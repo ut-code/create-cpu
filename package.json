@@ -9,6 +9,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@pixi/math-extras": "^7.1.4",
+    "pixi.js": "^7.1.4",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },
