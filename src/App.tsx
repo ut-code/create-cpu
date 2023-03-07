@@ -1,7 +1,21 @@
+import { Box } from "@mui/material";
 import Editor from "./Editor";
 
-function App() {
-  return <Editor />;
+export default function App() {
+  return (
+    <Box
+      sx={{ display: "grid", gridTemplateColumns: "100px 1fr", height: "100%" }}
+    >
+      <Box
+        sx={{
+          background: "paper",
+          borderRight: "1px solid",
+          borderRightColor: "divider",
+        }}
+      >
+        Menu
+      </Box>
+      <Editor />
+    </Box>
+  );
 }
-
-export default App;
