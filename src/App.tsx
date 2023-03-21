@@ -1,20 +1,19 @@
-import { Box } from "@mui/material";
-import Editor from "./Editor";
+import { Box, Divider } from "@mui/material";
+import Editor from "./components/Editor";
+import "@pixi/math-extras";
+import SidePanel from "./components/SidePanel";
 
 export default function App() {
   return (
     <Box
-      sx={{ display: "grid", gridTemplateColumns: "100px 1fr", height: "100%" }}
+      sx={{
+        display: "grid",
+        gridTemplateColumns: "100px max-content 1fr",
+        height: "100%",
+      }}
     >
-      <Box
-        sx={{
-          background: "paper",
-          borderRight: "1px solid",
-          borderRightColor: "divider",
-        }}
-      >
-        Menu
-      </Box>
+      <SidePanel />
+      <Divider orientation="vertical" />
       <Editor />
     </Box>
   );

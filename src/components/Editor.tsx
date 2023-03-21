@@ -7,7 +7,9 @@ import {
   Paper,
 } from "@mui/material";
 import { useEffect, useRef, useState } from "react";
-import { CCApplication, CCBlock } from "./editor";
+import invariant from "tiny-invariant";
+import CCApplication from "../models/application";
+import CCBlock from "../models/block";
 
 export default function Editor() {
   const applicationRef = useRef<CCApplication>();
@@ -18,12 +20,14 @@ export default function Editor() {
     useState<PIXI.Point | null>(null);
 
   useEffect(() => {
-    if (!containerRef.current || !canvasRef.current)
-      throw new Error("Element not found");
-    const app = new CCApplication(containerRef.current, canvasRef.current);
+    invariant(containerRef.current && canvasRef.current);
+    const app = new CCApplication(
+      containerRef.current,
+      canvasRef.current,
+      setContextMenuPosition
+    );
     applicationRef.current = app;
-    app.ccCanvas.addChild(new CCBlock({ x: 0, y: 0 }));
-    app.on("canvasContextMenu", setContextMenuPosition);
+    app.ccCanvas.addBlock(new CCBlock({ x: 0, y: 0 }));
   }, []);
 
   return (
@@ -32,6 +36,19 @@ export default function Editor() {
         ref={canvasRef}
         onContextMenu={(e) => {
           e.preventDefault();
+        }}
+        onDragOver={(e) => {
+          e.preventDefault();
+        }}
+        onDrop={(e) => {
+          invariant(applicationRef.current);
+          applicationRef.current.ccCanvas.addBlock(
+            new CCBlock(
+              applicationRef.current.ccCanvas.toWorldPosition(
+                new PIXI.Point(e.nativeEvent.offsetX, e.nativeEvent.offsetY)
+              )
+            )
+          );
         }}
       />
       {contextMenuPosition && (
@@ -52,10 +69,10 @@ export default function Editor() {
           >
             <MenuItem
               onClick={() => {
-                if (!applicationRef.current) return;
-                applicationRef.current.ccCanvas.addChild(
+                invariant(applicationRef.current);
+                applicationRef.current.ccCanvas.addBlock(
                   new CCBlock(
-                    applicationRef.current.ccCanvas.pixiEditorContainer.toLocal(
+                    applicationRef.current.ccCanvas.toWorldPosition(
                       contextMenuPosition
                     )
                   )

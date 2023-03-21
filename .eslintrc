@@ -1,0 +1,8 @@
+{
+  "root": true,
+  "extends": "airbnb-typescript-prettier",
+  "rules": {
+    "react/react-in-jsx-scope": "off", // Not necessary for react@>=17
+    "no-restricted-syntax": "off" // Allow using for-of syntax
+  }
+}
