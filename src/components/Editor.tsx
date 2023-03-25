@@ -27,7 +27,8 @@ export default function Editor() {
       setContextMenuPosition
     );
     applicationRef.current = app;
-    app.ccCanvas.addBlock(new CCBlock({ x: 0, y: 0 }));
+    app.ccCanvas.addBlock(new CCBlock({ x: 0, y: 0 }, "Custom"));
+    // app.ccCanvas.addBlock(new CCBlock({ x: 200, y: 0 }, "And"));
   }, []);
 
   return (
@@ -46,7 +47,8 @@ export default function Editor() {
             new CCBlock(
               applicationRef.current.ccCanvas.toWorldPosition(
                 new PIXI.Point(e.nativeEvent.offsetX, e.nativeEvent.offsetY)
-              )
+              ),
+              "And"
             )
           );
         }}
@@ -74,7 +76,8 @@ export default function Editor() {
                   new CCBlock(
                     applicationRef.current.ccCanvas.toWorldPosition(
                       contextMenuPosition
-                    )
+                    ),
+                    "Custom"
                   )
                 );
                 setContextMenuPosition(null);
