@@ -171,4 +171,9 @@ export default class CCCanvas {
       },
     });
   }
+
+  destroy() {
+    this.#pixiCanvas.removeChildren();
+    this.#pixiWorld.removeChildren();
+  }
 }

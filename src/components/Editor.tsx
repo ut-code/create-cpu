@@ -28,7 +28,8 @@ export default function Editor() {
     );
     applicationRef.current = app;
     app.ccCanvas.addBlock(new CCBlock({ x: 0, y: 0 }, "Custom"));
-    // app.ccCanvas.addBlock(new CCBlock({ x: 200, y: 0 }, "And"));
+    app.ccCanvas.addBlock(new CCBlock({ x: 200, y: 0 }, "And"));
+    return () => app.destroy();
   }, []);
 
   return (
