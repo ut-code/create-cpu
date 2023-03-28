@@ -1,4 +1,5 @@
 import * as PIXI from "pixi.js";
+import { Point } from "pixi.js";
 import { blackColor, primaryColor, whiteColor } from "../common/theme";
 
 export type CCBlockRegistrationProps = {
@@ -6,7 +7,7 @@ export type CCBlockRegistrationProps = {
   onDragStart(e: PIXI.FederatedMouseEvent): void;
 };
 
-export type BlockType = "And" | "Custom";
+export type BlockType = "And" | "Custom" | "Not";
 
 export default class CCBlock {
   // #props?: CCBlockRegistrationProps;
@@ -25,7 +26,7 @@ export default class CCBlock {
     this.#position = new PIXI.Point(position.x, position.y);
     this.#pixiGraphics = new PIXI.Graphics();
     this.#pixiGraphics.interactive = true;
-    if (blockType === "Custom") {
+    if (blockType === "Custom" || blockType === "Not") {
       this.#size = new PIXI.Point(100, 100);
     } else if (blockType === "And") {
       this.#size = new PIXI.Point(70, 100);
@@ -46,9 +47,9 @@ export default class CCBlock {
   private render() {
     const borderWidth = 5;
     const outlineWidth = 3;
+    this.#pixiGraphics.clear();
     switch (this.blockType) {
       case "Custom": {
-        this.#pixiGraphics.clear();
         this.#pixiGraphics.beginFill(whiteColor);
         this.#pixiGraphics.lineStyle({
           color: blackColor,
@@ -92,7 +93,6 @@ export default class CCBlock {
           x: this.#position.x + this.#size.x / 2,
           y: this.#position.y - this.#size.y / 2,
         };
-        this.#pixiGraphics.clear();
         this.#pixiGraphics.beginFill(whiteColor);
         this.#pixiGraphics.drawRect(
           rectangleLeftTop.x,
@@ -177,6 +177,75 @@ export default class CCBlock {
           this.#pixiGraphics.lineTo(
             rectangleLeftTop.x - borderWidth,
             rectangleLeftTop.y - borderWidth - outlineWidth
+          );
+        }
+        break;
+      }
+      case "Not": {
+        this.#pixiGraphics.beginFill(whiteColor);
+        this.#pixiGraphics.lineStyle({
+          color: blackColor,
+          width: borderWidth,
+          alignment: 1,
+        });
+        this.#pixiGraphics.drawPolygon(
+          new PIXI.Polygon(
+            new Point(
+              this.#position.x - this.#size.x / 2,
+              this.#position.y - this.#size.y / 2
+            ),
+            new Point(
+              this.#position.x - this.#size.x / 2,
+              this.#position.y + this.#size.y / 2
+            ),
+            new Point(this.#position.x + this.#size.x / 2, this.#position.y)
+          )
+        );
+        const radius = 6;
+        this.#pixiGraphics.drawCircle(
+          this.#position.x + this.#size.x / 2 + radius + borderWidth,
+          this.#position.y,
+          radius
+        );
+        this.#pixiGraphics.endFill();
+        this.#pixiGraphics.moveTo(
+          this.#position.x - this.#size.x / 2,
+          this.#position.y - borderWidth / 2
+        );
+        this.#pixiGraphics.lineTo(
+          this.#position.x - this.#size.x / 2 - this.#wireLength,
+          this.#position.y - borderWidth / 2
+        );
+        this.#pixiGraphics.moveTo(
+          this.#position.x + this.#size.x / 2 + radius * 2 + borderWidth,
+          this.#position.y + borderWidth / 2
+        );
+        this.#pixiGraphics.lineTo(
+          this.#position.x +
+            this.#size.x / 2 +
+            radius * 2 +
+            borderWidth +
+            this.#wireLength,
+          this.#position.y + borderWidth / 2
+        );
+        if (this.isSelected) {
+          this.#pixiGraphics.lineStyle({
+            color: primaryColor,
+            width: outlineWidth,
+            alignment: 1,
+          });
+          this.#pixiGraphics.drawPolygon(
+            new PIXI.Polygon(
+              new Point(
+                this.#position.x - this.#size.x / 2,
+                this.#position.y - this.#size.y / 2
+              ),
+              new Point(
+                this.#position.x - this.#size.x / 2,
+                this.#position.y + this.#size.y / 2
+              ),
+              new Point(this.#position.x + this.#size.x / 2, this.#position.y)
+            )
           );
         }
         break;
