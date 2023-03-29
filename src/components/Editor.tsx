@@ -28,6 +28,7 @@ export default function Editor() {
     );
     applicationRef.current = app;
     app.ccCanvas.addBlock(new CCBlock({ x: 0, y: 0 }));
+    return () => app.destroy();
   }, []);
 
   return (
