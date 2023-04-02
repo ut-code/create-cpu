@@ -39,6 +39,7 @@ export type CCConnection = {
 export type CCEdge = {
   id: string;
   name: string;
+  type: "input" | "output";
   /** Automatically calculated when null */
   position: Point | null;
 };
