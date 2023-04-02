@@ -35,8 +35,8 @@ export default class CCBlock {
   }
 
   private render() {
-    const borderWidth = 5;
-    const outlineWidth = 3;
+    const borderWidth = 3;
+    const outlineWidth = 1;
     this.#pixiGraphics.clear();
     this.#pixiGraphics.beginFill(whiteColor);
     this.#pixiGraphics.lineStyle({
@@ -58,10 +58,10 @@ export default class CCBlock {
         alignment: 1,
       });
       this.#pixiGraphics.drawRect(
-        this.#position.x - this.#size.x / 2 - borderWidth,
-        this.#position.y - this.#size.y / 2 - borderWidth,
-        this.#size.x + borderWidth * 2,
-        this.#size.y + borderWidth * 2
+        this.#position.x - this.#size.x / 2 - borderWidth / 2,
+        this.#position.y - this.#size.y / 2 - borderWidth / 2,
+        this.#size.x + borderWidth,
+        this.#size.y + borderWidth
       );
     }
   }
