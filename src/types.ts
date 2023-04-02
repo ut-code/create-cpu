@@ -39,7 +39,6 @@ export type CCConnection = {
 export type CCEdge = {
   id: string;
   name: string;
-  type: "input" | "output";
   /** Automatically calculated when null */
   position: Point | null;
 };
@@ -48,7 +47,8 @@ export type CCComponentDefinition = {
   id: string;
   name: string;
   description: string;
-  edges: CCEdge[];
+  inputEdges: CCEdge[];
+  outputEdges: CCEdge[];
   connections: CCConnection[];
   children: CCNode[];
 };
