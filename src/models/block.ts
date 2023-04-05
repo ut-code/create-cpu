@@ -94,7 +94,7 @@ export default class CCBlock {
     const edgeSize = 10;
     this.#componentDefinition.inputEdges.forEach((edge, index) => {
       const position = {
-        x: this.#position.x - this.#size.x / 2 - edgeSize / 2,
+        x: this.#position.x - this.#size.x / 2 - edgeSize / 2 - borderWidth / 2,
         y:
           this.#position.y -
           this.#size.y / 2 +
@@ -119,7 +119,7 @@ export default class CCBlock {
       this.#size.y / (this.#componentDefinition.outputEdges.length + 1);
     this.#componentDefinition.outputEdges.forEach((edge, index) => {
       const position = {
-        x: this.#position.x + this.#size.x / 2 - edgeSize / 2,
+        x: this.#position.x + this.#size.x / 2 - edgeSize / 2 + borderWidth / 2,
         y:
           this.#position.y -
           this.#size.y / 2 +
@@ -151,12 +151,12 @@ export default class CCBlock {
         alignment: 1,
       });
       this.#pixiGraphics.drawRect(
-        this.#position.x - this.#size.x / 2 - borderWidth - edgeSize / 2,
+        this.#position.x - this.#size.x / 2 - borderWidth * 1.5 - edgeSize / 2,
         this.#position.y -
           this.#size.y / 2 -
           borderWidth / 2 +
           outlineWidth / 2,
-        this.#size.x + borderWidth * 2 + edgeSize,
+        this.#size.x + borderWidth * 3 + edgeSize,
         this.#size.y + borderWidth - outlineWidth
       );
     }
