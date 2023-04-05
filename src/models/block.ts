@@ -151,10 +151,13 @@ export default class CCBlock {
         alignment: 1,
       });
       this.#pixiGraphics.drawRect(
-        this.#position.x - this.#size.x / 2 - borderWidth / 2,
-        this.#position.y - this.#size.y / 2 - borderWidth / 2,
-        this.#size.x + borderWidth,
-        this.#size.y + borderWidth
+        this.#position.x - this.#size.x / 2 - borderWidth - edgeSize / 2,
+        this.#position.y -
+          this.#size.y / 2 -
+          borderWidth / 2 +
+          outlineWidth / 2,
+        this.#size.x + borderWidth * 2 + edgeSize,
+        this.#size.y + borderWidth - outlineWidth
       );
     }
   }
