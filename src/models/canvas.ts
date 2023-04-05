@@ -74,10 +74,13 @@ export default class CCCanvas {
           .multiplyScalar(1 / this.worldPerspective.scale);
         switch (this.#dragState.target.type) {
           case "world":
-            this.worldPerspective = {
-              center: this.#dragState.target.initialCenter.subtract(dragOffset),
-              scale: this.worldPerspective.scale,
-            };
+            if (e.ctrlKey) {
+              this.worldPerspective = {
+                center:
+                  this.#dragState.target.initialCenter.subtract(dragOffset),
+                scale: this.worldPerspective.scale,
+              };
+            }
             return;
           case "block":
             this.#dragState.target.block.position =
