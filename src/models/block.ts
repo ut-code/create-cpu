@@ -150,14 +150,19 @@ export default class CCBlock {
         width: outlineWidth,
         alignment: 1,
       });
+      const margin = 8;
       this.#pixiGraphics.drawRect(
         this.#position.x - this.#size.x / 2 - borderWidth * 1.5 - edgeSize / 2,
         this.#position.y -
           this.#size.y / 2 -
-          borderWidth / 2 +
-          outlineWidth / 2,
+          this.#componentNameFontSize -
+          margin,
         this.#size.x + borderWidth * 3 + edgeSize,
-        this.#size.y + borderWidth - outlineWidth
+        this.#size.y +
+          this.#componentNameFontSize +
+          margin +
+          borderWidth / 2 -
+          outlineWidth / 2
       );
     }
   }
