@@ -17,7 +17,7 @@ export type CCNode = {
   id: string;
   componentId: string;
   position: Point;
-  sequentialCircuitIdentifier: CCSequentialCircuitIdentifier;
+  sequentialCircuitIdentifier?: CCSequentialCircuitIdentifier;
 };
 
 export type CCConnectionEndpoint = {
