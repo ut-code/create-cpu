@@ -3,6 +3,7 @@ import { createTheme } from "@mui/material";
 
 export const blackColor = 0x000000;
 export const whiteColor = 0xffffff;
+export const grayColor = 0xeeeeee;
 export const primaryColor = 0x00d372;
 export const editorBackgroundColor = 0xf3f3f3;
 export const editorGridColor = 0xdddddd;
