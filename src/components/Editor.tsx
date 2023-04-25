@@ -35,6 +35,7 @@ export default function Editor() {
         position: new PIXI.Point(0, 0),
       })
     );
+    return () => app.destroy();
   }, []);
 
   return (

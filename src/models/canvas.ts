@@ -173,4 +173,9 @@ export default class CCCanvas {
       componentDefinitionGetter: () => sampleHalfAdder,
     });
   }
+
+  destroy() {
+    this.#pixiCanvas.removeChildren();
+    this.#pixiWorld.removeChildren();
+  }
 }

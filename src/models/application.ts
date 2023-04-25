@@ -52,4 +52,8 @@ export default class CCApplication {
       pixiContainer: this.#pixiApplication.stage,
     });
   }
+
+  destroy() {
+    this.ccCanvas.destroy();
+  }
 }
