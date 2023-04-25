@@ -1,10 +1,27 @@
+import type { Point } from "pixi.js";
 import * as PIXI from "pixi.js";
-import { blackColor, primaryColor, whiteColor } from "../common/theme";
-import type { CCComponentDefinition } from "../types";
+import {
+  blackColor,
+  grayColor,
+  primaryColor,
+  whiteColor,
+} from "../common/theme";
+import type {
+  CCComponentDefinition,
+  CCSequentialCircuitIdentifier,
+} from "../types";
 
 export type CCBlockRegistrationProps = {
   pixiContainer: PIXI.Container;
   onDragStart(e: PIXI.FederatedMouseEvent): void;
+  componentDefinitionGetter: (componentId: string) => CCComponentDefinition;
+};
+
+type CCNodeConstructorProps = {
+  component: CCComponentDefinition;
+  id: string;
+  position: Point;
+  sequentialCircuitIdentifier?: CCSequentialCircuitIdentifier;
 };
 
 type PixiTexts = {
@@ -12,12 +29,16 @@ type PixiTexts = {
   edgesName: Map<string, PIXI.Text>;
 };
 
-export default class CCBlock {
+export default class CCNode {
   // #props?: CCBlockRegistrationProps;
 
   #pixiGraphics: PIXI.Graphics;
 
   #position: PIXI.Point;
+
+  #id: string;
+
+  #componentId: string;
 
   #size = new PIXI.Point(200, 100);
 
@@ -31,11 +52,31 @@ export default class CCBlock {
 
   #componentDefinition: CCComponentDefinition;
 
-  constructor(position: PIXI.IPointData, component: CCComponentDefinition) {
+  #sequentialCircuitIdentifier?: CCSequentialCircuitIdentifier;
+
+  constructor({
+    component,
+    id,
+    position,
+    sequentialCircuitIdentifier,
+  }: CCNodeConstructorProps) {
     this.#position = new PIXI.Point(position.x, position.y);
+    if (sequentialCircuitIdentifier) {
+      this.#sequentialCircuitIdentifier = sequentialCircuitIdentifier;
+    }
+    this.#id = id;
+    this.#componentId = component.id;
     this.#pixiGraphics = new PIXI.Graphics();
     this.#pixiGraphics.interactive = true;
     this.#componentDefinition = component;
+    this.#pixiTexts = this.#generateString();
+  }
+
+  #generateString(): {
+    componentName: PIXI.Text;
+    edgesName: Map<string, PIXI.Text>;
+  } {
+    const component = this.#componentDefinition;
     const componentName = new PIXI.Text(this.#componentDefinition.name, {
       fontSize: this.#componentNameFontSize,
     });
@@ -54,11 +95,15 @@ export default class CCBlock {
         })
       );
     }
-    this.#pixiTexts = { componentName, edgesName: map };
+    return { componentName, edgesName: map };
   }
 
   register(props: CCBlockRegistrationProps) {
     // this.#props = props;
+    this.#componentDefinition = props.componentDefinitionGetter(
+      this.#componentId
+    );
+    this.#pixiTexts = this.#generateString();
     props.pixiContainer.addChild(this.#pixiGraphics);
     props.pixiContainer.addChild(this.#pixiTexts.componentName);
     this.#pixiTexts.edgesName.forEach((value) =>
@@ -140,6 +185,8 @@ export default class CCBlock {
         edgeName.anchor.set(1, 0.25);
       }
     });
+    this.#pixiGraphics.endFill();
+    this.#pixiGraphics.beginFill(grayColor);
     this.#pixiGraphics.endFill();
     this.#pixiTexts.componentName.anchor.set(0, 1);
     this.#pixiTexts.componentName.x = this.#position.x - this.#size.x / 2;

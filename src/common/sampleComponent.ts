@@ -1,6 +1,6 @@
-import type { CCComponentDefinition } from "../types";
+import type { CCComponentDefinition, CCNode } from "../types";
 
-export const sampleComponent: CCComponentDefinition = {
+export const sampleHalfAdder: CCComponentDefinition = {
   id: "Half Adder",
   name: "Half Adder",
   description: "",
@@ -35,4 +35,13 @@ export const sampleComponent: CCComponentDefinition = {
   ],
   connections: [],
   children: [],
+};
+
+export const sampleHalfAdderNode: CCNode = {
+  id: "Half Adder1",
+  componentId: "Half Adder",
+  position: {
+    x: 0,
+    y: 0,
+  },
 };
