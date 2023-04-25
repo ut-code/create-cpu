@@ -36,9 +36,9 @@ export default class CCNode {
 
   #position: PIXI.Point;
 
-  #id: string;
+  readonly id: string;
 
-  #componentId: string;
+  readonly componentId: string;
 
   #size = new PIXI.Point(200, 100);
 
@@ -52,7 +52,7 @@ export default class CCNode {
 
   #componentDefinition: CCComponentDefinition;
 
-  #sequentialCircuitIdentifier?: CCSequentialCircuitIdentifier;
+  readonly sequentialCircuitIdentifier?: CCSequentialCircuitIdentifier;
 
   constructor({
     component,
@@ -62,10 +62,10 @@ export default class CCNode {
   }: CCNodeConstructorProps) {
     this.#position = new PIXI.Point(position.x, position.y);
     if (sequentialCircuitIdentifier) {
-      this.#sequentialCircuitIdentifier = sequentialCircuitIdentifier;
+      this.sequentialCircuitIdentifier = sequentialCircuitIdentifier;
     }
-    this.#id = id;
-    this.#componentId = component.id;
+    this.id = id;
+    this.componentId = component.id;
     this.#pixiGraphics = new PIXI.Graphics();
     this.#pixiGraphics.interactive = true;
     this.#componentDefinition = component;
@@ -101,7 +101,7 @@ export default class CCNode {
   register(props: CCBlockRegistrationProps) {
     // this.#props = props;
     this.#componentDefinition = props.componentDefinitionGetter(
-      this.#componentId
+      this.componentId
     );
     this.#pixiTexts = this.#generateString();
     props.pixiContainer.addChild(this.#pixiGraphics);
