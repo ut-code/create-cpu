@@ -2,6 +2,7 @@ import * as PIXI from "pixi.js";
 import invariant from "tiny-invariant";
 import { IObservable, Observable } from "../common/observable";
 import type { Perspective } from "../common/perspective";
+import { sampleHalfAdder } from "../common/sampleComponent";
 import type CCBlock from "./block";
 import CCGrid from "./grid";
 
@@ -169,6 +170,7 @@ export default class CCCanvas {
           },
         };
       },
+      componentDefinitionGetter: () => sampleHalfAdder,
     });
   }
 

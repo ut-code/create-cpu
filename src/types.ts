@@ -17,7 +17,7 @@ export type CCNode = {
   id: string;
   componentId: string;
   position: Point;
-  sequentialCircuitIdentifier: CCSequentialCircuitIdentifier;
+  sequentialCircuitIdentifier?: CCSequentialCircuitIdentifier;
 };
 
 export type CCConnectionEndpoint = {
@@ -47,7 +47,8 @@ export type CCComponentDefinition = {
   id: string;
   name: string;
   description: string;
-  edges: CCEdge[];
+  inputEdges: CCEdge[];
+  outputEdges: CCEdge[];
   connections: CCConnection[];
   children: CCNode[];
 };

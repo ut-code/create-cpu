@@ -9,7 +9,8 @@ import {
 import { useEffect, useRef, useState } from "react";
 import invariant from "tiny-invariant";
 import CCApplication from "../models/application";
-import CCBlock from "../models/block";
+import CCNode from "../models/block";
+import { sampleHalfAdder } from "../common/sampleComponent";
 
 export default function Editor() {
   const applicationRef = useRef<CCApplication>();
@@ -27,7 +28,13 @@ export default function Editor() {
       setContextMenuPosition
     );
     applicationRef.current = app;
-    app.ccCanvas.addBlock(new CCBlock({ x: 0, y: 0 }));
+    app.ccCanvas.addBlock(
+      new CCNode({
+        component: sampleHalfAdder,
+        id: "HalfAdder",
+        position: new PIXI.Point(0, 0),
+      })
+    );
     return () => app.destroy();
   }, []);
 
@@ -44,11 +51,13 @@ export default function Editor() {
         onDrop={(e) => {
           invariant(applicationRef.current);
           applicationRef.current.ccCanvas.addBlock(
-            new CCBlock(
-              applicationRef.current.ccCanvas.toWorldPosition(
+            new CCNode({
+              component: sampleHalfAdder,
+              position: applicationRef.current.ccCanvas.toWorldPosition(
                 new PIXI.Point(e.nativeEvent.offsetX, e.nativeEvent.offsetY)
-              )
-            )
+              ),
+              id: "HalfAdder",
+            })
           );
         }}
       />
@@ -72,11 +81,14 @@ export default function Editor() {
               onClick={() => {
                 invariant(applicationRef.current);
                 applicationRef.current.ccCanvas.addBlock(
-                  new CCBlock(
-                    applicationRef.current.ccCanvas.toWorldPosition(
-                      contextMenuPosition
-                    )
-                  )
+                  new CCNode({
+                    id: "HalfAdder",
+                    position:
+                      applicationRef.current.ccCanvas.toWorldPosition(
+                        contextMenuPosition
+                      ),
+                    component: sampleHalfAdder,
+                  })
                 );
                 setContextMenuPosition(null);
               }}
