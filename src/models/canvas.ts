@@ -4,6 +4,7 @@ import { IObservable, Observable } from "../common/observable";
 import type { Perspective } from "../common/perspective";
 import type CCBlock from "./block";
 import CCGrid from "./grid";
+import type CCConnection from "./connection";
 
 export type CCCanvasRegistrationProps = {
   size: IObservable<PIXI.Point>;
@@ -20,6 +21,8 @@ type DragState = {
 
 export default class CCCanvas {
   ccBlocks: CCBlock[] = [];
+
+  ccConnections: CCConnection[] = [];
 
   #props?: CCCanvasRegistrationProps;
 
@@ -169,6 +172,17 @@ export default class CCCanvas {
           },
         };
       },
+    });
+  }
+
+  addConnection(connection: CCConnection) {
+    invariant(this.#props);
+    this.ccConnections.push(connection);
+    connection.register({
+      pixiContainer: this.#pixiWorld,
+      fromPositionGetter: (e) =>
+        this.ccBlocks[e.nodeId].edges[e.edgeId].position,
+      toPositionGetter: (e) => this.ccBlocks[e.nodeId].edges[e.edgeId].position,
     });
   }
 
