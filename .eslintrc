@@ -3,6 +3,7 @@
   "extends": "airbnb-typescript-prettier",
   "rules": {
     "react/react-in-jsx-scope": "off", // Not necessary for react@>=17
-    "no-restricted-syntax": "off" // Allow using for-of syntax
+    "no-restricted-syntax": "off", // Allow using for-of syntax
+    "@typescript-eslint/no-non-null-assertion": "off"
   }
 }

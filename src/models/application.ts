@@ -1,10 +1,10 @@
 import * as PIXI from "pixi.js";
 import { editorBackgroundColor } from "../common/theme";
-import CCCanvas from "./canvas";
 import { Observable } from "../common/observable";
+import type CCStore from "./store";
 
 export default class CCApplication {
-  ccCanvas: CCCanvas;
+  #store: CCStore;
 
   #htmlContainer: HTMLDivElement;
 
@@ -17,10 +17,12 @@ export default class CCApplication {
   #resizeObserver: ResizeObserver;
 
   constructor(
+    store: CCStore,
     htmlContainer: HTMLDivElement,
     htmlCanvas: HTMLCanvasElement,
     onContextMenu: (position: PIXI.Point) => void
   ) {
+    this.#store = store;
     this.#htmlContainer = htmlContainer;
     this.#htmlCanvas = htmlCanvas;
 
@@ -43,8 +45,7 @@ export default class CCApplication {
       resolution: window.devicePixelRatio,
       autoDensity: true,
     });
-    this.ccCanvas = new CCCanvas();
-    this.ccCanvas.register({
+    this.#store.getComponent(null).register({
       size: this.#canvasSize,
       onContextMenu: (position) => {
         onContextMenu(position);
@@ -53,7 +54,8 @@ export default class CCApplication {
     });
   }
 
+  // eslint-disable-next-line class-methods-use-this
   destroy() {
-    this.ccCanvas.destroy();
+    // this.ccCanvas.destroy();
   }
 }

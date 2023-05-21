@@ -1,4 +1,4 @@
-import * as PIXI from "pixi.js";
+import type * as PIXI from "pixi.js";
 import {
   Box,
   ClickAwayListener,
@@ -9,10 +9,10 @@ import {
 import { useEffect, useRef, useState } from "react";
 import invariant from "tiny-invariant";
 import CCApplication from "../models/application";
-import CCNode from "../models/block";
-import { sampleHalfAdder } from "../common/sampleComponent";
+import CCStore from "../models/store";
 
 export default function Editor() {
+  const storeRef = useRef<CCStore>();
   const applicationRef = useRef<CCApplication>();
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -22,19 +22,15 @@ export default function Editor() {
 
   useEffect(() => {
     invariant(containerRef.current && canvasRef.current);
+    const store = new CCStore();
     const app = new CCApplication(
+      store,
       containerRef.current,
       canvasRef.current,
       setContextMenuPosition
     );
     applicationRef.current = app;
-    app.ccCanvas.addBlock(
-      new CCNode({
-        component: sampleHalfAdder,
-        id: "HalfAdder",
-        position: new PIXI.Point(0, 0),
-      })
-    );
+    storeRef.current = store;
     return () => app.destroy();
   }, []);
 
@@ -48,17 +44,8 @@ export default function Editor() {
         onDragOver={(e) => {
           e.preventDefault();
         }}
-        onDrop={(e) => {
+        onDrop={() => {
           invariant(applicationRef.current);
-          applicationRef.current.ccCanvas.addBlock(
-            new CCNode({
-              component: sampleHalfAdder,
-              position: applicationRef.current.ccCanvas.toWorldPosition(
-                new PIXI.Point(e.nativeEvent.offsetX, e.nativeEvent.offsetY)
-              ),
-              id: "HalfAdder",
-            })
-          );
         }}
       />
       {contextMenuPosition && (
@@ -80,16 +67,6 @@ export default function Editor() {
             <MenuItem
               onClick={() => {
                 invariant(applicationRef.current);
-                applicationRef.current.ccCanvas.addBlock(
-                  new CCNode({
-                    id: "HalfAdder",
-                    position:
-                      applicationRef.current.ccCanvas.toWorldPosition(
-                        contextMenuPosition
-                      ),
-                    component: sampleHalfAdder,
-                  })
-                );
                 setContextMenuPosition(null);
               }}
             >

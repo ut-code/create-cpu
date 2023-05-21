@@ -13,8 +13,10 @@ export type CCSequentialCircuitIdentifier = {
   order: number;
 };
 
+export type CCNodeId = string;
+
 export type CCNode = {
-  id: string;
+  id: CCNodeId;
   componentId: string;
   position: Point;
   sequentialCircuitIdentifier?: CCSequentialCircuitIdentifier;
@@ -25,8 +27,10 @@ export type CCConnectionEndpoint = {
   edgeId: string;
 };
 
+export type CCConnectionId = string;
+
 export type CCConnection = {
-  id: string;
+  id: CCConnectionId;
   from: CCConnectionEndpoint;
   to: CCConnectionEndpoint;
   /**
@@ -43,8 +47,11 @@ export type CCEdge = {
   position: Point | null;
 };
 
-export type CCComponentDefinition = {
-  id: string;
+/** `null` represents the root component. */
+export type CCComponentId = string | null;
+
+export type CCComponent = {
+  id: CCComponentId;
   name: string;
   description: string;
   inputEdges: CCEdge[];
