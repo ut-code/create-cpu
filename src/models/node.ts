@@ -6,31 +6,35 @@ import {
   primaryColor,
   whiteColor,
 } from "../common/theme";
-import type {
-  CCComponentDefinition,
-  CCSequentialCircuitIdentifier,
-} from "../types";
+import type { CCComponent, CCComponentId } from "../types";
+import type CCStore from "./store";
 
-export type CCBlockRegistrationProps = {
-  pixiContainer: PIXI.Container;
-  onDragStart(e: PIXI.FederatedMouseEvent): void;
-  componentDefinitionGetter: (componentId: string) => CCComponentDefinition;
+export type CCNodeConstructorProps = {
+  store: CCStore;
+  componentId: CCComponentId;
+  parentComponentId: CCComponentId;
+  position: Point;
 };
 
-type CCNodeConstructorProps = {
-  component: CCComponentDefinition;
-  id: string;
-  position: Point;
-  sequentialCircuitIdentifier?: CCSequentialCircuitIdentifier;
+export type CCNodeRegistrationProps = {
+  pixiContainer: PIXI.Container;
+  onDragStart(e: PIXI.FederatedMouseEvent): void;
+  getComponent: (componentId: CCComponentId) => CCComponent;
 };
 
 type PixiTexts = {
   componentName: PIXI.Text;
-  edgesName: Map<string, PIXI.Text>;
+  edgeNames: Map<string, PIXI.Text>;
 };
 
 export default class CCNode {
   // #props?: CCBlockRegistrationProps;
+
+  readonly ccComponentId: CCComponentId;
+
+  parentComponentId: CCComponentId;
+
+  #store: CCStore;
 
   #pixiGraphics: PIXI.Graphics;
 
@@ -38,75 +42,64 @@ export default class CCNode {
 
   readonly id: string;
 
-  readonly componentId: string;
-
   #size = new PIXI.Point(200, 100);
 
-  #componentNameFontSize = 24;
+  static readonly #componentNameFontSize = 24;
 
-  #edgenameFontSize = 16;
+  static readonly #edgeNameFontSize = 16;
 
   #isSelected = false;
 
   #pixiTexts: PixiTexts;
 
-  #componentDefinition: CCComponentDefinition;
-
-  readonly sequentialCircuitIdentifier?: CCSequentialCircuitIdentifier;
-
   constructor({
-    component,
-    id,
+    store,
+    componentId,
+    parentComponentId,
     position,
-    sequentialCircuitIdentifier,
   }: CCNodeConstructorProps) {
+    this.#store = store;
     this.#position = new PIXI.Point(position.x, position.y);
-    if (sequentialCircuitIdentifier) {
-      this.sequentialCircuitIdentifier = sequentialCircuitIdentifier;
-    }
-    this.id = id;
-    this.componentId = component.id;
+    this.id = window.crypto.randomUUID();
+    this.ccComponentId = componentId;
+    this.parentComponentId = parentComponentId;
     this.#pixiGraphics = new PIXI.Graphics();
     this.#pixiGraphics.interactive = true;
-    this.#componentDefinition = component;
-    this.#pixiTexts = this.#generateString();
+    this.#pixiTexts = this.#createText();
   }
 
-  #generateString(): {
+  #createText(): {
     componentName: PIXI.Text;
-    edgesName: Map<string, PIXI.Text>;
+    edgeNames: Map<string, PIXI.Text>;
   } {
-    const component = this.#componentDefinition;
-    const componentName = new PIXI.Text(this.#componentDefinition.name, {
-      fontSize: this.#componentNameFontSize,
+    const component = this.#store.getComponent(this.ccComponentId)!;
+    const componentName = new PIXI.Text(component.name, {
+      fontSize: CCNode.#componentNameFontSize,
     });
     const map = new Map<string, PIXI.Text>();
     for (const edge of component.inputEdges) {
       map.set(
         edge.id,
-        new PIXI.Text(edge.name, { fontSize: this.#edgenameFontSize })
+        new PIXI.Text(edge.name, { fontSize: CCNode.#edgeNameFontSize })
       );
     }
     for (const edge of component.outputEdges) {
       map.set(
         edge.id,
         new PIXI.Text(edge.name, {
-          fontSize: this.#edgenameFontSize,
+          fontSize: CCNode.#edgeNameFontSize,
         })
       );
     }
-    return { componentName, edgesName: map };
+    return { componentName, edgeNames: map };
   }
 
-  register(props: CCBlockRegistrationProps) {
+  register(props: CCNodeRegistrationProps) {
     // this.#props = props;
-    this.#componentDefinition = props.componentDefinitionGetter(
-      this.componentId
-    );
-    this.#pixiTexts = this.#generateString();
+    this.#pixiTexts = this.#createText();
     props.pixiContainer.addChild(this.#pixiGraphics);
     props.pixiContainer.addChild(this.#pixiTexts.componentName);
-    this.#pixiTexts.edgesName.forEach((value) =>
+    this.#pixiTexts.edgeNames.forEach((value) =>
       props.pixiContainer.addChild(value)
     );
     this.#pixiGraphics.on("mousedown", (e) => {
@@ -118,6 +111,7 @@ export default class CCNode {
   }
 
   private render() {
+    const component = this.#store.getComponent(this.ccComponentId)!;
     const borderWidth = 3;
     const outlineWidth = 1;
     this.#pixiGraphics.clear();
@@ -133,11 +127,10 @@ export default class CCNode {
       this.#size.x,
       this.#size.y
     );
-    const inputEdgeGap =
-      this.#size.y / (this.#componentDefinition.inputEdges.length + 1);
+    const inputEdgeGap = this.#size.y / (component.inputEdges.length + 1);
     const gap = 6;
     const edgeSize = 10;
-    this.#componentDefinition.inputEdges.forEach((edge, index) => {
+    component.inputEdges.forEach((edge, index) => {
       const position = {
         x: this.#position.x - this.#size.x / 2 - edgeSize / 2 - borderWidth / 2,
         y:
@@ -153,16 +146,15 @@ export default class CCNode {
         edgeSize,
         2
       );
-      const edgeName = this.#pixiTexts.edgesName.get(edge.id);
+      const edgeName = this.#pixiTexts.edgeNames.get(edge.id);
       if (edgeName) {
         edgeName.x = position.x + edgeSize + gap;
         edgeName.y = position.y;
         edgeName.anchor.set(0, 0.25);
       }
     });
-    const outputEdgeGap =
-      this.#size.y / (this.#componentDefinition.outputEdges.length + 1);
-    this.#componentDefinition.outputEdges.forEach((edge, index) => {
+    const outputEdgeGap = this.#size.y / (component.outputEdges.length + 1);
+    component.outputEdges.forEach((edge, index) => {
       const position = {
         x: this.#position.x + this.#size.x / 2 - edgeSize / 2 + borderWidth / 2,
         y:
@@ -178,7 +170,7 @@ export default class CCNode {
         edgeSize,
         2
       );
-      const edgeName = this.#pixiTexts.edgesName.get(edge.id);
+      const edgeName = this.#pixiTexts.edgeNames.get(edge.id);
       if (edgeName) {
         edgeName.x = position.x - gap;
         edgeName.y = position.y;
@@ -202,11 +194,11 @@ export default class CCNode {
         this.#position.x - this.#size.x / 2 - borderWidth * 1.5 - edgeSize / 2,
         this.#position.y -
           this.#size.y / 2 -
-          this.#componentNameFontSize -
+          CCNode.#componentNameFontSize -
           margin,
         this.#size.x + borderWidth * 3 + edgeSize,
         this.#size.y +
-          this.#componentNameFontSize +
+          CCNode.#componentNameFontSize +
           margin +
           borderWidth / 2 -
           outlineWidth / 2
@@ -230,5 +222,13 @@ export default class CCNode {
   set position(value) {
     this.#position = value;
     this.render();
+  }
+
+  destroy() {
+    this.#pixiGraphics.destroy();
+    this.#pixiTexts.componentName.destroy();
+    for (const text of this.#pixiTexts.edgeNames) {
+      text[1].destroy();
+    }
   }
 }

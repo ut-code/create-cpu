@@ -3,8 +3,10 @@ import invariant from "tiny-invariant";
 import { IObservable, Observable } from "../common/observable";
 import type { Perspective } from "../common/perspective";
 import { sampleHalfAdder } from "../common/sampleComponent";
-import type CCBlock from "./block";
+import type CCNode from "./node";
 import CCGrid from "./grid";
+import type { CCComponentId, CCEdge } from "../types";
+import type CCStore from "./store";
 
 export type CCCanvasRegistrationProps = {
   size: IObservable<PIXI.Point>;
@@ -16,11 +18,20 @@ type DragState = {
   startPosition: PIXI.Point;
   target:
     | { type: "world"; initialCenter: PIXI.Point }
-    | { type: "block"; block: CCBlock; initialPosition: PIXI.Point };
+    | { type: "block"; block: CCNode; initialPosition: PIXI.Point };
 };
 
-export default class CCCanvas {
-  ccBlocks: CCBlock[] = [];
+/** Editor for CCComponent */
+export default class CCComponent {
+  readonly id: CCComponentId;
+
+  name: string;
+
+  inputEdges: CCEdge[] = [];
+
+  outputEdges: CCEdge[] = [];
+
+  #store: CCStore;
 
   #props?: CCCanvasRegistrationProps;
 
@@ -37,7 +48,10 @@ export default class CCCanvas {
 
   #dragState: DragState | null = null;
 
-  constructor() {
+  constructor(store: CCStore, name: string, isRoot?: boolean) {
+    this.id = isRoot ? null : window.crypto.randomUUID();
+    this.name = name;
+    this.#store = store;
     this.#pixiCanvas = new PIXI.Container();
     this.#pixiCanvas.interactive = true;
     this.#pixiCanvas.hitArea = { contains: () => true }; // Capture events everywhere
@@ -52,11 +66,16 @@ export default class CCCanvas {
       worldPerspective: this.#worldPerspective,
       pixiContainer: this.#pixiCanvas,
     });
+    this.registerNodes();
     props.size.observe(() => {
       this.#render();
     });
     props.pixiContainer.addChild(this.#pixiCanvas);
     this.#pixiCanvas.addChild(this.#pixiWorld);
+
+    this.#pixiCanvas.on("pointerout", () => {
+      this.#dragState = null;
+    });
 
     // Support dragging
     this.#pixiCanvas.on("mousedown", (e) => {
@@ -112,6 +131,32 @@ export default class CCCanvas {
     });
   }
 
+  #registeredNodeIds = new Set<string>();
+
+  registerNodes() {
+    const ccNodes = this.#store.getCCNodesInCCComponent(this.id);
+    for (const ccNode of ccNodes) {
+      if (!this.#registeredNodeIds.has(ccNode.id)) {
+        this.#registeredNodeIds.add(ccNode.id);
+        ccNode.register({
+          pixiContainer: this.#pixiWorld,
+          // eslint-disable-next-line no-loop-func
+          onDragStart: (e) => {
+            this.#dragState = {
+              startPosition: e.global.clone(),
+              target: {
+                type: "block",
+                block: ccNode,
+                initialPosition: ccNode.position.clone(),
+              },
+            };
+          },
+          getComponent: () => sampleHalfAdder,
+        });
+      }
+    }
+  }
+
   #render() {
     invariant(this.#props);
     this.#pixiWorld.position = this.toCanvasPosition(new PIXI.Point(0, 0));
@@ -158,24 +203,20 @@ export default class CCCanvas {
     };
   }
 
-  addBlock(block: CCBlock) {
-    invariant(this.#props);
-    this.ccBlocks.push(block);
-    block.register({
-      pixiContainer: this.#pixiWorld,
-      onDragStart: (e) => {
-        this.#dragState = {
-          startPosition: e.global.clone(),
-          target: {
-            type: "block",
-            block,
-            initialPosition: block.position.clone(),
-          },
-        };
-      },
-      componentDefinitionGetter: () => sampleHalfAdder,
-    });
-  }
+  // addConnection(connection: CCConnection) {
+  //   this.ccConnections.push(connection);
+  //   connection.register({
+  //     pixiContainer: this.#pixiWorld,
+  //     getFromPosition: (e) =>
+  //       this.getComponent(
+  //         (this.getBlock(e.nodeId) as CCNode).ccComponentId as string
+  //       ).getEdge(e.edgeId).position,
+  //     getToPosition: (e) =>
+  //       this.getComponent(
+  //         (this.getBlock(e.nodeId) as CCNode).ccComponentId as string
+  //       ).getEdge(e.edgeId).position,
+  //   });
+  // }
 
   destroy() {
     this.#pixiCanvas.removeChildren();
