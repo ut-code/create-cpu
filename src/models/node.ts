@@ -8,7 +8,7 @@ import {
 } from "../common/theme";
 import type { CCComponentId } from "../types";
 import type CCStore from "./store";
-import type CCComponent from "./component";
+// import type CCComponent from "./component";
 
 export type CCNodeConstructorProps = {
   store: CCStore;
@@ -20,7 +20,7 @@ export type CCNodeConstructorProps = {
 export type CCNodeRegistrationProps = {
   pixiContainer: PIXI.Container;
   onDragStart(e: PIXI.FederatedMouseEvent): void;
-  getComponent: (componentId: CCComponentId) => CCComponent;
+  // getComponent: (componentId: CCComponentId) => CCComponent;
 };
 
 type PixiTexts = {

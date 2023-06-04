@@ -12,6 +12,9 @@ export type CCConnectionRegistrationProps = {
   getPinPosition: (endpoint: CCConnectionEndpoint) => PIXI.Point;
 };
 
+const lineWidth = 2;
+const lineColor = 0x000000;
+
 export default class CCConnection {
   #pixiGraphics: {
     from: PIXI.Graphics;
@@ -41,9 +44,9 @@ export default class CCConnection {
       middle: new PIXI.Graphics(),
       to: new PIXI.Graphics(),
     };
-    this.#pixiGraphics.from.lineStyle(2, 0x000000);
-    this.#pixiGraphics.middle.lineStyle(2, 0x000000);
-    this.#pixiGraphics.to.lineStyle(2, 0x000000);
+    this.#pixiGraphics.from.lineStyle(lineWidth, lineColor);
+    this.#pixiGraphics.middle.lineStyle(lineWidth, lineColor);
+    this.#pixiGraphics.to.lineStyle(lineWidth, lineColor);
     this.fromEndpoint = fromEndPoint;
     this.toEndpoint = toEndPoint;
     this.#bentPortion = 0.5;
@@ -53,6 +56,12 @@ export default class CCConnection {
 
   render() {
     invariant(this.#props);
+    this.#pixiGraphics.from.clear();
+    this.#pixiGraphics.middle.clear();
+    this.#pixiGraphics.to.clear();
+    this.#pixiGraphics.from.lineStyle(lineWidth, lineColor);
+    this.#pixiGraphics.middle.lineStyle(lineWidth, lineColor);
+    this.#pixiGraphics.to.lineStyle(lineWidth, lineColor);
     const fromPosition = this.#props.getPinPosition(this.fromEndpoint);
     const toPosition = this.#props.getPinPosition(this.toEndpoint);
     const diffX = toPosition.x - fromPosition.x;

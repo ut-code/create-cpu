@@ -2,7 +2,7 @@ import * as PIXI from "pixi.js";
 import invariant from "tiny-invariant";
 import { IObservable, Observable } from "../common/observable";
 import type { Perspective } from "../common/perspective";
-import { sampleHalfAdder } from "../common/sampleComponent";
+// import { sampleHalfAdder } from "../common/sampleComponent";
 import type CCNode from "./node";
 import CCGrid from "./grid";
 import type { CCComponentId } from "../types";
@@ -112,12 +112,32 @@ export default class CCComponent {
               };
             }
             return;
-          case "node":
+          case "node": {
             this.#dragState.target.node.position =
               this.#dragState.target.initialPosition.add(dragOffset);
             this.#dragState.target.node.render();
             // TODO: rendering connection
+            const component = this.#store.getComponent(
+              this.#dragState.target.node.ccComponentId
+            );
+            for (const pin of component.inputPins) {
+              this.#store
+                .getCCConnectionFromEndpoint(
+                  this.#dragState.target.node.id,
+                  pin.id
+                )
+                ?.render();
+            }
+            for (const pin of component.outputPins) {
+              this.#store
+                .getCCConnectionFromEndpoint(
+                  this.#dragState.target.node.id,
+                  pin.id
+                )
+                ?.render();
+            }
             return;
+          }
           default:
             throw new Error(
               `Unexpected drag target: ${
@@ -163,7 +183,7 @@ export default class CCComponent {
               },
             };
           },
-          getComponent: () => sampleHalfAdder,
+          // getComponent: () => sampleHalfAdder,
         });
       }
     }
