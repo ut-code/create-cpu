@@ -4,7 +4,7 @@ export const sampleHalfAdder: CCComponent = {
   id: "Half Adder",
   name: "Half Adder",
   description: "",
-  inputEdges: [
+  inputPins: [
     {
       id: "Input1",
       name: "Input1",
@@ -21,7 +21,7 @@ export const sampleHalfAdder: CCComponent = {
       position: null,
     },
   ],
-  outputEdges: [
+  outputPins: [
     {
       id: "Sum",
       name: "Sum",

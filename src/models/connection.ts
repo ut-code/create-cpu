@@ -1,14 +1,15 @@
 import * as PIXI from "pixi.js";
+import invariant from "tiny-invariant";
+import type { CCComponentId } from "../types";
 
-type CCConnectionEndpoint = {
+export type CCConnectionEndpoint = {
   nodeId: string;
-  edgeId: string;
+  pinId: string;
 };
 
 export type CCConnectionRegistrationProps = {
   pixiContainer: PIXI.Container;
-  getFromPosition: (connection: CCConnectionEndpoint) => PIXI.Point;
-  getToPosition: (toEndpoint: CCConnectionEndpoint) => PIXI.Point;
+  getPinPosition: (endpoint: CCConnectionEndpoint) => PIXI.Point;
 };
 
 export default class CCConnection {
@@ -18,21 +19,22 @@ export default class CCConnection {
     to: PIXI.Graphics;
   };
 
-  #fromEndpoint: CCConnectionEndpoint;
+  fromEndpoint: CCConnectionEndpoint;
 
-  #toEndpoint: CCConnectionEndpoint;
+  toEndpoint: CCConnectionEndpoint;
 
   #bentPortion: number;
 
-  getFromPosition: (fromEndpoint: CCConnectionEndpoint) => PIXI.Point;
+  #props?: CCConnectionRegistrationProps;
 
-  getToPosition: (toEndpoint: CCConnectionEndpoint) => PIXI.Point;
+  readonly id: string;
+
+  parentComponentId: CCComponentId;
 
   constructor(
     fromEndPoint: CCConnectionEndpoint,
     toEndPoint: CCConnectionEndpoint,
-    fromPosition: (fromEndpoint: CCConnectionEndpoint) => PIXI.Point,
-    toPosition: (toEndpoint: CCConnectionEndpoint) => PIXI.Point
+    parentComponentId: CCComponentId
   ) {
     this.#pixiGraphics = {
       from: new PIXI.Graphics(),
@@ -42,50 +44,44 @@ export default class CCConnection {
     this.#pixiGraphics.from.lineStyle(2, 0x000000);
     this.#pixiGraphics.middle.lineStyle(2, 0x000000);
     this.#pixiGraphics.to.lineStyle(2, 0x000000);
-    this.#fromEndpoint = fromEndPoint;
-    this.#toEndpoint = toEndPoint;
-    this.getFromPosition = fromPosition;
-    this.getToPosition = toPosition;
+    this.fromEndpoint = fromEndPoint;
+    this.toEndpoint = toEndPoint;
     this.#bentPortion = 0.5;
-  }
-
-  get fromPosition() {
-    return this.getFromPosition(this.#fromEndpoint);
-  }
-
-  get toPosition() {
-    return this.getToPosition(this.#toEndpoint);
+    this.id = window.crypto.randomUUID();
+    this.parentComponentId = parentComponentId;
   }
 
   render() {
-    const diffX = this.toPosition.x - this.fromPosition.x;
-    const diffY = this.toPosition.y - this.fromPosition.y;
-    this.#pixiGraphics.from.moveTo(this.fromPosition.x, this.fromPosition.y);
+    invariant(this.#props);
+    const fromPosition = this.#props.getPinPosition(this.fromEndpoint);
+    const toPosition = this.#props.getPinPosition(this.toEndpoint);
+    const diffX = toPosition.x - fromPosition.x;
+    // const diffY = toPosition.y - fromPosition.y;
+    this.#pixiGraphics.from.moveTo(fromPosition.x, fromPosition.y);
     this.#pixiGraphics.from.lineTo(
-      this.fromPosition.x + this.#bentPortion * diffX,
-      this.fromPosition.y + this.#bentPortion * diffY
+      fromPosition.x + this.#bentPortion * diffX,
+      fromPosition.y
     );
     this.#pixiGraphics.middle.moveTo(
-      this.fromPosition.x + this.#bentPortion * diffX,
-      this.fromPosition.y + this.#bentPortion * diffY
+      fromPosition.x + this.#bentPortion * diffX,
+      fromPosition.y
     );
     this.#pixiGraphics.middle.lineTo(
-      this.fromPosition.x + this.#bentPortion * diffX,
-      this.toPosition.y
+      fromPosition.x + this.#bentPortion * diffX,
+      toPosition.y
     );
     this.#pixiGraphics.to.moveTo(
-      this.fromPosition.x + this.#bentPortion * diffX,
-      this.toPosition.y
+      fromPosition.x + this.#bentPortion * diffX,
+      toPosition.y
     );
-    this.#pixiGraphics.to.lineTo(this.toPosition.x, this.toPosition.y);
+    this.#pixiGraphics.to.lineTo(toPosition.x, toPosition.y);
   }
 
   register(props: CCConnectionRegistrationProps) {
     props.pixiContainer.addChild(this.#pixiGraphics.from);
     props.pixiContainer.addChild(this.#pixiGraphics.middle);
     props.pixiContainer.addChild(this.#pixiGraphics.to);
-    this.getFromPosition = props.getFromPosition;
-    this.getToPosition = props.getToPosition;
+    this.#props = props;
     this.render();
   }
 }

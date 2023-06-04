@@ -6,8 +6,9 @@ import {
   primaryColor,
   whiteColor,
 } from "../common/theme";
-import type { CCComponent, CCComponentId } from "../types";
+import type { CCComponentId } from "../types";
 import type CCStore from "./store";
+import type CCComponent from "./component";
 
 export type CCNodeConstructorProps = {
   store: CCStore;
@@ -38,7 +39,7 @@ export default class CCNode {
 
   #pixiGraphics: PIXI.Graphics;
 
-  #position: PIXI.Point;
+  position: PIXI.Point;
 
   readonly id: string;
 
@@ -48,7 +49,7 @@ export default class CCNode {
 
   static readonly #edgeNameFontSize = 16;
 
-  #isSelected = false;
+  isSelected = false;
 
   #pixiTexts: PixiTexts;
 
@@ -59,7 +60,7 @@ export default class CCNode {
     position,
   }: CCNodeConstructorProps) {
     this.#store = store;
-    this.#position = new PIXI.Point(position.x, position.y);
+    this.position = new PIXI.Point(position.x, position.y);
     this.id = window.crypto.randomUUID();
     this.ccComponentId = componentId;
     this.parentComponentId = parentComponentId;
@@ -77,13 +78,13 @@ export default class CCNode {
       fontSize: CCNode.#componentNameFontSize,
     });
     const map = new Map<string, PIXI.Text>();
-    for (const edge of component.inputEdges) {
+    for (const edge of component.inputPins) {
       map.set(
         edge.id,
         new PIXI.Text(edge.name, { fontSize: CCNode.#edgeNameFontSize })
       );
     }
-    for (const edge of component.outputEdges) {
+    for (const edge of component.outputPins) {
       map.set(
         edge.id,
         new PIXI.Text(edge.name, {
@@ -106,11 +107,12 @@ export default class CCNode {
       this.isSelected = true;
       props.onDragStart(e);
       e.stopPropagation();
+      this.render();
     });
     this.render();
   }
 
-  private render() {
+  render() {
     const component = this.#store.getComponent(this.ccComponentId)!;
     const borderWidth = 3;
     const outlineWidth = 1;
@@ -122,19 +124,19 @@ export default class CCNode {
       alignment: 1,
     });
     this.#pixiGraphics.drawRect(
-      this.#position.x - this.#size.x / 2,
-      this.#position.y - this.#size.y / 2,
+      this.position.x - this.#size.x / 2,
+      this.position.y - this.#size.y / 2,
       this.#size.x,
       this.#size.y
     );
-    const inputEdgeGap = this.#size.y / (component.inputEdges.length + 1);
+    const inputEdgeGap = this.#size.y / (component.inputPins.length + 1);
     const gap = 6;
     const edgeSize = 10;
-    component.inputEdges.forEach((edge, index) => {
+    component.inputPins.forEach((edge, index) => {
       const position = {
-        x: this.#position.x - this.#size.x / 2 - edgeSize / 2 - borderWidth / 2,
+        x: this.position.x - this.#size.x / 2 - edgeSize / 2 - borderWidth / 2,
         y:
-          this.#position.y -
+          this.position.y -
           this.#size.y / 2 +
           inputEdgeGap * (index + 1) -
           edgeSize / 2,
@@ -153,12 +155,12 @@ export default class CCNode {
         edgeName.anchor.set(0, 0.25);
       }
     });
-    const outputEdgeGap = this.#size.y / (component.outputEdges.length + 1);
-    component.outputEdges.forEach((edge, index) => {
+    const outputEdgeGap = this.#size.y / (component.outputPins.length + 1);
+    component.outputPins.forEach((edge, index) => {
       const position = {
-        x: this.#position.x + this.#size.x / 2 - edgeSize / 2 + borderWidth / 2,
+        x: this.position.x + this.#size.x / 2 - edgeSize / 2 + borderWidth / 2,
         y:
-          this.#position.y -
+          this.position.y -
           this.#size.y / 2 +
           outputEdgeGap * (index + 1) -
           edgeSize / 2,
@@ -181,9 +183,9 @@ export default class CCNode {
     this.#pixiGraphics.beginFill(grayColor);
     this.#pixiGraphics.endFill();
     this.#pixiTexts.componentName.anchor.set(0, 1);
-    this.#pixiTexts.componentName.x = this.#position.x - this.#size.x / 2;
-    this.#pixiTexts.componentName.y = this.#position.y - this.#size.y / 2 - gap;
-    if (this.#isSelected) {
+    this.#pixiTexts.componentName.x = this.position.x - this.#size.x / 2;
+    this.#pixiTexts.componentName.y = this.position.y - this.#size.y / 2 - gap;
+    if (this.isSelected) {
       this.#pixiGraphics.lineStyle({
         color: primaryColor,
         width: outlineWidth,
@@ -191,8 +193,8 @@ export default class CCNode {
       });
       const margin = 8;
       this.#pixiGraphics.drawRect(
-        this.#position.x - this.#size.x / 2 - borderWidth * 1.5 - edgeSize / 2,
-        this.#position.y -
+        this.position.x - this.#size.x / 2 - borderWidth * 1.5 - edgeSize / 2,
+        this.position.y -
           this.#size.y / 2 -
           CCNode.#componentNameFontSize -
           margin,
@@ -206,29 +208,39 @@ export default class CCNode {
     }
   }
 
-  get isSelected() {
-    return this.#isSelected;
-  }
-
-  set isSelected(value) {
-    this.#isSelected = value;
-    this.render();
-  }
-
-  get position() {
-    return this.#position;
-  }
-
-  set position(value) {
-    this.#position = value;
-    this.render();
-  }
-
   destroy() {
     this.#pixiGraphics.destroy();
     this.#pixiTexts.componentName.destroy();
     for (const text of this.#pixiTexts.edgeNames) {
       text[1].destroy();
     }
+  }
+
+  getPinPosition(pinId: string): Point {
+    const component = this.#store.getComponent(this.ccComponentId)!;
+    const inputPinIds = component.inputPins.map((pin) => pin.id);
+    const inputPinCount = inputPinIds.length;
+    const outputPinIds = component.outputPins.map((pin) => pin.id);
+    const outputPinCount = outputPinIds.length;
+    if (inputPinIds.includes(pinId)) {
+      const pinIndex = inputPinIds.indexOf(pinId);
+      return new PIXI.Point(
+        this.position.x - this.#size.x / 2,
+        this.position.y -
+          this.#size.y / 2 +
+          (this.#size.y / (inputPinCount + 1)) * (pinIndex + 1)
+      );
+    }
+    if (outputPinIds.includes(pinId)) {
+      const pinIndex = outputPinIds.indexOf(pinId);
+      return new PIXI.Point(
+        this.position.x + this.#size.x / 2,
+        this.position.y -
+          this.#size.y / 2 +
+          (this.#size.y / (outputPinCount + 1)) * (pinIndex + 1)
+      );
+    }
+
+    throw Error(`pin: ${pinId} not found in node: ${this.id}`);
   }
 }

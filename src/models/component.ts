@@ -5,7 +5,7 @@ import type { Perspective } from "../common/perspective";
 import { sampleHalfAdder } from "../common/sampleComponent";
 import type CCNode from "./node";
 import CCGrid from "./grid";
-import type { CCComponentId, CCEdge } from "../types";
+import type { CCComponentId } from "../types";
 import type CCStore from "./store";
 
 export type CCCanvasRegistrationProps = {
@@ -18,7 +18,12 @@ type DragState = {
   startPosition: PIXI.Point;
   target:
     | { type: "world"; initialCenter: PIXI.Point }
-    | { type: "block"; block: CCNode; initialPosition: PIXI.Point };
+    | { type: "node"; node: CCNode; initialPosition: PIXI.Point };
+};
+
+export type CCPin = {
+  id: string;
+  name: string;
 };
 
 /** Editor for CCComponent */
@@ -27,9 +32,9 @@ export default class CCComponent {
 
   name: string;
 
-  inputEdges: CCEdge[] = [];
+  inputPins: CCPin[] = [];
 
-  outputEdges: CCEdge[] = [];
+  outputPins: CCPin[] = [];
 
   #store: CCStore;
 
@@ -86,6 +91,11 @@ export default class CCComponent {
           initialCenter: this.worldPerspective.center,
         },
       };
+      const ccNodes = this.#store.getCCNodes();
+      for (const ccNode of ccNodes.values()) {
+        ccNode.isSelected = false;
+        ccNode.render();
+      }
     });
     this.#pixiCanvas.on("mousemove", (e) => {
       if (this.#dragState) {
@@ -102,9 +112,11 @@ export default class CCComponent {
               };
             }
             return;
-          case "block":
-            this.#dragState.target.block.position =
+          case "node":
+            this.#dragState.target.node.position =
               this.#dragState.target.initialPosition.add(dragOffset);
+            this.#dragState.target.node.render();
+            // TODO: rendering connection
             return;
           default:
             throw new Error(
@@ -145,13 +157,32 @@ export default class CCComponent {
             this.#dragState = {
               startPosition: e.global.clone(),
               target: {
-                type: "block",
-                block: ccNode,
+                type: "node",
+                node: ccNode,
                 initialPosition: ccNode.position.clone(),
               },
             };
           },
           getComponent: () => sampleHalfAdder,
+        });
+      }
+    }
+  }
+
+  #registeredConnectionIds = new Set<string>();
+
+  registerConnections() {
+    const ccConnections = this.#store.getCCConnectionsInCCComponent(this.id);
+    for (const ccConnection of ccConnections) {
+      if (!this.#registeredConnectionIds.has(ccConnection.id)) {
+        this.#registeredConnectionIds.add(ccConnection.id);
+        ccConnection.register({
+          pixiContainer: this.#pixiWorld,
+          getPinPosition: (endpoint) => {
+            return this.#store
+              .getCCNode(endpoint.nodeId)!
+              .getPinPosition(endpoint.pinId);
+          },
         });
       }
     }
