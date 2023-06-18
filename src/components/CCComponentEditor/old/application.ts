@@ -1,6 +1,6 @@
 import * as PIXI from "pixi.js";
-import { editorBackgroundColor } from "../common/theme";
-import { Observable } from "../common/observable";
+import { editorBackgroundColor } from "../../../common/theme";
+import { Observable } from "../../../common/observable";
 import type CCStore from "./store";
 
 export default class CCApplication {

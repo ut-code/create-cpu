@@ -8,31 +8,40 @@ import {
 } from "@mui/material";
 import { useEffect, useRef, useState } from "react";
 import invariant from "tiny-invariant";
-import CCApplication from "../models/application";
-import CCStore from "../models/store";
+import { KeyboardDoubleArrowRight } from "@mui/icons-material";
+import { useStore } from "../../contexts/store";
+import CCComponentEditorRenderer from "./renderer";
+import type { CCComponentId } from "../../store/component";
 
-export default function Editor() {
-  const storeRef = useRef<CCStore>();
-  const applicationRef = useRef<CCApplication>();
+export type CCComponentEditorProps = {
+  componentId: CCComponentId;
+};
+
+export default function CCComponentEditor({
+  componentId,
+}: CCComponentEditorProps) {
+  const rendererRef = useRef<CCComponentEditorRenderer>();
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const store = useStore();
+  const component = store.components.get(componentId);
+  invariant(component);
 
   const [contextMenuPosition, setContextMenuPosition] =
     useState<PIXI.Point | null>(null);
 
   useEffect(() => {
     invariant(containerRef.current && canvasRef.current);
-    const store = new CCStore();
-    const app = new CCApplication(
+    const app = new CCComponentEditorRenderer(
       store,
+      componentId,
       containerRef.current,
       canvasRef.current,
       setContextMenuPosition
     );
-    applicationRef.current = app;
-    storeRef.current = store;
+    rendererRef.current = app;
     return () => app.destroy();
-  }, []);
+  }, [store, componentId]);
 
   return (
     <Box sx={{ position: "relative", overflow: "hidden" }} ref={containerRef}>
@@ -45,9 +54,25 @@ export default function Editor() {
           e.preventDefault();
         }}
         onDrop={() => {
-          invariant(applicationRef.current);
+          invariant(rendererRef.current);
         }}
       />
+      <Paper
+        sx={{
+          position: "absolute",
+          top: "30px",
+          left: "30px",
+          width: "400px",
+          display: "flex",
+          alignItems: "center",
+          gap: 1,
+          p: 1,
+        }}
+      >
+        <Box sx={{ color: "text.secondary" }}>Components</Box>
+        <KeyboardDoubleArrowRight />
+        {component.name}
+      </Paper>
       {contextMenuPosition && (
         <ClickAwayListener
           onClickAway={() => {
@@ -66,7 +91,7 @@ export default function Editor() {
           >
             <MenuItem
               onClick={() => {
-                invariant(applicationRef.current);
+                invariant(rendererRef.current);
                 setContextMenuPosition(null);
               }}
             >

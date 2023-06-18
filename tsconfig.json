@@ -6,7 +6,8 @@
     "module": "ESNext",
     "moduleResolution": "Node",
     "noEmit": true,
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    "verbatimModuleSyntax": true
   },
   "include": ["src"]
 }

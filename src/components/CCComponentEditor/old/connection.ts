@@ -1,6 +1,6 @@
 import * as PIXI from "pixi.js";
 import invariant from "tiny-invariant";
-import type { CCComponentId } from "../types";
+import type { CCComponentId } from "./types";
 
 export type CCConnectionEndpoint = {
   nodeId: string;

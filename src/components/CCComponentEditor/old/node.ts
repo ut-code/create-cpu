@@ -5,8 +5,8 @@ import {
   grayColor,
   primaryColor,
   whiteColor,
-} from "../common/theme";
-import type { CCComponentId } from "../types";
+} from "../../../common/theme";
+import type { CCComponentId } from "./types";
 import type CCStore from "./store";
 // import type CCComponent from "./component";
 

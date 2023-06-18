@@ -1,6 +1,6 @@
 import { Point } from "pixi.js";
-import type { CCComponentId, CCConnectionId } from "../types";
-import CCComponent, { CCPin } from "./component";
+import type { CCComponentId, CCConnectionId } from "./types";
+import CCComponent, { type CCPin } from "./component";
 import CCNode from "./node";
 import CCConnection from "./connection";
 

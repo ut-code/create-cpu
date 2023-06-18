@@ -1,8 +1,8 @@
 import * as PIXI from "pixi.js";
 import invariant from "tiny-invariant";
-import type { IObservable } from "../common/observable";
-import { editorGridColor } from "../common/theme";
-import type { Perspective } from "../common/perspective";
+import type { IObservable } from "../../../common/observable";
+import { editorGridColor } from "../../../common/theme";
+import type { Perspective } from "../../../common/perspective";
 
 export type CCGridRegistrationProps = {
   canvasSize: IObservable<PIXI.Point>;

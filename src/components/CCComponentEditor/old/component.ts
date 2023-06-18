@@ -1,11 +1,10 @@
 import * as PIXI from "pixi.js";
 import invariant from "tiny-invariant";
-import { IObservable, Observable } from "../common/observable";
-import type { Perspective } from "../common/perspective";
-// import { sampleHalfAdder } from "../common/sampleComponent";
+import { type IObservable, Observable } from "../../../common/observable";
+import type { Perspective } from "../../../common/perspective";
 import type CCNode from "./node";
 import CCGrid from "./grid";
-import type { CCComponentId } from "../types";
+import type { CCComponentId } from "./types";
 import type CCStore from "./store";
 
 export type CCCanvasRegistrationProps = {
