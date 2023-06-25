@@ -13,6 +13,7 @@ export type CCComponent = {
 export type CCComponentStoreEvents = {
   didRegister(component: CCComponent): void;
   didUnregister(component: CCComponent): void;
+  didUpdate(component: CCComponent): void;
 };
 
 export class CCComponentStore extends EventEmitter<CCComponentStoreEvents> {
@@ -47,6 +48,10 @@ export class CCComponentStore extends EventEmitter<CCComponentStoreEvents> {
 
   get(id: CCComponentId): CCComponent | undefined {
     return this.#components.get(id);
+  }
+
+  getAll(): ReadonlyMap<CCComponentId, CCComponent> {
+    return this.#components;
   }
 
   static create(partialComponent: Omit<CCComponent, "id">): CCComponent {

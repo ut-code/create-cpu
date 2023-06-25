@@ -3,7 +3,7 @@ import CCComponentEditor from "./components/CCComponentEditor";
 import "@pixi/math-extras";
 import SidePanel from "./components/SidePanel";
 import GlobalHeader from "./components/GlobalHeader";
-import { useStore } from "./contexts/store";
+import { useStore } from "./store/react";
 
 export default function App() {
   const store = useStore();
@@ -13,7 +13,7 @@ export default function App() {
       sx={{
         display: "grid",
         gridTemplateRows: "max-content 1fr",
-        gridTemplateColumns: "100px max-content 1fr",
+        gridTemplateColumns: "200px max-content 1fr",
         height: "100%",
       }}
     >

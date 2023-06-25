@@ -9,12 +9,15 @@ import CCComponentEditorRendererNode from "./node";
 import type { Perspective } from "../../../common/perspective";
 import type { CCConnection, CCConnectionId } from "../../../store/connection";
 import CCComponentEditorRendererConnection from "./connection";
+import type { CCPinId } from "../../../store/pin";
 
 type DragState = {
   startPosition: PIXI.Point;
   target:
     | { type: "world"; initialCenter: PIXI.Point }
-    | { type: "node"; nodeId: CCNodeId; initialPosition: PIXI.Point };
+    | { type: "node"; nodeId: CCNodeId; initialPosition: PIXI.Point }
+    | { type: "pin"; pinId: CCPinId }
+    | { type: "rangeSelect" };
 };
 
 export default class CCComponentEditorRenderer {
@@ -86,37 +89,43 @@ export default class CCComponentEditorRenderer {
     this.#pixiApplication.stage.addChild(this.#pixiWorld);
     this.#pixiApplication.stage.interactive = true;
     this.#pixiApplication.stage.hitArea = { contains: () => true }; // Capture events everywhere
-    this.#pixiApplication.stage.on("mousedown", (e) => {
-      this.#dragState = {
-        startPosition: e.global.clone(),
-        target: {
-          type: "world",
-          initialCenter: this.#worldPerspective.value.center,
-        },
-      };
+    this.#pixiApplication.stage.on("pointerdown", (e) => {
+      if (e.button === 2) {
+        this.#dragState = {
+          startPosition: e.global.clone(),
+          target: {
+            type: "world",
+            initialCenter: this.#worldPerspective.value.center,
+          },
+        };
+      }
       for (const ccNodeRenderer of this.#nodeRenderers.values()) {
         ccNodeRenderer.isSelected = false;
         ccNodeRenderer.render();
       }
     });
-    this.#pixiApplication.stage.on("mousemove", (e) => {
+    this.#pixiApplication.stage.on("pointermove", (e) => {
       if (!this.#dragState) return;
       const dragOffset = e.global
         .subtract(this.#dragState.startPosition)
         .multiplyScalar(1 / this.#worldPerspective.value.scale);
       switch (this.#dragState.target.type) {
         case "world":
-          if (e.ctrlKey) {
-            this.#worldPerspective.value = {
-              center: this.#dragState.target.initialCenter.subtract(dragOffset),
-              scale: this.#worldPerspective.value.scale,
-            };
-          }
+          this.#worldPerspective.value = {
+            center: this.#dragState.target.initialCenter.subtract(dragOffset),
+            scale: this.#worldPerspective.value.scale,
+          };
           return;
         case "node": {
           this.#store.nodes.update(this.#dragState.target.nodeId, {
             position: this.#dragState.target.initialPosition.add(dragOffset),
           });
+          return;
+        }
+        case "pin": {
+          return;
+        }
+        case "rangeSelect": {
           return;
         }
         default:
@@ -125,7 +134,11 @@ export default class CCComponentEditorRenderer {
           );
       }
     });
-    this.#pixiApplication.stage.on("mouseup", () => {
+    this.#pixiApplication.stage.on("pointerup", () => {
+      this.#dragState = null;
+    });
+
+    this.#pixiApplication.stage.on("pointerout", () => {
       this.#dragState = null;
     });
 
@@ -143,7 +156,7 @@ export default class CCComponentEditorRenderer {
 
     // Support zooming
     this.#pixiApplication.stage.on("wheel", (e) => {
-      this.#zoom(this.#toWorldPosition(e.global), 0.999 ** e.deltaY);
+      this.#zoom(this.toWorldPosition(e.global), 0.999 ** e.deltaY);
     });
 
     // Context menu
@@ -175,12 +188,14 @@ export default class CCComponentEditorRenderer {
       pixiParentContainer: this.#pixiWorld,
       onDragStart,
     });
-    newNodeRenderer.onMouseDown((e) => {
+    newNodeRenderer.onPointerDown((e) => {
       newNodeRenderer.isSelected = true;
-      for (const [ccNodeId, nodeRenderer] of this.#nodeRenderers.entries()) {
-        if (ccNodeId !== nodeId) {
-          nodeRenderer.isSelected = false;
-          nodeRenderer.render();
+      if (!e.shiftKey) {
+        for (const [ccNodeId, nodeRenderer] of this.#nodeRenderers.entries()) {
+          if (ccNodeId !== nodeId) {
+            nodeRenderer.isSelected = false;
+            nodeRenderer.render();
+          }
         }
       }
       onDragStart(e);
@@ -219,14 +234,14 @@ export default class CCComponentEditorRenderer {
     this.#nodeRenderers.get(node.id)?.destroy();
   };
 
-  #toWorldPosition(canvasPosition: PIXI.Point) {
+  toWorldPosition(canvasPosition: PIXI.Point) {
     return canvasPosition
       .subtract(this.#canvasSize.value.multiplyScalar(0.5))
       .multiplyScalar(1 / this.#worldPerspective.value.scale)
       .add(this.#worldPerspective.value.center);
   }
 
-  #toCanvasPosition(worldPosition: PIXI.Point) {
+  toCanvasPosition(worldPosition: PIXI.Point) {
     return worldPosition
       .subtract(this.#worldPerspective.value.center)
       .multiplyScalar(this.#worldPerspective.value.scale)
@@ -246,7 +261,7 @@ export default class CCComponentEditorRenderer {
   }
 
   #render = () => {
-    this.#pixiWorld.position = this.#toCanvasPosition(new PIXI.Point(0, 0));
+    this.#pixiWorld.position = this.toCanvasPosition(new PIXI.Point(0, 0));
     this.#pixiWorld.scale = {
       x: this.#worldPerspective.value.scale,
       y: this.#worldPerspective.value.scale,

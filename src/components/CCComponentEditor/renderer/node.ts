@@ -9,6 +9,7 @@ import {
 import type { CCNodeId } from "../../../store/node";
 import type { CCPinId } from "../../../store/pin";
 import type CCStore from "../../../store";
+import CCComponentEditorRendererPin from "./pin";
 
 export type CCComponentEditorRendererNodeProps = {
   store: CCStore;
@@ -41,6 +42,8 @@ export default class CCComponentEditorRendererNode {
 
   #pixiTexts: PixiTexts;
 
+  #pinRenderers = new Map<CCPinId, CCComponentEditorRendererPin>();
+
   constructor({
     store,
     nodeId,
@@ -58,6 +61,19 @@ export default class CCComponentEditorRendererNode {
       this.#pixiTexts.componentName,
       ...this.#pixiTexts.pinNames.values()
     );
+    const node = this.#store.nodes.get(this.#nodeId)!;
+    const component = this.#store.components.get(node.componentId)!;
+    const pinIds = this.#store.pins.getPinIdsByComponentId(component.id);
+    for (const pinId of pinIds) {
+      const pinRenderer = new CCComponentEditorRendererPin({
+        store,
+        nodeId,
+        pinId,
+        pixiParentContainer,
+      });
+      this.#pinRenderers.set(pinId, pinRenderer);
+      // pinRenderer.render();
+    }
 
     this.#store.nodes.on("didUpdate", this.render);
     this.render();
@@ -65,8 +81,8 @@ export default class CCComponentEditorRendererNode {
     onDragStart;
   }
 
-  onMouseDown(event: (e: PIXI.FederatedPointerEvent) => void) {
-    this.#pixiGraphics.on("mousedown", event);
+  onPointerDown(event: (e: PIXI.FederatedPointerEvent) => void) {
+    this.#pixiGraphics.on("pointerdown", event);
   }
 
   #createText(): PixiTexts {
@@ -114,67 +130,82 @@ export default class CCComponentEditorRendererNode {
       CCComponentEditorRendererNode.#size.x,
       CCComponentEditorRendererNode.#size.y
     );
-    const inputEdgeGap =
-      CCComponentEditorRendererNode.#size.y / (inputPins.length + 1);
+    this.#pixiGraphics.endFill();
+    // const inputEdgeGap =
+    //   CCComponentEditorRendererNode.#size.y / (inputPins.length + 1);
     const gap = 6;
     const edgeSize = 10;
     inputPins.forEach((pin, index) => {
-      const position = {
-        x:
-          node.position.x -
-          CCComponentEditorRendererNode.#size.x / 2 -
-          edgeSize / 2 -
-          borderWidth / 2,
-        y:
-          node.position.y -
-          CCComponentEditorRendererNode.#size.y / 2 +
-          inputEdgeGap * (index + 1) -
-          edgeSize / 2,
-      };
-      this.#pixiGraphics.drawRoundedRect(
-        position.x,
-        position.y,
-        edgeSize,
-        edgeSize,
-        2
+      const pinRenderer = this.#pinRenderers.get(pin.id);
+      pinRenderer?.render(
+        index,
+        CCComponentEditorRendererNode.#size,
+        inputPins.length,
+        this.#pixiTexts.pinNames
       );
-      const pinName = this.#pixiTexts.pinNames.get(pin.id);
-      if (pinName) {
-        pinName.x = position.x + edgeSize + gap;
-        pinName.y = position.y;
-        pinName.anchor.set(0, 0.25);
-      }
+      // const position = {
+      //   x:
+      //     node.position.x -
+      //     CCComponentEditorRendererNode.#size.x / 2 -
+      //     edgeSize / 2 -
+      //     borderWidth / 2,
+      //   y:
+      //     node.position.y -
+      //     CCComponentEditorRendererNode.#size.y / 2 +
+      //     inputEdgeGap * (index + 1) -
+      //     edgeSize / 2,
+      // };
+      // this.#pixiGraphics.drawRoundedRect(
+      //   position.x,
+      //   position.y,
+      //   edgeSize,
+      //   edgeSize,
+      //   2
+      // );
+      // const pinName = this.#pixiTexts.pinNames.get(pin.id);
+      // if (pinName) {
+      //   pinName.x = position.x + edgeSize + gap;
+      //   pinName.y = position.y;
+      //   pinName.anchor.set(0, 0.25);
+      // }
     });
-    const outputPinGap =
-      CCComponentEditorRendererNode.#size.y / (outputPins.length + 1);
+    // const outputPinGap =
+    //   CCComponentEditorRendererNode.#size.y / (outputPins.length + 1);
     outputPins.forEach((edge, index) => {
-      const position = {
-        x:
-          node.position.x +
-          CCComponentEditorRendererNode.#size.x / 2 -
-          edgeSize / 2 +
-          borderWidth / 2,
-        y:
-          node.position.y -
-          CCComponentEditorRendererNode.#size.y / 2 +
-          outputPinGap * (index + 1) -
-          edgeSize / 2,
-      };
-      this.#pixiGraphics.drawRoundedRect(
-        position.x,
-        position.y,
-        edgeSize,
-        edgeSize,
-        2
+      const pinRenderer = this.#pinRenderers.get(edge.id);
+      pinRenderer?.render(
+        index,
+        CCComponentEditorRendererNode.#size,
+        outputPins.length,
+        this.#pixiTexts.pinNames
       );
-      const edgeName = this.#pixiTexts.pinNames.get(edge.id);
-      if (edgeName) {
-        edgeName.x = position.x - gap;
-        edgeName.y = position.y;
-        edgeName.anchor.set(1, 0.25);
-      }
+      // const position = {
+      //   x:
+      //     node.position.x +
+      //     CCComponentEditorRendererNode.#size.x / 2 -
+      //     edgeSize / 2 +
+      //     borderWidth / 2,
+      //   y:
+      //     node.position.y -
+      //     CCComponentEditorRendererNode.#size.y / 2 +
+      //     outputPinGap * (index + 1) -
+      //     edgeSize / 2,
+      // };
+      // this.#pixiGraphics.drawRoundedRect(
+      //   position.x,
+      //   position.y,
+      //   edgeSize,
+      //   edgeSize,
+      //   2
+      // );
+      // const edgeName = this.#pixiTexts.pinNames.get(edge.id);
+      // if (edgeName) {
+      //   edgeName.x = position.x - gap;
+      //   edgeName.y = position.y;
+      //   edgeName.anchor.set(1, 0.25);
+      // }
     });
-    this.#pixiGraphics.endFill();
+    // this.#pixiGraphics.endFill();
     this.#pixiGraphics.beginFill(grayColor);
     this.#pixiGraphics.endFill();
     this.#pixiTexts.componentName.anchor.set(0, 1);

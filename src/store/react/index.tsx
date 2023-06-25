@@ -1,11 +1,11 @@
 import { createContext, useContext, useState } from "react";
 import invariant from "tiny-invariant";
 import { Point } from "pixi.js";
-import CCStore from "../store";
-import { CCComponentStore } from "../store/component";
-import { CCPinStore } from "../store/pin";
-import { CCNodeStore } from "../store/node";
-import { CCConnectionStore } from "../store/connection";
+import CCStore from "..";
+import { CCComponentStore } from "../component";
+import { CCPinStore } from "../pin";
+import { CCNodeStore } from "../node";
+import { CCConnectionStore } from "../connection";
 
 const storeContext = createContext<CCStore | null>(null);
 

@@ -1,4 +1,4 @@
-import type * as PIXI from "pixi.js";
+import * as PIXI from "pixi.js";
 import {
   Box,
   ClickAwayListener,
@@ -9,9 +9,11 @@ import {
 import { useEffect, useRef, useState } from "react";
 import invariant from "tiny-invariant";
 import { KeyboardDoubleArrowRight } from "@mui/icons-material";
-import { useStore } from "../../contexts/store";
+import { useStore } from "../../store/react";
 import CCComponentEditorRenderer from "./renderer";
 import type { CCComponentId } from "../../store/component";
+import { parseDataTransferAsComponent } from "../../common/serialization";
+import { CCNodeStore } from "../../store/node";
 
 export type CCComponentEditorProps = {
   componentId: CCComponentId;
@@ -53,8 +55,21 @@ export default function CCComponentEditor({
         onDragOver={(e) => {
           e.preventDefault();
         }}
-        onDrop={() => {
+        onDrop={(e) => {
           invariant(rendererRef.current);
+          const droppedComponentId = parseDataTransferAsComponent(
+            e.dataTransfer
+          );
+          if (!droppedComponentId) return;
+          store.nodes.register(
+            CCNodeStore.create({
+              componentId: droppedComponentId,
+              parentComponentId: componentId,
+              position: rendererRef.current.toWorldPosition(
+                new PIXI.Point(e.nativeEvent.offsetX, e.nativeEvent.offsetY)
+              ),
+            })
+          );
         }}
       />
       <Paper

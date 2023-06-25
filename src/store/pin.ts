@@ -7,6 +7,7 @@ import type { CCComponentId } from "./component";
 
 export type CCPinId = Opaque<string, "CCPinId">;
 export type CCPinType = "input" | "output";
+export const ccPinTypes: CCPinType[] = ["input", "output"];
 
 export type CCPin = {
   readonly id: CCPinId;
