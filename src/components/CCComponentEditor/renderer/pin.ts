@@ -2,19 +2,18 @@ import * as PIXI from "pixi.js";
 import type CCStore from "../../../store";
 import type { CCPinId } from "../../../store/pin";
 import type { CCNodeId } from "../../../store/node";
-import { blackColor, whiteColor } from "../../../common/theme";
+import { blackColor, whiteColor, primaryColor } from "../../../common/theme";
 
 export type CCComponentEditorRendererPinProps = {
   store: CCStore;
   nodeId: CCNodeId;
   pinId: CCPinId;
   pixiParentContainer: PIXI.Container;
+  pixiText: PIXI.Text;
 };
 
 export default class CCComponentEditorRendererPin {
   #store: CCStore;
-
-  #nodeId: CCNodeId;
 
   #pinId: CCPinId;
 
@@ -22,43 +21,44 @@ export default class CCComponentEditorRendererPin {
 
   #pixiGraphics: PIXI.Graphics;
 
+  #pixiText: PIXI.Text;
+
+  #pixiWorld: PIXI.Container;
+
   isSelected = false;
 
   constructor({
     store,
-    nodeId,
     pinId,
     pixiParentContainer,
+    pixiText,
   }: CCComponentEditorRendererPinProps) {
     this.#store = store;
-    this.#nodeId = nodeId;
     this.#pinId = pinId;
     this.#pixiParentContainer = pixiParentContainer;
+    this.#pixiWorld = new PIXI.Container();
+    this.#pixiParentContainer.addChild(this.#pixiWorld);
     this.#pixiGraphics = new PIXI.Graphics();
     this.#pixiGraphics.interactive = true;
-    this.#pixiParentContainer.addChild(this.#pixiGraphics);
+    this.#pixiWorld.addChild(this.#pixiGraphics);
+    this.#pixiText = pixiText;
+    this.#pixiWorld.addChild(this.#pixiText);
   }
 
-  render(
-    index: number,
-    size: PIXI.Point,
-    pinsLength: number,
-    pinNames: Map<string, PIXI.Text>
-  ) {
+  onPointerDown(event: (e: PIXI.FederatedPointerEvent) => void) {
+    this.#pixiGraphics.on("pointerdown", event);
+  }
+
+  render(index: number, size: PIXI.Point, pinsLength: number) {
     const pin = this.#store.pins.get(this.#pinId)!;
     const gap = 6;
     const edgeSize = 10;
     const borderWidth = 3;
-    const node = this.#store.nodes.get(this.#nodeId)!;
     const edgeGap = size.y / (pinsLength + 1);
     const sign = pin.type === "input" ? 1 : -1;
     const position = {
-      x:
-        node.position.x -
-        (sign * size.x) / 2 -
-        edgeSize / 2 -
-        (sign * borderWidth) / 2,
-      y: node.position.y - size.y / 2 + edgeGap * (index + 1) - edgeSize / 2,
+      x: -(sign * size.x) / 2 - edgeSize / 2 - (sign * borderWidth) / 2,
+      y: -size.y / 2 + edgeGap * (index + 1) - edgeSize / 2,
     };
     this.#pixiGraphics.clear();
     this.#pixiGraphics.beginFill(whiteColor);
@@ -67,19 +67,28 @@ export default class CCComponentEditorRendererPin {
       width: borderWidth,
       alignment: 1,
     });
-    this.#pixiGraphics.drawRoundedRect(
-      position.x,
-      position.y,
-      edgeSize,
-      edgeSize,
-      2
-    );
+    this.#pixiGraphics.drawRoundedRect(0, 0, edgeSize, edgeSize, 2);
     this.#pixiGraphics.endFill();
-    const pinName = pinNames.get(pin.id);
-    if (pinName) {
-      pinName.x = position.x + edgeSize + gap;
-      pinName.y = position.y;
-      pinName.anchor.set(0, 0.25);
+    if (this.#pixiText) {
+      if (pin.type === "input") {
+        this.#pixiText.x = edgeSize + gap;
+        this.#pixiText.y = 0;
+        this.#pixiText.anchor.set(0, 0.25);
+      } else if (pin.type === "output") {
+        this.#pixiText.x = -gap;
+        this.#pixiText.y = 0;
+        this.#pixiText.anchor.set(1, 0.25);
+      }
     }
+
+    if (this.isSelected) {
+      this.#pixiGraphics.lineStyle({
+        color: primaryColor,
+        width: 1,
+        alignment: 1,
+      });
+      this.#pixiGraphics.drawRect(-2, -2, edgeSize + 4, edgeSize + 4);
+    }
+    this.#pixiWorld.position = position;
   }
 }

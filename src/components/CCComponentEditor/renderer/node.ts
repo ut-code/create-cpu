@@ -1,18 +1,15 @@
-import type { Point } from "pixi.js";
+// import type { Point } from "pixi.js";
 import * as PIXI from "pixi.js";
-import {
-  blackColor,
-  grayColor,
-  primaryColor,
-  whiteColor,
-} from "../../../common/theme";
+import { blackColor, primaryColor, whiteColor } from "../../../common/theme";
 import type { CCNodeId } from "../../../store/node";
 import type { CCPinId } from "../../../store/pin";
 import type CCStore from "../../../store";
 import CCComponentEditorRendererPin from "./pin";
+import type { ComponentEditorStore } from "../store";
 
 export type CCComponentEditorRendererNodeProps = {
   store: CCStore;
+  componentEditorStore: ComponentEditorStore;
   nodeId: CCNodeId;
   pixiParentContainer: PIXI.Container;
   onDragStart(e: PIXI.FederatedMouseEvent): void;
@@ -26,6 +23,10 @@ type PixiTexts = {
 export default class CCComponentEditorRendererNode {
   #store: CCStore;
 
+  #componentEditorStore: ComponentEditorStore;
+
+  #unsubscribeComponentEditorStore: () => void;
+
   #nodeId: CCNodeId;
 
   #pixiParentContainer: PIXI.Container;
@@ -38,47 +39,59 @@ export default class CCComponentEditorRendererNode {
 
   static readonly #edgeNameFontSize = 16;
 
-  isSelected = false;
-
   #pixiTexts: PixiTexts;
 
   #pinRenderers = new Map<CCPinId, CCComponentEditorRendererPin>();
 
-  constructor({
-    store,
-    nodeId,
-    pixiParentContainer,
-    onDragStart,
-  }: CCComponentEditorRendererNodeProps) {
-    this.#store = store;
-    this.#nodeId = nodeId;
-    this.#pixiParentContainer = pixiParentContainer;
+  #pixiWorld: PIXI.Container;
+
+  constructor(props: CCComponentEditorRendererNodeProps) {
+    this.#store = props.store;
+    this.#componentEditorStore = props.componentEditorStore;
+    this.#nodeId = props.nodeId;
+    this.#pixiParentContainer = props.pixiParentContainer;
     this.#pixiGraphics = new PIXI.Graphics();
     this.#pixiGraphics.interactive = true;
     this.#pixiTexts = this.#createText();
-    this.#pixiParentContainer.addChild(this.#pixiGraphics);
-    this.#pixiGraphics.addChild(
-      this.#pixiTexts.componentName,
-      ...this.#pixiTexts.pinNames.values()
-    );
+    this.#pixiWorld = new PIXI.Container();
+    this.#pixiParentContainer.addChild(this.#pixiWorld);
+    this.#pixiWorld.addChild(this.#pixiGraphics);
+    this.#pixiWorld.addChild(this.#pixiTexts.componentName);
+
     const node = this.#store.nodes.get(this.#nodeId)!;
-    const component = this.#store.components.get(node.componentId)!;
-    const pinIds = this.#store.pins.getPinIdsByComponentId(component.id);
+    const pinIds = this.#store.pins.getPinIdsByComponentId(node.componentId);
     for (const pinId of pinIds) {
       const pinRenderer = new CCComponentEditorRendererPin({
-        store,
-        nodeId,
+        store: props.store,
+        nodeId: props.nodeId,
         pinId,
-        pixiParentContainer,
+        pixiParentContainer: this.#pixiWorld,
+        pixiText: this.#pixiTexts.pinNames.get(pinId)!,
+      });
+      pinRenderer.onPointerDown(() => {
+        pinRenderer.isSelected = true;
+        for (const [ccPinId, ccPinRenderer] of this.#pinRenderers.entries()) {
+          if (ccPinId !== pinId) {
+            ccPinRenderer.isSelected = false;
+            // pinRenderer.render();
+          }
+        }
+        // e.stopPropagation();
       });
       this.#pinRenderers.set(pinId, pinRenderer);
-      // pinRenderer.render();
     }
 
+    this.#pixiGraphics.on("pointerdown", (e) => {
+      this.#componentEditorStore
+        .getState()
+        .selectNode([this.#nodeId], !e.shiftKey);
+      props.onDragStart(e);
+      e.stopPropagation();
+    });
     this.#store.nodes.on("didUpdate", this.render);
+    this.#unsubscribeComponentEditorStore =
+      this.#componentEditorStore.subscribe(this.render);
     this.render();
-    // eslint-disable-next-line no-unused-expressions
-    onDragStart;
   }
 
   onPointerDown(event: (e: PIXI.FederatedPointerEvent) => void) {
@@ -125,14 +138,12 @@ export default class CCComponentEditorRendererNode {
       alignment: 1,
     });
     this.#pixiGraphics.drawRect(
-      node.position.x - CCComponentEditorRendererNode.#size.x / 2,
-      node.position.y - CCComponentEditorRendererNode.#size.y / 2,
+      -CCComponentEditorRendererNode.#size.x / 2,
+      -CCComponentEditorRendererNode.#size.y / 2,
       CCComponentEditorRendererNode.#size.x,
       CCComponentEditorRendererNode.#size.y
     );
     this.#pixiGraphics.endFill();
-    // const inputEdgeGap =
-    //   CCComponentEditorRendererNode.#size.y / (inputPins.length + 1);
     const gap = 6;
     const edgeSize = 10;
     inputPins.forEach((pin, index) => {
@@ -140,81 +151,26 @@ export default class CCComponentEditorRendererNode {
       pinRenderer?.render(
         index,
         CCComponentEditorRendererNode.#size,
-        inputPins.length,
-        this.#pixiTexts.pinNames
+        inputPins.length
       );
-      // const position = {
-      //   x:
-      //     node.position.x -
-      //     CCComponentEditorRendererNode.#size.x / 2 -
-      //     edgeSize / 2 -
-      //     borderWidth / 2,
-      //   y:
-      //     node.position.y -
-      //     CCComponentEditorRendererNode.#size.y / 2 +
-      //     inputEdgeGap * (index + 1) -
-      //     edgeSize / 2,
-      // };
-      // this.#pixiGraphics.drawRoundedRect(
-      //   position.x,
-      //   position.y,
-      //   edgeSize,
-      //   edgeSize,
-      //   2
-      // );
-      // const pinName = this.#pixiTexts.pinNames.get(pin.id);
-      // if (pinName) {
-      //   pinName.x = position.x + edgeSize + gap;
-      //   pinName.y = position.y;
-      //   pinName.anchor.set(0, 0.25);
-      // }
     });
-    // const outputPinGap =
-    //   CCComponentEditorRendererNode.#size.y / (outputPins.length + 1);
-    outputPins.forEach((edge, index) => {
-      const pinRenderer = this.#pinRenderers.get(edge.id);
+    outputPins.forEach((pin, index) => {
+      const pinRenderer = this.#pinRenderers.get(pin.id);
       pinRenderer?.render(
         index,
         CCComponentEditorRendererNode.#size,
-        outputPins.length,
-        this.#pixiTexts.pinNames
+        outputPins.length
       );
-      // const position = {
-      //   x:
-      //     node.position.x +
-      //     CCComponentEditorRendererNode.#size.x / 2 -
-      //     edgeSize / 2 +
-      //     borderWidth / 2,
-      //   y:
-      //     node.position.y -
-      //     CCComponentEditorRendererNode.#size.y / 2 +
-      //     outputPinGap * (index + 1) -
-      //     edgeSize / 2,
-      // };
-      // this.#pixiGraphics.drawRoundedRect(
-      //   position.x,
-      //   position.y,
-      //   edgeSize,
-      //   edgeSize,
-      //   2
-      // );
-      // const edgeName = this.#pixiTexts.pinNames.get(edge.id);
-      // if (edgeName) {
-      //   edgeName.x = position.x - gap;
-      //   edgeName.y = position.y;
-      //   edgeName.anchor.set(1, 0.25);
-      // }
     });
-    // this.#pixiGraphics.endFill();
-    this.#pixiGraphics.beginFill(grayColor);
-    this.#pixiGraphics.endFill();
     this.#pixiTexts.componentName.anchor.set(0, 1);
     this.#pixiTexts.componentName.x =
-      node.position.x - CCComponentEditorRendererNode.#size.x / 2;
+      -CCComponentEditorRendererNode.#size.x / 2;
     this.#pixiTexts.componentName.y =
-      node.position.y - CCComponentEditorRendererNode.#size.y / 2 - gap;
+      -CCComponentEditorRendererNode.#size.y / 2 - gap;
 
-    if (this.isSelected) {
+    if (
+      this.#componentEditorStore.getState().selectedNodeIds.has(this.#nodeId)
+    ) {
       this.#pixiGraphics.lineStyle({
         color: primaryColor,
         width: outlineWidth,
@@ -222,12 +178,10 @@ export default class CCComponentEditorRendererNode {
       });
       const margin = 8;
       this.#pixiGraphics.drawRect(
-        node.position.x -
-          CCComponentEditorRendererNode.#size.x / 2 -
+        -CCComponentEditorRendererNode.#size.x / 2 -
           borderWidth * 1.5 -
           edgeSize / 2,
-        node.position.y -
-          CCComponentEditorRendererNode.#size.y / 2 -
+        -CCComponentEditorRendererNode.#size.y / 2 -
           CCComponentEditorRendererNode.#componentNameFontSize -
           margin,
         CCComponentEditorRendererNode.#size.x + borderWidth * 3 + edgeSize,
@@ -238,6 +192,7 @@ export default class CCComponentEditorRendererNode {
           outlineWidth / 2
       );
     }
+    this.#pixiWorld.position = node.position;
   };
 
   destroy() {
@@ -247,42 +202,6 @@ export default class CCComponentEditorRendererNode {
       text[1].destroy();
     }
     this.#store.nodes.off("didUpdate", this.render);
-  }
-
-  getPinPosition(pinId: CCPinId): Point {
-    const node = this.#store.nodes.get(this.#nodeId)!;
-    const component = this.#store.components.get(node.componentId)!;
-    const pinIds = this.#store.pins.getPinIdsByComponentId(component.id)!;
-    const pins = pinIds.map((id) => this.#store.pins.get(id)!);
-    const inputPinIds = pins
-      .filter((pin) => pin.type === "input")
-      .map((pin) => pin.id);
-    const inputPinCount = inputPinIds.length;
-    const outputPinIds = pins
-      .filter((pin) => pin.type === "output")
-      .map((pin) => pin.id);
-    const outputPinCount = outputPinIds.length;
-    if (inputPinIds.includes(pinId)) {
-      const pinIndex = inputPinIds.indexOf(pinId);
-      return new PIXI.Point(
-        node.position.x - CCComponentEditorRendererNode.#size.x / 2,
-        node.position.y -
-          CCComponentEditorRendererNode.#size.y / 2 +
-          (CCComponentEditorRendererNode.#size.y / (inputPinCount + 1)) *
-            (pinIndex + 1)
-      );
-    }
-    if (outputPinIds.includes(pinId)) {
-      const pinIndex = outputPinIds.indexOf(pinId);
-      return new PIXI.Point(
-        node.position.x + CCComponentEditorRendererNode.#size.x / 2,
-        node.position.y -
-          CCComponentEditorRendererNode.#size.y / 2 +
-          (CCComponentEditorRendererNode.#size.y / (outputPinCount + 1)) *
-            (pinIndex + 1)
-      );
-    }
-
-    throw Error(`pin: ${pinId} not found in node: ${this.#nodeId}`);
+    this.#unsubscribeComponentEditorStore();
   }
 }

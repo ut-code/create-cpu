@@ -14,18 +14,17 @@ import CCComponentEditorRenderer from "./renderer";
 import type { CCComponentId } from "../../store/component";
 import { parseDataTransferAsComponent } from "../../common/serialization";
 import { CCNodeStore } from "../../store/node";
+import { ComponentEditorStoreProvider, useComponentEditorStore } from "./store";
 
 export type CCComponentEditorProps = {
   componentId: CCComponentId;
 };
 
-export default function CCComponentEditor({
-  componentId,
-}: CCComponentEditorProps) {
+function CCComponentEditorContent({ componentId }: CCComponentEditorProps) {
   const rendererRef = useRef<CCComponentEditorRenderer>();
   const containerRef = useRef<HTMLDivElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const store = useStore();
+  const componentEditorStore = useComponentEditorStore();
   const component = store.components.get(componentId);
   invariant(component);
 
@@ -33,22 +32,23 @@ export default function CCComponentEditor({
     useState<PIXI.Point | null>(null);
 
   useEffect(() => {
-    invariant(containerRef.current && canvasRef.current);
-    const app = new CCComponentEditorRenderer(
+    invariant(containerRef.current);
+    const app = new CCComponentEditorRenderer({
       store,
+      componentEditorStore,
       componentId,
-      containerRef.current,
-      canvasRef.current,
-      setContextMenuPosition
-    );
+      htmlContainer: containerRef.current,
+      onContextMenu: setContextMenuPosition,
+    });
     rendererRef.current = app;
     return () => app.destroy();
-  }, [store, componentId]);
+  }, [store, componentEditorStore, componentId]);
 
   return (
-    <Box sx={{ position: "relative", overflow: "hidden" }} ref={containerRef}>
-      <canvas
-        ref={canvasRef}
+    <Box sx={{ position: "relative", overflow: "hidden" }}>
+      <div
+        style={{ overflow: "hidden", width: "100%", height: "100%" }}
+        ref={containerRef}
         onContextMenu={(e) => {
           e.preventDefault();
         }}
@@ -116,5 +116,13 @@ export default function CCComponentEditor({
         </ClickAwayListener>
       )}
     </Box>
+  );
+}
+
+export default function CCComponentEditor(props: CCComponentEditorProps) {
+  return (
+    <ComponentEditorStoreProvider>
+      <CCComponentEditorContent {...props} />
+    </ComponentEditorStoreProvider>
   );
 }

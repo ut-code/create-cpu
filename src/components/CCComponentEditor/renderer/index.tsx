@@ -10,6 +10,7 @@ import type { Perspective } from "../../../common/perspective";
 import type { CCConnection, CCConnectionId } from "../../../store/connection";
 import CCComponentEditorRendererConnection from "./connection";
 import type { CCPinId } from "../../../store/pin";
+import type { ComponentEditorStore } from "../store";
 
 type DragState = {
   startPosition: PIXI.Point;
@@ -20,14 +21,22 @@ type DragState = {
     | { type: "rangeSelect" };
 };
 
+export type CCComponentEditorRendererProps = {
+  store: CCStore;
+  componentEditorStore: ComponentEditorStore;
+  componentId: CCComponentId;
+  htmlContainer: HTMLDivElement;
+  onContextMenu: (position: PIXI.Point) => void;
+};
+
 export default class CCComponentEditorRenderer {
   #store: CCStore;
+
+  #componentEditorStore: ComponentEditorStore;
 
   #componentId: CCComponentId;
 
   #htmlContainer: HTMLDivElement;
-
-  #htmlCanvas: HTMLCanvasElement;
 
   #canvasSize: Observable<PIXI.Point>;
 
@@ -53,18 +62,12 @@ export default class CCComponentEditorRenderer {
 
   #resizeObserver: ResizeObserver;
 
-  constructor(
-    store: CCStore,
-    componentId: CCComponentId,
-    htmlContainer: HTMLDivElement,
-    htmlCanvas: HTMLCanvasElement,
-    onContextMenu: (position: PIXI.Point) => void
-  ) {
-    this.#store = store;
-    this.#componentId = componentId;
-    this.#htmlContainer = htmlContainer;
-    this.#htmlCanvas = htmlCanvas;
-    invariant(this.#store.components.get(componentId));
+  constructor(props: CCComponentEditorRendererProps) {
+    this.#store = props.store;
+    this.#componentEditorStore = props.componentEditorStore;
+    this.#componentId = props.componentId;
+    this.#htmlContainer = props.htmlContainer;
+    invariant(this.#store.components.get(props.componentId));
 
     const rect = this.#htmlContainer.getBoundingClientRect();
     this.#canvasSize = new Observable(new PIXI.Point(rect.width, rect.height));
@@ -79,12 +82,14 @@ export default class CCComponentEditorRenderer {
     this.#resizeObserver.observe(this.#htmlContainer);
 
     this.#pixiApplication = new PIXI.Application({
-      view: this.#htmlCanvas,
       resizeTo: this.#htmlContainer,
       background: editorBackgroundColor,
       resolution: window.devicePixelRatio,
       autoDensity: true,
     });
+    this.#htmlContainer.appendChild(
+      this.#pixiApplication.view as HTMLCanvasElement
+    );
     this.#pixiWorld = new PIXI.Container();
     this.#pixiApplication.stage.addChild(this.#pixiWorld);
     this.#pixiApplication.stage.interactive = true;
@@ -98,11 +103,15 @@ export default class CCComponentEditorRenderer {
             initialCenter: this.#worldPerspective.value.center,
           },
         };
+      } else if (e.button === 0) {
+        this.#dragState = {
+          startPosition: e.global.clone(),
+          target: {
+            type: "rangeSelect",
+          },
+        };
       }
-      for (const ccNodeRenderer of this.#nodeRenderers.values()) {
-        ccNodeRenderer.isSelected = false;
-        ccNodeRenderer.render();
-      }
+      this.#componentEditorStore.getState().selectNode([], true);
     });
     this.#pixiApplication.stage.on("pointermove", (e) => {
       if (!this.#dragState) return;
@@ -145,14 +154,14 @@ export default class CCComponentEditorRenderer {
     this.#store.nodes
       .getNodeIdsByParentComponentId(this.#componentId)
       .forEach((nodeId) => this.#addNodeRenderer(nodeId));
-    store.nodes.on("didRegister", this.#onNodeAdded);
-    store.nodes.on("didUnregister", this.#onNodeRemoved);
+    props.store.nodes.on("didRegister", this.#onNodeAdded);
+    props.store.nodes.on("didUnregister", this.#onNodeRemoved);
 
     this.#store.connections
       .getConnectionIdsByParentComponentId(this.#componentId)
       .forEach((connectionId) => this.#addConnectionRenderer(connectionId));
-    store.connections.on("didRegister", this.#onConnectionAdded);
-    store.connections.on("didUnregister", this.#onConnectionRemoved);
+    props.store.connections.on("didRegister", this.#onConnectionAdded);
+    props.store.connections.on("didUnregister", this.#onConnectionRemoved);
 
     // Support zooming
     this.#pixiApplication.stage.on("wheel", (e) => {
@@ -161,7 +170,7 @@ export default class CCComponentEditorRenderer {
 
     // Context menu
     this.#pixiApplication.stage.on("rightclick", (e) => {
-      onContextMenu(e.global.clone());
+      props.onContextMenu(e.global.clone());
       e.preventDefault();
     });
 
@@ -184,23 +193,10 @@ export default class CCComponentEditorRenderer {
     };
     const newNodeRenderer = new CCComponentEditorRendererNode({
       store: this.#store,
+      componentEditorStore: this.#componentEditorStore,
       nodeId,
       pixiParentContainer: this.#pixiWorld,
       onDragStart,
-    });
-    newNodeRenderer.onPointerDown((e) => {
-      newNodeRenderer.isSelected = true;
-      if (!e.shiftKey) {
-        for (const [ccNodeId, nodeRenderer] of this.#nodeRenderers.entries()) {
-          if (ccNodeId !== nodeId) {
-            nodeRenderer.isSelected = false;
-            nodeRenderer.render();
-          }
-        }
-      }
-      onDragStart(e);
-      e.stopPropagation();
-      newNodeRenderer.render();
     });
     this.#nodeRenderers.set(nodeId, newNodeRenderer);
   }
@@ -273,6 +269,6 @@ export default class CCComponentEditorRenderer {
     this.#store.nodes.off("didRegister", this.#onNodeAdded);
     this.#store.nodes.off("didUnregister", this.#onNodeRemoved);
     for (const renderer of this.#nodeRenderers.values()) renderer.destroy();
-    // this.ccCanvas.destroy();
+    this.#pixiApplication.destroy(true);
   }
 }
