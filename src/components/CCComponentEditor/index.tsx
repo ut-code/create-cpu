@@ -2,13 +2,14 @@ import * as PIXI from "pixi.js";
 import {
   Box,
   ClickAwayListener,
+  Fab,
   MenuItem,
   MenuList,
   Paper,
 } from "@mui/material";
 import { useEffect, useRef, useState } from "react";
 import invariant from "tiny-invariant";
-import { KeyboardDoubleArrowRight } from "@mui/icons-material";
+import { Edit, KeyboardDoubleArrowRight, PlayArrow } from "@mui/icons-material";
 import { useStore } from "../../store/react";
 import CCComponentEditorRenderer from "./renderer";
 import type { CCComponentId } from "../../store/component";
@@ -25,6 +26,7 @@ function CCComponentEditorContent({ componentId }: CCComponentEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const store = useStore();
   const componentEditorStore = useComponentEditorStore();
+  const componentEditorState = componentEditorStore();
   const component = store.components.get(componentId);
   invariant(component);
 
@@ -88,6 +90,17 @@ function CCComponentEditorContent({ componentId }: CCComponentEditorProps) {
         <KeyboardDoubleArrowRight />
         {component.name}
       </Paper>
+      <Fab
+        style={{ position: "absolute", bottom: "40px", right: "40px" }}
+        color="primary"
+        onClick={() =>
+          componentEditorState.setEditorMode(
+            componentEditorState.editorMode === "edit" ? "play" : "edit"
+          )
+        }
+      >
+        {componentEditorState.editorMode === "edit" ? <Edit /> : <PlayArrow />}
+      </Fab>
       {contextMenuPosition && (
         <ClickAwayListener
           onClickAway={() => {

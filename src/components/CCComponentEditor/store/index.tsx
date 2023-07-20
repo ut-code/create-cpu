@@ -3,15 +3,24 @@ import invariant from "tiny-invariant";
 import { create } from "zustand";
 import PIXI from "pixi.js";
 
+type EditorMode = "edit" | "play";
+
 type State = {
+  editorMode: EditorMode;
   selectedNodeIds: Set<string>;
-  selectNode(ids: string[], exclusive: boolean): void;
   rangeSelect: { start: PIXI.Point; end: PIXI.Point } | undefined;
+  setEditorMode(mode: EditorMode): void;
+  selectNode(ids: string[], exclusive: boolean): void;
 };
 
 const createStore = () =>
   create<State>((set) => ({
+    editorMode: "edit",
     selectedNodeIds: new Set(),
+    rangeSelect: undefined,
+    setEditorMode(mode: EditorMode) {
+      set((state) => ({ ...state, editorMode: mode }));
+    },
     selectNode(ids: string[], exclusive: boolean) {
       set((state) => ({
         ...state,
@@ -20,7 +29,6 @@ const createStore = () =>
         ),
       }));
     },
-    rangeSelect: undefined,
   }));
 
 export type ComponentEditorStore = ReturnType<typeof createStore>;

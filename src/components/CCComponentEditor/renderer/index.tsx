@@ -86,6 +86,7 @@ export default class CCComponentEditorRenderer {
       background: editorBackgroundColor,
       resolution: window.devicePixelRatio,
       autoDensity: true,
+      antialias: true,
     });
     this.#htmlContainer.appendChild(
       this.#pixiApplication.view as HTMLCanvasElement
@@ -147,7 +148,7 @@ export default class CCComponentEditorRenderer {
       this.#dragState = null;
     });
 
-    this.#pixiApplication.stage.on("pointerout", () => {
+    this.#pixiApplication.stage.on("pointerleave", () => {
       this.#dragState = null;
     });
 
