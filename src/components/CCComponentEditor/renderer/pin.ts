@@ -10,6 +10,8 @@ export type CCComponentEditorRendererPinProps = {
   pinId: CCPinId;
   pixiParentContainer: PIXI.Container;
   pixiText: PIXI.Text;
+  onDragStart(e: PIXI.FederatedMouseEvent, pinId: CCPinId): void;
+  onDragEnd(e: PIXI.FederatedMouseEvent): void;
 };
 
 export default class CCComponentEditorRendererPin {
@@ -32,6 +34,8 @@ export default class CCComponentEditorRendererPin {
     pinId,
     pixiParentContainer,
     pixiText,
+    onDragStart,
+    onDragEnd,
   }: CCComponentEditorRendererPinProps) {
     this.#store = store;
     this.#pinId = pinId;
@@ -43,6 +47,14 @@ export default class CCComponentEditorRendererPin {
     this.#pixiWorld.addChild(this.#pixiGraphics);
     this.#pixiText = pixiText;
     this.#pixiWorld.addChild(this.#pixiText);
+    this.#pixiGraphics.on("pointerdown", (e) => {
+      onDragStart(e, pinId);
+      e.stopPropagation();
+    });
+    this.#pixiGraphics.on("pointerup", (e) => {
+      onDragEnd(e);
+      e.stopPropagation();
+    });
   }
 
   onPointerDown(event: (e: PIXI.FederatedPointerEvent) => void) {

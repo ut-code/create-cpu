@@ -12,8 +12,8 @@ export const ccPinTypes: CCPinType[] = ["input", "output"];
 export type CCPin = {
   readonly id: CCPinId;
   readonly componentId: CCComponentId;
+  readonly type: CCPinType;
   name: string;
-  type: CCPinType;
 };
 
 export type CCPinStoreEvents = {

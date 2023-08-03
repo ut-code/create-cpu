@@ -1,11 +1,13 @@
 // import type { Point } from "pixi.js";
 import * as PIXI from "pixi.js";
+import type { Point } from "pixi.js";
 import { blackColor, primaryColor, whiteColor } from "../../../common/theme";
 import type { CCNodeId } from "../../../store/node";
-import type { CCPinId } from "../../../store/pin";
+import { type CCPinId } from "../../../store/pin";
 import type CCStore from "../../../store";
 import CCComponentEditorRendererPin from "./pin";
 import type { ComponentEditorStore } from "../store";
+import CCComponentEditorRendererInput from "./input";
 
 export type CCComponentEditorRendererNodeProps = {
   store: CCStore;
@@ -13,6 +15,8 @@ export type CCComponentEditorRendererNodeProps = {
   nodeId: CCNodeId;
   pixiParentContainer: PIXI.Container;
   onDragStart(e: PIXI.FederatedMouseEvent): void;
+  onDragStartPin(e: PIXI.FederatedMouseEvent, pinId: CCPinId): void;
+  onDragEndPin(): void;
 };
 
 type PixiTexts = {
@@ -43,6 +47,8 @@ export default class CCComponentEditorRendererNode {
 
   #pinRenderers = new Map<CCPinId, CCComponentEditorRendererPin>();
 
+  #inputRenderers = new Map<CCPinId, CCComponentEditorRendererInput>();
+
   #pixiWorld: PIXI.Container;
 
   constructor(props: CCComponentEditorRendererNodeProps) {
@@ -67,18 +73,33 @@ export default class CCComponentEditorRendererNode {
         pinId,
         pixiParentContainer: this.#pixiWorld,
         pixiText: this.#pixiTexts.pinNames.get(pinId)!,
+        onDragStart: props.onDragStartPin,
+        onDragEnd: props.onDragEndPin,
       });
-      pinRenderer.onPointerDown(() => {
-        pinRenderer.isSelected = true;
-        for (const [ccPinId, ccPinRenderer] of this.#pinRenderers.entries()) {
-          if (ccPinId !== pinId) {
-            ccPinRenderer.isSelected = false;
-            // pinRenderer.render();
-          }
-        }
-        // e.stopPropagation();
-      });
+      // pinRenderer.onPointerDown(() => {
+      //   pinRenderer.isSelected = true;
+      //   for (const [ccPinId, ccPinRenderer] of this.#pinRenderers.entries()) {
+      //     if (ccPinId !== pinId) {
+      //       ccPinRenderer.isSelected = false;
+      //       // pinRenderer.render();
+      //     }
+      //   }
+      //   // e.stopPropagation();
+      // });
       this.#pinRenderers.set(pinId, pinRenderer);
+      const inputRenderer = new CCComponentEditorRendererInput({
+        store: props.store,
+        componentEditorStore: props.componentEditorStore,
+        pixiParentContainer: this.#pixiWorld,
+        nodeId: props.nodeId,
+        pinId,
+        position: CCComponentEditorRendererNode.getPinOffset(
+          this.#store,
+          this.#nodeId,
+          pinId
+        ),
+      });
+      this.#inputRenderers.set(pinId, inputRenderer);
     }
 
     this.#pixiGraphics.on("pointerdown", (e) => {
@@ -203,5 +224,81 @@ export default class CCComponentEditorRendererNode {
     }
     this.#store.nodes.off("didUpdate", this.render);
     this.#unsubscribeComponentEditorStore();
+  }
+
+  static getPinOffset(store: CCStore, nodeId: CCNodeId, pinId: CCPinId): Point {
+    const node = store.nodes.get(nodeId)!;
+    const component = store.components.get(node.componentId)!;
+    const pinIds = store.pins.getPinIdsByComponentId(component.id)!;
+    const pins = pinIds.map((id) => store.pins.get(id)!);
+    const inputPinIds = pins
+      .filter((pin) => pin.type === "input")
+      .map((pin) => pin.id);
+    const inputPinCount = inputPinIds.length;
+    const outputPinIds = pins
+      .filter((pin) => pin.type === "output")
+      .map((pin) => pin.id);
+    const outputPinCount = outputPinIds.length;
+    if (inputPinIds.includes(pinId)) {
+      const pinIndex = inputPinIds.indexOf(pinId);
+      return new PIXI.Point(
+        -CCComponentEditorRendererNode.#size.x / 2,
+        -CCComponentEditorRendererNode.#size.y / 2 +
+          (CCComponentEditorRendererNode.#size.y / (inputPinCount + 1)) *
+            (pinIndex + 1)
+      );
+    }
+    if (outputPinIds.includes(pinId)) {
+      const pinIndex = outputPinIds.indexOf(pinId);
+      return new PIXI.Point(
+        CCComponentEditorRendererNode.#size.x / 2,
+        -CCComponentEditorRendererNode.#size.y / 2 +
+          (CCComponentEditorRendererNode.#size.y / (outputPinCount + 1)) *
+            (pinIndex + 1)
+      );
+    }
+
+    throw Error(`pin: ${pinId} not found in node: ${node.id}`);
+  }
+
+  static getPinAbsolute(
+    store: CCStore,
+    nodeId: CCNodeId,
+    pinId: CCPinId
+  ): Point {
+    const node = store.nodes.get(nodeId)!;
+    const component = store.components.get(node.componentId)!;
+    const pinIds = store.pins.getPinIdsByComponentId(component.id)!;
+    const pins = pinIds.map((id) => store.pins.get(id)!);
+    const inputPinIds = pins
+      .filter((pin) => pin.type === "input")
+      .map((pin) => pin.id);
+    const inputPinCount = inputPinIds.length;
+    const outputPinIds = pins
+      .filter((pin) => pin.type === "output")
+      .map((pin) => pin.id);
+    const outputPinCount = outputPinIds.length;
+    if (inputPinIds.includes(pinId)) {
+      const pinIndex = inputPinIds.indexOf(pinId);
+      return new PIXI.Point(
+        node.position.x - CCComponentEditorRendererNode.#size.x / 2,
+        node.position.y -
+          CCComponentEditorRendererNode.#size.y / 2 +
+          (CCComponentEditorRendererNode.#size.y / (inputPinCount + 1)) *
+            (pinIndex + 1)
+      );
+    }
+    if (outputPinIds.includes(pinId)) {
+      const pinIndex = outputPinIds.indexOf(pinId);
+      return new PIXI.Point(
+        node.position.x + CCComponentEditorRendererNode.#size.x / 2,
+        node.position.y -
+          CCComponentEditorRendererNode.#size.y / 2 +
+          (CCComponentEditorRendererNode.#size.y / (outputPinCount + 1)) *
+            (pinIndex + 1)
+      );
+    }
+
+    throw Error(`pin: ${pinId} not found in node: ${node.id}`);
   }
 }
