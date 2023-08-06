@@ -48,6 +48,10 @@ export default class CCComponentEditorRendererInput {
     this.#pixiContainer.addChild(this.#pixiGraphics);
     this.#unsubscribeComponentEditorStore =
       this.#componentEditorStore.subscribe(this.render);
+    // eslint-disable-next-line no-unused-expressions
+    this.#unsubscribeComponentEditorStore;
+    // eslint-disable-next-line no-unused-expressions
+    this.#nodeId;
     this.render();
   }
 
