@@ -16,7 +16,7 @@ export type CCComponentEditorRendererNodeProps = {
   pixiParentContainer: PIXI.Container;
   onDragStart(e: PIXI.FederatedMouseEvent): void;
   onDragStartPin(e: PIXI.FederatedMouseEvent, pinId: CCPinId): void;
-  onDragEndPin(): void;
+  onDragEndPin(e: PIXI.FederatedMouseEvent, pinId: CCPinId): void;
 };
 
 type PixiTexts = {

@@ -11,7 +11,7 @@ export type CCComponentEditorRendererPinProps = {
   pixiParentContainer: PIXI.Container;
   pixiText: PIXI.Text;
   onDragStart(e: PIXI.FederatedMouseEvent, pinId: CCPinId): void;
-  onDragEnd(e: PIXI.FederatedMouseEvent): void;
+  onDragEnd(e: PIXI.FederatedMouseEvent, pinId: CCPinId): void;
 };
 
 export default class CCComponentEditorRendererPin {
@@ -52,7 +52,7 @@ export default class CCComponentEditorRendererPin {
       e.stopPropagation();
     });
     this.#pixiGraphics.on("pointerup", (e) => {
-      onDragEnd(e);
+      onDragEnd(e, pinId);
       e.stopPropagation();
     });
   }

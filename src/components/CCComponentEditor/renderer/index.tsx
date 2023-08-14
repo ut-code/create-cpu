@@ -7,7 +7,11 @@ import type { CCComponentId } from "../../../store/component";
 import type { CCNode, CCNodeId } from "../../../store/node";
 import CCComponentEditorRendererNode from "./node";
 import type { Perspective } from "../../../common/perspective";
-import type { CCConnection, CCConnectionId } from "../../../store/connection";
+import {
+  CCConnectionStore,
+  type CCConnection,
+  type CCConnectionId,
+} from "../../../store/connection";
 import CCComponentEditorRendererConnection from "./connection";
 import CCComponentEditorRendererRangeSelect from "./rangeSelect";
 import type { CCPinId } from "../../../store/pin";
@@ -18,7 +22,12 @@ type DragState = {
   target:
     | { type: "world"; initialCenter: PIXI.Point }
     | { type: "node"; nodeId: CCNodeId; initialPosition: PIXI.Point }
-    | { type: "pin"; pinId: CCPinId; initialPosition: PIXI.Point }
+    | {
+        type: "pin";
+        pinId: CCPinId;
+        nodeId: CCNodeId;
+        initialPosition: PIXI.Point;
+      }
     | { type: "rangeSelect" };
 };
 
@@ -183,6 +192,9 @@ export default class CCComponentEditorRenderer {
     this.#pixiApplication.stage.on("pointerup", () => {
       this.#dragState = null;
       this.#componentEditorStore.getState().setRangeSelect(null);
+      if (this.#creatingConnectionPixiGraphics != null) {
+        this.#creatingConnectionPixiGraphics.clear();
+      }
       this.#rangeSelectRenderer.render();
     });
 
@@ -233,26 +245,50 @@ export default class CCComponentEditorRenderer {
       };
     };
     const onDragStartPin = (e: PIXI.FederatedMouseEvent, pinId: CCPinId) => {
-      const node = this.#store.nodes.get(nodeId)!;
+      // const node = this.#store.nodes.get(nodeId)!;
       const lineWidth = 2;
       const lineColor = 0x000000;
-      this.#creatingConnectionPixiGraphics.clear();
+      // this.#creatingConnectionPixiGraphics.clear();
       this.#creatingConnectionPixiGraphics.lineStyle(lineWidth, lineColor);
-      this.#creatingConnectionPixiGraphics.moveTo(
-        node.position.x,
-        node.position.y
+      const pinPosition = CCComponentEditorRendererNode.getPinAbsolute(
+        this.#store,
+        nodeId,
+        pinId
       );
+      this.#creatingConnectionPixiGraphics.moveTo(pinPosition.x, pinPosition.y);
       this.#dragState = {
         startPosition: e.global.clone(),
         target: {
           type: "pin",
           pinId,
-          initialPosition: node.position.clone(),
+          nodeId,
+          initialPosition: pinPosition.clone(),
         },
       };
     };
-    const onDragEndPin = () => {
-      this.#creatingConnectionPixiGraphics?.destroy();
+    const onDragEndPin = (_: PIXI.FederatedMouseEvent, pinId: CCPinId) => {
+      this.#creatingConnectionPixiGraphics?.clear();
+      const pinType = this.#store.pins.get(pinId)?.type;
+      if (this.#dragState?.target.type === "pin") {
+        const anotherPinId = this.#dragState.target.pinId;
+        const anotherPinType = this.#store.pins.get(anotherPinId)?.type;
+        const anotherNodeId = this.#dragState.target.nodeId;
+        if (pinType === "input" && anotherPinType === "output") {
+          const newConnection = CCConnectionStore.create({
+            to: { nodeId, pinId },
+            from: { nodeId: anotherNodeId, pinId: anotherPinId },
+            parentComponentId: this.#componentId,
+          });
+          this.#store.connections.register(newConnection);
+        } else if (pinType === "output" && anotherPinType === "input") {
+          const newConnection = CCConnectionStore.create({
+            from: { nodeId, pinId },
+            to: { nodeId: anotherNodeId, pinId: anotherPinId },
+            parentComponentId: this.#componentId,
+          });
+          this.#store.connections.register(newConnection);
+        }
+      }
       this.#dragState = null;
     };
     const newNodeRenderer = new CCComponentEditorRendererNode({
