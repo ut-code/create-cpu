@@ -40,7 +40,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     const sampleNode1 = CCNodeStore.create({
       parentComponentId: rootComponent.id,
       componentId: sampleComponent.id,
-      position: new Point(0, 0),
+      position: new Point(-200, 0),
     });
     const sampleNode2 = CCNodeStore.create({
       parentComponentId: rootComponent.id,
@@ -50,8 +50,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     tempStore.nodes.register(sampleNode1);
     tempStore.nodes.register(sampleNode2);
     const sampleConnection = CCConnectionStore.create({
-      to: { nodeId: sampleNode1.id, pinId: sampleComponentInputPin1.id },
-      from: { nodeId: sampleNode2.id, pinId: sampleComponentOutputPin1.id },
+      to: { nodeId: sampleNode2.id, pinId: sampleComponentInputPin1.id },
+      from: { nodeId: sampleNode1.id, pinId: sampleComponentOutputPin1.id },
       parentComponentId: rootComponent.id,
     });
     tempStore.connections.register(sampleConnection);

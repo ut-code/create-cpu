@@ -162,7 +162,7 @@ export default class CCComponentEditorRenderer {
         }
         case "pin": {
           this.#creatingConnectionPixiGraphics.clear();
-          this.#creatingConnectionPixiGraphics.lineStyle(2, 0x0000);
+          this.#creatingConnectionPixiGraphics.lineStyle(2, 0x696969);
           this.#creatingConnectionPixiGraphics.moveTo(
             this.#dragState.target.initialPosition.x,
             this.#dragState.target.initialPosition.y
@@ -249,6 +249,7 @@ export default class CCComponentEditorRenderer {
       const lineWidth = 2;
       const lineColor = 0x000000;
       // this.#creatingConnectionPixiGraphics.clear();
+      this.#pixiWorld.addChild(this.#creatingConnectionPixiGraphics);
       this.#creatingConnectionPixiGraphics.lineStyle(lineWidth, lineColor);
       const pinPosition = CCComponentEditorRendererNode.getPinAbsolute(
         this.#store,
@@ -274,6 +275,25 @@ export default class CCComponentEditorRenderer {
         const anotherPinType = this.#store.pins.get(anotherPinId)?.type;
         const anotherNodeId = this.#dragState.target.nodeId;
         if (pinType === "input" && anotherPinType === "output") {
+          // const oldConnectionId =
+          //   this.#store.connections.getConnectionIdByPinId(
+          //     this.#componentId,
+          //     nodeId,
+          //     pinId
+          //   );
+          // if (oldConnectionId) {
+          //   console.log(oldConnectionId);
+          //   this.#store.connections.unregister(oldConnectionId);
+          // }
+          // const anotherOldConnectionId =
+          //   this.#store.connections.getConnectionIdByPinId(
+          //     this.#componentId,
+          //     anotherNodeId,
+          //     anotherPinId
+          //   );
+          // if (anotherOldConnectionId) {
+          //   this.#store.connections.unregister(anotherOldConnectionId);
+          // }
           const newConnection = CCConnectionStore.create({
             to: { nodeId, pinId },
             from: { nodeId: anotherNodeId, pinId: anotherPinId },
@@ -281,6 +301,25 @@ export default class CCComponentEditorRenderer {
           });
           this.#store.connections.register(newConnection);
         } else if (pinType === "output" && anotherPinType === "input") {
+          // const oldConnectionId =
+          //   this.#store.connections.getConnectionIdByPinId(
+          //     this.#componentId,
+          //     nodeId,
+          //     pinId
+          //   );
+          // if (oldConnectionId) {
+          //   console.log(oldConnectionId);
+          //   this.#store.connections.unregister(oldConnectionId);
+          // }
+          // const anotherOldConnectionId =
+          //   this.#store.connections.getConnectionIdByPinId(
+          //     this.#componentId,
+          //     anotherNodeId,
+          //     anotherPinId
+          //   );
+          // if (anotherOldConnectionId) {
+          //   this.#store.connections.unregister(anotherOldConnectionId);
+          // }
           const newConnection = CCConnectionStore.create({
             from: { nodeId, pinId },
             to: { nodeId: anotherNodeId, pinId: anotherPinId },

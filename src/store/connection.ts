@@ -81,6 +81,24 @@ export class CCConnectionStore extends EventEmitter<CCConnectionStoreEvents> {
     ];
   }
 
+  getConnectionIdByPinId(
+    parentComponentId: CCComponentId,
+    nodeId: CCNodeId,
+    pinId: CCPinId
+  ): CCConnectionId | undefined {
+    const candidates =
+      this.getConnectionIdsByParentComponentId(parentComponentId);
+    const connectionId = candidates.find((id) => {
+      const connection = this.#store.connections.get(id);
+      return (
+        (connection?.from.nodeId === nodeId &&
+          connection?.from.pinId === pinId) ||
+        (connection?.to.nodeId === nodeId && connection?.to.pinId === pinId)
+      );
+    });
+    return connectionId;
+  }
+
   static create(partialConnection: Omit<CCConnection, "id">): CCConnection {
     return {
       id: crypto.randomUUID() as CCConnectionId,
