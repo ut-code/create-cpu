@@ -1,9 +1,9 @@
 import * as PIXI from "pixi.js";
-import type { Point } from "pixi.js";
 import type { CCConnectionId } from "../../../store/connection";
 import type CCStore from "../../../store";
 import type { CCPinId } from "../../../store/pin";
 import type { CCNodeId } from "../../../store/node";
+import CCComponentEditorRendererNode from "./node";
 
 export type CCConnectionEndpoint = {
   nodeId: string;
@@ -33,8 +33,6 @@ export default class CCComponentEditorRendererConnection {
 
   #bentPortion: number;
 
-  static readonly #size = new PIXI.Point(200, 100);
-
   constructor(
     store: CCStore,
     connectionId: CCConnectionId,
@@ -59,43 +57,6 @@ export default class CCComponentEditorRendererConnection {
     this.#store.nodes.on("didUpdate", this.#render);
   }
 
-  getPinPosition(nodeId: CCNodeId, pinId: CCPinId): Point {
-    const node = this.#store.nodes.get(nodeId)!;
-    const component = this.#store.components.get(node.componentId)!;
-    const pinIds = this.#store.pins.getPinIdsByComponentId(component.id)!;
-    const pins = pinIds.map((id) => this.#store.pins.get(id)!);
-    const inputPinIds = pins
-      .filter((pin) => pin.type === "input")
-      .map((pin) => pin.id);
-    const inputPinCount = inputPinIds.length;
-    const outputPinIds = pins
-      .filter((pin) => pin.type === "output")
-      .map((pin) => pin.id);
-    const outputPinCount = outputPinIds.length;
-    if (inputPinIds.includes(pinId)) {
-      const pinIndex = inputPinIds.indexOf(pinId);
-      return new PIXI.Point(
-        node.position.x - CCComponentEditorRendererConnection.#size.x / 2,
-        node.position.y -
-          CCComponentEditorRendererConnection.#size.y / 2 +
-          (CCComponentEditorRendererConnection.#size.y / (inputPinCount + 1)) *
-            (pinIndex + 1)
-      );
-    }
-    if (outputPinIds.includes(pinId)) {
-      const pinIndex = outputPinIds.indexOf(pinId);
-      return new PIXI.Point(
-        node.position.x + CCComponentEditorRendererConnection.#size.x / 2,
-        node.position.y -
-          CCComponentEditorRendererConnection.#size.y / 2 +
-          (CCComponentEditorRendererConnection.#size.y / (outputPinCount + 1)) *
-            (pinIndex + 1)
-      );
-    }
-
-    throw Error(`pin: ${pinId} not found in node: ${node.id}`);
-  }
-
   destroy() {
     this.#pixiGraphics.from.destroy();
     this.#pixiGraphics.to.destroy();
@@ -111,11 +72,13 @@ export default class CCComponentEditorRendererConnection {
     this.#pixiGraphics.to.lineStyle(lineWidth, lineColor);
     const fromEndPoint = this.#store.connections.get(this.#connectionId)?.from;
     const toEndPoint = this.#store.connections.get(this.#connectionId)?.to;
-    const fromPosition = this.getPinPosition(
+    const fromPosition = CCComponentEditorRendererNode.getPinAbsolute(
+      this.#store,
       fromEndPoint?.nodeId as CCNodeId,
       fromEndPoint?.pinId as CCPinId
     );
-    const toPosition = this.getPinPosition(
+    const toPosition = CCComponentEditorRendererNode.getPinAbsolute(
+      this.#store,
       toEndPoint?.nodeId as CCNodeId,
       toEndPoint?.pinId as CCPinId
     );
