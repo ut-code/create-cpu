@@ -3,7 +3,7 @@ import EventEmitter from "eventemitter3";
 import invariant from "tiny-invariant";
 import { MultiMap } from "mnemonist";
 import type CCStore from ".";
-import type { CCComponentId } from "./component";
+import { type CCComponentId } from "./component";
 
 export type CCPinId = Opaque<string, "CCPinId">;
 export type CCPinType = "input" | "output";

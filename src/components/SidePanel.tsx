@@ -24,6 +24,7 @@ function ComponentRenderer({ componentId }: { componentId: CCComponentId }) {
         style={{
           display: "grid",
           gridTemplateColumns: "1fr 1fr",
+          alignItems: "center",
           marginTop: "4px",
           border: `2px solid ${new Color(blackColor).toHex()}`,
           background: new Color(whiteColor).toHex(),
