@@ -10,7 +10,7 @@ type CCComponentEditorRendererRangeSelectProps = {
   pixiParentContainer: PIXI.Container;
 };
 
-const rearrangeRangeSelect = ({
+export const rearrangeRangeSelect = ({
   start,
   end,
 }: {

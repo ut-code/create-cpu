@@ -53,6 +53,10 @@ export class CCNodeStore extends EventEmitter<CCNodeStoreEvents> {
     return this.#nodes.get(id);
   }
 
+  getAll(): CCNode[] {
+    return [...this.#nodes.values()];
+  }
+
   getNodeIdsByParentComponentId(parentComponentId: CCComponentId): CCNodeId[] {
     return [...(this.#parentComponentIdToNodeIds.get(parentComponentId) ?? [])];
   }
