@@ -7,6 +7,7 @@ export type CCComponentId = Opaque<string, "CCComponentId">;
 
 export type CCComponent = {
   readonly id: CCComponentId;
+  readonly isIntrinsic: boolean;
   name: string;
 };
 
@@ -17,19 +18,14 @@ export type CCComponentStoreEvents = {
 };
 
 export class CCComponentStore extends EventEmitter<CCComponentStoreEvents> {
-  #store: CCStore;
-
   #components: Map<CCComponentId, CCComponent> = new Map();
 
   readonly rootComponentId: CCComponentId;
 
-  constructor(store: CCStore, rootComponent: CCComponent) {
+  constructor(_: CCStore, rootComponent: CCComponent) {
     super();
     this.rootComponentId = rootComponent.id;
     this.register(rootComponent);
-    this.#store = store;
-    // eslint-disable-next-line no-unused-expressions
-    this.#store;
   }
 
   register(component: CCComponent): void {
@@ -54,9 +50,12 @@ export class CCComponentStore extends EventEmitter<CCComponentStoreEvents> {
     return this.#components;
   }
 
-  static create(partialComponent: Omit<CCComponent, "id">): CCComponent {
+  static create(
+    partialComponent: Omit<CCComponent, "id" | "isIntrinsic">
+  ): CCComponent {
     return {
       id: crypto.randomUUID() as CCComponentId,
+      isIntrinsic: false,
       ...partialComponent,
     };
   }
