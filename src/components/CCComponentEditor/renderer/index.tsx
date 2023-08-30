@@ -275,57 +275,47 @@ export default class CCComponentEditorRenderer {
         const anotherPinType = this.#store.pins.get(anotherPinId)?.type;
         const anotherNodeId = this.#dragState.target.nodeId;
         if (pinType === "input" && anotherPinType === "output") {
-          // const oldConnectionId =
-          //   this.#store.connections.getConnectionIdByPinId(
-          //     this.#componentId,
-          //     nodeId,
-          //     pinId
-          //   );
-          // if (oldConnectionId) {
-          //   console.log(oldConnectionId);
-          //   this.#store.connections.unregister(oldConnectionId);
-          // }
-          // const anotherOldConnectionId =
-          //   this.#store.connections.getConnectionIdByPinId(
-          //     this.#componentId,
-          //     anotherNodeId,
-          //     anotherPinId
-          //   );
-          // if (anotherOldConnectionId) {
-          //   this.#store.connections.unregister(anotherOldConnectionId);
-          // }
-          const newConnection = CCConnectionStore.create({
-            to: { nodeId, pinId },
-            from: { nodeId: anotherNodeId, pinId: anotherPinId },
-            parentComponentId: this.#componentId,
-          });
-          this.#store.connections.register(newConnection);
+          const beforeConnectionId =
+            this.#store.connections.getConnectionIdByPinId(
+              this.#componentId,
+              nodeId,
+              pinId
+            );
+          const anotherBeforeConnectionId =
+            this.#store.connections.getConnectionIdByPinId(
+              this.#componentId,
+              anotherNodeId,
+              anotherPinId
+            );
+          if (!beforeConnectionId && !anotherBeforeConnectionId) {
+            const newConnection = CCConnectionStore.create({
+              to: { nodeId, pinId },
+              from: { nodeId: anotherNodeId, pinId: anotherPinId },
+              parentComponentId: this.#componentId,
+            });
+            this.#store.connections.register(newConnection);
+          }
         } else if (pinType === "output" && anotherPinType === "input") {
-          // const oldConnectionId =
-          //   this.#store.connections.getConnectionIdByPinId(
-          //     this.#componentId,
-          //     nodeId,
-          //     pinId
-          //   );
-          // if (oldConnectionId) {
-          //   console.log(oldConnectionId);
-          //   this.#store.connections.unregister(oldConnectionId);
-          // }
-          // const anotherOldConnectionId =
-          //   this.#store.connections.getConnectionIdByPinId(
-          //     this.#componentId,
-          //     anotherNodeId,
-          //     anotherPinId
-          //   );
-          // if (anotherOldConnectionId) {
-          //   this.#store.connections.unregister(anotherOldConnectionId);
-          // }
-          const newConnection = CCConnectionStore.create({
-            from: { nodeId, pinId },
-            to: { nodeId: anotherNodeId, pinId: anotherPinId },
-            parentComponentId: this.#componentId,
-          });
-          this.#store.connections.register(newConnection);
+          const beforeConnectionId =
+            this.#store.connections.getConnectionIdByPinId(
+              this.#componentId,
+              nodeId,
+              pinId
+            );
+          const anotherBeforeConnectionId =
+            this.#store.connections.getConnectionIdByPinId(
+              this.#componentId,
+              anotherNodeId,
+              anotherPinId
+            );
+          if (!beforeConnectionId && !anotherBeforeConnectionId) {
+            const newConnection = CCConnectionStore.create({
+              from: { nodeId, pinId },
+              to: { nodeId: anotherNodeId, pinId: anotherPinId },
+              parentComponentId: this.#componentId,
+            });
+            this.#store.connections.register(newConnection);
+          }
         }
       }
       this.#dragState = null;
@@ -346,7 +336,8 @@ export default class CCComponentEditorRenderer {
     const newConnectionRenderer = new CCComponentEditorRendererConnection(
       this.#store,
       connectionId,
-      this.#pixiWorld
+      this.#pixiWorld,
+      this.#onConnectionRemoved
     );
     this.#connectionRenderers.set(connectionId, newConnectionRenderer);
   }
