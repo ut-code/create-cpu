@@ -58,9 +58,10 @@ export default class CCComponentEditorRendererConnection {
   }
 
   destroy() {
-    this.#pixiGraphics.from.destroy();
-    this.#pixiGraphics.to.destroy();
-    this.#pixiGraphics.middle.destroy();
+    this.#pixiParentContainer.removeChild(this.#pixiGraphics.from);
+    this.#pixiParentContainer.removeChild(this.#pixiGraphics.middle);
+    this.#pixiParentContainer.removeChild(this.#pixiGraphics.to);
+    this.#store.nodes.off("didUpdate", this.#render);
   }
 
   #render = () => {

@@ -41,12 +41,14 @@ export class CCNodeStore extends EventEmitter<CCNodeStoreEvents> {
     this.emit("didRegister", node);
   }
 
-  unregister(id: CCNodeId): void {
-    const node = this.#nodes.get(id);
-    if (!node) throw new Error(`Node ${id} not found`);
-    this.#parentComponentIdToNodeIds.remove(node.parentComponentId, node.id);
-    this.#nodes.delete(id);
-    this.emit("didUnregister", node);
+  unregister(ids: CCNodeId[]): void {
+    for (const id of ids) {
+      const node = this.#nodes.get(id);
+      if (!node) throw new Error(`Node ${id} not found`);
+      this.emit("didUnregister", node);
+      this.#parentComponentIdToNodeIds.remove(node.parentComponentId, node.id);
+      this.#nodes.delete(id);
+    }
   }
 
   get(id: CCNodeId): CCNode | undefined {
