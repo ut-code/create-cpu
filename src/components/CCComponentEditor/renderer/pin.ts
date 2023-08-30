@@ -21,11 +21,11 @@ export default class CCComponentEditorRendererPin {
 
   #pixiParentContainer: PIXI.Container;
 
+  #pixiWorld: PIXI.Container;
+
   #pixiGraphics: PIXI.Graphics;
 
   #pixiText: PIXI.Text;
-
-  #pixiWorld: PIXI.Container;
 
   isSelected = false;
 
@@ -102,5 +102,9 @@ export default class CCComponentEditorRendererPin {
       this.#pixiGraphics.drawRect(-2, -2, edgeSize + 4, edgeSize + 4);
     }
     this.#pixiWorld.position = position;
+  }
+
+  destroy() {
+    this.#pixiParentContainer.removeChild(this.#pixiWorld);
   }
 }

@@ -222,6 +222,12 @@ export default class CCComponentEditorRendererNode {
     for (const text of this.#pixiTexts.pinNames) {
       text[1].destroy();
     }
+    for (const pinRenderer of this.#pinRenderers.values()) {
+      pinRenderer.destroy();
+    }
+    for (const inputRenderer of this.#inputRenderers.values()) {
+      inputRenderer.destroy();
+    }
     this.#store.nodes.off("didUpdate", this.render);
     this.#unsubscribeComponentEditorStore();
   }
