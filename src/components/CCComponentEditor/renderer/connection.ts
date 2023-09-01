@@ -82,8 +82,8 @@ export default class CCComponentEditorRendererConnection {
     this.#pixiGraphics.from.destroy();
     this.#pixiGraphics.to.destroy();
     this.#pixiGraphics.middle.destroy();
+    this.#store.nodes.off("didUpdate", this.#render);
     this.#store.connections.unregister(this.#connectionId);
-    // this.#store.nodes.off("didUpdate", this.#render);
   }
 
   #render = () => {

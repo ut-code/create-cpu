@@ -294,6 +294,8 @@ export default class CCComponentEditorRenderer {
               parentComponentId: this.#componentId,
             });
             this.#store.connections.register(newConnection);
+          } else {
+            console.log(beforeConnectionId, anotherBeforeConnectionId);
           }
         } else if (pinType === "output" && anotherPinType === "input") {
           const beforeConnectionId =
@@ -315,6 +317,8 @@ export default class CCComponentEditorRenderer {
               parentComponentId: this.#componentId,
             });
             this.#store.connections.register(newConnection);
+          } else {
+            console.log(beforeConnectionId, anotherBeforeConnectionId);
           }
         }
       }

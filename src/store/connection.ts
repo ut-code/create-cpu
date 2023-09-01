@@ -42,8 +42,6 @@ export class CCConnectionStore extends EventEmitter<CCConnectionStoreEvents> {
   }
 
   register(connection: CCConnection): void {
-    console.log("connection register");
-    console.log(connection.id);
     const fromNode = this.#store.nodes.get(connection.from.nodeId);
     const toNode = this.#store.nodes.get(connection.to.nodeId);
     const fromPin = this.#store.pins.get(connection.from.pinId);
@@ -61,16 +59,14 @@ export class CCConnectionStore extends EventEmitter<CCConnectionStoreEvents> {
   }
 
   unregister(id: CCConnectionId): void {
-    console.log("connection unregister");
-    console.log(id);
     const connection = this.#connections.get(id);
     if (!connection) throw new Error(`Connection ${id} not found`);
     this.#parentComponentIdToConnectionIds.remove(
       connection.parentComponentId,
       connection.id
     );
-    this.#connections.delete(id);
-    this.emit("didUnregister", connection);
+    // this.#connections.delete(id);
+    // this.emit("didUnregister", connection);
   }
 
   get(id: CCConnectionId): CCConnection | undefined {
