@@ -87,7 +87,6 @@ export default class CCComponentEditorRendererConnection {
     // this.#store.connections.unregister(this.#connectionId);
 
     // this.#store.nodes.off("didUpdate", this.#render);
-
   }
 
   #render = () => {
