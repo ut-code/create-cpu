@@ -28,7 +28,7 @@ type DragState = {
         nodeId: CCNodeId;
         initialPosition: PIXI.Point;
       }
-    | { type: "rangeSelect" };
+    | { type: "rangeSelect"; initialPosition: PIXI.Point };
 };
 
 export type CCComponentEditorRendererProps = {
@@ -126,13 +126,15 @@ export default class CCComponentEditorRenderer {
           },
         };
       } else if (e.button === 0) {
+        const position = this.toWorldPosition(e.global.clone());
         this.#componentEditorStore
           .getState()
-          .setRangeSelect({ start: e.global.clone(), end: e.global.clone() });
+          .setRangeSelect({ start: position, end: position });
         this.#dragState = {
           startPosition: e.global.clone(),
           target: {
             type: "rangeSelect",
+            initialPosition: position,
           },
         };
         this.#rangeSelectRenderer.render();
@@ -176,11 +178,26 @@ export default class CCComponentEditorRenderer {
           return;
         }
         case "rangeSelect": {
+          const start = this.#dragState.target.initialPosition;
+          const end = this.#dragState.target.initialPosition.add(dragOffset);
           this.#componentEditorStore.getState().setRangeSelect({
-            start: this.#dragState.startPosition,
-            end: this.#dragState.startPosition.add(dragOffset),
+            start,
+            end,
           });
           this.#rangeSelectRenderer.render();
+          for (const node of this.#store.nodes.getAll()) {
+            const nodePosition = node.position;
+            if (
+              nodePosition.x >= Math.min(start.x, end.x) &&
+              nodePosition.x <= Math.max(start.x, end.x) &&
+              nodePosition.y >= Math.min(start.y, end.y) &&
+              nodePosition.y <= Math.max(start.y, end.y)
+            ) {
+              this.#componentEditorStore
+                .getState()
+                .selectNode([node.id], false);
+            }
+          }
           return;
         }
         default:

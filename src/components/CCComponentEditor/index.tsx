@@ -125,6 +125,17 @@ function CCComponentEditorContent({ componentId }: CCComponentEditorProps) {
             >
               ブロックを配置
             </MenuItem>
+            <MenuItem
+              onClick={() => {
+                store.nodes.unregister([
+                  ...componentEditorState.selectedNodeIds,
+                ]);
+                componentEditorState.selectNode([], true);
+                setContextMenuPosition(null);
+              }}
+            >
+              削除
+            </MenuItem>
           </MenuList>
         </ClickAwayListener>
       )}

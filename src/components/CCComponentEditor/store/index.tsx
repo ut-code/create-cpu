@@ -13,12 +13,12 @@ export type InputValueKey = `${CCNodeId},${CCPinId}`;
 
 type State = {
   editorMode: EditorMode;
-  selectedNodeIds: Set<string>;
+  selectedNodeIds: Set<CCNodeId>;
   rangeSelect: RangeSelect;
   setRangeSelect(rangeSelect: RangeSelect): void;
   inputValues: Map<InputValueKey, boolean>;
   setEditorMode(mode: EditorMode): void;
-  selectNode(ids: string[], exclusive: boolean): void;
+  selectNode(ids: CCNodeId[], exclusive: boolean): void;
 };
 
 const createStore = () =>
@@ -44,7 +44,7 @@ const createStore = () =>
     setEditorMode(mode: EditorMode) {
       set((state) => ({ ...state, editorMode: mode }));
     },
-    selectNode(ids: string[], exclusive: boolean) {
+    selectNode(ids: CCNodeId[], exclusive: boolean) {
       set((state) => ({
         ...state,
         selectedNodeIds: new Set(

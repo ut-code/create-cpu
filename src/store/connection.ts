@@ -39,6 +39,16 @@ export class CCConnectionStore extends EventEmitter<CCConnectionStoreEvents> {
   constructor(store: CCStore) {
     super();
     this.#store = store;
+    this.#store.nodes.on("didUnregister", (node) => {
+      for (const connection of this.#connections.values()) {
+        if (
+          connection.from.nodeId === node.id ||
+          connection.to.nodeId === node.id
+        ) {
+          this.unregister(connection.id);
+        }
+      }
+    });
   }
 
   register(connection: CCConnection): void {
@@ -61,12 +71,14 @@ export class CCConnectionStore extends EventEmitter<CCConnectionStoreEvents> {
   unregister(id: CCConnectionId): void {
     const connection = this.#connections.get(id);
     if (!connection) throw new Error(`Connection ${id} not found`);
+    this.emit("didUnregister", connection);
     this.#parentComponentIdToConnectionIds.remove(
       connection.parentComponentId,
       connection.id
     );
     // this.#connections.delete(id);
     // this.emit("didUnregister", connection);
+    this.#connections.delete(id);
   }
 
   get(id: CCConnectionId): CCConnection | undefined {
