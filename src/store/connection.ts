@@ -76,6 +76,8 @@ export class CCConnectionStore extends EventEmitter<CCConnectionStoreEvents> {
       connection.parentComponentId,
       connection.id
     );
+    // this.#connections.delete(id);
+    // this.emit("didUnregister", connection);
     this.#connections.delete(id);
   }
 

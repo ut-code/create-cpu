@@ -1,5 +1,5 @@
 import * as PIXI from "pixi.js";
-import type { CCConnectionId } from "../../../store/connection";
+import type { CCConnection, CCConnectionId } from "../../../store/connection";
 import type CCStore from "../../../store";
 import type { CCPinId } from "../../../store/pin";
 import type { CCNodeId } from "../../../store/node";
@@ -36,32 +36,57 @@ export default class CCComponentEditorRendererConnection {
   constructor(
     store: CCStore,
     connectionId: CCConnectionId,
-    pixiParentContainer: PIXI.Container
+    pixiParentContainer: PIXI.Container,
+    onConnectionRemoved: (connection: CCConnection) => void
   ) {
     this.#store = store;
     this.#connectionId = connectionId;
     this.#pixiGraphics = {
-      from: new PIXI.Graphics(),
-      middle: new PIXI.Graphics(),
-      to: new PIXI.Graphics(),
+      from: CCComponentEditorRendererConnection.#createGraphics(),
+      middle: CCComponentEditorRendererConnection.#createGraphics(),
+      to: CCComponentEditorRendererConnection.#createGraphics(),
     };
     this.#pixiParentContainer = pixiParentContainer;
     this.#pixiParentContainer.addChild(this.#pixiGraphics.from);
     this.#pixiParentContainer.addChild(this.#pixiGraphics.middle);
     this.#pixiParentContainer.addChild(this.#pixiGraphics.to);
-    this.#pixiGraphics.from.lineStyle(lineWidth, lineColor);
-    this.#pixiGraphics.middle.lineStyle(lineWidth, lineColor);
-    this.#pixiGraphics.to.lineStyle(lineWidth, lineColor);
+    this.#pixiGraphics.from.on("pointerdown", () => {
+      const connection = this.#store.connections.get(this.#connectionId)!;
+      onConnectionRemoved(connection);
+    });
+    this.#pixiGraphics.middle.on("pointerdown", () => {
+      const connection = this.#store.connections.get(this.#connectionId)!;
+      onConnectionRemoved(connection);
+    });
+    this.#pixiGraphics.to.on("pointerdown", () => {
+      const connection = this.#store.connections.get(this.#connectionId)!;
+      onConnectionRemoved(connection);
+    });
     this.#bentPortion = 0.5;
     this.#render();
     this.#store.nodes.on("didUpdate", this.#render);
+  }
+
+  static #createGraphics() {
+    const graphics = new PIXI.Graphics();
+    graphics.interactive = true;
+    graphics.cursor = "pointer";
+    graphics.lineStyle(lineWidth, lineColor);
+    return graphics;
   }
 
   destroy() {
     this.#pixiParentContainer.removeChild(this.#pixiGraphics.from);
     this.#pixiParentContainer.removeChild(this.#pixiGraphics.middle);
     this.#pixiParentContainer.removeChild(this.#pixiGraphics.to);
+
+    this.#pixiGraphics.from.destroy();
+    this.#pixiGraphics.to.destroy();
+    this.#pixiGraphics.middle.destroy();
     this.#store.nodes.off("didUpdate", this.#render);
+    // this.#store.connections.unregister(this.#connectionId);
+
+    // this.#store.nodes.off("didUpdate", this.#render);
   }
 
   #render = () => {
@@ -85,23 +110,61 @@ export default class CCComponentEditorRendererConnection {
     );
     const diffX = toPosition.x - fromPosition.x;
     // const diffY = toPosition.y - fromPosition.y;
-    this.#pixiGraphics.from.moveTo(fromPosition.x, fromPosition.y);
+    this.#pixiGraphics.from.beginFill(lineColor);
+    this.#pixiGraphics.from.moveTo(
+      fromPosition.x + lineWidth / 2,
+      fromPosition.y - lineWidth / 2
+    );
     this.#pixiGraphics.from.lineTo(
       fromPosition.x + this.#bentPortion * diffX,
-      fromPosition.y
+      fromPosition.y - lineWidth / 2
     );
-    this.#pixiGraphics.middle.moveTo(
+    this.#pixiGraphics.from.lineTo(
       fromPosition.x + this.#bentPortion * diffX,
+      fromPosition.y + lineWidth / 2
+    );
+    this.#pixiGraphics.from.lineTo(
+      fromPosition.x + lineWidth / 2,
+      fromPosition.y + lineWidth / 2
+    );
+    this.#pixiGraphics.from.endFill();
+
+    this.#pixiGraphics.middle.beginFill(lineColor);
+    this.#pixiGraphics.middle.moveTo(
+      fromPosition.x + this.#bentPortion * diffX - lineWidth / 2,
       fromPosition.y
     );
     this.#pixiGraphics.middle.lineTo(
-      fromPosition.x + this.#bentPortion * diffX,
+      fromPosition.x + this.#bentPortion * diffX - lineWidth / 2,
       toPosition.y
     );
+    this.#pixiGraphics.middle.lineTo(
+      fromPosition.x + this.#bentPortion * diffX + lineWidth / 2,
+      toPosition.y
+    );
+    this.#pixiGraphics.middle.lineTo(
+      fromPosition.x + this.#bentPortion * diffX + lineWidth / 2,
+      fromPosition.y
+    );
+    this.#pixiGraphics.middle.endFill();
+    this.#pixiGraphics.to.beginFill(lineColor);
     this.#pixiGraphics.to.moveTo(
       fromPosition.x + this.#bentPortion * diffX,
-      toPosition.y
+      toPosition.y - lineWidth / 2
+    );
+    this.#pixiGraphics.to.lineTo(
+      toPosition.x - lineWidth / 2,
+      toPosition.y - lineWidth / 2
+    );
+    this.#pixiGraphics.to.lineTo(
+      toPosition.x - lineWidth / 2,
+      toPosition.y + lineWidth / 2
+    );
+    this.#pixiGraphics.to.lineTo(
+      fromPosition.x + this.#bentPortion * diffX,
+      toPosition.y + lineWidth / 2
     );
     this.#pixiGraphics.to.lineTo(toPosition.x, toPosition.y);
+    this.#pixiGraphics.to.endFill();
   };
 }

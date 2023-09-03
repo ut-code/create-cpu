@@ -76,16 +76,6 @@ export default class CCComponentEditorRendererNode {
         onDragStart: props.onDragStartPin,
         onDragEnd: props.onDragEndPin,
       });
-      // pinRenderer.onPointerDown(() => {
-      //   pinRenderer.isSelected = true;
-      //   for (const [ccPinId, ccPinRenderer] of this.#pinRenderers.entries()) {
-      //     if (ccPinId !== pinId) {
-      //       ccPinRenderer.isSelected = false;
-      //       // pinRenderer.render();
-      //     }
-      //   }
-      //   // e.stopPropagation();
-      // });
       this.#pinRenderers.set(pinId, pinRenderer);
       const inputRenderer = new CCComponentEditorRendererInput({
         store: props.store,
