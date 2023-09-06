@@ -1,7 +1,6 @@
 import type { Opaque } from "type-fest";
 import EventEmitter from "eventemitter3";
 import invariant from "tiny-invariant";
-import { MultiMap } from "mnemonist";
 import type CCStore from ".";
 import { type CCComponentId } from "./component";
 
@@ -26,8 +25,6 @@ export class CCPinStore extends EventEmitter<CCPinStoreEvents> {
 
   #pins: Map<CCPinId, CCPin> = new Map();
 
-  #componentIdToPinIds = new MultiMap<CCComponentId, CCPinId>(Set);
-
   constructor(store: CCStore) {
     super();
     this.#store = store;
@@ -36,14 +33,12 @@ export class CCPinStore extends EventEmitter<CCPinStoreEvents> {
   register(pin: CCPin): void {
     invariant(this.#store.components.get(pin.componentId));
     this.#pins.set(pin.id, pin);
-    this.#componentIdToPinIds.set(pin.componentId, pin.id);
     this.emit("didRegister", pin);
   }
 
   unregister(id: CCPinId): void {
     const pin = this.#pins.get(id);
     if (!pin) throw new Error(`Pin ${id} not found`);
-    this.#componentIdToPinIds.remove(pin.componentId, pin.id);
     this.#pins.delete(id);
     this.emit("didUnregister", pin);
   }
@@ -53,7 +48,9 @@ export class CCPinStore extends EventEmitter<CCPinStoreEvents> {
   }
 
   getPinIdsByComponentId(componentId: CCComponentId): CCPinId[] {
-    return [...(this.#componentIdToPinIds.get(componentId) ?? [])];
+    return [...this.#pins.values()]
+      .filter((pin) => pin.componentId === componentId)
+      .map((pin) => pin.id);
   }
 
   static create(partialPin: Omit<CCPin, "id">): CCPin {

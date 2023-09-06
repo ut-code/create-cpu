@@ -1,7 +1,9 @@
-import { Box } from "@mui/material";
+import { Box, InputAdornment, TextField } from "@mui/material";
 import invariant from "tiny-invariant";
 import nullthrows from "nullthrows";
 import { Color } from "pixi.js";
+import { useState } from "react";
+import { Search } from "@mui/icons-material";
 import useAllComponents from "../store/react/selectors";
 import { useStore } from "../store/react";
 import type { CCComponentId } from "../store/component";
@@ -88,23 +90,41 @@ export default function SidePanel() {
   const components = useAllComponents().filter(
     (component) => component.id !== store.components.rootComponentId
   );
+  const [searchText, setSearchText] = useState("");
 
   return (
     <Box sx={{ background: "paper" }}>
+      <TextField
+        size="small"
+        sx={{ m: 1 }}
+        InputProps={{
+          startAdornment: (
+            <InputAdornment position="start">
+              <Search />
+            </InputAdornment>
+          ),
+        }}
+        value={searchText}
+        onChange={(e) => {
+          setSearchText(e.target.value);
+        }}
+      />
       <Box component="ul" sx={{ m: 0, p: 0, listStyleType: "none" }}>
-        {components.map((component) => (
-          <Box
-            key={component.id}
-            component="li"
-            draggable
-            sx={{ cursor: "grab", p: 2 }}
-            onDragStart={(e) => {
-              setDataTransferAsComponent(e.dataTransfer, component.id);
-            }}
-          >
-            <ComponentRenderer componentId={component.id} />
-          </Box>
-        ))}
+        {components
+          .filter((component) => component.name.includes(searchText))
+          .map((component) => (
+            <Box
+              key={component.id}
+              component="li"
+              draggable
+              sx={{ cursor: "grab", p: 2 }}
+              onDragStart={(e) => {
+                setDataTransferAsComponent(e.dataTransfer, component.id);
+              }}
+            >
+              <ComponentRenderer componentId={component.id} />
+            </Box>
+          ))}
       </Box>
     </Box>
   );

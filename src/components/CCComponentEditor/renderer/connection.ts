@@ -1,9 +1,10 @@
 import * as PIXI from "pixi.js";
-import type { CCConnection, CCConnectionId } from "../../../store/connection";
+import type { CCConnectionId } from "../../../store/connection";
 import type CCStore from "../../../store";
 import type { CCPinId } from "../../../store/pin";
 import type { CCNodeId } from "../../../store/node";
 import CCComponentEditorRendererNode from "./node";
+import type { ComponentEditorStore } from "../store";
 
 export type CCConnectionEndpoint = {
   nodeId: string;
@@ -33,11 +34,13 @@ export default class CCComponentEditorRendererConnection {
 
   #bentPortion: number;
 
+  #componentEditorStore: ComponentEditorStore;
+
   constructor(
     store: CCStore,
     connectionId: CCConnectionId,
     pixiParentContainer: PIXI.Container,
-    onConnectionRemoved: (connection: CCConnection) => void
+    componentEditorStore: ComponentEditorStore
   ) {
     this.#store = store;
     this.#connectionId = connectionId;
@@ -50,21 +53,32 @@ export default class CCComponentEditorRendererConnection {
     this.#pixiParentContainer.addChild(this.#pixiGraphics.from);
     this.#pixiParentContainer.addChild(this.#pixiGraphics.middle);
     this.#pixiParentContainer.addChild(this.#pixiGraphics.to);
-    this.#pixiGraphics.from.on("pointerdown", () => {
-      const connection = this.#store.connections.get(this.#connectionId)!;
-      onConnectionRemoved(connection);
+    this.#pixiGraphics.from.on("pointerdown", (e) => {
+      this.onPointerDown(e);
     });
-    this.#pixiGraphics.middle.on("pointerdown", () => {
-      const connection = this.#store.connections.get(this.#connectionId)!;
-      onConnectionRemoved(connection);
+    this.#pixiGraphics.middle.on("pointerdown", (e) => {
+      this.onPointerDown(e);
     });
-    this.#pixiGraphics.to.on("pointerdown", () => {
-      const connection = this.#store.connections.get(this.#connectionId)!;
-      onConnectionRemoved(connection);
+    this.#pixiGraphics.to.on("pointerdown", (e) => {
+      this.onPointerDown(e);
     });
     this.#bentPortion = 0.5;
+    this.#componentEditorStore = componentEditorStore;
     this.#render();
     this.#store.nodes.on("didUpdate", this.#render);
+  }
+
+  onPointerDown(e: PIXI.FederatedEvent) {
+    if (
+      !this.#componentEditorStore
+        .getState()
+        .selectedConnectionIds.has(this.#connectionId)
+    ) {
+      this.#componentEditorStore
+        .getState()
+        .selectConnection([this.#connectionId], false);
+    }
+    e.stopPropagation();
   }
 
   static #createGraphics() {
@@ -84,9 +98,6 @@ export default class CCComponentEditorRendererConnection {
     this.#pixiGraphics.to.destroy();
     this.#pixiGraphics.middle.destroy();
     this.#store.nodes.off("didUpdate", this.#render);
-    // this.#store.connections.unregister(this.#connectionId);
-
-    // this.#store.nodes.off("didUpdate", this.#render);
   }
 
   #render = () => {
@@ -129,24 +140,59 @@ export default class CCComponentEditorRendererConnection {
     );
     this.#pixiGraphics.from.endFill();
 
+    const fromHitArea = new PIXI.Polygon(
+      new PIXI.Point(fromPosition.x, fromPosition.y - 2 * lineWidth),
+      new PIXI.Point(
+        fromPosition.x + this.#bentPortion * diffX,
+        fromPosition.y - 2 * lineWidth
+      ),
+      new PIXI.Point(
+        fromPosition.x + this.#bentPortion * diffX,
+        fromPosition.y + 2 * lineWidth
+      ),
+      new PIXI.Point(fromPosition.x, fromPosition.y + 2 * lineWidth)
+    );
+
+    this.#pixiGraphics.from.hitArea = fromHitArea;
+
     this.#pixiGraphics.middle.beginFill(lineColor);
     this.#pixiGraphics.middle.moveTo(
       fromPosition.x + this.#bentPortion * diffX - lineWidth / 2,
-      fromPosition.y
+      fromPosition.y +
+        (fromPosition.y < toPosition.y ? -lineWidth / 2 : lineWidth / 2)
     );
     this.#pixiGraphics.middle.lineTo(
       fromPosition.x + this.#bentPortion * diffX - lineWidth / 2,
-      toPosition.y
+      toPosition.y +
+        (fromPosition.y < toPosition.y ? lineWidth / 2 : -lineWidth / 2)
     );
     this.#pixiGraphics.middle.lineTo(
       fromPosition.x + this.#bentPortion * diffX + lineWidth / 2,
-      toPosition.y
+      toPosition.y +
+        (fromPosition.y < toPosition.y ? lineWidth / 2 : -lineWidth / 2)
     );
     this.#pixiGraphics.middle.lineTo(
       fromPosition.x + this.#bentPortion * diffX + lineWidth / 2,
-      fromPosition.y
+      fromPosition.y +
+        (fromPosition.y < toPosition.y ? -lineWidth / 2 : lineWidth / 2)
     );
     this.#pixiGraphics.middle.endFill();
+
+    const middleHitArea = new PIXI.Polygon(
+      new PIXI.Point(fromPosition.x, fromPosition.y - 2 * lineWidth),
+      new PIXI.Point(
+        fromPosition.x + this.#bentPortion * diffX,
+        fromPosition.y - 2 * lineWidth
+      ),
+      new PIXI.Point(
+        fromPosition.x + this.#bentPortion * diffX,
+        fromPosition.y + 2 * lineWidth
+      ),
+      new PIXI.Point(fromPosition.x, fromPosition.y + 2 * lineWidth)
+    );
+
+    this.#pixiGraphics.middle.hitArea = middleHitArea;
+
     this.#pixiGraphics.to.beginFill(lineColor);
     this.#pixiGraphics.to.moveTo(
       fromPosition.x + this.#bentPortion * diffX,

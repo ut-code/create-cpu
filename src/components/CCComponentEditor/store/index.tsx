@@ -4,6 +4,7 @@ import { create } from "zustand";
 import PIXI from "pixi.js";
 import type { CCPinId } from "../../../store/pin";
 import type { CCNodeId } from "../../../store/node";
+import type { CCConnectionId } from "../../../store/connection";
 
 type EditorMode = "edit" | "play";
 
@@ -16,9 +17,11 @@ type State = {
   selectedNodeIds: Set<CCNodeId>;
   rangeSelect: RangeSelect;
   setRangeSelect(rangeSelect: RangeSelect): void;
+  selectedConnectionIds: Set<CCConnectionId>;
   inputValues: Map<InputValueKey, boolean>;
   setEditorMode(mode: EditorMode): void;
   selectNode(ids: CCNodeId[], exclusive: boolean): void;
+  selectConnection(ids: CCConnectionId[], exclusive: boolean): void;
 };
 
 const createStore = () =>
@@ -26,6 +29,7 @@ const createStore = () =>
     editorMode: "edit",
     selectedNodeIds: new Set(),
     rangeSelect: null,
+    selectedConnectionIds: new Set(),
     inputValues: new Map(),
     getInputValue(nodeId: CCNodeId, pinId: CCPinId) {
       return this.inputValues.get(`${nodeId},${pinId}`) ?? false;
@@ -50,6 +54,16 @@ const createStore = () =>
         selectedNodeIds: new Set(
           exclusive ? ids : [...state.selectedNodeIds, ...ids]
         ),
+        selectedConnectionIds: new Set(),
+      }));
+    },
+    selectConnection(ids: CCConnectionId[], exclusive: boolean) {
+      set((state) => ({
+        ...state,
+        selectedConnectionIds: new Set(
+          exclusive ? ids : [...state.selectedConnectionIds, ...ids]
+        ),
+        selectedNodeIds: new Set(),
       }));
     },
   }));

@@ -21,14 +21,19 @@ type DragState = {
   startPosition: PIXI.Point;
   target:
     | { type: "world"; initialCenter: PIXI.Point }
-    | { type: "node"; nodeId: CCNodeId; initialPosition: PIXI.Point }
+    | {
+        type: "node";
+        nodeId: CCNodeId;
+        initialPosition: Map<CCNodeId, PIXI.Point>;
+      }
     | {
         type: "pin";
         pinId: CCPinId;
         nodeId: CCNodeId;
         initialPosition: PIXI.Point;
       }
-    | { type: "rangeSelect"; initialPosition: PIXI.Point };
+    | { type: "rangeSelect"; initialPosition: PIXI.Point }
+    | { type: "connection"; connectionId: CCConnectionId };
 };
 
 export type CCComponentEditorRendererProps = {
@@ -156,8 +161,11 @@ export default class CCComponentEditorRenderer {
         case "node": {
           for (const nodeId of this.#componentEditorStore.getState()
             .selectedNodeIds) {
+            const initialPosition = this.#dragState.target.initialPosition.get(
+              nodeId as CCNodeId
+            )!;
             this.#store.nodes.update(nodeId as CCNodeId, {
-              position: this.#dragState.target.initialPosition.add(dragOffset),
+              position: initialPosition.add(dragOffset),
             });
           }
           return;
@@ -198,6 +206,10 @@ export default class CCComponentEditorRenderer {
                 .selectNode([node.id], false);
             }
           }
+          return;
+        }
+        case "connection": {
+          // Do nothing
           return;
         }
         default:
@@ -251,13 +263,18 @@ export default class CCComponentEditorRenderer {
   #addNodeRenderer(nodeId: CCNodeId) {
     if (this.#nodeRenderers.has(nodeId)) return;
     const onDragStart = (e: PIXI.FederatedMouseEvent) => {
-      const node = this.#store.nodes.get(nodeId)!;
+      const { selectedNodeIds } = this.#componentEditorStore.getState();
+      const initialPosition = new Map<CCNodeId, PIXI.Point>();
+      for (const selectedNodeId of selectedNodeIds) {
+        const selectedNode = this.#store.nodes.get(selectedNodeId)!;
+        initialPosition.set(selectedNodeId, selectedNode.position.clone());
+      }
       this.#dragState = {
         startPosition: e.global.clone(),
         target: {
           type: "node",
           nodeId,
-          initialPosition: node.position.clone(),
+          initialPosition,
         },
       };
     };
@@ -293,14 +310,9 @@ export default class CCComponentEditorRenderer {
         const anotherNodeId = this.#dragState.target.nodeId;
         if (pinType === "input" && anotherPinType === "output") {
           const beforeConnectionId =
-            this.#store.connections.getConnectionIdByPinId(
-              this.#componentId,
-              nodeId,
-              pinId
-            );
+            this.#store.connections.getConnectionIdByPinId(nodeId, pinId);
           const anotherBeforeConnectionId =
             this.#store.connections.getConnectionIdByPinId(
-              this.#componentId,
               anotherNodeId,
               anotherPinId
             );
@@ -311,19 +323,12 @@ export default class CCComponentEditorRenderer {
               parentComponentId: this.#componentId,
             });
             this.#store.connections.register(newConnection);
-          } else {
-            console.log(beforeConnectionId, anotherBeforeConnectionId);
           }
         } else if (pinType === "output" && anotherPinType === "input") {
           const beforeConnectionId =
-            this.#store.connections.getConnectionIdByPinId(
-              this.#componentId,
-              nodeId,
-              pinId
-            );
+            this.#store.connections.getConnectionIdByPinId(nodeId, pinId);
           const anotherBeforeConnectionId =
             this.#store.connections.getConnectionIdByPinId(
-              this.#componentId,
               anotherNodeId,
               anotherPinId
             );
@@ -334,8 +339,6 @@ export default class CCComponentEditorRenderer {
               parentComponentId: this.#componentId,
             });
             this.#store.connections.register(newConnection);
-          } else {
-            console.log(beforeConnectionId, anotherBeforeConnectionId);
           }
         }
       }
@@ -358,7 +361,7 @@ export default class CCComponentEditorRenderer {
       this.#store,
       connectionId,
       this.#pixiWorld,
-      this.#onConnectionRemoved
+      this.#componentEditorStore
     );
     this.#connectionRenderers.set(connectionId, newConnectionRenderer);
   }

@@ -125,17 +125,24 @@ function CCComponentEditorContent({ componentId }: CCComponentEditorProps) {
             >
               ブロックを配置
             </MenuItem>
-            <MenuItem
-              onClick={() => {
-                store.nodes.unregister([
-                  ...componentEditorState.selectedNodeIds,
-                ]);
-                componentEditorState.selectNode([], true);
-                setContextMenuPosition(null);
-              }}
-            >
-              削除
-            </MenuItem>
+            {(componentEditorState.selectedNodeIds.size !== 0 ||
+              componentEditorState.selectedConnectionIds.size !== 0) && (
+              <MenuItem
+                onClick={() => {
+                  store.nodes.unregister([
+                    ...componentEditorState.selectedNodeIds,
+                  ]);
+                  store.connections.unregister([
+                    ...componentEditorState.selectedConnectionIds,
+                  ]);
+                  componentEditorState.selectNode([], true);
+                  componentEditorState.selectConnection([], false);
+                  setContextMenuPosition(null);
+                }}
+              >
+                削除
+              </MenuItem>
+            )}
           </MenuList>
         </ClickAwayListener>
       )}

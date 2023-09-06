@@ -45,7 +45,7 @@ export class CCConnectionStore extends EventEmitter<CCConnectionStoreEvents> {
           connection.from.nodeId === node.id ||
           connection.to.nodeId === node.id
         ) {
-          this.unregister(connection.id);
+          this.unregister([connection.id]);
         }
       }
     });
@@ -68,17 +68,17 @@ export class CCConnectionStore extends EventEmitter<CCConnectionStoreEvents> {
     this.emit("didRegister", connection);
   }
 
-  unregister(id: CCConnectionId): void {
-    const connection = this.#connections.get(id);
-    if (!connection) throw new Error(`Connection ${id} not found`);
-    this.emit("didUnregister", connection);
-    this.#parentComponentIdToConnectionIds.remove(
-      connection.parentComponentId,
-      connection.id
-    );
-    // this.#connections.delete(id);
-    // this.emit("didUnregister", connection);
-    this.#connections.delete(id);
+  unregister(ids: CCConnectionId[]): void {
+    for (const id of ids) {
+      const connection = this.#connections.get(id);
+      if (!connection) throw new Error(`Connection ${id} not found`);
+      this.emit("didUnregister", connection);
+      this.#parentComponentIdToConnectionIds.remove(
+        connection.parentComponentId,
+        connection.id
+      );
+      this.#connections.delete(id);
+    }
   }
 
   get(id: CCConnectionId): CCConnection | undefined {
@@ -94,21 +94,15 @@ export class CCConnectionStore extends EventEmitter<CCConnectionStoreEvents> {
   }
 
   getConnectionIdByPinId(
-    parentComponentId: CCComponentId,
     nodeId: CCNodeId,
     pinId: CCPinId
   ): CCConnectionId | undefined {
-    const candidates =
-      this.getConnectionIdsByParentComponentId(parentComponentId);
-    const connectionId = candidates.find((id) => {
-      const connection = this.#store.connections.get(id);
-      return (
-        (connection?.from.nodeId === nodeId &&
-          connection?.from.pinId === pinId) ||
-        (connection?.to.nodeId === nodeId && connection?.to.pinId === pinId)
-      );
-    });
-    return connectionId;
+    return [...this.#connections.values()].find(
+      (connection) =>
+        (connection.from.nodeId === nodeId &&
+          connection.from.pinId === pinId) ||
+        (connection.to.nodeId === nodeId && connection.to.pinId === pinId)
+    )?.id;
   }
 
   static create(partialConnection: Omit<CCConnection, "id">): CCConnection {
