@@ -44,6 +44,7 @@ export default class CCComponentEditorRendererPin {
     this.#pixiParentContainer.addChild(this.#pixiWorld);
     this.#pixiGraphics = new PIXI.Graphics();
     this.#pixiGraphics.interactive = true;
+    this.#pixiGraphics.cursor = "pointer";
     this.#pixiWorld.addChild(this.#pixiGraphics);
     this.#pixiText = pixiText;
     this.#pixiWorld.addChild(this.#pixiText);
@@ -102,6 +103,15 @@ export default class CCComponentEditorRendererPin {
       this.#pixiGraphics.drawRect(-2, -2, edgeSize + 4, edgeSize + 4);
     }
     this.#pixiWorld.position = position;
+
+    const hitAreaGap = 4;
+    const hitArea = new PIXI.Polygon(
+      new PIXI.Point(-hitAreaGap, -hitAreaGap),
+      new PIXI.Point(-hitAreaGap, edgeSize + hitAreaGap),
+      new PIXI.Point(edgeSize + hitAreaGap, edgeSize + hitAreaGap),
+      new PIXI.Point(edgeSize + hitAreaGap, -hitAreaGap)
+    );
+    this.#pixiGraphics.hitArea = hitArea;
   }
 
   destroy() {
