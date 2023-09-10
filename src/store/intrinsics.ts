@@ -14,6 +14,7 @@ export const andIntrinsicComponentInputPinA: CCPin = {
   componentId: andIntrinsicComponent.id,
   type: "input",
   name: "A",
+  implementation: { type: "intrinsic" },
 };
 
 export const andIntrinsicComponentInputPinB: CCPin = {
@@ -21,6 +22,7 @@ export const andIntrinsicComponentInputPinB: CCPin = {
   componentId: andIntrinsicComponent.id,
   type: "input",
   name: "B",
+  implementation: { type: "intrinsic" },
 };
 
 export const andIntrinsicComponentOutputPin: CCPin = {
@@ -28,6 +30,7 @@ export const andIntrinsicComponentOutputPin: CCPin = {
   componentId: andIntrinsicComponent.id,
   type: "output",
   name: "Out",
+  implementation: { type: "intrinsic" },
 };
 
 export const orIntrinsicComponent: CCComponent = {
@@ -41,6 +44,7 @@ export const orIntrinsicComponentInputPinA: CCPin = {
   componentId: orIntrinsicComponent.id,
   type: "input",
   name: "A",
+  implementation: { type: "intrinsic" },
 };
 
 export const orIntrinsicComponentInputPinB: CCPin = {
@@ -48,6 +52,7 @@ export const orIntrinsicComponentInputPinB: CCPin = {
   componentId: orIntrinsicComponent.id,
   type: "input",
   name: "B",
+  implementation: { type: "intrinsic" },
 };
 
 export const orIntrinsicComponentOutputPin: CCPin = {
@@ -55,6 +60,7 @@ export const orIntrinsicComponentOutputPin: CCPin = {
   componentId: orIntrinsicComponent.id,
   type: "output",
   name: "Out",
+  implementation: { type: "intrinsic" },
 };
 
 export const notIntrinsicComponent: CCComponent = {
@@ -68,6 +74,7 @@ export const notIntrinsicComponentInputPin: CCPin = {
   componentId: notIntrinsicComponent.id,
   type: "input",
   name: "In",
+  implementation: { type: "intrinsic" },
 };
 
 export const notIntrinsicComponentOutputPin: CCPin = {
@@ -75,6 +82,7 @@ export const notIntrinsicComponentOutputPin: CCPin = {
   componentId: notIntrinsicComponent.id,
   type: "output",
   name: "Out",
+  implementation: { type: "intrinsic" },
 };
 
 export function registerIntrinsics(store: CCStore) {

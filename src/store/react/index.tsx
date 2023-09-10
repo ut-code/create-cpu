@@ -15,6 +15,27 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       name: "Root",
     });
     const tempStore = new CCStore(rootComponent);
+    const rootComponentInputPin1 = CCPinStore.create({
+      type: "input",
+      componentId: rootComponent.id,
+      name: "FooInputEdge",
+      implementation: { type: "intrinsic" },
+    });
+    tempStore.pins.register(rootComponentInputPin1);
+    const rootComponentInputPin2 = CCPinStore.create({
+      type: "input",
+      componentId: rootComponent.id,
+      name: "BarInputEdge",
+      implementation: { type: "intrinsic" },
+    });
+    tempStore.pins.register(rootComponentInputPin2);
+    const rootComponentOutputPin1 = CCPinStore.create({
+      type: "output",
+      componentId: rootComponent.id,
+      name: "FooOutputEdge",
+      implementation: { type: "intrinsic" },
+    });
+    tempStore.pins.register(rootComponentOutputPin1);
     const sampleComponent = CCComponentStore.create({
       name: "Sample",
     });
@@ -23,16 +44,19 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       type: "input",
       componentId: sampleComponent.id,
       name: "A",
+      implementation: { type: "intrinsic" },
     });
     const sampleComponentInputPin2 = CCPinStore.create({
       type: "input",
       componentId: sampleComponent.id,
       name: "B",
+      implementation: { type: "intrinsic" },
     });
     const sampleComponentOutputPin1 = CCPinStore.create({
       type: "output",
       componentId: sampleComponent.id,
       name: "X",
+      implementation: { type: "intrinsic" },
     });
     tempStore.pins.register(sampleComponentInputPin1);
     tempStore.pins.register(sampleComponentInputPin2);

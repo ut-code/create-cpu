@@ -19,8 +19,11 @@ type State = {
   setRangeSelect(rangeSelect: RangeSelect): void;
   selectedConnectionIds: Set<CCConnectionId>;
   inputValues: Map<InputValueKey, boolean>;
+  getInputValue(nodeId: CCNodeId, pinId: CCPinId): boolean;
+  setInputValue(nodeId: CCNodeId, pinId: CCPinId, value: boolean): void;
   setEditorMode(mode: EditorMode): void;
   selectNode(ids: CCNodeId[], exclusive: boolean): void;
+  unselectNode(ids: CCNodeId[]): void;
   selectConnection(ids: CCConnectionId[], exclusive: boolean): void;
 };
 
@@ -38,7 +41,10 @@ const createStore = () =>
       set((state) => {
         return {
           ...state,
-          inputValues: state.inputValues.set(`${nodeId},${pinId}`, value),
+          inputValues: new Map(state.inputValues).set(
+            `${nodeId},${pinId}`,
+            value
+          ),
         };
       });
     },
@@ -53,6 +59,15 @@ const createStore = () =>
         ...state,
         selectedNodeIds: new Set(
           exclusive ? ids : [...state.selectedNodeIds, ...ids]
+        ),
+        selectedConnectionIds: new Set(),
+      }));
+    },
+    unselectNode(ids: CCNodeId[]) {
+      set((state) => ({
+        ...state,
+        selectedNodeIds: new Set(
+          [...state.selectedNodeIds].filter((nodeId) => !ids.includes(nodeId))
         ),
         selectedConnectionIds: new Set(),
       }));

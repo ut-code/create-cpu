@@ -34,16 +34,24 @@ export default class CCComponentEditorRendererConnection {
 
   #bentPortion: number;
 
+  #temporaryBentPortion: number;
+
+  #offset: number;
+
   #componentEditorStore: ComponentEditorStore;
+
+  #onDragStart: (e: PIXI.FederatedMouseEvent) => void;
 
   constructor(
     store: CCStore,
     connectionId: CCConnectionId,
     pixiParentContainer: PIXI.Container,
-    componentEditorStore: ComponentEditorStore
+    componentEditorStore: ComponentEditorStore,
+    onDragStart: (e: PIXI.FederatedMouseEvent) => void
   ) {
     this.#store = store;
     this.#connectionId = connectionId;
+    this.#onDragStart = onDragStart;
     this.#pixiGraphics = {
       from: CCComponentEditorRendererConnection.#createGraphics(),
       middle: CCComponentEditorRendererConnection.#createGraphics(),
@@ -54,15 +62,26 @@ export default class CCComponentEditorRendererConnection {
     this.#pixiParentContainer.addChild(this.#pixiGraphics.middle);
     this.#pixiParentContainer.addChild(this.#pixiGraphics.to);
     this.#pixiGraphics.from.on("pointerdown", (e) => {
-      this.onPointerDown(e);
+      if (e.button === 2) {
+        this.onPointerDown(e);
+      }
     });
     this.#pixiGraphics.middle.on("pointerdown", (e) => {
-      this.onPointerDown(e);
+      if (e.button === 2) {
+        this.onPointerDown(e);
+      } else if (e.button === 0) {
+        this.#onDragStart(e);
+        e.stopPropagation();
+      }
     });
     this.#pixiGraphics.to.on("pointerdown", (e) => {
-      this.onPointerDown(e);
+      if (e.button === 2) {
+        this.onPointerDown(e);
+      }
     });
     this.#bentPortion = 0.5;
+    this.#temporaryBentPortion = this.#bentPortion;
+    this.#offset = 0;
     this.#componentEditorStore = componentEditorStore;
     this.#render();
     this.#store.nodes.on("didUpdate", this.#render);
@@ -79,6 +98,30 @@ export default class CCComponentEditorRendererConnection {
         .selectConnection([this.#connectionId], false);
     }
     e.stopPropagation();
+  }
+
+  onDragEnd() {
+    const fromEndPoint = this.#store.connections.get(this.#connectionId)?.from;
+    const toEndPoint = this.#store.connections.get(this.#connectionId)?.to;
+    const fromPosition = CCComponentEditorRendererNode.getPinAbsolute(
+      this.#store,
+      fromEndPoint?.nodeId as CCNodeId,
+      fromEndPoint?.pinId as CCPinId
+    );
+    const toPosition = CCComponentEditorRendererNode.getPinAbsolute(
+      this.#store,
+      toEndPoint?.nodeId as CCNodeId,
+      toEndPoint?.pinId as CCPinId
+    );
+    const diffX = toPosition.x - fromPosition.x;
+    this.#bentPortion = this.#temporaryBentPortion + this.#offset / diffX;
+    if (this.#bentPortion > 1) {
+      this.#bentPortion = 1;
+    } else if (this.#bentPortion < 0) {
+      this.#bentPortion = 0;
+    }
+    this.#temporaryBentPortion = this.#bentPortion;
+    // e.stopPropagation();
   }
 
   static #createGraphics() {
@@ -98,6 +141,30 @@ export default class CCComponentEditorRendererConnection {
     this.#pixiGraphics.to.destroy();
     this.#pixiGraphics.middle.destroy();
     this.#store.nodes.off("didUpdate", this.#render);
+  }
+
+  updateBentPortion(offset: number) {
+    this.#offset = offset;
+    const fromEndPoint = this.#store.connections.get(this.#connectionId)?.from;
+    const toEndPoint = this.#store.connections.get(this.#connectionId)?.to;
+    const fromPosition = CCComponentEditorRendererNode.getPinAbsolute(
+      this.#store,
+      fromEndPoint?.nodeId as CCNodeId,
+      fromEndPoint?.pinId as CCPinId
+    );
+    const toPosition = CCComponentEditorRendererNode.getPinAbsolute(
+      this.#store,
+      toEndPoint?.nodeId as CCNodeId,
+      toEndPoint?.pinId as CCPinId
+    );
+    const diffX = toPosition.x - fromPosition.x;
+    this.#bentPortion = this.#temporaryBentPortion + offset / diffX;
+    if (this.#bentPortion > 1) {
+      this.#bentPortion = 1;
+    } else if (this.#bentPortion < 0) {
+      this.#bentPortion = 0;
+    }
+    this.#render();
   }
 
   #render = () => {
@@ -152,7 +219,6 @@ export default class CCComponentEditorRendererConnection {
       ),
       new PIXI.Point(fromPosition.x, fromPosition.y + 2 * lineWidth)
     );
-
     this.#pixiGraphics.from.hitArea = fromHitArea;
 
     this.#pixiGraphics.middle.beginFill(lineColor);
@@ -179,18 +245,20 @@ export default class CCComponentEditorRendererConnection {
     this.#pixiGraphics.middle.endFill();
 
     const middleHitArea = new PIXI.Polygon(
-      new PIXI.Point(fromPosition.x, fromPosition.y - 2 * lineWidth),
       new PIXI.Point(
-        fromPosition.x + this.#bentPortion * diffX,
-        fromPosition.y - 2 * lineWidth
+        fromPosition.x + this.#bentPortion * diffX - 2 * lineWidth,
+        fromPosition.y
       ),
       new PIXI.Point(
-        fromPosition.x + this.#bentPortion * diffX,
-        fromPosition.y + 2 * lineWidth
+        fromPosition.x + this.#bentPortion * diffX + 2 * lineWidth,
+        fromPosition.y
       ),
-      new PIXI.Point(fromPosition.x, fromPosition.y + 2 * lineWidth)
+      new PIXI.Point(fromPosition.x + this.#bentPortion * diffX, toPosition.y),
+      new PIXI.Point(
+        fromPosition.x + this.#bentPortion * diffX - 2 * lineWidth,
+        toPosition.y
+      )
     );
-
     this.#pixiGraphics.middle.hitArea = middleHitArea;
 
     this.#pixiGraphics.to.beginFill(lineColor);
@@ -212,5 +280,19 @@ export default class CCComponentEditorRendererConnection {
     );
     this.#pixiGraphics.to.lineTo(toPosition.x, toPosition.y);
     this.#pixiGraphics.to.endFill();
+
+    const toHitArea = new PIXI.Polygon(
+      new PIXI.Point(toPosition.x, toPosition.y - 2 * lineWidth),
+      new PIXI.Point(
+        fromPosition.x + this.#bentPortion * diffX,
+        toPosition.y - 2 * lineWidth
+      ),
+      new PIXI.Point(
+        fromPosition.x + this.#bentPortion * diffX,
+        toPosition.y + 2 * lineWidth
+      ),
+      new PIXI.Point(toPosition.x, toPosition.y + 2 * lineWidth)
+    );
+    this.#pixiGraphics.to.hitArea = toHitArea;
   };
 }

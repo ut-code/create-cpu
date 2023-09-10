@@ -13,6 +13,7 @@ export type CCComponent = {
 
 export type CCComponentStoreEvents = {
   didRegister(component: CCComponent): void;
+  willUnregister(component: CCComponent): void;
   didUnregister(component: CCComponent): void;
   didUpdate(component: CCComponent): void;
 };
@@ -38,6 +39,7 @@ export class CCComponentStore extends EventEmitter<CCComponentStoreEvents> {
     invariant(id !== this.rootComponentId);
     const component = this.#components.get(id);
     if (!component) throw new Error(`Component ${id} not found`);
+    this.emit("willUnregister", component);
     this.#components.delete(id);
     this.emit("didUnregister", component);
   }
