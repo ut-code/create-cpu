@@ -99,7 +99,7 @@ function CCComponentEditorContent({ componentId }: CCComponentEditorProps) {
           )
         }
       >
-        {componentEditorState.editorMode === "edit" ? <Edit /> : <PlayArrow />}
+        {componentEditorState.editorMode === "edit" ? <PlayArrow /> : <Edit />}
       </Fab>
       {contextMenuPosition && (
         <ClickAwayListener

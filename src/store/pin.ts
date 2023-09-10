@@ -3,20 +3,37 @@ import EventEmitter from "eventemitter3";
 import invariant from "tiny-invariant";
 import type CCStore from ".";
 import { type CCComponentId } from "./component";
+import type { CCNodeId } from "./node";
 
 export type CCPinId = Opaque<string, "CCPinId">;
 export type CCPinType = "input" | "output";
 export const ccPinTypes: CCPinType[] = ["input", "output"];
 
+export type CCPinUserImplementation = {
+  readonly type: "user";
+  readonly nodeId: CCNodeId;
+  readonly pinId: CCPinId;
+};
+
+export type CCPinIntrinsicImplementation = {
+  readonly type: "intrinsic";
+};
+
+export type CCPinImplementation =
+  | CCPinUserImplementation
+  | CCPinIntrinsicImplementation;
+
 export type CCPin = {
   readonly id: CCPinId;
   readonly componentId: CCComponentId;
   readonly type: CCPinType;
+  readonly implementation: CCPinImplementation;
   name: string;
 };
 
 export type CCPinStoreEvents = {
   didRegister(Pin: CCPin): void;
+  willUnregister(Pin: CCPin): void;
   didUnregister(Pin: CCPin): void;
 };
 
@@ -28,6 +45,43 @@ export class CCPinStore extends EventEmitter<CCPinStoreEvents> {
   constructor(store: CCStore) {
     super();
     this.#store = store;
+    this.#store.components.on("willUnregister", (component) => {
+      for (const pin of this.#pins.values()) {
+        if (pin.componentId === component.id) {
+          this.unregister(pin.id);
+        }
+      }
+    });
+    this.#store.nodes.on("didRegister", (node) => {
+      const component = this.#store.components.get(node.componentId)!;
+      for (const implementationPinId of this.getPinIdsByComponentId(
+        node.componentId
+      )) {
+        const implementationPin = this.get(implementationPinId)!;
+        this.register(
+          CCPinStore.create({
+            name: `${component.name} ${implementationPin.name}`,
+            componentId: node.parentComponentId,
+            type: implementationPin.type,
+            implementation: {
+              type: "user",
+              nodeId: node.id,
+              pinId: implementationPin.id,
+            },
+          })
+        );
+      }
+    });
+    this.#store.nodes.on("willUnregister", (node) => {
+      for (const pin of this.#pins.values()) {
+        if (
+          pin.implementation.type === "user" &&
+          pin.implementation.nodeId === node.id
+        ) {
+          this.unregister(pin.id);
+        }
+      }
+    });
   }
 
   register(pin: CCPin): void {
@@ -39,6 +93,7 @@ export class CCPinStore extends EventEmitter<CCPinStoreEvents> {
   unregister(id: CCPinId): void {
     const pin = this.#pins.get(id);
     if (!pin) throw new Error(`Pin ${id} not found`);
+    this.emit("willUnregister", pin);
     this.#pins.delete(id);
     this.emit("didUnregister", pin);
   }

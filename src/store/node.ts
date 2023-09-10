@@ -17,6 +17,7 @@ export type CCNode = {
 
 export type CCNodeStoreEvents = {
   didRegister(Node: CCNode): void;
+  willUnregister(Node: CCNode): void;
   didUnregister(Node: CCNode): void;
   didUpdate(Node: CCNode): void;
 };
@@ -45,9 +46,10 @@ export class CCNodeStore extends EventEmitter<CCNodeStoreEvents> {
     for (const id of ids) {
       const node = this.#nodes.get(id);
       if (!node) throw new Error(`Node ${id} not found`);
-      this.emit("didUnregister", node);
+      this.emit("willUnregister", node);
       this.#parentComponentIdToNodeIds.remove(node.parentComponentId, node.id);
       this.#nodes.delete(id);
+      this.emit("didUnregister", node);
     }
   }
 

@@ -33,7 +33,11 @@ type DragState = {
         initialPosition: PIXI.Point;
       }
     | { type: "rangeSelect"; initialPosition: PIXI.Point }
-    | { type: "connection"; connectionId: CCConnectionId };
+    | {
+        type: "connection";
+        connectionId: CCConnectionId;
+        initialPosition: PIXI.Point;
+      };
 };
 
 export type CCComponentEditorRendererProps = {
@@ -173,15 +177,24 @@ export default class CCComponentEditorRenderer {
         case "pin": {
           this.#creatingConnectionPixiGraphics.clear();
           this.#creatingConnectionPixiGraphics.lineStyle(2, 0x696969);
+          const fromPosition = this.#dragState.target.initialPosition;
+          const toPosition = fromPosition.add(dragOffset);
           this.#creatingConnectionPixiGraphics.moveTo(
-            this.#dragState.target.initialPosition.x,
-            this.#dragState.target.initialPosition.y
+            fromPosition.x,
+            fromPosition.y
           );
-          const newPosition =
-            this.#dragState.target.initialPosition.add(dragOffset);
+          const diffX = toPosition.x - fromPosition.x;
           this.#creatingConnectionPixiGraphics.lineTo(
-            newPosition.x,
-            newPosition.y
+            fromPosition.x + 0.5 * diffX,
+            fromPosition.y
+          );
+          this.#creatingConnectionPixiGraphics.lineTo(
+            fromPosition.x + 0.5 * diffX,
+            toPosition.y
+          );
+          this.#creatingConnectionPixiGraphics.lineTo(
+            toPosition.x,
+            toPosition.y
           );
           return;
         }
@@ -193,23 +206,20 @@ export default class CCComponentEditorRenderer {
             end,
           });
           this.#rangeSelectRenderer.render();
-          for (const node of this.#store.nodes.getAll()) {
-            const nodePosition = node.position;
-            if (
-              nodePosition.x >= Math.min(start.x, end.x) &&
-              nodePosition.x <= Math.max(start.x, end.x) &&
-              nodePosition.y >= Math.min(start.y, end.y) &&
-              nodePosition.y <= Math.max(start.y, end.y)
-            ) {
-              this.#componentEditorStore
-                .getState()
-                .selectNode([node.id], false);
-            }
+
+          for (const nodeRenderer of this.#nodeRenderers.values()) {
+            nodeRenderer.judgeIsRangeSelected(start, end);
           }
           return;
         }
         case "connection": {
-          // Do nothing
+          const fromPosition = this.#dragState.target.initialPosition;
+          const toPosition = fromPosition.add(dragOffset);
+          const offset = toPosition.x - fromPosition.x;
+          const connectionRenderer = this.#connectionRenderers.get(
+            this.#dragState.target.connectionId
+          );
+          connectionRenderer?.updateBentPortion(offset);
           return;
         }
         default:
@@ -219,6 +229,12 @@ export default class CCComponentEditorRenderer {
       }
     });
     this.#pixiApplication.stage.on("pointerup", () => {
+      if (this.#dragState?.target.type === "connection") {
+        const connectionRenderer = this.#connectionRenderers.get(
+          this.#dragState.target.connectionId
+        )!;
+        connectionRenderer.onDragEnd();
+      }
       this.#dragState = null;
       this.#componentEditorStore.getState().setRangeSelect(null);
       if (this.#creatingConnectionPixiGraphics != null) {
@@ -357,11 +373,22 @@ export default class CCComponentEditorRenderer {
   }
 
   #addConnectionRenderer(connectionId: CCConnectionId) {
+    const onDragStart = (e: PIXI.FederatedMouseEvent) => {
+      this.#dragState = {
+        startPosition: e.global.clone(),
+        target: {
+          type: "connection",
+          connectionId,
+          initialPosition: this.toWorldPosition(e.global.clone()),
+        },
+      };
+    };
     const newConnectionRenderer = new CCComponentEditorRendererConnection(
       this.#store,
       connectionId,
       this.#pixiWorld,
-      this.#componentEditorStore
+      this.#componentEditorStore,
+      onDragStart
     );
     this.#connectionRenderers.set(connectionId, newConnectionRenderer);
   }
