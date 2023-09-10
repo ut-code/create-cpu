@@ -337,6 +337,7 @@ export default class CCComponentEditorRenderer {
               to: { nodeId, pinId },
               from: { nodeId: anotherNodeId, pinId: anotherPinId },
               parentComponentId: this.#componentId,
+              bentPortion: 0.5,
             });
             this.#store.connections.register(newConnection);
           }
@@ -353,6 +354,7 @@ export default class CCComponentEditorRenderer {
               from: { nodeId, pinId },
               to: { nodeId: anotherNodeId, pinId: anotherPinId },
               parentComponentId: this.#componentId,
+              bentPortion: 0.5,
             });
             this.#store.connections.register(newConnection);
           }

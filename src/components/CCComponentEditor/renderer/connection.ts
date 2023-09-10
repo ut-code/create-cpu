@@ -32,7 +32,7 @@ export default class CCComponentEditorRendererConnection {
     to: PIXI.Graphics;
   };
 
-  #bentPortion: number;
+  #bentPortionCache: number;
 
   #temporaryBentPortion: number;
 
@@ -79,8 +79,10 @@ export default class CCComponentEditorRendererConnection {
         this.onPointerDown(e);
       }
     });
-    this.#bentPortion = 0.5;
-    this.#temporaryBentPortion = this.#bentPortion;
+    this.#bentPortionCache = this.#store.connections.get(
+      this.#connectionId
+    )!.bentPortion;
+    this.#temporaryBentPortion = this.#bentPortionCache;
     this.#offset = 0;
     this.#componentEditorStore = componentEditorStore;
     this.#render();
@@ -114,13 +116,15 @@ export default class CCComponentEditorRendererConnection {
       toEndPoint?.pinId as CCPinId
     );
     const diffX = toPosition.x - fromPosition.x;
-    this.#bentPortion = this.#temporaryBentPortion + this.#offset / diffX;
-    if (this.#bentPortion > 1) {
-      this.#bentPortion = 1;
-    } else if (this.#bentPortion < 0) {
-      this.#bentPortion = 0;
+    this.#bentPortionCache = this.#temporaryBentPortion + this.#offset / diffX;
+    if (this.#bentPortionCache > 1) {
+      this.#bentPortionCache = 1;
+    } else if (this.#bentPortionCache < 0) {
+      this.#bentPortionCache = 0;
     }
-    this.#temporaryBentPortion = this.#bentPortion;
+    this.#temporaryBentPortion = this.#bentPortionCache;
+    this.#store.connections.get(this.#connectionId)!.bentPortion =
+      this.#bentPortionCache;
     // e.stopPropagation();
   }
 
@@ -158,11 +162,11 @@ export default class CCComponentEditorRendererConnection {
       toEndPoint?.pinId as CCPinId
     );
     const diffX = toPosition.x - fromPosition.x;
-    this.#bentPortion = this.#temporaryBentPortion + offset / diffX;
-    if (this.#bentPortion > 1) {
-      this.#bentPortion = 1;
-    } else if (this.#bentPortion < 0) {
-      this.#bentPortion = 0;
+    this.#bentPortionCache = this.#temporaryBentPortion + offset / diffX;
+    if (this.#bentPortionCache > 1) {
+      this.#bentPortionCache = 1;
+    } else if (this.#bentPortionCache < 0) {
+      this.#bentPortionCache = 0;
     }
     this.#render();
   }
@@ -194,11 +198,11 @@ export default class CCComponentEditorRendererConnection {
       fromPosition.y - lineWidth / 2
     );
     this.#pixiGraphics.from.lineTo(
-      fromPosition.x + this.#bentPortion * diffX,
+      fromPosition.x + this.#bentPortionCache * diffX,
       fromPosition.y - lineWidth / 2
     );
     this.#pixiGraphics.from.lineTo(
-      fromPosition.x + this.#bentPortion * diffX,
+      fromPosition.x + this.#bentPortionCache * diffX,
       fromPosition.y + lineWidth / 2
     );
     this.#pixiGraphics.from.lineTo(
@@ -210,11 +214,11 @@ export default class CCComponentEditorRendererConnection {
     const fromHitArea = new PIXI.Polygon(
       new PIXI.Point(fromPosition.x, fromPosition.y - 2 * lineWidth),
       new PIXI.Point(
-        fromPosition.x + this.#bentPortion * diffX,
+        fromPosition.x + this.#bentPortionCache * diffX,
         fromPosition.y - 2 * lineWidth
       ),
       new PIXI.Point(
-        fromPosition.x + this.#bentPortion * diffX,
+        fromPosition.x + this.#bentPortionCache * diffX,
         fromPosition.y + 2 * lineWidth
       ),
       new PIXI.Point(fromPosition.x, fromPosition.y + 2 * lineWidth)
@@ -223,22 +227,22 @@ export default class CCComponentEditorRendererConnection {
 
     this.#pixiGraphics.middle.beginFill(lineColor);
     this.#pixiGraphics.middle.moveTo(
-      fromPosition.x + this.#bentPortion * diffX - lineWidth / 2,
+      fromPosition.x + this.#bentPortionCache * diffX - lineWidth / 2,
       fromPosition.y +
         (fromPosition.y < toPosition.y ? -lineWidth / 2 : lineWidth / 2)
     );
     this.#pixiGraphics.middle.lineTo(
-      fromPosition.x + this.#bentPortion * diffX - lineWidth / 2,
+      fromPosition.x + this.#bentPortionCache * diffX - lineWidth / 2,
       toPosition.y +
         (fromPosition.y < toPosition.y ? lineWidth / 2 : -lineWidth / 2)
     );
     this.#pixiGraphics.middle.lineTo(
-      fromPosition.x + this.#bentPortion * diffX + lineWidth / 2,
+      fromPosition.x + this.#bentPortionCache * diffX + lineWidth / 2,
       toPosition.y +
         (fromPosition.y < toPosition.y ? lineWidth / 2 : -lineWidth / 2)
     );
     this.#pixiGraphics.middle.lineTo(
-      fromPosition.x + this.#bentPortion * diffX + lineWidth / 2,
+      fromPosition.x + this.#bentPortionCache * diffX + lineWidth / 2,
       fromPosition.y +
         (fromPosition.y < toPosition.y ? -lineWidth / 2 : lineWidth / 2)
     );
@@ -246,16 +250,19 @@ export default class CCComponentEditorRendererConnection {
 
     const middleHitArea = new PIXI.Polygon(
       new PIXI.Point(
-        fromPosition.x + this.#bentPortion * diffX - 2 * lineWidth,
+        fromPosition.x + this.#bentPortionCache * diffX - 2 * lineWidth,
         fromPosition.y
       ),
       new PIXI.Point(
-        fromPosition.x + this.#bentPortion * diffX + 2 * lineWidth,
+        fromPosition.x + this.#bentPortionCache * diffX + 2 * lineWidth,
         fromPosition.y
       ),
-      new PIXI.Point(fromPosition.x + this.#bentPortion * diffX, toPosition.y),
       new PIXI.Point(
-        fromPosition.x + this.#bentPortion * diffX - 2 * lineWidth,
+        fromPosition.x + this.#bentPortionCache * diffX,
+        toPosition.y
+      ),
+      new PIXI.Point(
+        fromPosition.x + this.#bentPortionCache * diffX - 2 * lineWidth,
         toPosition.y
       )
     );
@@ -263,7 +270,7 @@ export default class CCComponentEditorRendererConnection {
 
     this.#pixiGraphics.to.beginFill(lineColor);
     this.#pixiGraphics.to.moveTo(
-      fromPosition.x + this.#bentPortion * diffX,
+      fromPosition.x + this.#bentPortionCache * diffX,
       toPosition.y - lineWidth / 2
     );
     this.#pixiGraphics.to.lineTo(
@@ -275,7 +282,7 @@ export default class CCComponentEditorRendererConnection {
       toPosition.y + lineWidth / 2
     );
     this.#pixiGraphics.to.lineTo(
-      fromPosition.x + this.#bentPortion * diffX,
+      fromPosition.x + this.#bentPortionCache * diffX,
       toPosition.y + lineWidth / 2
     );
     this.#pixiGraphics.to.lineTo(toPosition.x, toPosition.y);
@@ -284,11 +291,11 @@ export default class CCComponentEditorRendererConnection {
     const toHitArea = new PIXI.Polygon(
       new PIXI.Point(toPosition.x, toPosition.y - 2 * lineWidth),
       new PIXI.Point(
-        fromPosition.x + this.#bentPortion * diffX,
+        fromPosition.x + this.#bentPortionCache * diffX,
         toPosition.y - 2 * lineWidth
       ),
       new PIXI.Point(
-        fromPosition.x + this.#bentPortion * diffX,
+        fromPosition.x + this.#bentPortionCache * diffX,
         toPosition.y + 2 * lineWidth
       ),
       new PIXI.Point(toPosition.x, toPosition.y + 2 * lineWidth)
