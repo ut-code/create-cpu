@@ -77,6 +77,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       to: { nodeId: sampleNode2.id, pinId: sampleComponentInputPin1.id },
       from: { nodeId: sampleNode1.id, pinId: sampleComponentOutputPin1.id },
       parentComponentId: rootComponent.id,
+      bentPortion: 0.5,
     });
     tempStore.connections.register(sampleConnection);
     return tempStore;

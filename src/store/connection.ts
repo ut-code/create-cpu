@@ -19,6 +19,7 @@ export type CCConnection = {
   readonly from: CCConnectionEndpoint;
   readonly to: CCConnectionEndpoint;
   readonly parentComponentId: CCComponentId;
+  bentPortion: number;
 };
 
 export type CCConnectionStoreEvents = {
