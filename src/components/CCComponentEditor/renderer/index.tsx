@@ -14,6 +14,7 @@ import CCComponentEditorRendererConnection from "./connection";
 import CCComponentEditorRendererRangeSelect from "./rangeSelect";
 import type { CCPinId } from "../../../store/pin";
 import type { ComponentEditorStore } from "../store";
+import CCSimulator from "./simulator";
 
 type DragState = {
   startPosition: PIXI.Point;
@@ -78,11 +79,18 @@ export default class CCComponentEditorRenderer {
 
   #creatingConnectionPixiGraphics: PIXI.Graphics;
 
+  #simulator: CCSimulator;
+
   constructor(props: CCComponentEditorRendererProps) {
     this.#store = props.store;
     this.#componentEditorStore = props.componentEditorStore;
     this.#componentId = props.componentId;
     this.#htmlContainer = props.htmlContainer;
+    this.#simulator = new CCSimulator({
+      store: this.#store,
+      componentEditorStore: this.#componentEditorStore,
+      componentId: this.#componentId,
+    });
     invariant(this.#store.components.get(props.componentId));
 
     const rect = this.#htmlContainer.getBoundingClientRect();
@@ -362,6 +370,34 @@ export default class CCComponentEditorRenderer {
       }
       this.#dragState = null;
     };
+    const simulation = () => {
+      const editorState = this.#componentEditorStore.getState();
+      const pinIds = this.#store.pins.getPinIdsByComponentId(this.#componentId);
+      const input = new Map<CCPinId, boolean>();
+      for (const pinId of pinIds) {
+        const pin = this.#store.pins.get(pinId)!;
+        if (pin.type === "input") {
+          if (pin.implementation.type === "user") {
+            const implementationNodeId = pin.implementation.nodeId;
+            const implementationPinId = pin.implementation.pinId;
+            if (
+              !this.#store.connections.getConnectionIdByPinId(
+                implementationNodeId,
+                implementationPinId
+              )
+            ) {
+              const inputValue = editorState.getInputValue(
+                implementationNodeId,
+                implementationPinId
+              );
+              input.set(pinId, inputValue);
+            }
+          }
+        }
+      }
+      const output = this.#simulator.simulation(input);
+      return output;
+    };
     const newNodeRenderer = new CCComponentEditorRendererNode({
       store: this.#store,
       componentEditorStore: this.#componentEditorStore,
@@ -370,6 +406,7 @@ export default class CCComponentEditorRenderer {
       onDragStart,
       onDragStartPin,
       onDragEndPin,
+      simulation,
     });
     this.#nodeRenderers.set(nodeId, newNodeRenderer);
   }
