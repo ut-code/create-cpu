@@ -5,9 +5,21 @@ import type CCStore from ".";
 import { type CCComponentId } from "./component";
 import type { CCNodeId } from "./node";
 
+export type CCPin = {
+  readonly id: CCPinId;
+  readonly componentId: CCComponentId;
+  readonly type: CCPinType;
+  readonly implementation: CCPinImplementation;
+  name: string;
+};
+
 export type CCPinId = Opaque<string, "CCPinId">;
 export type CCPinType = "input" | "output";
 export const ccPinTypes: CCPinType[] = ["input", "output"];
+
+export type CCPinImplementation =
+  | CCPinUserImplementation
+  | CCPinIntrinsicImplementation;
 
 export type CCPinUserImplementation = {
   readonly type: "user";
@@ -17,18 +29,6 @@ export type CCPinUserImplementation = {
 
 export type CCPinIntrinsicImplementation = {
   readonly type: "intrinsic";
-};
-
-export type CCPinImplementation =
-  | CCPinUserImplementation
-  | CCPinIntrinsicImplementation;
-
-export type CCPin = {
-  readonly id: CCPinId;
-  readonly componentId: CCComponentId;
-  readonly type: CCPinType;
-  readonly implementation: CCPinImplementation;
-  name: string;
 };
 
 export type CCPinStoreEvents = {

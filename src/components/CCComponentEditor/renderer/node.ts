@@ -5,9 +5,10 @@ import { blackColor, primaryColor, whiteColor } from "../../../common/theme";
 import type { CCNodeId } from "../../../store/node";
 import { type CCPinId } from "../../../store/pin";
 import type CCStore from "../../../store";
-import CCComponentEditorRendererPin from "./pin";
+import CCComponentEditorRendererNodePin from "./nodePin";
 import type { ComponentEditorStore } from "../store";
-import CCComponentEditorRendererPort from "./port";
+import CCComponentEditorRendererComponentPin from "./componentPin";
+import { rearrangeRangeSelect } from "./rangeSelect";
 
 export type CCComponentEditorRendererNodeProps = {
   store: CCStore;
@@ -49,9 +50,12 @@ export default class CCComponentEditorRendererNode {
 
   #pixiTexts: PixiTexts;
 
-  #pinRenderers = new Map<CCPinId, CCComponentEditorRendererPin>();
+  #nodePinRenderers = new Map<CCPinId, CCComponentEditorRendererNodePin>();
 
-  #portRenderers = new Map<CCPinId, CCComponentEditorRendererPort>();
+  #componentPinRenderers = new Map<
+    CCPinId,
+    CCComponentEditorRendererComponentPin
+  >();
 
   #pixiWorld: PIXI.Container;
 
@@ -71,7 +75,7 @@ export default class CCComponentEditorRendererNode {
     const node = this.#store.nodes.get(this.#nodeId)!;
     const pinIds = this.#store.pins.getPinIdsByComponentId(node.componentId);
     for (const pinId of pinIds) {
-      const pinRenderer = new CCComponentEditorRendererPin({
+      const pinRenderer = new CCComponentEditorRendererNodePin({
         store: props.store,
         nodeId: props.nodeId,
         pinId,
@@ -80,15 +84,19 @@ export default class CCComponentEditorRendererNode {
         onDragStart: props.onDragStartPin,
         onDragEnd: props.onDragEndPin,
       });
-      this.#pinRenderers.set(pinId, pinRenderer);
+      this.#nodePinRenderers.set(pinId, pinRenderer);
     }
 
-    this.reconcileChildPortRenderers();
+    this.reconcileChildComponentPinRenderers();
 
     this.#pixiGraphics.on("pointerdown", (e) => {
       if (
-        !this.#componentEditorStore.getState().selectedNodeIds.has(this.#nodeId)
+        this.#componentEditorStore.getState().selectedNodeIds.has(this.#nodeId)
       ) {
+        if (e.shiftKey) {
+          this.#componentEditorStore.getState().unselectNode([this.#nodeId]);
+        }
+      } else {
         this.#componentEditorStore
           .getState()
           .selectNode([this.#nodeId], !e.shiftKey);
@@ -97,11 +105,17 @@ export default class CCComponentEditorRendererNode {
       e.stopPropagation();
     });
     this.#store.nodes.on("didUpdate", this.render);
-    this.#store.components.on("didUpdate", this.reconcileChildPortRenderers);
-    this.#store.connections.on("didRegister", this.reconcileChildPortRenderers);
+    this.#store.components.on(
+      "didUpdate",
+      this.reconcileChildComponentPinRenderers
+    );
+    this.#store.connections.on(
+      "didRegister",
+      this.reconcileChildComponentPinRenderers
+    );
     this.#store.connections.on(
       "didUnregister",
-      this.reconcileChildPortRenderers
+      this.reconcileChildComponentPinRenderers
     );
     this.#unsubscribeComponentEditorStore =
       this.#componentEditorStore.subscribe(this.render);
@@ -159,11 +173,11 @@ export default class CCComponentEditorRendererNode {
     const gap = 6;
     const edgeSize = 10;
     inputPins.forEach((pin, index) => {
-      const pinRenderer = this.#pinRenderers.get(pin.id);
+      const pinRenderer = this.#nodePinRenderers.get(pin.id);
       pinRenderer?.render(index, size, inputPins.length);
     });
     outputPins.forEach((pin, index) => {
-      const pinRenderer = this.#pinRenderers.get(pin.id);
+      const pinRenderer = this.#nodePinRenderers.get(pin.id);
       pinRenderer?.render(index, size, outputPins.length);
     });
     this.#pixiTexts.componentName.anchor.set(0, 1);
@@ -195,44 +209,50 @@ export default class CCComponentEditorRendererNode {
     this.#pixiWorld.position = node.position;
   };
 
-  reconcileChildPortRenderers = () => {
+  reconcileChildComponentPinRenderers = () => {
     const node = this.#store.nodes.get(this.#nodeId)!;
     const pinIds = this.#store.pins.getPinIdsByComponentId(node.componentId);
 
-    const existingPortRenderers = new Map(this.#portRenderers);
-    const newPortRenderers = new Map<CCPinId, CCComponentEditorRendererPort>();
+    const existingComponentPinRenderers = new Map(this.#componentPinRenderers);
+    const newComponentPinRenderers = new Map<
+      CCPinId,
+      CCComponentEditorRendererComponentPin
+    >();
     for (const pinId of pinIds) {
       if (
         !this.#store.connections.getConnectionIdByPinId(this.#nodeId, pinId)
       ) {
-        const existingPortRenderer = existingPortRenderers.get(pinId);
-        if (existingPortRenderer) {
-          newPortRenderers.set(pinId, existingPortRenderer);
-          existingPortRenderers.delete(pinId);
+        const existingComponentPinRenderer =
+          existingComponentPinRenderers.get(pinId);
+        if (existingComponentPinRenderer) {
+          newComponentPinRenderers.set(pinId, existingComponentPinRenderer);
+          existingComponentPinRenderers.delete(pinId);
         } else {
-          const portRenderer = new CCComponentEditorRendererPort({
-            store: this.#store,
-            componentEditorStore: this.#componentEditorStore,
-            pixiParentContainer: this.#pixiWorld,
-            nodeId: this.#nodeId,
-            pinId,
-            position: CCComponentEditorRendererNode.getPinOffset(
-              this.#store,
-              this.#nodeId,
-              pinId
-            ),
-          });
-          newPortRenderers.set(pinId, portRenderer);
+          const componentPinRenderer =
+            new CCComponentEditorRendererComponentPin({
+              store: this.#store,
+              componentEditorStore: this.#componentEditorStore,
+              pixiParentContainer: this.#pixiWorld,
+              nodeId: this.#nodeId,
+              pinId,
+              position: CCComponentEditorRendererNode.getPinOffset(
+                this.#store,
+                this.#nodeId,
+                pinId
+              ),
+            });
+          newComponentPinRenderers.set(pinId, componentPinRenderer);
         }
       }
     }
-    for (const portRenderer of existingPortRenderers.values()) {
-      portRenderer.destroy();
+    for (const componentPinRenderer of existingComponentPinRenderers.values()) {
+      componentPinRenderer.destroy();
     }
-    this.#portRenderers = newPortRenderers;
+    this.#componentPinRenderers = newComponentPinRenderers;
   };
 
-  judgeIsRangeSelected(start: PIXI.Point, end: PIXI.Point) {
+  judgeIsRangeSelected(start_: PIXI.Point, end_: PIXI.Point) {
+    const { start, end } = rearrangeRangeSelect({ start: start_, end: end_ });
     const node = this.#store.nodes.get(this.#nodeId)!;
     const component = this.#store.components.get(node.componentId)!;
     const pins = this.#store.pins
@@ -243,17 +263,17 @@ export default class CCComponentEditorRendererNode {
     const size = getSize(inputPins.length, outputPins.length);
     const nodePosition = node.position;
     const nodePositions = [
-      new PIXI.Point(nodePosition.x + size.x / 2, nodePosition.y + size.y / 2),
-      new PIXI.Point(nodePosition.x + size.x / 2, nodePosition.y - size.y / 2),
-      new PIXI.Point(nodePosition.x - size.x / 2, nodePosition.y + size.y / 2),
       new PIXI.Point(nodePosition.x - size.x / 2, nodePosition.y - size.y / 2),
+      new PIXI.Point(nodePosition.x - size.x / 2, nodePosition.y + size.y / 2),
+      new PIXI.Point(nodePosition.x + size.x / 2, nodePosition.y - size.y / 2),
+      new PIXI.Point(nodePosition.x + size.x / 2, nodePosition.y + size.y / 2),
     ];
-    const isRangeSelected = (position: PIXI.Point) =>
-      position.x >= Math.min(start.x, end.x) &&
-      position.x <= Math.max(start.x, end.x) &&
-      position.y >= Math.min(start.y, end.y) &&
-      position.y <= Math.max(start.y, end.y);
-    if (nodePositions.some(isRangeSelected)) {
+    if (
+      Math.max(nodePositions[0]!.x, start.x) <
+        Math.min(nodePositions[3]!.x, end.x) &&
+      Math.max(nodePositions[0]!.y, start.y) <
+        Math.min(nodePositions[3]!.y, end.y)
+    ) {
       this.#componentEditorStore.getState().selectNode([node.id], false);
     } else {
       this.#componentEditorStore.getState().unselectNode([node.id]);
@@ -266,21 +286,24 @@ export default class CCComponentEditorRendererNode {
     for (const text of this.#pixiTexts.pinNames) {
       text[1].destroy();
     }
-    for (const pinRenderer of this.#pinRenderers.values()) {
+    for (const pinRenderer of this.#nodePinRenderers.values()) {
       pinRenderer.destroy();
     }
-    for (const portRenderer of this.#portRenderers.values()) {
-      portRenderer.destroy();
+    for (const componentPinRenderer of this.#componentPinRenderers.values()) {
+      componentPinRenderer.destroy();
     }
     this.#store.nodes.off("didUpdate", this.render);
-    this.#store.components.off("didUpdate", this.reconcileChildPortRenderers);
+    this.#store.components.off(
+      "didUpdate",
+      this.reconcileChildComponentPinRenderers
+    );
     this.#store.connections.off(
       "didRegister",
-      this.reconcileChildPortRenderers
+      this.reconcileChildComponentPinRenderers
     );
     this.#store.connections.off(
       "didUnregister",
-      this.reconcileChildPortRenderers
+      this.reconcileChildComponentPinRenderers
     );
     this.#unsubscribeComponentEditorStore();
   }

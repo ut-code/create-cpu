@@ -5,8 +5,14 @@ import PIXI from "pixi.js";
 import type { CCPinId } from "../../../store/pin";
 import type { CCNodeId } from "../../../store/node";
 import type { CCConnectionId } from "../../../store/connection";
+import {
+  type WorldPerspectiveStoreMixin,
+  worldPerspectiveStoreMixin,
+} from "./worldPerspective";
 
-type EditorMode = "edit" | "play";
+export type EditorMode = EditorModeEdit | EditorModePlay;
+export type EditorModeEdit = "edit";
+export type EditorModePlay = "play";
 
 export type RangeSelect = { start: PIXI.Point; end: PIXI.Point } | null;
 
@@ -25,10 +31,10 @@ type State = {
   selectNode(ids: CCNodeId[], exclusive: boolean): void;
   unselectNode(ids: CCNodeId[]): void;
   selectConnection(ids: CCConnectionId[], exclusive: boolean): void;
-};
+} & WorldPerspectiveStoreMixin;
 
 const createStore = () =>
-  create<State>((set) => ({
+  create<State>((set, get) => ({
     editorMode: "edit",
     selectedNodeIds: new Set(),
     rangeSelect: null,
@@ -81,6 +87,7 @@ const createStore = () =>
         selectedNodeIds: new Set(),
       }));
     },
+    ...worldPerspectiveStoreMixin(set, get),
   }));
 
 export type ComponentEditorStore = ReturnType<typeof createStore>;

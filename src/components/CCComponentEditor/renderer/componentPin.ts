@@ -1,7 +1,7 @@
 import * as PIXI from "pixi.js";
 import invariant from "tiny-invariant";
 import type CCStore from "../../../store";
-import type { ComponentEditorStore } from "../store";
+import type { ComponentEditorStore, EditorModePlay } from "../store";
 import type { CCNodeId } from "../../../store/node";
 import type { CCPinId } from "../../../store/pin";
 import {
@@ -70,6 +70,8 @@ export default class CCComponentEditorRendererPort {
     }
     this.#pixiContainer.addChild(this.#pixiGraphics);
     this.#pixiLabelText = new PIXI.Text();
+    this.#pixiLabelText.style.fontSize =
+      CCComponentEditorRendererPort.drawingConstants.fontSize;
     this.#pixiContainer.addChild(this.#pixiLabelText);
     this.#pixiValueText = new PIXI.Text();
     this.#pixiValueText.style.fontSize =
@@ -77,6 +79,11 @@ export default class CCComponentEditorRendererPort {
     this.#pixiValueText.style.fill =
       CCComponentEditorRendererPort.drawingConstants.valueColor;
     this.#pixiValueText.anchor.set(0.5, 0.5);
+    if (this.#store.pins.get(this.#pinId)!.type === "input") {
+      this.#pixiValueText.interactive = true;
+      this.#pixiValueText.cursor = "pointer";
+      this.#pixiValueText.on("pointerdown", this.onClick);
+    }
     this.#pixiContainer.addChild(this.#pixiValueText);
     this.#store.components.on("didUpdate", this.render);
     this.#unsubscribeComponentEditorStore =
@@ -96,13 +103,26 @@ export default class CCComponentEditorRendererPort {
     const editorState = this.#componentEditorStore.getState();
     const pin = this.#store.pins.get(this.#pinId)!;
     this.#pixiContainer.position = this.position;
+    this.#pixiLabelText.text = pin.name;
     const c = CCComponentEditorRendererPort.drawingConstants;
     if (editorState.editorMode === "edit") {
       this.#pixiValueText.visible = false;
       this.#pixiGraphics.lineStyle(1, editorGridColor);
       this.#pixiGraphics.beginFill(whiteColor);
-    } else {
-      invariant((editorState.editorMode satisfies "play") === "play");
+      this.#pixiLabelText.anchor.set(0.5, 0.5);
+      this.#pixiLabelText.position.set(
+        (c.marginToNode + c.valueBoxWidth / 2) *
+          (pin.type === "input" ? -1 : 1),
+        0
+      );
+    } else if (editorState.editorMode === "play") {
+      invariant((editorState.editorMode satisfies EditorModePlay) === "play");
+      this.#pixiLabelText.anchor.set(pin.type === "input" ? 1 : 0, 0.5);
+      this.#pixiLabelText.position.set(
+        (c.marginToNode + c.valueBoxWidth + c.marginToValueBox) *
+          (pin.type === "input" ? -1 : 1),
+        0
+      );
       this.#pixiValueText.visible = true;
       this.#pixiValueText.position.set(
         (c.marginToNode + c.valueBoxWidth / 2) *
