@@ -4,7 +4,7 @@ import type { CCPinId } from "../../../store/pin";
 import type { CCNodeId } from "../../../store/node";
 import { blackColor, whiteColor, primaryColor } from "../../../common/theme";
 
-export type CCComponentEditorRendererPinProps = {
+export type CCComponentEditorRendererNodePinProps = {
   store: CCStore;
   nodeId: CCNodeId;
   pinId: CCPinId;
@@ -14,7 +14,7 @@ export type CCComponentEditorRendererPinProps = {
   onDragEnd(e: PIXI.FederatedMouseEvent, pinId: CCPinId): void;
 };
 
-export default class CCComponentEditorRendererPin {
+export default class CCComponentEditorRendererNodePin {
   #store: CCStore;
 
   #pinId: CCPinId;
@@ -36,7 +36,7 @@ export default class CCComponentEditorRendererPin {
     pixiText,
     onDragStart,
     onDragEnd,
-  }: CCComponentEditorRendererPinProps) {
+  }: CCComponentEditorRendererNodePinProps) {
     this.#store = store;
     this.#pinId = pinId;
     this.#pixiParentContainer = pixiParentContainer;

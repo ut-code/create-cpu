@@ -67,7 +67,7 @@ function CCComponentEditorContent({ componentId }: CCComponentEditorProps) {
             CCNodeStore.create({
               componentId: droppedComponentId,
               parentComponentId: componentId,
-              position: rendererRef.current.toWorldPosition(
+              position: componentEditorState.toWorldPosition(
                 new PIXI.Point(e.nativeEvent.offsetX, e.nativeEvent.offsetY)
               ),
             })
@@ -123,7 +123,7 @@ function CCComponentEditorContent({ componentId }: CCComponentEditorProps) {
                 setContextMenuPosition(null);
               }}
             >
-              ブロックを配置
+              Create a node
             </MenuItem>
             {(componentEditorState.selectedNodeIds.size !== 0 ||
               componentEditorState.selectedConnectionIds.size !== 0) && (
@@ -140,7 +140,7 @@ function CCComponentEditorContent({ componentId }: CCComponentEditorProps) {
                   setContextMenuPosition(null);
                 }}
               >
-                削除
+                Delete
               </MenuItem>
             )}
           </MenuList>

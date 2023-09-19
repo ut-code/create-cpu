@@ -1,12 +1,10 @@
 import * as PIXI from "pixi.js";
 import invariant from "tiny-invariant";
 import { editorBackgroundColor } from "../../../common/theme";
-import { Observable } from "../../../common/observable";
 import type CCStore from "../../../store";
 import type { CCComponentId } from "../../../store/component";
 import type { CCNode, CCNodeId } from "../../../store/node";
 import CCComponentEditorRendererNode from "./node";
-import type { Perspective } from "../../../common/perspective";
 import {
   CCConnectionStore,
   type CCConnection,
@@ -53,11 +51,11 @@ export default class CCComponentEditorRenderer {
 
   #componentEditorStore: ComponentEditorStore;
 
+  #unsubscribeComponentEditorStore: () => void;
+
   #componentId: CCComponentId;
 
   #htmlContainer: HTMLDivElement;
-
-  #canvasSize: Observable<PIXI.Point>;
 
   #pixiApplication: PIXI.Application;
 
@@ -74,11 +72,6 @@ export default class CCComponentEditorRenderer {
 
   // #gridRenderer = null;
 
-  #worldPerspective: Observable<Perspective> = new Observable({
-    center: new PIXI.Point(0, 0),
-    scale: 1.0,
-  });
-
   #dragState: DragState | null = null;
 
   #resizeObserver: ResizeObserver;
@@ -93,14 +86,15 @@ export default class CCComponentEditorRenderer {
     invariant(this.#store.components.get(props.componentId));
 
     const rect = this.#htmlContainer.getBoundingClientRect();
-    this.#canvasSize = new Observable(new PIXI.Point(rect.width, rect.height));
+    this.#componentEditorStore
+      .getState()
+      .setCanvasSize(new PIXI.Point(rect.width, rect.height));
     this.#resizeObserver = new ResizeObserver(([entry]) => {
       const contentRect = entry?.contentRect;
       if (!contentRect) return;
-      this.#canvasSize.value = new PIXI.Point(
-        contentRect.width,
-        contentRect.height
-      );
+      this.#componentEditorStore
+        .getState()
+        .setCanvasSize(new PIXI.Point(contentRect.width, contentRect.height));
     });
     this.#resizeObserver.observe(this.#htmlContainer);
 
@@ -126,16 +120,18 @@ export default class CCComponentEditorRenderer {
     this.#pixiApplication.stage.interactive = true;
     this.#pixiApplication.stage.hitArea = { contains: () => true }; // Capture events everywhere
     this.#pixiApplication.stage.on("pointerdown", (e) => {
+      const { worldPerspective, toWorldPosition } =
+        this.#componentEditorStore.getState();
       if (e.button === 2) {
         this.#dragState = {
           startPosition: e.global.clone(),
           target: {
             type: "world",
-            initialCenter: this.#worldPerspective.value.center,
+            initialCenter: worldPerspective.center,
           },
         };
       } else if (e.button === 0) {
-        const position = this.toWorldPosition(e.global.clone());
+        const position = toWorldPosition(e.global.clone());
         this.#componentEditorStore
           .getState()
           .setRangeSelect({ start: position, end: position });
@@ -152,15 +148,17 @@ export default class CCComponentEditorRenderer {
     });
     this.#pixiApplication.stage.on("pointermove", (e) => {
       if (!this.#dragState) return;
+      const { worldPerspective, setWorldPerspective } =
+        this.#componentEditorStore.getState();
       const dragOffset = e.global
         .subtract(this.#dragState.startPosition)
-        .multiplyScalar(1 / this.#worldPerspective.value.scale);
+        .multiplyScalar(1 / worldPerspective.scale);
       switch (this.#dragState.target.type) {
         case "world":
-          this.#worldPerspective.value = {
+          setWorldPerspective({
             center: this.#dragState.target.initialCenter.subtract(dragOffset),
-            scale: this.#worldPerspective.value.scale,
-          };
+            scale: worldPerspective.scale,
+          });
           return;
         case "node": {
           for (const nodeId of this.#componentEditorStore.getState()
@@ -263,7 +261,8 @@ export default class CCComponentEditorRenderer {
 
     // Support zooming
     this.#pixiApplication.stage.on("wheel", (e) => {
-      this.#zoom(this.toWorldPosition(e.global), 0.999 ** e.deltaY);
+      const { zoom, toWorldPosition } = this.#componentEditorStore.getState();
+      zoom(toWorldPosition(e.global), 0.999 ** e.deltaY);
     });
 
     // Context menu
@@ -272,7 +271,8 @@ export default class CCComponentEditorRenderer {
       e.preventDefault();
     });
 
-    this.#worldPerspective.observe(this.#render);
+    this.#unsubscribeComponentEditorStore =
+      this.#componentEditorStore.subscribe(this.#render);
     this.#render();
   }
 
@@ -376,12 +376,13 @@ export default class CCComponentEditorRenderer {
 
   #addConnectionRenderer(connectionId: CCConnectionId) {
     const onDragStart = (e: PIXI.FederatedMouseEvent) => {
+      const { toWorldPosition } = this.#componentEditorStore.getState();
       this.#dragState = {
         startPosition: e.global.clone(),
         target: {
           type: "connection",
           connectionId,
-          initialPosition: this.toWorldPosition(e.global.clone()),
+          initialPosition: toWorldPosition(e.global.clone()),
         },
       };
     };
@@ -415,37 +416,13 @@ export default class CCComponentEditorRenderer {
     this.#nodeRenderers.get(node.id)?.destroy();
   };
 
-  toWorldPosition(canvasPosition: PIXI.Point) {
-    return canvasPosition
-      .subtract(this.#canvasSize.value.multiplyScalar(0.5))
-      .multiplyScalar(1 / this.#worldPerspective.value.scale)
-      .add(this.#worldPerspective.value.center);
-  }
-
-  toCanvasPosition(worldPosition: PIXI.Point) {
-    return worldPosition
-      .subtract(this.#worldPerspective.value.center)
-      .multiplyScalar(this.#worldPerspective.value.scale)
-      .add(this.#canvasSize.value.multiplyScalar(0.5));
-  }
-
-  #zoom(zoomCenter: PIXI.Point, factor: number) {
-    const newCenter = this.#worldPerspective.value.center
-      .subtract(zoomCenter)
-      .multiplyScalar(1 / factor)
-      .add(zoomCenter);
-    const newScale = this.#worldPerspective.value.scale * factor;
-    this.#worldPerspective.value = {
-      center: newCenter,
-      scale: newScale,
-    };
-  }
-
   #render = () => {
-    this.#pixiWorld.position = this.toCanvasPosition(new PIXI.Point(0, 0));
+    const { worldPerspective, toCanvasPosition } =
+      this.#componentEditorStore.getState();
+    this.#pixiWorld.position = toCanvasPosition(new PIXI.Point(0, 0));
     this.#pixiWorld.scale = {
-      x: this.#worldPerspective.value.scale,
-      y: this.#worldPerspective.value.scale,
+      x: worldPerspective.scale,
+      y: worldPerspective.scale,
     };
   };
 
@@ -455,6 +432,7 @@ export default class CCComponentEditorRenderer {
     this.#store.nodes.off("didUnregister", this.#onNodeRemoved);
     for (const renderer of this.#nodeRenderers.values()) renderer.destroy();
     this.#rangeSelectRenderer.destroy();
+    this.#unsubscribeComponentEditorStore();
     this.#pixiApplication.destroy(true);
   }
 }
