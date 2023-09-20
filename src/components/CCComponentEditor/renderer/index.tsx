@@ -370,7 +370,7 @@ export default class CCComponentEditorRenderer {
       }
       this.#dragState = null;
     };
-    const simulation = () => {
+    const simulation = (targetNodeId: CCNodeId) => {
       const editorState = this.#componentEditorStore.getState();
       const pinIds = this.#store.pins.getPinIdsByComponentId(this.#componentId);
       const input = new Map<CCPinId, boolean>();
@@ -396,7 +396,17 @@ export default class CCComponentEditorRenderer {
         }
       }
       const output = this.#simulator.simulation(input);
-      return output;
+      const nodeOutput = new Map<CCPinId, boolean>();
+      for (const [outputPinId, outputValue] of output) {
+        const pin = this.#store.pins.get(outputPinId)!;
+        if (
+          pin.implementation.type === "user" &&
+          pin.implementation.nodeId === targetNodeId
+        ) {
+          nodeOutput.set(pin.implementation.pinId, outputValue);
+        }
+      }
+      return nodeOutput;
     };
     const newNodeRenderer = new CCComponentEditorRendererNode({
       store: this.#store,

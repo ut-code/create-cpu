@@ -142,7 +142,16 @@ export default function evaluateComponent(
             foundInputNumber.get(connectedNodeId)! + 1
           );
         } else {
-          componentOutputs.set(outputPinId, outputValue);
+          const parentComponentPinId = pinIds.find((id) => {
+            const pin = store.pins.get(id)!;
+            return (
+              pin.type === "output" &&
+              pin.implementation.type === "user" &&
+              pin.implementation.nodeId === currentNodeId &&
+              pin.implementation.pinId === outputPinId
+            );
+          })!;
+          componentOutputs.set(parentComponentPinId, outputValue);
         }
       }
     } else {

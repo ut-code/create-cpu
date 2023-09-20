@@ -18,7 +18,7 @@ export type CCComponentEditorRendererNodeProps = {
   onDragStart(e: PIXI.FederatedMouseEvent): void;
   onDragStartPin(e: PIXI.FederatedMouseEvent, pinId: CCPinId): void;
   onDragEndPin(e: PIXI.FederatedMouseEvent, pinId: CCPinId): void;
-  simulation(): Map<CCPinId, boolean>;
+  simulation(nodeId: CCNodeId): Map<CCPinId, boolean>;
 };
 
 type PixiTexts = {
@@ -60,7 +60,7 @@ export default class CCComponentEditorRendererNode {
 
   #pixiWorld: PIXI.Container;
 
-  #simulation: () => Map<CCPinId, boolean>;
+  #simulation: (nodeId: CCNodeId) => Map<CCPinId, boolean>;
 
   constructor(props: CCComponentEditorRendererNodeProps) {
     this.#store = props.store;
@@ -232,6 +232,9 @@ export default class CCComponentEditorRendererNode {
           newComponentPinRenderers.set(pinId, existingComponentPinRenderer);
           existingComponentPinRenderers.delete(pinId);
         } else {
+          const simulation = () => {
+            return this.#simulation(this.#nodeId);
+          };
           const componentPinRenderer =
             new CCComponentEditorRendererComponentPin({
               store: this.#store,
@@ -244,7 +247,7 @@ export default class CCComponentEditorRendererNode {
                 this.#nodeId,
                 pinId
               ),
-              simulation: this.#simulation,
+              simulation,
             });
           newComponentPinRenderers.set(pinId, componentPinRenderer);
         }
