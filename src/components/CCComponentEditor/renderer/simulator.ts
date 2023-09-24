@@ -15,13 +15,21 @@ export default class CCSimulator {
 
   readonly #componentId: CCComponentId;
 
+  readonly #componentEditorStore: ComponentEditorStore;
+
   constructor(props: CCSimulatorProps) {
     this.#store = props.store;
     this.#componentId = props.componentId;
+    this.#componentEditorStore = props.componentEditorStore;
   }
 
   simulation = (input: Map<CCPinId, boolean>) => {
-    const output = evaluateComponent(this.#store, this.#componentId, input);
+    const output = evaluateComponent(
+      this.#store,
+      this.#componentEditorStore,
+      this.#componentId,
+      input
+    );
     return output;
   };
 }

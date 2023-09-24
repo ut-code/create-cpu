@@ -1,6 +1,7 @@
 {
   "root": true,
   "extends": "airbnb-typescript-prettier",
+  "ignorePatterns": ["dist/"],
   "rules": {
     "no-restricted-syntax": "off", // Allow using for-of syntax
     "react/react-in-jsx-scope": "off", // Not necessary for react@>=17

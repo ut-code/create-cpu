@@ -2,6 +2,8 @@ import type CCStore from ".";
 import type { CCComponentId } from "./component";
 import type { CCPinId } from "./pin";
 import type { CCNodeId } from "./node";
+import * as intrinsics from "./intrinsics";
+import type { ComponentEditorStore } from "../components/CCComponentEditor/store";
 
 function evaluateIntrinsic(
   store: CCStore,
@@ -10,43 +12,78 @@ function evaluateIntrinsic(
 ) {
   const component = store.components.get(componentId)!;
   const pinIds = store.pins.getPinIdsByComponentId(componentId);
-  switch (component.name) {
-    case "Not":
+  switch (component.id) {
+    case intrinsics.notIntrinsicComponent.id:
       if (pinIds.length === 2) {
-        const inputValue = input.get(pinIds[0] as CCPinId);
+        const inputValue = input.get(
+          intrinsics.notIntrinsicComponentInputPin.id
+        );
         return !inputValue;
       }
       throw new Error(`invalid input number (${component.name})`);
-    case "And":
+    case intrinsics.andIntrinsicComponent.id:
       if (pinIds.length === 3) {
-        const inputValue0 = input.get(pinIds[0] as CCPinId);
-        const inputValue1 = input.get(pinIds[1] as CCPinId);
+        const inputValue0 = input.get(
+          intrinsics.andIntrinsicComponentInputPinA.id
+        );
+        const inputValue1 = input.get(
+          intrinsics.andIntrinsicComponentInputPinB.id
+        );
         return inputValue0 && inputValue1;
       }
       throw new Error(`invalid input number (${component.name})`);
-    case "Or":
+    case intrinsics.orIntrinsicComponent.id:
       if (pinIds.length === 3) {
-        const inputValue0 = input.get(pinIds[0] as CCPinId);
-        const inputValue1 = input.get(pinIds[1] as CCPinId);
+        const inputValue0 = input.get(
+          intrinsics.orIntrinsicComponentInputPinA.id
+        );
+        const inputValue1 = input.get(
+          intrinsics.orIntrinsicComponentInputPinB.id
+        );
         return inputValue0 || inputValue1;
       }
       throw new Error(`invalid input number (${component.name})`);
-    case "Xor":
+    case intrinsics.xorIntrinsicComponent.id:
       if (pinIds.length === 3) {
-        const inputValue0 = input.get(pinIds[0] as CCPinId);
-        const inputValue1 = input.get(pinIds[1] as CCPinId);
+        const inputValue0 = input.get(
+          intrinsics.xorIntrinsicComponentInputPinA.id
+        );
+        const inputValue1 = input.get(
+          intrinsics.xorIntrinsicComponentInputPinB.id
+        );
         return inputValue0 !== inputValue1;
       }
       throw new Error(`invalid input number (${component.name})`);
-    case "Sample":
-      return true;
+    case intrinsics.inputIntrinsicComponent.id:
+      if (pinIds.length === 2) {
+        const inputValue = input.get(
+          intrinsics.inputIntrinsicComponentInputPin.id
+        );
+        return inputValue;
+      }
+      throw new Error(`invalid input number (${component.name})`);
+    // case "Sample":
+    //   return true;
     default:
       throw new Error(`invalid component (${component.name})`);
   }
 }
 
+// class CCEvaluation {
+//   inputCache: Map<Map<CCPinId, boolean>, Map<CCPinId, boolean>>;
+
+//   constructor() {
+//     this.inputCache = new Map<Map<CCPinId, boolean>, Map<CCPinId, boolean>>();
+//   }
+
+//   clear() {
+//     this.inputCache.clear();
+//   }
+// }
+
 export default function evaluateComponent(
   store: CCStore,
+  componentEditorStore: ComponentEditorStore,
   componentId: CCComponentId,
   input: Map<CCPinId, boolean>
 ) {
@@ -90,10 +127,10 @@ export default function evaluateComponent(
         const connectedNodeId = pin.implementation.nodeId;
         const connectedPinId = pin.implementation.pinId;
         if (
-          !store.connections.getConnectionIdByPinId(
+          store.connections.getConnectionIdsByPinId(
             connectedNodeId,
             connectedPinId
-          )
+          )?.length === 0
         ) {
           const tmp = inputValues.get(connectedNodeId)!;
           tmp.set(connectedPinId, input.get(pinId)!);
@@ -122,25 +159,28 @@ export default function evaluateComponent(
     ) {
       const outputs = evaluateComponent(
         store,
+        componentEditorStore,
         currentComponentId,
         inputValues.get(currentNodeId)!
       )!;
       for (const [outputPinId, outputValue] of outputs) {
-        const connectionId = store.connections.getConnectionIdByPinId(
+        const connectionIds = store.connections.getConnectionIdsByPinId(
           currentNodeId,
           outputPinId
         )!;
-        const connection = store.connections.get(connectionId);
-        if (connection) {
-          const connectedNodeId = connection.to.nodeId;
-          const connectedPinId = connection.to.pinId;
-          const tmp = inputValues.get(connectedNodeId)!;
-          tmp.set(connectedPinId, outputValue);
-          inputValues.set(connectedNodeId, tmp);
-          foundInputNumber.set(
-            connectedNodeId,
-            foundInputNumber.get(connectedNodeId)! + 1
-          );
+        if (connectionIds.length !== 0) {
+          for (const connectionId of connectionIds) {
+            const connection = store.connections.get(connectionId)!;
+            const connectedNodeId = connection.to.nodeId;
+            const connectedPinId = connection.to.pinId;
+            const tmp = inputValues.get(connectedNodeId)!;
+            tmp.set(connectedPinId, outputValue);
+            inputValues.set(connectedNodeId, tmp);
+            foundInputNumber.set(
+              connectedNodeId,
+              foundInputNumber.get(connectedNodeId)! + 1
+            );
+          }
         } else {
           const parentComponentPinId = pinIds.find((id) => {
             const pin = store.pins.get(id)!;

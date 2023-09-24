@@ -24,6 +24,7 @@ export type CCComponentEditorProps = {
 function CCComponentEditorContent({ componentId }: CCComponentEditorProps) {
   const rendererRef = useRef<CCComponentEditorRenderer>();
   const containerRef = useRef<HTMLDivElement>(null);
+  const overlayAreaRef = useRef<HTMLDivElement>(null);
   const store = useStore();
   const componentEditorStore = useComponentEditorStore();
   const componentEditorState = componentEditorStore();
@@ -34,10 +35,13 @@ function CCComponentEditorContent({ componentId }: CCComponentEditorProps) {
     useState<PIXI.Point | null>(null);
 
   useEffect(() => {
-    invariant(containerRef.current);
+    invariant(containerRef.current && overlayAreaRef.current);
     const app = new CCComponentEditorRenderer({
-      store,
-      componentEditorStore,
+      context: {
+        store,
+        componentEditorStore,
+        overlayArea: overlayAreaRef.current,
+      },
       componentId,
       htmlContainer: containerRef.current,
       onContextMenu: setContextMenuPosition,
@@ -72,6 +76,17 @@ function CCComponentEditorContent({ componentId }: CCComponentEditorProps) {
               ),
             })
           );
+        }}
+      />
+      <div
+        ref={overlayAreaRef}
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
+          pointerEvents: "none",
         }}
       />
       <Paper

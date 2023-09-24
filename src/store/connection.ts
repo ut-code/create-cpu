@@ -96,16 +96,18 @@ export class CCConnectionStore extends EventEmitter<CCConnectionStoreEvents> {
     ];
   }
 
-  getConnectionIdByPinId(
+  getConnectionIdsByPinId(
     nodeId: CCNodeId,
     pinId: CCPinId
-  ): CCConnectionId | undefined {
-    return [...this.#connections.values()].find(
-      (connection) =>
-        (connection.from.nodeId === nodeId &&
-          connection.from.pinId === pinId) ||
-        (connection.to.nodeId === nodeId && connection.to.pinId === pinId)
-    )?.id;
+  ): CCConnectionId[] | undefined {
+    return [...this.#connections.values()]
+      .filter(
+        (connection) =>
+          (connection.from.nodeId === nodeId &&
+            connection.from.pinId === pinId) ||
+          (connection.to.nodeId === nodeId && connection.to.pinId === pinId)
+      )
+      .map((connection) => connection.id);
   }
 
   static create(partialConnection: Omit<CCConnection, "id">): CCConnection {

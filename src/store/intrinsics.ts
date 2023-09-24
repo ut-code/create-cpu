@@ -115,6 +115,28 @@ export const xorIntrinsicComponentOutputPin: CCPin = {
   implementation: { type: "intrinsic" },
 };
 
+export const inputIntrinsicComponent: CCComponent = {
+  id: "ffffffff-0005-4000-8000-000000000000" as CCComponentId,
+  isIntrinsic: true,
+  name: "Input",
+};
+
+export const inputIntrinsicComponentInputPin: CCPin = {
+  id: "ffffffff-0005-4000-8000-000000000001" as CCPinId,
+  componentId: inputIntrinsicComponent.id,
+  type: "input",
+  name: "In",
+  implementation: { type: "intrinsic" },
+};
+
+export const inputIntrinsicComponentOutputPin: CCPin = {
+  id: "ffffffff-0005-4000-8000-000000000002" as CCPinId,
+  componentId: inputIntrinsicComponent.id,
+  type: "output",
+  name: "Out",
+  implementation: { type: "intrinsic" },
+};
+
 export function registerIntrinsics(store: CCStore) {
   store.components.register(andIntrinsicComponent);
   store.pins.register(andIntrinsicComponentInputPinA);
@@ -131,4 +153,7 @@ export function registerIntrinsics(store: CCStore) {
   store.pins.register(xorIntrinsicComponentInputPinA);
   store.pins.register(xorIntrinsicComponentInputPinB);
   store.pins.register(xorIntrinsicComponentOutputPin);
+  store.components.register(inputIntrinsicComponent);
+  store.pins.register(inputIntrinsicComponentInputPin);
+  store.pins.register(inputIntrinsicComponentOutputPin);
 }
