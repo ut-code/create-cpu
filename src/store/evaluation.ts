@@ -12,23 +12,30 @@ function evaluateIntrinsic(
   const pinIds = store.pins.getPinIdsByComponentId(componentId);
   switch (component.name) {
     case "Not":
-      if (pinIds.length === 1) {
+      if (pinIds.length === 2) {
         const inputValue = input.get(pinIds[0] as CCPinId);
         return !inputValue;
       }
       throw new Error(`invalid input number (${component.name})`);
     case "And":
-      if (pinIds.length === 2) {
+      if (pinIds.length === 3) {
         const inputValue0 = input.get(pinIds[0] as CCPinId);
         const inputValue1 = input.get(pinIds[1] as CCPinId);
         return inputValue0 && inputValue1;
       }
       throw new Error(`invalid input number (${component.name})`);
     case "Or":
-      if (pinIds.length === 2) {
+      if (pinIds.length === 3) {
         const inputValue0 = input.get(pinIds[0] as CCPinId);
         const inputValue1 = input.get(pinIds[1] as CCPinId);
         return inputValue0 || inputValue1;
+      }
+      throw new Error(`invalid input number (${component.name})`);
+    case "Xor":
+      if (pinIds.length === 3) {
+        const inputValue0 = input.get(pinIds[0] as CCPinId);
+        const inputValue1 = input.get(pinIds[1] as CCPinId);
+        return inputValue0 !== inputValue1;
       }
       throw new Error(`invalid input number (${component.name})`);
     case "Sample":
@@ -82,13 +89,20 @@ export default function evaluateComponent(
       if (pin.implementation.type === "user") {
         const connectedNodeId = pin.implementation.nodeId;
         const connectedPinId = pin.implementation.pinId;
-        const tmp = inputValues.get(connectedNodeId)!;
-        tmp.set(connectedPinId, input.get(pinId)!);
-        inputValues.set(connectedNodeId, tmp);
-        foundInputNumber.set(
-          connectedNodeId,
-          foundInputNumber.get(connectedNodeId)! + 1
-        );
+        if (
+          !store.connections.getConnectionIdByPinId(
+            connectedNodeId,
+            connectedPinId
+          )
+        ) {
+          const tmp = inputValues.get(connectedNodeId)!;
+          tmp.set(connectedPinId, input.get(pinId)!);
+          inputValues.set(connectedNodeId, tmp);
+          foundInputNumber.set(
+            connectedNodeId,
+            foundInputNumber.get(connectedNodeId)! + 1
+          );
+        }
       }
     }
   }
@@ -128,7 +142,16 @@ export default function evaluateComponent(
             foundInputNumber.get(connectedNodeId)! + 1
           );
         } else {
-          componentOutputs.set(outputPinId, outputValue);
+          const parentComponentPinId = pinIds.find((id) => {
+            const pin = store.pins.get(id)!;
+            return (
+              pin.type === "output" &&
+              pin.implementation.type === "user" &&
+              pin.implementation.nodeId === currentNodeId &&
+              pin.implementation.pinId === outputPinId
+            );
+          })!;
+          componentOutputs.set(parentComponentPinId, outputValue);
         }
       }
     } else {

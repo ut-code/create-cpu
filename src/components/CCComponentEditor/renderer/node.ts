@@ -18,6 +18,7 @@ export type CCComponentEditorRendererNodeProps = {
   onDragStart(e: PIXI.FederatedMouseEvent): void;
   onDragStartPin(e: PIXI.FederatedMouseEvent, pinId: CCPinId): void;
   onDragEndPin(e: PIXI.FederatedMouseEvent, pinId: CCPinId): void;
+  simulation(nodeId: CCNodeId): Map<CCPinId, boolean>;
 };
 
 type PixiTexts = {
@@ -59,11 +60,14 @@ export default class CCComponentEditorRendererNode {
 
   #pixiWorld: PIXI.Container;
 
+  #simulation: (nodeId: CCNodeId) => Map<CCPinId, boolean>;
+
   constructor(props: CCComponentEditorRendererNodeProps) {
     this.#store = props.store;
     this.#componentEditorStore = props.componentEditorStore;
     this.#nodeId = props.nodeId;
     this.#pixiParentContainer = props.pixiParentContainer;
+    this.#simulation = props.simulation;
     this.#pixiGraphics = new PIXI.Graphics();
     this.#pixiGraphics.interactive = true;
     this.#pixiTexts = this.#createText();
@@ -228,6 +232,9 @@ export default class CCComponentEditorRendererNode {
           newComponentPinRenderers.set(pinId, existingComponentPinRenderer);
           existingComponentPinRenderers.delete(pinId);
         } else {
+          const simulation = () => {
+            return this.#simulation(this.#nodeId);
+          };
           const componentPinRenderer =
             new CCComponentEditorRendererComponentPin({
               store: this.#store,
@@ -240,6 +247,7 @@ export default class CCComponentEditorRendererNode {
                 this.#nodeId,
                 pinId
               ),
+              simulation,
             });
           newComponentPinRenderers.set(pinId, componentPinRenderer);
         }
