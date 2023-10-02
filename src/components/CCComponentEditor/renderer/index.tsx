@@ -441,21 +441,25 @@ export default class CCComponentEditorRenderer extends CCComponentEditorRenderer
   #onConnectionAdded = (connection: CCConnection) => {
     if (connection.parentComponentId !== this.#componentId) return;
     this.#addConnectionRenderer(connection.id);
+    this.#simulator.clear();
   };
 
   #onConnectionRemoved = (connection: CCConnection) => {
     if (connection.parentComponentId !== this.#componentId) return;
     this.#connectionRenderers.get(connection.id)?.destroy();
+    this.#simulator.clear();
   };
 
   #onNodeAdded = (node: CCNode) => {
     if (node.parentComponentId !== this.#componentId) return;
     this.#addNodeRenderer(node.id);
+    this.#simulator.clear();
   };
 
   #onNodeRemoved = (node: CCNode) => {
     if (node.parentComponentId !== this.#componentId) return;
     this.#nodeRenderers.get(node.id)?.destroy();
+    this.#simulator.clear();
   };
 
   #render = () => {
