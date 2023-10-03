@@ -273,6 +273,8 @@ export default class CCComponentEditorRenderer extends CCComponentEditorRenderer
 
     // Context menu
     this.#pixiApplication.stage.on("rightclick", (e) => {
+      const componentEditorState = this.context.componentEditorStore.getState();
+      if (componentEditorState.editorMode === "play") return;
       props.onContextMenu(e.global.clone());
       e.preventDefault();
     });
@@ -302,6 +304,8 @@ export default class CCComponentEditorRenderer extends CCComponentEditorRenderer
     };
     const onDragStartPin = (e: PIXI.FederatedMouseEvent, pinId: CCPinId) => {
       // const node = this.context.store.nodes.get(nodeId)!;
+      const componentEditorState = this.context.componentEditorStore.getState();
+      if (componentEditorState.editorMode === "play") return;
       const lineWidth = 2;
       const lineColor = 0x000000;
       // this.#creatingConnectionPixiGraphics.clear();
