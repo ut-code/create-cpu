@@ -66,7 +66,8 @@ function CCComponentEditorContent({ componentId }: CCComponentEditorProps) {
           const droppedComponentId = parseDataTransferAsComponent(
             e.dataTransfer
           );
-          if (!droppedComponentId) return;
+          if (!droppedComponentId || componentEditorState.editorMode === "play")
+            return;
           store.nodes.register(
             CCNodeStore.create({
               componentId: droppedComponentId,
