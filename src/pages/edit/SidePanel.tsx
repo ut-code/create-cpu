@@ -4,12 +4,12 @@ import nullthrows from "nullthrows";
 import { Color } from "pixi.js";
 import { useState } from "react";
 import { Search } from "@mui/icons-material";
-import useAllComponents from "../store/react/selectors";
-import { useStore } from "../store/react";
-import type { CCComponentId } from "../store/component";
-import { ccPinTypes } from "../store/pin";
-import { blackColor, whiteColor } from "../common/theme";
-import { setDataTransferAsComponent } from "../common/serialization";
+import useAllComponents from "../../store/react/selectors";
+import { useStore } from "../../store/react";
+import type { CCComponentId } from "../../store/component";
+import { ccPinTypes } from "../../store/pin";
+import { blackColor, whiteColor } from "../../common/theme";
+import { setDataTransferAsComponent } from "../../common/serialization";
 
 function ComponentRenderer({ componentId }: { componentId: CCComponentId }) {
   const store = useStore();

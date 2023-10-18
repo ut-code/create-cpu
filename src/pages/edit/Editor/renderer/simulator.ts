@@ -1,7 +1,7 @@
-import type CCStore from "../../../store";
-import type { CCComponentId } from "../../../store/component";
-import CCEvaluation from "../../../store/evaluation";
-import type { CCPinId } from "../../../store/pin";
+import type CCStore from "../../../../store";
+import type { CCComponentId } from "../../../../store/component";
+import CCEvaluation from "../../../../store/evaluation";
+import type { CCPinId } from "../../../../store/pin";
 import type { ComponentEditorStore } from "../store";
 
 type CCSimulatorProps = {

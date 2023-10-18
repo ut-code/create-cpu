@@ -1,6 +1,6 @@
 /* eslint-disable max-classes-per-file */
 
-import type CCStore from "../../../store";
+import type CCStore from "../../../../store";
 import type { ComponentEditorStore } from "../store";
 
 export type CCComponentEditorRendererContext = {

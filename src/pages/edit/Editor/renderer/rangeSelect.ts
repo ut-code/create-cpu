@@ -1,8 +1,8 @@
 import invariant from "tiny-invariant";
 import * as PIXI from "pixi.js";
-import type CCStore from "../../../store";
+import type CCStore from "../../../../store";
 import type { ComponentEditorStore } from "../store";
-import { primaryColor } from "../../../common/theme";
+import { primaryColor } from "../../../../common/theme";
 
 type CCComponentEditorRendererRangeSelectProps = {
   store: CCStore;
