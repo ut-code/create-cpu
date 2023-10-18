@@ -1,5 +1,5 @@
 import * as PIXI from "pixi.js";
-import type { Perspective } from "../../../common/perspective";
+import type { Perspective } from "../../../../common/perspective";
 
 export type WorldPerspectiveStoreMixin = {
   canvasSize: PIXI.Point;

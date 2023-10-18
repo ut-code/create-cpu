@@ -1,26 +1,37 @@
-import { Box, Divider } from "@mui/material";
-import CCComponentEditor from "./components/CCComponentEditor";
+import { Box } from "@mui/material";
+import { useState } from "react";
 import "@pixi/math-extras";
-import SidePanel from "./components/SidePanel";
 import GlobalHeader from "./components/GlobalHeader";
 import { useStore } from "./store/react";
+import type { CCComponentId } from "./store/component";
+import EditPage from "./pages/edit";
+import HomePage from "./pages/home";
 
 export default function App() {
   const store = useStore();
+  const [editedComponentId, setEditedComponentId] =
+    useState<CCComponentId | null>(store.components.rootComponentId);
 
   return (
     <Box
       sx={{
         display: "grid",
         gridTemplateRows: "max-content 1fr",
-        gridTemplateColumns: "200px max-content 1fr",
         height: "100%",
       }}
     >
       <GlobalHeader style={{ gridColumn: "1 / -1" }} />
-      <SidePanel />
-      <Divider orientation="vertical" />
-      <CCComponentEditor componentId={store.components.rootComponentId} />
+      {editedComponentId ? (
+        <EditPage
+          editedComponentId={editedComponentId}
+          onEditOtherComponent={setEditedComponentId}
+          onClose={() => {
+            setEditedComponentId(null);
+          }}
+        />
+      ) : (
+        <HomePage onComponentSelected={setEditedComponentId} />
+      )}
     </Box>
   );
 }

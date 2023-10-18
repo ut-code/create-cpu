@@ -2,26 +2,39 @@ import * as PIXI from "pixi.js";
 import {
   Box,
   ClickAwayListener,
+  Divider,
   Fab,
+  IconButton,
   MenuItem,
   MenuList,
   Paper,
 } from "@mui/material";
 import { useEffect, useRef, useState } from "react";
 import invariant from "tiny-invariant";
-import { Edit, KeyboardDoubleArrowRight, PlayArrow } from "@mui/icons-material";
-import { useStore } from "../../store/react";
+import {
+  Close,
+  Edit,
+  KeyboardDoubleArrowRight,
+  PlayArrow,
+} from "@mui/icons-material";
+import { useStore } from "../../../store/react";
 import CCComponentEditorRenderer from "./renderer";
-import type { CCComponentId } from "../../store/component";
-import { parseDataTransferAsComponent } from "../../common/serialization";
-import { CCNodeStore } from "../../store/node";
+import type { CCComponentId } from "../../../store/component";
+import { parseDataTransferAsComponent } from "../../../common/serialization";
+import { CCNodeStore } from "../../../store/node";
 import { ComponentEditorStoreProvider, useComponentEditorStore } from "./store";
 
 export type CCComponentEditorProps = {
   componentId: CCComponentId;
+  onEditComponent: (componentId: CCComponentId) => void;
+  onClose: () => void;
 };
 
-function CCComponentEditorContent({ componentId }: CCComponentEditorProps) {
+function CCComponentEditorContent({
+  componentId,
+  onEditComponent,
+  onClose,
+}: CCComponentEditorProps) {
   const rendererRef = useRef<CCComponentEditorRenderer>();
   const containerRef = useRef<HTMLDivElement>(null);
   const overlayAreaRef = useRef<HTMLDivElement>(null);
@@ -105,6 +118,15 @@ function CCComponentEditorContent({ componentId }: CCComponentEditorProps) {
         <Box sx={{ color: "text.secondary" }}>Components</Box>
         <KeyboardDoubleArrowRight />
         {component.name}
+        <div aria-hidden style={{ flexGrow: 1 }} />
+        <IconButton
+          size="small"
+          onClick={() => {
+            onClose();
+          }}
+        >
+          <Close fontSize="small" />
+        </IconButton>
       </Paper>
       <Fab
         style={{ position: "absolute", bottom: "40px", right: "40px" }}
@@ -159,6 +181,36 @@ function CCComponentEditorContent({ componentId }: CCComponentEditorProps) {
                 Delete
               </MenuItem>
             )}
+
+            {(() => {
+              if (componentEditorState.selectedNodeIds.size !== 1)
+                return undefined;
+              const iteratorResult = componentEditorState.selectedNodeIds
+                .values()
+                .next();
+              invariant(!iteratorResult.done);
+              const targetNode = store.nodes.get(iteratorResult.value);
+              invariant(targetNode);
+              const targetComponent = store.components.get(
+                targetNode.componentId
+              );
+              invariant(targetComponent);
+              if (targetComponent.isIntrinsic) return undefined;
+              return (
+                <>
+                  <Divider />
+                  <MenuItem
+                    onClick={() => {
+                      invariant(targetNode);
+                      setContextMenuPosition(null);
+                      onEditComponent(targetNode.componentId);
+                    }}
+                  >
+                    Edit...
+                  </MenuItem>
+                </>
+              );
+            })()}
           </MenuList>
         </ClickAwayListener>
       )}

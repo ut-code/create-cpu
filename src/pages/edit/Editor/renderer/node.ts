@@ -1,10 +1,10 @@
 // import type { Point } from "pixi.js";
 import * as PIXI from "pixi.js";
 import type { Point } from "pixi.js";
-import { blackColor, primaryColor, whiteColor } from "../../../common/theme";
-import type { CCNodeId } from "../../../store/node";
-import { type CCPinId } from "../../../store/pin";
-import type CCStore from "../../../store";
+import { blackColor, primaryColor, whiteColor } from "../../../../common/theme";
+import type { CCNodeId } from "../../../../store/node";
+import { type CCPinId } from "../../../../store/pin";
+import type CCStore from "../../../../store";
 import CCComponentEditorRendererNodePin from "./nodePin";
 import CCComponentEditorRendererComponentPin from "./componentPin";
 import { rearrangeRangeSelect } from "./rangeSelect";

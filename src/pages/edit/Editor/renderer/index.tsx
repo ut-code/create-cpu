@@ -1,17 +1,17 @@
 import * as PIXI from "pixi.js";
 import invariant from "tiny-invariant";
-import { editorBackgroundColor } from "../../../common/theme";
-import type { CCComponentId } from "../../../store/component";
-import type { CCNode, CCNodeId } from "../../../store/node";
+import { editorBackgroundColor } from "../../../../common/theme";
+import type { CCComponentId } from "../../../../store/component";
+import type { CCNode, CCNodeId } from "../../../../store/node";
 import CCComponentEditorRendererNode from "./node";
 import {
   CCConnectionStore,
   type CCConnection,
   type CCConnectionId,
-} from "../../../store/connection";
+} from "../../../../store/connection";
 import CCComponentEditorRendererConnection from "./connection";
 import CCComponentEditorRendererRangeSelect from "./rangeSelect";
-import type { CCPinId } from "../../../store/pin";
+import type { CCPinId } from "../../../../store/pin";
 import CCSimulator from "./simulator";
 import type { CCComponentEditorRendererContext } from "./base";
 import CCComponentEditorRendererBase from "./base";
