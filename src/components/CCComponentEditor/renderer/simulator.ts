@@ -28,6 +28,14 @@ export default class CCSimulator {
     return output;
   };
 
+  multipleSimulation = (input: Map<CCPinId, boolean[]>) => {
+    const outputs = this.#evaluation.evaluateMultipleComponent(
+      this.#componentId,
+      input
+    );
+    return outputs;
+  };
+
   clear() {
     this.#evaluation.clear();
   }

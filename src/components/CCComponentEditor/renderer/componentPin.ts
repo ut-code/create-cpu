@@ -19,6 +19,7 @@ type CCComponentEditorRendererPortProps = {
   pinId: CCPinId;
   position: PIXI.Point;
   simulation: () => Map<CCPinId, boolean>;
+  multipleSimulation: () => Map<CCPinId, boolean[]>;
 };
 
 export default class CCComponentEditorRendererPort {
@@ -44,7 +45,11 @@ export default class CCComponentEditorRendererPort {
 
   readonly #unsubscribeComponentEditorStore: () => void;
 
+  // eslint-disable-next-line
+  // @ts-ignore
   readonly #simulation: () => Map<CCPinId, boolean>;
+
+  readonly #multiSimulation: () => Map<CCPinId, boolean[]>;
 
   private static readonly drawingConstants = {
     marginToNode: 20,
@@ -62,6 +67,7 @@ export default class CCComponentEditorRendererPort {
     this.#pinId = props.pinId;
     this.position = props.position;
     this.#simulation = props.simulation;
+    this.#multiSimulation = props.multipleSimulation;
     this.#componentEditorStore = props.componentEditorStore;
     this.#pixiParentContainer = props.pixiParentContainer;
     this.#pixiContainer = new PIXI.Container();
@@ -142,10 +148,23 @@ export default class CCComponentEditorRendererPort {
           : "0";
         this.#pixiGraphics.beginFill(activeColor);
       } else {
-        const output = this.#simulation();
-        for (const [key, value] of output) {
+        // const output = this.#simulation();
+        const multipleOutput = this.#multiSimulation();
+        // for (const [key, value] of output) {
+        //   if (key === this.#pinId) {
+        //     this.#pixiValueText.text = value ? "1" : "0";
+        //   }
+        // }
+        const createValueText = (values: boolean[]) => {
+          let valueText = "";
+          for (let i = 0; i < values.length; i += 1) {
+            valueText += values[i] ? "1" : "0";
+          }
+          return valueText;
+        };
+        for (const [key, values] of multipleOutput) {
           if (key === this.#pinId) {
-            this.#pixiValueText.text = value ? "1" : "0";
+            this.#pixiValueText.text = createValueText(values);
           }
         }
         this.#pixiGraphics.beginFill(grayColor.darken2);

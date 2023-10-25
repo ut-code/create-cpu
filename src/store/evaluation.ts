@@ -282,6 +282,11 @@ export default class CCEvaluation {
             intrinsics.andIntrinsicComponentInputPinB.id
           );
           const outputValue = [];
+          if (inputValue0!.length !== inputValue1!.length) {
+            throw new Error(
+              `invalid multiplicity of input (${component.name})`
+            );
+          }
           for (let i = 0; i < inputValue0!.length; i += 1) {
             outputValue.push(inputValue0![i]! && inputValue1![i]!);
           }
@@ -296,6 +301,11 @@ export default class CCEvaluation {
           const inputValue1 = input.get(
             intrinsics.orIntrinsicComponentInputPinB.id
           );
+          if (inputValue0!.length !== inputValue1!.length) {
+            throw new Error(
+              `invalid multiplicity of input (${component.name})`
+            );
+          }
           const outputValue = [];
           for (let i = 0; i < inputValue0!.length; i += 1) {
             outputValue.push(inputValue0![i]! || inputValue1![i]!);
@@ -311,6 +321,11 @@ export default class CCEvaluation {
           const inputValue1 = input.get(
             intrinsics.xorIntrinsicComponentInputPinB.id
           );
+          if (inputValue0!.length !== inputValue1!.length) {
+            throw new Error(
+              `invalid multiplicity of input (${component.name})`
+            );
+          }
           const outputValue = [];
           for (let i = 0; i < inputValue0!.length; i += 1) {
             outputValue.push(inputValue0![i]! !== inputValue1![i]!);
@@ -324,6 +339,36 @@ export default class CCEvaluation {
             intrinsics.inputIntrinsicComponentInputPin.id
           );
           return inputValue!;
+        }
+        throw new Error(`invalid input number (${component.name})`);
+      case intrinsics.fourBitsIntrinsicComponent.id:
+        if (pinIds.length === 5) {
+          const inputValue0 = input.get(
+            intrinsics.fourBitsIntrinsicComponentInputPin0.id
+          );
+          const inputValue1 = input.get(
+            intrinsics.fourBitsIntrinsicComponentInputPin1.id
+          );
+          const inputValue2 = input.get(
+            intrinsics.fourBitsIntrinsicComponentInputPin2.id
+          );
+          const inputValue3 = input.get(
+            intrinsics.fourBitsIntrinsicComponentInputPin3.id
+          );
+          if (
+            inputValue0!.length === 1 &&
+            inputValue1!.length === 1 &&
+            inputValue2!.length === 1 &&
+            inputValue3!.length === 1
+          ) {
+            const outputValue = [];
+            outputValue.push(inputValue3![0]!);
+            outputValue.push(inputValue2![0]!);
+            outputValue.push(inputValue1![0]!);
+            outputValue.push(inputValue0![0]!);
+            return outputValue;
+          }
+          throw new Error(`invalid multiplicity of input (${component.name})`);
         }
         throw new Error(`invalid input number (${component.name})`);
       // case "Sample":
