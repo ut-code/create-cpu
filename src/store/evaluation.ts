@@ -11,6 +11,8 @@ export default class CCEvaluation {
 
   #inputMultipleCache: Map<CCEvaluationId, Map<CCPinId, boolean[]>>;
 
+  static readonly #cacheSize = 5;
+
   #store: CCStore;
 
   constructor(store: CCStore) {
@@ -396,9 +398,8 @@ export default class CCEvaluation {
       }
       return outputMap;
     }
-    const cacheHit = this.#inputMultipleCache.get(
-      CCEvaluation.createMultipleId(componentId, input)
-    );
+    const id = CCEvaluation.createMultipleId(componentId, input);
+    const cacheHit = this.#inputMultipleCache.get(id);
     if (cacheHit) {
       return cacheHit;
     }
@@ -483,8 +484,8 @@ export default class CCEvaluation {
               );
             }
           } else {
-            const parentComponentPinId = pinIds.find((id) => {
-              const pin = this.#store.pins.get(id)!;
+            const parentComponentPinId = pinIds.find((pinId) => {
+              const pin = this.#store.pins.get(pinId)!;
               return (
                 pin.type === "output" &&
                 pin.implementation.type === "user" &&
@@ -499,10 +500,10 @@ export default class CCEvaluation {
         unvisitedNodes.add(currentNodeId);
       }
     }
-    this.#inputMultipleCache.set(
-      CCEvaluation.createMultipleId(componentId, input),
-      componentOutputs
-    );
+    if (this.#inputMultipleCache.size >= CCEvaluation.#cacheSize) {
+      this.#inputMultipleCache.delete([...this.#inputMultipleCache.keys()][0]!);
+    }
+    this.#inputMultipleCache.set(id, componentOutputs);
     return componentOutputs;
   }
 }
