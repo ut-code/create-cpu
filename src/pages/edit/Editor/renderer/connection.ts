@@ -1,8 +1,8 @@
 import * as PIXI from "pixi.js";
-import type { CCConnectionId } from "../../../store/connection";
-import type CCStore from "../../../store";
-import type { CCPinId } from "../../../store/pin";
-import type { CCNodeId } from "../../../store/node";
+import type { CCConnectionId } from "../../../../store/connection";
+import type CCStore from "../../../../store";
+import type { CCPinId } from "../../../../store/pin";
+import type { CCNodeId } from "../../../../store/node";
 import CCComponentEditorRendererNode from "./node";
 import type { ComponentEditorStore } from "../store";
 

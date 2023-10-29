@@ -1,16 +1,16 @@
 import * as PIXI from "pixi.js";
 import invariant from "tiny-invariant";
-import type CCStore from "../../../store";
+import type CCStore from "../../../../store";
 import type { ComponentEditorStore, EditorModePlay } from "../store";
-import type { CCNodeId } from "../../../store/node";
-import type { CCPinId } from "../../../store/pin";
+import type { CCNodeId } from "../../../../store/node";
+import type { CCPinId } from "../../../../store/pin";
 import {
   activeColor,
   editorGridColor,
   errorColor,
   grayColor,
   whiteColor,
-} from "../../../common/theme";
+} from "../../../../common/theme";
 
 type CCComponentEditorRendererPortProps = {
   store: CCStore;

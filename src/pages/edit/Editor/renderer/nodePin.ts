@@ -1,8 +1,8 @@
 import * as PIXI from "pixi.js";
-import type CCStore from "../../../store";
-import type { CCPinId } from "../../../store/pin";
-import type { CCNodeId } from "../../../store/node";
-import { blackColor, whiteColor, primaryColor } from "../../../common/theme";
+import type CCStore from "../../../../store";
+import type { CCPinId } from "../../../../store/pin";
+import type { CCNodeId } from "../../../../store/node";
+import { blackColor, whiteColor, primaryColor } from "../../../../common/theme";
 
 export type CCComponentEditorRendererNodePinProps = {
   store: CCStore;

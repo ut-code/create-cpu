@@ -2,9 +2,9 @@ import { createContext, useContext, useState } from "react";
 import invariant from "tiny-invariant";
 import { create } from "zustand";
 import PIXI from "pixi.js";
-import type { CCPinId } from "../../../store/pin";
-import type { CCNodeId } from "../../../store/node";
-import type { CCConnectionId } from "../../../store/connection";
+import type { CCPinId } from "../../../../store/pin";
+import type { CCNodeId } from "../../../../store/node";
+import type { CCConnectionId } from "../../../../store/connection";
 import {
   type WorldPerspectiveStoreMixin,
   worldPerspectiveStoreMixin,
