@@ -7,6 +7,7 @@ import type { CCPinId } from "../../../store/pin";
 import {
   activeColor,
   editorGridColor,
+  errorColor,
   grayColor,
   whiteColor,
 } from "../../../common/theme";
@@ -19,7 +20,7 @@ type CCComponentEditorRendererPortProps = {
   pinId: CCPinId;
   position: PIXI.Point;
   simulation: () => Map<CCPinId, boolean>;
-  multipleSimulation: () => Map<CCPinId, boolean[]>;
+  multipleSimulation: () => Map<CCPinId, boolean[]> | null;
 };
 
 export default class CCComponentEditorRendererPort {
@@ -49,7 +50,7 @@ export default class CCComponentEditorRendererPort {
   // @ts-ignore
   readonly #simulation: () => Map<CCPinId, boolean>;
 
-  readonly #multiSimulation: () => Map<CCPinId, boolean[]>;
+  readonly #multipleSimulation: () => Map<CCPinId, boolean[]> | null;
 
   #valueBoxWidth: number;
 
@@ -69,7 +70,7 @@ export default class CCComponentEditorRendererPort {
     this.#pinId = props.pinId;
     this.position = props.position;
     this.#simulation = props.simulation;
-    this.#multiSimulation = props.multipleSimulation;
+    this.#multipleSimulation = props.multipleSimulation;
     this.#componentEditorStore = props.componentEditorStore;
     this.#pixiParentContainer = props.pixiParentContainer;
     this.#pixiContainer = new PIXI.Container();
@@ -144,29 +145,34 @@ export default class CCComponentEditorRendererPort {
         this.#pixiGraphics.beginFill(activeColor);
       } else {
         // const output = this.#simulation();
-        const multipleOutput = this.#multiSimulation();
+        const multipleOutput = this.#multipleSimulation();
         // for (const [key, value] of output) {
         //   if (key === this.#pinId) {
         //     this.#pixiValueText.text = value ? "1" : "0";
         //   }
         // }
-        const createValueText = (values: boolean[]) => {
-          let valueText = "";
-          for (let i = 0; i < values.length; i += 1) {
-            valueText += values[i] ? "1" : "0";
+        if (multipleOutput) {
+          const createValueText = (values: boolean[]) => {
+            let valueText = "";
+            for (let i = 0; i < values.length; i += 1) {
+              valueText += values[i] ? "1" : "0";
+            }
+            return valueText;
+          };
+          for (const [key, values] of multipleOutput) {
+            if (key === this.#pinId) {
+              this.#pixiValueText.text = createValueText(values);
+              this.#valueBoxWidth =
+                c.valueBoxWidthUnit +
+                ((values.length - 1) * c.valueBoxWidthUnit) / 4;
+              break;
+            }
           }
-          return valueText;
-        };
-        for (const [key, values] of multipleOutput) {
-          if (key === this.#pinId) {
-            this.#pixiValueText.text = createValueText(values);
-            this.#valueBoxWidth =
-              c.valueBoxWidthUnit +
-              ((values.length - 1) * c.valueBoxWidthUnit) / 4;
-            break;
-          }
+          this.#pixiGraphics.beginFill(grayColor.darken2);
+        } else {
+          this.#pixiValueText.text = "";
+          this.#pixiGraphics.beginFill(errorColor);
         }
-        this.#pixiGraphics.beginFill(grayColor.darken2);
       }
       this.#pixiLabelText.anchor.set(pin.type === "input" ? 1 : 0, 0.5);
       this.#pixiLabelText.position.set(

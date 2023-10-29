@@ -20,7 +20,7 @@ export type CCComponentEditorRendererNodeProps = {
   onDragStartPin(e: PIXI.FederatedMouseEvent, pinId: CCPinId): void;
   onDragEndPin(e: PIXI.FederatedMouseEvent, pinId: CCPinId): void;
   simulation(nodeId: CCNodeId): Map<CCPinId, boolean>;
-  multipleSimulation(nodeId: CCNodeId): Map<CCPinId, boolean[]>;
+  multipleSimulation(nodeId: CCNodeId): Map<CCPinId, boolean[]> | null;
 };
 
 type PixiTexts = {
@@ -60,7 +60,7 @@ export default class CCComponentEditorRendererNode extends CCComponentEditorRend
 
   #simulation: (nodeId: CCNodeId) => Map<CCPinId, boolean>;
 
-  #multipleSimulation: (nodeId: CCNodeId) => Map<CCPinId, boolean[]>;
+  #multipleSimulation: (nodeId: CCNodeId) => Map<CCPinId, boolean[]> | null;
 
   constructor(props: CCComponentEditorRendererNodeProps) {
     super(props.context);

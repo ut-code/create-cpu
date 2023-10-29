@@ -437,6 +437,7 @@ export default class CCComponentEditorRenderer extends CCComponentEditorRenderer
         }
       }
       const output = this.#simulator.multipleSimulation(input);
+      if (output == null) return null;
       const nodeOutput = new Map<CCPinId, boolean[]>();
       for (const [outputPinId, outputValue] of output) {
         const pin = this.context.store.pins.get(outputPinId)!;

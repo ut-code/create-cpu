@@ -1,3 +1,4 @@
+import invariant from "tiny-invariant";
 import type CCStore from ".";
 import type { CCComponentId } from "./component";
 import type { CCPinId } from "./pin";
@@ -259,120 +260,108 @@ export default class CCEvaluation {
   evaluateMultipleIntrinsic(
     componentId: CCComponentId,
     input: Map<CCPinId, boolean[]>
-  ) {
+  ): boolean[] | null {
     const component = this.#store.components.get(componentId)!;
     const pinIds = this.#store.pins.getPinIdsByComponentId(componentId);
     switch (component.id) {
-      case intrinsics.notIntrinsicComponent.id:
-        if (pinIds.length === 2) {
-          const inputValue = input.get(
-            intrinsics.notIntrinsicComponentInputPin.id
-          );
+      case intrinsics.notIntrinsicComponent.id: {
+        invariant(pinIds.length === 2);
+        const inputValue = input.get(
+          intrinsics.notIntrinsicComponentInputPin.id
+        );
+        const outputValue = [];
+        for (const value of inputValue!) {
+          outputValue.push(!value);
+        }
+        return outputValue;
+      }
+      case intrinsics.andIntrinsicComponent.id: {
+        invariant(pinIds.length === 3);
+        const inputValue0 = input.get(
+          intrinsics.andIntrinsicComponentInputPinA.id
+        );
+        const inputValue1 = input.get(
+          intrinsics.andIntrinsicComponentInputPinB.id
+        );
+        const outputValue = [];
+        if (inputValue0!.length !== inputValue1!.length) {
+          return null;
+        }
+        for (let i = 0; i < inputValue0!.length; i += 1) {
+          outputValue.push(inputValue0![i]! && inputValue1![i]!);
+        }
+        return outputValue;
+      }
+      case intrinsics.orIntrinsicComponent.id: {
+        invariant(pinIds.length === 3);
+        const inputValue0 = input.get(
+          intrinsics.orIntrinsicComponentInputPinA.id
+        );
+        const inputValue1 = input.get(
+          intrinsics.orIntrinsicComponentInputPinB.id
+        );
+        if (inputValue0!.length !== inputValue1!.length) {
+          return null;
+        }
+        const outputValue = [];
+        for (let i = 0; i < inputValue0!.length; i += 1) {
+          outputValue.push(inputValue0![i]! || inputValue1![i]!);
+        }
+        return outputValue;
+      }
+      case intrinsics.xorIntrinsicComponent.id: {
+        invariant(pinIds.length === 3);
+        const inputValue0 = input.get(
+          intrinsics.xorIntrinsicComponentInputPinA.id
+        );
+        const inputValue1 = input.get(
+          intrinsics.xorIntrinsicComponentInputPinB.id
+        );
+        if (inputValue0!.length !== inputValue1!.length) {
+          return null;
+        }
+        const outputValue = [];
+        for (let i = 0; i < inputValue0!.length; i += 1) {
+          outputValue.push(inputValue0![i]! !== inputValue1![i]!);
+        }
+        return outputValue;
+      }
+      case intrinsics.inputIntrinsicComponent.id: {
+        invariant(pinIds.length === 2);
+        const inputValue = input.get(
+          intrinsics.inputIntrinsicComponentInputPin.id
+        );
+        return inputValue!;
+      }
+      case intrinsics.fourBitsIntrinsicComponent.id: {
+        invariant(pinIds.length === 5);
+        const inputValue0 = input.get(
+          intrinsics.fourBitsIntrinsicComponentInputPin0.id
+        );
+        const inputValue1 = input.get(
+          intrinsics.fourBitsIntrinsicComponentInputPin1.id
+        );
+        const inputValue2 = input.get(
+          intrinsics.fourBitsIntrinsicComponentInputPin2.id
+        );
+        const inputValue3 = input.get(
+          intrinsics.fourBitsIntrinsicComponentInputPin3.id
+        );
+        if (
+          inputValue0!.length === 1 &&
+          inputValue1!.length === 1 &&
+          inputValue2!.length === 1 &&
+          inputValue3!.length === 1
+        ) {
           const outputValue = [];
-          for (const value of inputValue!) {
-            outputValue.push(!value);
-          }
+          outputValue.push(inputValue3![0]!);
+          outputValue.push(inputValue2![0]!);
+          outputValue.push(inputValue1![0]!);
+          outputValue.push(inputValue0![0]!);
           return outputValue;
         }
-        throw new Error(`invalid input number (${component.name})`);
-      case intrinsics.andIntrinsicComponent.id:
-        if (pinIds.length === 3) {
-          const inputValue0 = input.get(
-            intrinsics.andIntrinsicComponentInputPinA.id
-          );
-          const inputValue1 = input.get(
-            intrinsics.andIntrinsicComponentInputPinB.id
-          );
-          const outputValue = [];
-          if (inputValue0!.length !== inputValue1!.length) {
-            throw new Error(
-              `invalid multiplicity of input (${component.name})`
-            );
-          }
-          for (let i = 0; i < inputValue0!.length; i += 1) {
-            outputValue.push(inputValue0![i]! && inputValue1![i]!);
-          }
-          return outputValue;
-        }
-        throw new Error(`invalid input number (${component.name})`);
-      case intrinsics.orIntrinsicComponent.id:
-        if (pinIds.length === 3) {
-          const inputValue0 = input.get(
-            intrinsics.orIntrinsicComponentInputPinA.id
-          );
-          const inputValue1 = input.get(
-            intrinsics.orIntrinsicComponentInputPinB.id
-          );
-          if (inputValue0!.length !== inputValue1!.length) {
-            throw new Error(
-              `invalid multiplicity of input (${component.name})`
-            );
-          }
-          const outputValue = [];
-          for (let i = 0; i < inputValue0!.length; i += 1) {
-            outputValue.push(inputValue0![i]! || inputValue1![i]!);
-          }
-          return outputValue;
-        }
-        throw new Error(`invalid input number (${component.name})`);
-      case intrinsics.xorIntrinsicComponent.id:
-        if (pinIds.length === 3) {
-          const inputValue0 = input.get(
-            intrinsics.xorIntrinsicComponentInputPinA.id
-          );
-          const inputValue1 = input.get(
-            intrinsics.xorIntrinsicComponentInputPinB.id
-          );
-          if (inputValue0!.length !== inputValue1!.length) {
-            throw new Error(
-              `invalid multiplicity of input (${component.name})`
-            );
-          }
-          const outputValue = [];
-          for (let i = 0; i < inputValue0!.length; i += 1) {
-            outputValue.push(inputValue0![i]! !== inputValue1![i]!);
-          }
-          return outputValue;
-        }
-        throw new Error(`invalid input number (${component.name})`);
-      case intrinsics.inputIntrinsicComponent.id:
-        if (pinIds.length === 2) {
-          const inputValue = input.get(
-            intrinsics.inputIntrinsicComponentInputPin.id
-          );
-          return inputValue!;
-        }
-        throw new Error(`invalid input number (${component.name})`);
-      case intrinsics.fourBitsIntrinsicComponent.id:
-        if (pinIds.length === 5) {
-          const inputValue0 = input.get(
-            intrinsics.fourBitsIntrinsicComponentInputPin0.id
-          );
-          const inputValue1 = input.get(
-            intrinsics.fourBitsIntrinsicComponentInputPin1.id
-          );
-          const inputValue2 = input.get(
-            intrinsics.fourBitsIntrinsicComponentInputPin2.id
-          );
-          const inputValue3 = input.get(
-            intrinsics.fourBitsIntrinsicComponentInputPin3.id
-          );
-          if (
-            inputValue0!.length === 1 &&
-            inputValue1!.length === 1 &&
-            inputValue2!.length === 1 &&
-            inputValue3!.length === 1
-          ) {
-            const outputValue = [];
-            outputValue.push(inputValue3![0]!);
-            outputValue.push(inputValue2![0]!);
-            outputValue.push(inputValue1![0]!);
-            outputValue.push(inputValue0![0]!);
-            return outputValue;
-          }
-          throw new Error(`invalid multiplicity of input (${component.name})`);
-        }
-        throw new Error(`invalid input number (${component.name})`);
+        return null;
+      }
       // case "Sample":
       //   return true;
       default:
@@ -383,12 +372,15 @@ export default class CCEvaluation {
   evaluateMultipleComponent(
     componentId: CCComponentId,
     input: Map<CCPinId, boolean[]>
-  ) {
+  ): Map<CCPinId, boolean[]> | null {
     const component = this.#store.components.get(componentId);
     if (!component) throw new Error(`Component ${component} is not defined.`);
     const pinIds = this.#store.pins.getPinIdsByComponentId(componentId);
     if (component.isIntrinsic) {
-      const outputValue = this.evaluateMultipleIntrinsic(componentId, input)!;
+      const outputValue = this.evaluateMultipleIntrinsic(componentId, input);
+      if (!outputValue) {
+        return null;
+      }
       const outputMap = new Map<CCPinId, boolean[]>();
       for (const pinId of pinIds) {
         const pin = this.#store.pins.get(pinId)!;
@@ -464,7 +456,10 @@ export default class CCEvaluation {
         const outputs = this.evaluateMultipleComponent(
           currentComponentId,
           inputValues.get(currentNodeId)!
-        )!;
+        );
+        if (!outputs) {
+          return null;
+        }
         for (const [outputPinId, outputValue] of outputs) {
           const connectionIds = this.#store.connections.getConnectionIdsByPinId(
             currentNodeId,
