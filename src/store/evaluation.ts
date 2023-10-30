@@ -405,8 +405,19 @@ export default class CCEvaluation {
       inputValues.set(nodeId, new Map<CCPinId, boolean[]>());
       const node = this.#store.nodes.get(nodeId)!;
       const innerComponentId = node.componentId;
-      const innerPinIds =
-        this.#store.pins.getPinIdsByComponentId(innerComponentId);
+      const innerPinIds = this.#store.pins
+        .getPinIdsByComponentId(innerComponentId)
+        .filter((pinId) => {
+          const pin = this.#store.pins.get(pinId)!;
+          return (
+            pin.implementation.type === "intrinsic" ||
+            (pin.implementation.type === "user" &&
+              this.#store.connections.getConnectionIdsByPinId(
+                pin.implementation.nodeId,
+                pin.implementation.pinId
+              )?.length === 0)
+          );
+        });
       let inputPinNumber = 0;
       for (const innerPinId of innerPinIds) {
         const innerPin = this.#store.pins.get(innerPinId)!;
