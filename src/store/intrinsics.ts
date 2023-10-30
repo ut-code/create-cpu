@@ -137,6 +137,52 @@ export const inputIntrinsicComponentOutputPin: CCPin = {
   implementation: { type: "intrinsic" },
 };
 
+export const fourBitsIntrinsicComponent: CCComponent = {
+  id: "ffffffff-0006-4000-8000-000000000000" as CCComponentId,
+  isIntrinsic: true,
+  name: "FourBits",
+};
+
+export const fourBitsIntrinsicComponentInputPin0: CCPin = {
+  id: "ffffffff-0006-4000-8000-000000000001" as CCPinId,
+  componentId: fourBitsIntrinsicComponent.id,
+  type: "input",
+  name: "bit0",
+  implementation: { type: "intrinsic" },
+};
+
+export const fourBitsIntrinsicComponentInputPin1: CCPin = {
+  id: "ffffffff-0006-4000-8000-000000000002" as CCPinId,
+  componentId: fourBitsIntrinsicComponent.id,
+  type: "input",
+  name: "bit1",
+  implementation: { type: "intrinsic" },
+};
+
+export const fourBitsIntrinsicComponentInputPin2: CCPin = {
+  id: "ffffffff-0006-4000-8000-000000000003" as CCPinId,
+  componentId: fourBitsIntrinsicComponent.id,
+  type: "input",
+  name: "bit2",
+  implementation: { type: "intrinsic" },
+};
+
+export const fourBitsIntrinsicComponentInputPin3: CCPin = {
+  id: "ffffffff-0006-4000-8000-000000000004" as CCPinId,
+  componentId: fourBitsIntrinsicComponent.id,
+  type: "input",
+  name: "bit3",
+  implementation: { type: "intrinsic" },
+};
+
+export const fourBitsIntrinsicComponentOutputPin: CCPin = {
+  id: "ffffffff-0006-4000-8000-000000000005" as CCPinId,
+  componentId: fourBitsIntrinsicComponent.id,
+  type: "output",
+  name: "Out",
+  implementation: { type: "intrinsic" },
+};
+
 export function registerIntrinsics(store: CCStore) {
   store.components.register(andIntrinsicComponent);
   store.pins.register(andIntrinsicComponentInputPinA);
@@ -156,4 +202,10 @@ export function registerIntrinsics(store: CCStore) {
   store.components.register(inputIntrinsicComponent);
   store.pins.register(inputIntrinsicComponentInputPin);
   store.pins.register(inputIntrinsicComponentOutputPin);
+  store.components.register(fourBitsIntrinsicComponent);
+  store.pins.register(fourBitsIntrinsicComponentInputPin0);
+  store.pins.register(fourBitsIntrinsicComponentInputPin1);
+  store.pins.register(fourBitsIntrinsicComponentInputPin2);
+  store.pins.register(fourBitsIntrinsicComponentInputPin3);
+  store.pins.register(fourBitsIntrinsicComponentOutputPin);
 }

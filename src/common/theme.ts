@@ -10,6 +10,7 @@ export const grayColor = {
 };
 export const primaryColor = 0x00d372;
 export const activeColor = 0x00aaff;
+export const errorColor = 0xff0000;
 export const editorBackgroundColor = 0xf3f3f3;
 export const editorGridColor = 0xdddddd;
 

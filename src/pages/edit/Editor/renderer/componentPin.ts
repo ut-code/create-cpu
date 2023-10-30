@@ -7,6 +7,7 @@ import type { CCPinId } from "../../../../store/pin";
 import {
   activeColor,
   editorGridColor,
+  errorColor,
   grayColor,
   whiteColor,
 } from "../../../../common/theme";
@@ -19,6 +20,7 @@ type CCComponentEditorRendererPortProps = {
   pinId: CCPinId;
   position: PIXI.Point;
   simulation: () => Map<CCPinId, boolean>;
+  multipleSimulation: () => Map<CCPinId, boolean[]> | null;
 };
 
 export default class CCComponentEditorRendererPort {
@@ -44,14 +46,20 @@ export default class CCComponentEditorRendererPort {
 
   readonly #unsubscribeComponentEditorStore: () => void;
 
+  // eslint-disable-next-line
+  // @ts-ignore
   readonly #simulation: () => Map<CCPinId, boolean>;
+
+  readonly #multipleSimulation: () => Map<CCPinId, boolean[]> | null;
+
+  #valueBoxWidth: number;
 
   private static readonly drawingConstants = {
     marginToNode: 20,
     marginToValueBox: 10,
     fontSize: 16,
     valueColor: whiteColor,
-    valueBoxWidth: 40,
+    valueBoxWidthUnit: 40,
     valueBoxHeight: 20,
     valueBoxRadius: 1000,
   } as const;
@@ -62,6 +70,7 @@ export default class CCComponentEditorRendererPort {
     this.#pinId = props.pinId;
     this.position = props.position;
     this.#simulation = props.simulation;
+    this.#multipleSimulation = props.multipleSimulation;
     this.#componentEditorStore = props.componentEditorStore;
     this.#pixiParentContainer = props.pixiParentContainer;
     this.#pixiContainer = new PIXI.Container();
@@ -92,6 +101,8 @@ export default class CCComponentEditorRendererPort {
     this.#store.components.on("didUpdate", this.render);
     this.#unsubscribeComponentEditorStore =
       this.#componentEditorStore.subscribe(this.render);
+    this.#valueBoxWidth =
+      CCComponentEditorRendererPort.drawingConstants.valueBoxWidthUnit;
     this.render();
   }
 
@@ -111,29 +122,20 @@ export default class CCComponentEditorRendererPort {
     const c = CCComponentEditorRendererPort.drawingConstants;
     if (editorState.editorMode === "edit") {
       this.#pixiValueText.visible = false;
+      this.#valueBoxWidth = c.valueBoxWidthUnit;
       this.#pixiGraphics.lineStyle(1, editorGridColor);
       this.#pixiGraphics.beginFill(whiteColor);
+
       this.#pixiLabelText.anchor.set(0.5, 0.5);
       this.#pixiLabelText.position.set(
-        (c.marginToNode + c.valueBoxWidth / 2) *
+        (c.marginToNode + c.valueBoxWidthUnit / 2) *
           (pin.type === "input" ? -1 : 1),
         0
       );
     } else if (editorState.editorMode === "play") {
       invariant((editorState.editorMode satisfies EditorModePlay) === "play");
-      this.#pixiLabelText.anchor.set(pin.type === "input" ? 1 : 0, 0.5);
-      this.#pixiLabelText.position.set(
-        (c.marginToNode + c.valueBoxWidth + c.marginToValueBox) *
-          (pin.type === "input" ? -1 : 1),
-        0
-      );
-      this.#pixiValueText.visible = true;
-      this.#pixiValueText.position.set(
-        (c.marginToNode + c.valueBoxWidth / 2) *
-          (pin.type === "input" ? -1 : 1),
-        0
-      );
       if (pin.type === "input") {
+        this.#valueBoxWidth = c.valueBoxWidthUnit;
         this.#pixiValueText.text = editorState.getInputValue(
           this.#nodeId,
           this.#pinId
@@ -142,20 +144,56 @@ export default class CCComponentEditorRendererPort {
           : "0";
         this.#pixiGraphics.beginFill(activeColor);
       } else {
-        const output = this.#simulation();
-        for (const [key, value] of output) {
-          if (key === this.#pinId) {
-            this.#pixiValueText.text = value ? "1" : "0";
+        // const output = this.#simulation();
+        const multipleOutput = this.#multipleSimulation();
+        // for (const [key, value] of output) {
+        //   if (key === this.#pinId) {
+        //     this.#pixiValueText.text = value ? "1" : "0";
+        //   }
+        // }
+        if (multipleOutput) {
+          const createValueText = (values: boolean[]) => {
+            let valueText = "";
+            for (let i = 0; i < values.length; i += 1) {
+              valueText += values[i] ? "1" : "0";
+            }
+            return valueText;
+          };
+          for (const [key, values] of multipleOutput) {
+            if (key === this.#pinId) {
+              this.#pixiValueText.text = createValueText(values);
+              this.#valueBoxWidth =
+                c.valueBoxWidthUnit +
+                ((values.length - 1) * c.valueBoxWidthUnit) / 4;
+              break;
+            }
           }
+          this.#pixiGraphics.beginFill(grayColor.darken2);
+        } else {
+          this.#pixiValueText.text = "";
+          this.#pixiGraphics.beginFill(errorColor);
         }
-        this.#pixiGraphics.beginFill(grayColor.darken2);
       }
+      this.#pixiLabelText.anchor.set(pin.type === "input" ? 1 : 0, 0.5);
+      this.#pixiLabelText.position.set(
+        (c.marginToNode + this.#valueBoxWidth + c.marginToValueBox) *
+          (pin.type === "input" ? -1 : 1),
+        0
+      );
+      this.#pixiValueText.visible = true;
+      this.#pixiValueText.position.set(
+        (c.marginToNode + this.#valueBoxWidth / 2) *
+          (pin.type === "input" ? -1 : 1),
+        0
+      );
     }
 
     this.#pixiGraphics.drawRoundedRect(
-      pin.type === "input" ? -c.valueBoxWidth - c.marginToNode : c.marginToNode,
+      pin.type === "input"
+        ? -c.valueBoxWidthUnit - c.marginToNode
+        : c.marginToNode,
       -c.valueBoxHeight / 2,
-      c.valueBoxWidth,
+      this.#valueBoxWidth,
       c.valueBoxHeight,
       c.valueBoxRadius
     );

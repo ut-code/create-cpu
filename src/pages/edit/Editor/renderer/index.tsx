@@ -408,6 +408,49 @@ export default class CCComponentEditorRenderer extends CCComponentEditorRenderer
       }
       return nodeOutput;
     };
+
+    const multipleSimulation = (targetNodeId: CCNodeId) => {
+      const editorState = this.context.componentEditorStore.getState();
+      const pinIds = this.context.store.pins.getPinIdsByComponentId(
+        this.#componentId
+      );
+      const input = new Map<CCPinId, boolean[]>();
+      for (const pinId of pinIds) {
+        const pin = this.context.store.pins.get(pinId)!;
+        if (pin.type === "input") {
+          if (pin.implementation.type === "user") {
+            const implementationNodeId = pin.implementation.nodeId;
+            const implementationPinId = pin.implementation.pinId;
+            if (
+              this.context.store.connections.getConnectionIdsByPinId(
+                implementationNodeId,
+                implementationPinId
+              )!.length === 0
+            ) {
+              const inputValue = editorState.getInputValue(
+                implementationNodeId,
+                implementationPinId
+              );
+              input.set(pinId, [inputValue]);
+            }
+          }
+        }
+      }
+      const output = this.#simulator.multipleSimulation(input);
+      if (output == null) return null;
+      const nodeOutput = new Map<CCPinId, boolean[]>();
+      for (const [outputPinId, outputValue] of output) {
+        const pin = this.context.store.pins.get(outputPinId)!;
+        if (
+          pin.implementation.type === "user" &&
+          pin.implementation.nodeId === targetNodeId
+        ) {
+          nodeOutput.set(pin.implementation.pinId, outputValue);
+        }
+      }
+      return nodeOutput;
+    };
+
     const newNodeRenderer = new CCComponentEditorRendererNode({
       context: this.context,
       nodeId,
@@ -416,6 +459,7 @@ export default class CCComponentEditorRenderer extends CCComponentEditorRenderer
       onDragStartPin,
       onDragEndPin,
       simulation,
+      multipleSimulation,
     });
     this.#nodeRenderers.set(nodeId, newNodeRenderer);
   }
