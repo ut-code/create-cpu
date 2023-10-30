@@ -77,9 +77,19 @@ export default class CCComponentEditorRendererNode extends CCComponentEditorRend
     this.#pixiWorld.addChild(this.#pixiTexts.componentName);
 
     const node = this.context.store.nodes.get(this.#nodeId)!;
-    const pinIds = this.context.store.pins.getPinIdsByComponentId(
-      node.componentId
-    );
+    const pinIds = this.context.store.pins
+      .getPinIdsByComponentId(node.componentId)
+      .filter((pinId) => {
+        const pin = this.context.store.pins.get(pinId)!;
+        return (
+          pin.implementation.type === "intrinsic" ||
+          (pin.implementation.type === "user" &&
+            this.context.store.connections.getConnectionIdsByPinId(
+              pin.implementation.nodeId,
+              pin.implementation.pinId
+            )?.length === 0)
+        );
+      });
     for (const pinId of pinIds) {
       const pinRenderer = new CCComponentEditorRendererNodePin({
         store: this.context.store,
@@ -166,8 +176,38 @@ export default class CCComponentEditorRendererNode extends CCComponentEditorRend
     const pins = this.context.store.pins
       .getPinIdsByComponentId(component.id)
       .map((pinId) => this.context.store.pins.get(pinId)!);
-    const inputPins = pins.filter((pin) => pin.type === "input");
-    const outputPins = pins.filter((pin) => pin.type === "output");
+    const inputPins = pins.filter((pin) => {
+      if (pin.type === "output") {
+        return false;
+      }
+      if (pin.implementation.type === "intrinsic") {
+        return true;
+      }
+      const implementationNodeId = pin.implementation.nodeId;
+      const implementationPinId = pin.implementation.pinId;
+      return (
+        this.context.store.connections.getConnectionIdsByPinId(
+          implementationNodeId,
+          implementationPinId
+        )?.length === 0
+      );
+    });
+    const outputPins = pins.filter((pin) => {
+      if (pin.type === "input") {
+        return false;
+      }
+      if (pin.implementation.type === "intrinsic") {
+        return true;
+      }
+      const implementationNodeId = pin.implementation.nodeId;
+      const implementationPinId = pin.implementation.pinId;
+      return (
+        this.context.store.connections.getConnectionIdsByPinId(
+          implementationNodeId,
+          implementationPinId
+        )?.length === 0
+      );
+    });
     const size = getSize(inputPins.length, outputPins.length);
     const borderWidth = 3;
     const outlineWidth = 1;
@@ -223,9 +263,19 @@ export default class CCComponentEditorRendererNode extends CCComponentEditorRend
 
   reconcileChildComponentPinRenderers = () => {
     const node = this.context.store.nodes.get(this.#nodeId)!;
-    const pinIds = this.context.store.pins.getPinIdsByComponentId(
-      node.componentId
-    );
+    const pinIds = this.context.store.pins
+      .getPinIdsByComponentId(node.componentId)
+      .filter((pinId) => {
+        const pin = this.context.store.pins.get(pinId)!;
+        return (
+          pin.implementation.type === "intrinsic" ||
+          (pin.implementation.type === "user" &&
+            this.context.store.connections.getConnectionIdsByPinId(
+              pin.implementation.nodeId,
+              pin.implementation.pinId
+            )?.length === 0)
+        );
+      });
 
     const existingComponentPinRenderers = new Map(this.#componentPinRenderers);
     const newComponentPinRenderers = new Map<
@@ -337,7 +387,19 @@ export default class CCComponentEditorRendererNode extends CCComponentEditorRend
   static getPinOffset(store: CCStore, nodeId: CCNodeId, pinId: CCPinId): Point {
     const node = store.nodes.get(nodeId)!;
     const component = store.components.get(node.componentId)!;
-    const pinIds = store.pins.getPinIdsByComponentId(component.id)!;
+    const pinIds = store.pins
+      .getPinIdsByComponentId(component.id)!
+      .filter((pinId_) => {
+        const pin = store.pins.get(pinId_)!;
+        return (
+          pin.implementation.type === "intrinsic" ||
+          (pin.implementation.type === "user" &&
+            store.connections.getConnectionIdsByPinId(
+              pin.implementation.nodeId,
+              pin.implementation.pinId
+            )?.length === 0)
+        );
+      });
     const pins = pinIds.map((id) => store.pins.get(id)!);
     const inputPinIds = pins
       .filter((pin) => pin.type === "input")
@@ -373,7 +435,19 @@ export default class CCComponentEditorRendererNode extends CCComponentEditorRend
   ): Point {
     const node = store.nodes.get(nodeId)!;
     const component = store.components.get(node.componentId)!;
-    const pinIds = store.pins.getPinIdsByComponentId(component.id)!;
+    const pinIds = store.pins
+      .getPinIdsByComponentId(component.id)!
+      .filter((pinId_) => {
+        const pin = store.pins.get(pinId_)!;
+        return (
+          pin.implementation.type === "intrinsic" ||
+          (pin.implementation.type === "user" &&
+            store.connections.getConnectionIdsByPinId(
+              pin.implementation.nodeId,
+              pin.implementation.pinId
+            )?.length === 0)
+        );
+      });
     const pins = pinIds.map((id) => store.pins.get(id)!);
     const inputPinIds = pins
       .filter((pin) => pin.type === "input")
