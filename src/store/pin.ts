@@ -54,9 +54,20 @@ export class CCPinStore extends EventEmitter<CCPinStoreEvents> {
     });
     this.#store.nodes.on("didRegister", (node) => {
       const component = this.#store.components.get(node.componentId)!;
-      for (const implementationPinId of this.getPinIdsByComponentId(
-        node.componentId
-      )) {
+      const pins = this.#store.pins
+        .getPinIdsByComponentId(node.componentId)!
+        .filter((pinId) => {
+          const pin = this.#store.pins.get(pinId)!;
+          return (
+            pin.implementation.type === "intrinsic" ||
+            (pin.implementation.type === "user" &&
+              this.#store.connections.getConnectionIdsByPinId(
+                pin.implementation.nodeId,
+                pin.implementation.pinId
+              )?.length === 0)
+          );
+        });
+      for (const implementationPinId of pins) {
         const implementationPin = this.get(implementationPinId)!;
         this.register(
           CCPinStore.create({

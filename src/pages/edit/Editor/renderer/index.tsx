@@ -495,6 +495,7 @@ export default class CCComponentEditorRenderer extends CCComponentEditorRenderer
   #onConnectionRemoved = (connection: CCConnection) => {
     if (connection.parentComponentId !== this.#componentId) return;
     this.#connectionRenderers.get(connection.id)?.destroy();
+    this.#connectionRenderers.delete(connection.id);
     this.#simulator.clear();
   };
 
@@ -507,6 +508,7 @@ export default class CCComponentEditorRenderer extends CCComponentEditorRenderer
   #onNodeRemoved = (node: CCNode) => {
     if (node.parentComponentId !== this.#componentId) return;
     this.#nodeRenderers.get(node.id)?.destroy();
+    this.#nodeRenderers.delete(node.id);
     this.#simulator.clear();
   };
 

@@ -17,6 +17,17 @@ function ComponentRenderer({ componentId }: { componentId: CCComponentId }) {
   invariant(component);
   const pins = store.pins
     .getPinIdsByComponentId(componentId)
+    .filter((pinId) => {
+      const pin = store.pins.get(pinId)!;
+      return (
+        pin.implementation.type === "intrinsic" ||
+        (pin.implementation.type === "user" &&
+          store.connections.getConnectionIdsByPinId(
+            pin.implementation.nodeId,
+            pin.implementation.pinId
+          )?.length === 0)
+      );
+    })
     .map((ccPinId) => nullthrows(store.pins.get(ccPinId)));
 
   return (
