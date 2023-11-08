@@ -183,6 +183,52 @@ export const fourBitsIntrinsicComponentOutputPin: CCPin = {
   implementation: { type: "intrinsic" },
 };
 
+export const distiributeFourBitsIntrinsicComponent: CCComponent = {
+  id: "ffffffff-0007-4000-8000-000000000000" as CCComponentId,
+  isIntrinsic: true,
+  name: "DistributeFourBits",
+};
+
+export const distiributeFourBitsIntrinsicComponentInputPin: CCPin = {
+  id: "ffffffff-0007-4000-8000-000000000001" as CCPinId,
+  componentId: distiributeFourBitsIntrinsicComponent.id,
+  type: "input",
+  name: "input",
+  implementation: { type: "intrinsic" },
+};
+
+export const distiributeFourBitsIntrinsicComponentOutputPin0: CCPin = {
+  id: "ffffffff-0007-4000-8000-000000000002" as CCPinId,
+  componentId: distiributeFourBitsIntrinsicComponent.id,
+  type: "output",
+  name: "bit0",
+  implementation: { type: "intrinsic" },
+};
+
+export const distiributeFourBitsIntrinsicComponentOutputPin1: CCPin = {
+  id: "ffffffff-0007-4000-8000-000000000003" as CCPinId,
+  componentId: distiributeFourBitsIntrinsicComponent.id,
+  type: "output",
+  name: "bit1",
+  implementation: { type: "intrinsic" },
+};
+
+export const distiributeFourBitsIntrinsicComponentOutputPin2: CCPin = {
+  id: "ffffffff-0007-4000-8000-000000000004" as CCPinId,
+  componentId: distiributeFourBitsIntrinsicComponent.id,
+  type: "output",
+  name: "bit2",
+  implementation: { type: "intrinsic" },
+};
+
+export const distiributeFourBitsIntrinsicComponentOutputPin3: CCPin = {
+  id: "ffffffff-0007-4000-8000-000000000005" as CCPinId,
+  componentId: distiributeFourBitsIntrinsicComponent.id,
+  type: "output",
+  name: "bit3",
+  implementation: { type: "intrinsic" },
+};
+
 export function registerIntrinsics(store: CCStore) {
   store.components.register(andIntrinsicComponent);
   store.pins.register(andIntrinsicComponentInputPinA);
@@ -208,4 +254,10 @@ export function registerIntrinsics(store: CCStore) {
   store.pins.register(fourBitsIntrinsicComponentInputPin2);
   store.pins.register(fourBitsIntrinsicComponentInputPin3);
   store.pins.register(fourBitsIntrinsicComponentOutputPin);
+  store.components.register(distiributeFourBitsIntrinsicComponent);
+  store.pins.register(distiributeFourBitsIntrinsicComponentInputPin);
+  store.pins.register(distiributeFourBitsIntrinsicComponentOutputPin0);
+  store.pins.register(distiributeFourBitsIntrinsicComponentOutputPin1);
+  store.pins.register(distiributeFourBitsIntrinsicComponentOutputPin2);
+  store.pins.register(distiributeFourBitsIntrinsicComponentOutputPin3);
 }
