@@ -260,7 +260,7 @@ export default class CCEvaluation {
   evaluateMultipleIntrinsic(
     componentId: CCComponentId,
     input: Map<CCPinId, boolean[]>
-  ): boolean[] | null {
+  ): Map<CCPinId, boolean[]> | null {
     const component = this.#store.components.get(componentId)!;
     const pinIds = this.#store.pins.getPinIdsByComponentId(componentId);
     switch (component.id) {
@@ -273,7 +273,12 @@ export default class CCEvaluation {
         for (const value of inputValue!) {
           outputValue.push(!value);
         }
-        return outputValue;
+        const outputMap = new Map<CCPinId, boolean[]>();
+        outputMap.set(
+          intrinsics.notIntrinsicComponentOutputPin.id,
+          outputValue
+        );
+        return outputMap;
       }
       case intrinsics.andIntrinsicComponent.id: {
         invariant(pinIds.length === 3);
@@ -290,7 +295,12 @@ export default class CCEvaluation {
         for (let i = 0; i < inputValue0!.length; i += 1) {
           outputValue.push(inputValue0![i]! && inputValue1![i]!);
         }
-        return outputValue;
+        const outputMap = new Map<CCPinId, boolean[]>();
+        outputMap.set(
+          intrinsics.andIntrinsicComponentOutputPin.id,
+          outputValue
+        );
+        return outputMap;
       }
       case intrinsics.orIntrinsicComponent.id: {
         invariant(pinIds.length === 3);
@@ -307,7 +317,9 @@ export default class CCEvaluation {
         for (let i = 0; i < inputValue0!.length; i += 1) {
           outputValue.push(inputValue0![i]! || inputValue1![i]!);
         }
-        return outputValue;
+        const outputMap = new Map<CCPinId, boolean[]>();
+        outputMap.set(intrinsics.orIntrinsicComponentOutputPin.id, outputValue);
+        return outputMap;
       }
       case intrinsics.xorIntrinsicComponent.id: {
         invariant(pinIds.length === 3);
@@ -324,14 +336,24 @@ export default class CCEvaluation {
         for (let i = 0; i < inputValue0!.length; i += 1) {
           outputValue.push(inputValue0![i]! !== inputValue1![i]!);
         }
-        return outputValue;
+        const outputMap = new Map<CCPinId, boolean[]>();
+        outputMap.set(
+          intrinsics.xorIntrinsicComponentOutputPin.id,
+          outputValue
+        );
+        return outputMap;
       }
       case intrinsics.inputIntrinsicComponent.id: {
         invariant(pinIds.length === 2);
         const inputValue = input.get(
           intrinsics.inputIntrinsicComponentInputPin.id
         );
-        return inputValue!;
+        const outputMap = new Map<CCPinId, boolean[]>();
+        outputMap.set(
+          intrinsics.inputIntrinsicComponentOutputPin.id,
+          inputValue!
+        );
+        return outputMap;
       }
       case intrinsics.fourBitsIntrinsicComponent.id: {
         invariant(pinIds.length === 5);
@@ -358,7 +380,39 @@ export default class CCEvaluation {
           outputValue.push(inputValue2![0]!);
           outputValue.push(inputValue1![0]!);
           outputValue.push(inputValue0![0]!);
-          return outputValue;
+          const outputMap = new Map<CCPinId, boolean[]>();
+          outputMap.set(
+            intrinsics.fourBitsIntrinsicComponentOutputPin.id,
+            outputValue
+          );
+          return outputMap;
+        }
+        return null;
+      }
+      case intrinsics.distiributeFourBitsIntrinsicComponent.id: {
+        invariant(pinIds.length === 5);
+        const inputValue = input.get(
+          intrinsics.distiributeFourBitsIntrinsicComponentInputPin.id
+        );
+        if (inputValue!.length === 4) {
+          const outputMap = new Map<CCPinId, boolean[]>();
+          outputMap.set(
+            intrinsics.distiributeFourBitsIntrinsicComponentOutputPin0.id,
+            [inputValue![3]!]
+          );
+          outputMap.set(
+            intrinsics.distiributeFourBitsIntrinsicComponentOutputPin1.id,
+            [inputValue![2]!]
+          );
+          outputMap.set(
+            intrinsics.distiributeFourBitsIntrinsicComponentOutputPin2.id,
+            [inputValue![1]!]
+          );
+          outputMap.set(
+            intrinsics.distiributeFourBitsIntrinsicComponentOutputPin3.id,
+            [inputValue![0]!]
+          );
+          return outputMap;
         }
         return null;
       }
@@ -385,7 +439,7 @@ export default class CCEvaluation {
       for (const pinId of pinIds) {
         const pin = this.#store.pins.get(pinId)!;
         if (pin.type === "output") {
-          outputMap.set(pinId, outputValue);
+          outputMap.set(pinId, outputValue.get(pinId)!);
         }
       }
       return outputMap;
