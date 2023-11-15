@@ -29,7 +29,7 @@ export class CCComponentEditorRendererTextBox extends CCComponentEditorRendererB
   constructor(props: CCComponentEditorRendererTextBoxProps) {
     super(props.context);
     this.#unsubscribeComponentEditorStore =
-      this.context.componentEditorStore.subscribe(this.render);
+      this.context.componentEditorStore.subscribe(() => this.render());
     this.#pixiParentContainer = props.pixiParentContainer;
     this.#pixiText = new PIXI.Text();
     this.#pixiParentContainer.addChild(this.#pixiText);
