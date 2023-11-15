@@ -16,7 +16,7 @@ export default function App() {
     <Box
       sx={{
         display: "grid",
-        gridTemplateRows: "max-content 1fr",
+        gridTemplateRows: "max-content minmax(0, 1fr)",
         height: "100%",
       }}
     >

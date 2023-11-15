@@ -92,7 +92,7 @@ export default class CCComponentEditorRendererNode extends CCComponentEditorRend
       });
     for (const pinId of pinIds) {
       const pinRenderer = new CCComponentEditorRendererNodePin({
-        store: this.context.store,
+        context: this.context,
         nodeId: props.nodeId,
         pinId,
         pixiParentContainer: this.#pixiWorld,
@@ -303,8 +303,7 @@ export default class CCComponentEditorRendererNode extends CCComponentEditorRend
           };
           const componentPinRenderer =
             new CCComponentEditorRendererComponentPin({
-              store: this.context.store,
-              componentEditorStore: this.context.componentEditorStore,
+              context: this.context,
               pixiParentContainer: this.#pixiWorld,
               nodeId: this.#nodeId,
               pinId,

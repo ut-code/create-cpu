@@ -1,11 +1,13 @@
 import * as PIXI from "pixi.js";
-import type CCStore from "../../../../store";
 import type { CCPinId } from "../../../../store/pin";
 import type { CCNodeId } from "../../../../store/node";
 import { blackColor, whiteColor, primaryColor } from "../../../../common/theme";
+import CCComponentEditorRendererBase, {
+  type CCComponentEditorRendererContext,
+} from "./base";
 
 export type CCComponentEditorRendererNodePinProps = {
-  store: CCStore;
+  context: CCComponentEditorRendererContext;
   nodeId: CCNodeId;
   pinId: CCPinId;
   pixiParentContainer: PIXI.Container;
@@ -14,9 +16,7 @@ export type CCComponentEditorRendererNodePinProps = {
   onDragEnd(e: PIXI.FederatedMouseEvent, pinId: CCPinId): void;
 };
 
-export default class CCComponentEditorRendererNodePin {
-  #store: CCStore;
-
+export default class CCComponentEditorRendererNodePin extends CCComponentEditorRendererBase {
   #pinId: CCPinId;
 
   #pixiParentContainer: PIXI.Container;
@@ -30,14 +30,14 @@ export default class CCComponentEditorRendererNodePin {
   isSelected = false;
 
   constructor({
-    store,
+    context,
     pinId,
     pixiParentContainer,
     pixiText,
     onDragStart,
     onDragEnd,
   }: CCComponentEditorRendererNodePinProps) {
-    this.#store = store;
+    super(context);
     this.#pinId = pinId;
     this.#pixiParentContainer = pixiParentContainer;
     this.#pixiWorld = new PIXI.Container();
@@ -63,7 +63,7 @@ export default class CCComponentEditorRendererNodePin {
   }
 
   render(index: number, size: PIXI.Point, pinsLength: number) {
-    const pin = this.#store.pins.get(this.#pinId)!;
+    const pin = this.context.store.pins.get(this.#pinId)!;
     const gap = 6;
     const edgeSize = 10;
     const borderWidth = 3;
@@ -114,7 +114,7 @@ export default class CCComponentEditorRendererNodePin {
     this.#pixiGraphics.hitArea = hitArea;
   }
 
-  destroy() {
+  override destroy() {
     this.#pixiParentContainer.removeChild(this.#pixiWorld);
   }
 }

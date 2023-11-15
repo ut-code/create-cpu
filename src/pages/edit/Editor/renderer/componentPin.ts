@@ -1,7 +1,6 @@
 import * as PIXI from "pixi.js";
 import invariant from "tiny-invariant";
-import type CCStore from "../../../../store";
-import type { ComponentEditorStore, EditorModePlay } from "../store";
+import type { EditorModePlay } from "../store";
 import type { CCNodeId } from "../../../../store/node";
 import type { CCPinId } from "../../../../store/pin";
 import {
@@ -11,10 +10,12 @@ import {
   grayColor,
   whiteColor,
 } from "../../../../common/theme";
+import { CCComponentEditorRendererTextBox } from "./textBox";
+import type { CCComponentEditorRendererContext } from "./base";
+import CCComponentEditorRendererBase from "./base";
 
 type CCComponentEditorRendererPortProps = {
-  store: CCStore;
-  componentEditorStore: ComponentEditorStore;
+  context: CCComponentEditorRendererContext;
   pixiParentContainer: PIXI.Container;
   nodeId: CCNodeId;
   pinId: CCPinId;
@@ -23,11 +24,7 @@ type CCComponentEditorRendererPortProps = {
   multipleSimulation: () => Map<CCPinId, boolean[]> | null;
 };
 
-export default class CCComponentEditorRendererPort {
-  readonly #store: CCStore;
-
-  readonly #componentEditorStore: ComponentEditorStore;
-
+export default class CCComponentEditorRendererPort extends CCComponentEditorRendererBase {
   readonly #nodeId: CCNodeId;
 
   readonly #pinId: CCPinId;
@@ -40,7 +37,7 @@ export default class CCComponentEditorRendererPort {
 
   readonly #pixiGraphics: PIXI.Graphics;
 
-  readonly #pixiLabelText: PIXI.Text;
+  readonly #pixiLabelTextBox: CCComponentEditorRendererTextBox;
 
   readonly #pixiValueText: PIXI.Text;
 
@@ -65,49 +62,52 @@ export default class CCComponentEditorRendererPort {
   } as const;
 
   constructor(props: CCComponentEditorRendererPortProps) {
-    this.#store = props.store;
+    super(props.context);
     this.#nodeId = props.nodeId;
     this.#pinId = props.pinId;
     this.position = props.position;
     this.#simulation = props.simulation;
     this.#multipleSimulation = props.multipleSimulation;
-    this.#componentEditorStore = props.componentEditorStore;
     this.#pixiParentContainer = props.pixiParentContainer;
     this.#pixiContainer = new PIXI.Container();
     this.#pixiParentContainer.addChild(this.#pixiContainer);
     this.#pixiGraphics = new PIXI.Graphics();
-    if (this.#store.pins.get(this.#pinId)!.type === "input") {
+    if (this.context.store.pins.get(this.#pinId)!.type === "input") {
       this.#pixiGraphics.interactive = true;
       this.#pixiGraphics.cursor = "pointer";
       this.#pixiGraphics.on("pointerdown", this.onClick);
     }
     this.#pixiContainer.addChild(this.#pixiGraphics);
-    this.#pixiLabelText = new PIXI.Text();
-    this.#pixiLabelText.style.fontSize =
-      CCComponentEditorRendererPort.drawingConstants.fontSize;
-    this.#pixiContainer.addChild(this.#pixiLabelText);
+    this.#pixiLabelTextBox = new CCComponentEditorRendererTextBox({
+      context: this.context,
+      pixiParentContainer: this.#pixiContainer,
+      isEditable: true,
+    });
+    this.registerChildRenderer(this.#pixiLabelTextBox);
+    // this.#pixiLabelTextBox.style.fontSize =
+    //   CCComponentEditorRendererPort.drawingConstants.fontSize;
     this.#pixiValueText = new PIXI.Text();
     this.#pixiValueText.style.fontSize =
       CCComponentEditorRendererPort.drawingConstants.fontSize;
     this.#pixiValueText.style.fill =
       CCComponentEditorRendererPort.drawingConstants.valueColor;
     this.#pixiValueText.anchor.set(0.5, 0.5);
-    if (this.#store.pins.get(this.#pinId)!.type === "input") {
+    if (this.context.store.pins.get(this.#pinId)!.type === "input") {
       this.#pixiValueText.interactive = true;
       this.#pixiValueText.cursor = "pointer";
       this.#pixiValueText.on("pointerdown", this.onClick);
     }
     this.#pixiContainer.addChild(this.#pixiValueText);
-    this.#store.components.on("didUpdate", this.render);
+    this.context.store.components.on("didUpdate", this.render);
     this.#unsubscribeComponentEditorStore =
-      this.#componentEditorStore.subscribe(this.render);
+      this.context.componentEditorStore.subscribe(this.render);
     this.#valueBoxWidth =
       CCComponentEditorRendererPort.drawingConstants.valueBoxWidthUnit;
     this.render();
   }
 
   onClick = (e: PIXI.FederatedPointerEvent) => {
-    const editorState = this.#componentEditorStore.getState();
+    const editorState = this.context.componentEditorStore.getState();
     const previousValue = editorState.getInputValue(this.#nodeId, this.#pinId);
     editorState.setInputValue(this.#nodeId, this.#pinId, !previousValue);
     e.preventDefault();
@@ -115,10 +115,10 @@ export default class CCComponentEditorRendererPort {
 
   render = () => {
     this.#pixiGraphics.clear();
-    const editorState = this.#componentEditorStore.getState();
-    const pin = this.#store.pins.get(this.#pinId)!;
+    const editorState = this.context.componentEditorStore.getState();
+    const pin = this.context.store.pins.get(this.#pinId)!;
     this.#pixiContainer.position = this.position;
-    this.#pixiLabelText.text = pin.name;
+    this.#pixiLabelTextBox.value = pin.name;
     const c = CCComponentEditorRendererPort.drawingConstants;
     if (editorState.editorMode === "edit") {
       this.#pixiValueText.visible = false;
@@ -126,8 +126,8 @@ export default class CCComponentEditorRendererPort {
       this.#pixiGraphics.lineStyle(1, editorGridColor);
       this.#pixiGraphics.beginFill(whiteColor);
 
-      this.#pixiLabelText.anchor.set(0.5, 0.5);
-      this.#pixiLabelText.position.set(
+      this.#pixiLabelTextBox.alignment = "center";
+      this.#pixiLabelTextBox.position.set(
         (c.marginToNode + c.valueBoxWidthUnit / 2) *
           (pin.type === "input" ? -1 : 1),
         0
@@ -174,8 +174,9 @@ export default class CCComponentEditorRendererPort {
           this.#pixiGraphics.beginFill(errorColor);
         }
       }
-      this.#pixiLabelText.anchor.set(pin.type === "input" ? 1 : 0, 0.5);
-      this.#pixiLabelText.position.set(
+      this.#pixiLabelTextBox.alignment =
+        pin.type === "input" ? "right" : "left";
+      this.#pixiLabelTextBox.position.set(
         (c.marginToNode + this.#valueBoxWidth + c.marginToValueBox) *
           (pin.type === "input" ? -1 : 1),
         0
@@ -186,6 +187,7 @@ export default class CCComponentEditorRendererPort {
           (pin.type === "input" ? -1 : 1),
         0
       );
+      this.#pixiLabelTextBox.render();
     }
 
     this.#pixiGraphics.drawRoundedRect(
@@ -200,9 +202,10 @@ export default class CCComponentEditorRendererPort {
     this.#pixiGraphics.endFill();
   };
 
-  destroy() {
+  override destroy() {
     this.#pixiParentContainer.removeChild(this.#pixiContainer);
-    this.#store.components.off("didUpdate", this.render);
+    this.context.store.components.off("didUpdate", this.render);
     this.#unsubscribeComponentEditorStore();
+    super.destroy();
   }
 }

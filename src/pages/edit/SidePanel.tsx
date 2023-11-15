@@ -104,7 +104,7 @@ export default function SidePanel() {
   const [searchText, setSearchText] = useState("");
 
   return (
-    <Box sx={{ background: "paper" }}>
+    <Box sx={{ overflowY: "auto" }}>
       <TextField
         size="small"
         sx={{ m: 1 }}
