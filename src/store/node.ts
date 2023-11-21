@@ -1,7 +1,7 @@
 import type { Opaque } from "type-fest";
 import EventEmitter from "eventemitter3";
 import invariant from "tiny-invariant";
-import PIXI from "pixi.js";
+import * as PIXI from "pixi.js";
 import { MultiMap } from "mnemonist";
 import type CCStore from ".";
 import type { CCComponentId } from "./component";
@@ -29,9 +29,15 @@ export class CCNodeStore extends EventEmitter<CCNodeStoreEvents> {
 
   #parentComponentIdToNodeIds = new MultiMap<CCComponentId, CCNodeId>(Set);
 
-  constructor(store: CCStore) {
+  constructor(store: CCStore, nodes?: CCNode[]) {
     super();
     this.#store = store;
+    if (nodes) {
+      for (const node of nodes) {
+        node.position = new PIXI.Point(node.position.x, node.position.y);
+        this.register(node);
+      }
+    }
   }
 
   register(node: CCNode): void {
@@ -77,5 +83,9 @@ export class CCNodeStore extends EventEmitter<CCNodeStoreEvents> {
       id: crypto.randomUUID() as CCNodeId,
       ...partialNode,
     };
+  }
+
+  toArray(): CCNode[] {
+    return [...this.#nodes.values()];
   }
 }

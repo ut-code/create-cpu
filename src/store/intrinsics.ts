@@ -230,6 +230,7 @@ export const distiributeFourBitsIntrinsicComponentOutputPin3: CCPin = {
 };
 
 export function registerIntrinsics(store: CCStore) {
+  if (store.components.get(andIntrinsicComponent.id)) return;
   store.components.register(andIntrinsicComponent);
   store.pins.register(andIntrinsicComponentInputPinA);
   store.pins.register(andIntrinsicComponentInputPinB);
