@@ -56,22 +56,7 @@ export default class CCComponentEditorRendererConnection {
     this.#pixiParentContainer.addChild(this.#pixiGraphics.from);
     this.#pixiParentContainer.addChild(this.#pixiGraphics.middle);
     this.#pixiParentContainer.addChild(this.#pixiGraphics.to);
-    // this.#pixiGraphics.from.on("pointerover", (e) => {
-    //   const fromEndPoint = this.#store.connections.get(this.#connectionId)?.from;
-    //   console.log(fromEndPoint)
-    //   console.log(this.#componentEditorStore.getState().inputValues)
-    //   console.log(this.#componentEditorStore.getState().getInputValue(fromEndPoint?.nodeId, fromEndPoint?.pinId))
-    // })
-    // this.#pixiGraphics.middle.on("pointerover", (e) => {
-    //   const fromEndPoint = this.#store.connections.get(this.#connectionId)?.from;
-    //   console.log(fromEndPoint)
-    //   console.log(this.#componentEditorStore.getState().getInputValue(fromEndPoint?.nodeId, fromEndPoint?.pinId))
-    // })
-    // this.#pixiGraphics.to.on("pointerover", (e) => {
-    //   const fromEndPoint = this.#store.connections.get(this.#connectionId)?.from;
-    //   console.log(fromEndPoint)
-    //   console.log(this.#componentEditorStore.getState().getInputValue(fromEndPoint?.nodeId, fromEndPoint?.pinId))
-    // })
+
     this.#pixiGraphics.from.on("pointerdown", (e) => {
       if (e.button === 2) {
         this.onPointerDown(e);
