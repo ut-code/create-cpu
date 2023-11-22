@@ -23,10 +23,23 @@ export class CCComponentStore extends EventEmitter<CCComponentStoreEvents> {
 
   readonly rootComponentId: CCComponentId;
 
-  constructor(_: CCStore, rootComponent: CCComponent) {
+  constructor(
+    _: CCStore,
+    rootComponent?: CCComponent,
+    rootComponentId?: CCComponentId,
+    components?: CCComponent[]
+  ) {
     super();
-    this.rootComponentId = rootComponent.id;
-    this.register(rootComponent);
+    if (rootComponent) {
+      this.rootComponentId = rootComponent.id;
+      this.register(rootComponent);
+    } else {
+      invariant(rootComponentId && components);
+      this.rootComponentId = rootComponentId;
+      for (const component of components) {
+        this.register(component);
+      }
+    }
   }
 
   register(component: CCComponent): void {
@@ -60,5 +73,9 @@ export class CCComponentStore extends EventEmitter<CCComponentStoreEvents> {
       isIntrinsic: false,
       ...partialComponent,
     };
+  }
+
+  toArray(): CCComponent[] {
+    return [...this.#components.values()];
   }
 }

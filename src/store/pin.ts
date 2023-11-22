@@ -42,9 +42,14 @@ export class CCPinStore extends EventEmitter<CCPinStoreEvents> {
 
   #pins: Map<CCPinId, CCPin> = new Map();
 
-  constructor(store: CCStore) {
+  constructor(store: CCStore, pins?: CCPin[]) {
     super();
     this.#store = store;
+    if (pins) {
+      for (const pin of pins) {
+        this.register(pin);
+      }
+    }
     this.#store.components.on("willUnregister", (component) => {
       for (const pin of this.#pins.values()) {
         if (pin.componentId === component.id) {
@@ -54,7 +59,7 @@ export class CCPinStore extends EventEmitter<CCPinStoreEvents> {
     });
     this.#store.nodes.on("didRegister", (node) => {
       const component = this.#store.components.get(node.componentId)!;
-      const pins = this.#store.pins
+      const storePins = this.#store.pins
         .getPinIdsByComponentId(node.componentId)!
         .filter((pinId) => {
           const pin = this.#store.pins.get(pinId)!;
@@ -67,7 +72,7 @@ export class CCPinStore extends EventEmitter<CCPinStoreEvents> {
               )?.length === 0)
           );
         });
-      for (const implementationPinId of pins) {
+      for (const implementationPinId of storePins) {
         const implementationPin = this.get(implementationPinId)!;
         this.register(
           CCPinStore.create({
@@ -124,5 +129,9 @@ export class CCPinStore extends EventEmitter<CCPinStoreEvents> {
       id: crypto.randomUUID() as CCPinId,
       ...partialPin,
     };
+  }
+
+  toArray(): CCPin[] {
+    return [...this.#pins.values()];
   }
 }

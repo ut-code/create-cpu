@@ -38,9 +38,14 @@ export class CCConnectionStore extends EventEmitter<CCConnectionStoreEvents> {
     CCConnectionId
   >(Set);
 
-  constructor(store: CCStore) {
+  constructor(store: CCStore, connections?: CCConnection[]) {
     super();
     this.#store = store;
+    if (connections) {
+      for (const connection of connections) {
+        this.register(connection);
+      }
+    }
     this.#store.nodes.on("willUnregister", (node) => {
       for (const connection of this.#connections.values()) {
         if (
@@ -115,5 +120,9 @@ export class CCConnectionStore extends EventEmitter<CCConnectionStoreEvents> {
       id: crypto.randomUUID() as CCConnectionId,
       ...partialConnection,
     };
+  }
+
+  toArray(): CCConnection[] {
+    return [...this.#connections.values()];
   }
 }
