@@ -1,5 +1,21 @@
-import { useContext, useState } from "react";
+import { useContext, useRef, useState } from "react";
 import invariant from "tiny-invariant";
+import {
+  Box,
+  Button,
+  Container,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  TextField,
+  Typography,
+} from "@mui/material";
+import {
+  Save as SaveIcon,
+  FileOpen as FileOpenIcon,
+  Add as AddIcon,
+} from "@mui/icons-material";
 import { CCComponentStore, type CCComponentId } from "../../store/component";
 import useAllComponents from "../../store/react/selectors";
 import { storeContext, useStore } from "../../store/react";
@@ -46,50 +62,134 @@ export default function HomePage({ onComponentSelected }: HomePageProps) {
     reader.readAsText(file);
   };
 
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const [isCreateNewComponentDialogOpen, setIsCreateNewComponentDialogOpen] =
+    useState(false);
+  const closeCreateNewComponentDialog = () => {
+    setIsCreateNewComponentDialogOpen(false);
+    setNewComponentName("");
+  };
+
   return (
     <div style={{ overflowY: "auto" }}>
-      <h1>Home</h1>
-      <ul>
-        {components.map((component) => (
-          <li key={component.id}>
-            <button
-              type="button"
+      <Container sx={{ px: 2, py: 6 }} maxWidth="sm">
+        <Typography variant="h2" typography="h4" gutterBottom>
+          File
+        </Typography>
+        <Box sx={{ display: "flex", gap: 1 }}>
+          <Button
+            variant="outlined"
+            color="inherit"
+            onClick={downloadStore}
+            startIcon={<SaveIcon />}
+          >
+            Save
+          </Button>
+          <input
+            ref={inputRef}
+            type="file"
+            style={{ display: "none" }}
+            onChange={(e) => uploadStore(e)}
+          />
+          <Button
+            variant="outlined"
+            color="inherit"
+            onClick={() => inputRef.current?.click()}
+            startIcon={<FileOpenIcon />}
+          >
+            Load
+          </Button>
+        </Box>
+        <Box sx={{ display: "flex", alignItems: "center", mt: 4 }}>
+          <div style={{ flexGrow: 1 }}>
+            <Typography variant="h2" typography="h4">
+              Components
+            </Typography>
+            <Typography color="textSecondary">
+              Select a component to start editing.
+            </Typography>
+          </div>
+          <div>
+            <Button
+              variant="outlined"
+              color="inherit"
+              onClick={() => setIsCreateNewComponentDialogOpen(true)}
+              startIcon={<AddIcon />}
+            >
+              Create new...
+            </Button>
+          </div>
+        </Box>
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))",
+            gridAutoRows: "60px",
+            mt: 2,
+            gap: 2,
+          }}
+        >
+          {components.map((component) => (
+            <Button
+              key={component.id}
+              variant="outlined"
+              sx={{
+                display: "block",
+                typography: "h6",
+                alignItems: "center",
+                textTransform: "none",
+                textAlign: "start",
+              }}
+              color="inherit"
               onClick={() => onComponentSelected(component.id)}
             >
               {component.name}
-            </button>
-          </li>
-        ))}
-      </ul>
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (!newComponentName) return;
-          const newComponent = CCComponentStore.create({
-            name: newComponentName,
-          });
-          store.components.register(newComponent);
-          onComponentSelected(newComponent.id);
-        }}
-      >
-        <input
-          value={newComponentName}
-          onChange={(e) => setNewComponentName(e.target.value)}
-          placeholder="New component name"
-        />
-        <button type="submit" disabled={!newComponentName}>
-          Create!
-        </button>
-      </form>
-      <div>
-        <button type="button" onClick={() => downloadStore()}>
-          Download
-        </button>
-      </div>
-      <div>
-        ファイルをアップロード
-        <input type="file" onChange={(e) => uploadStore(e)} />
-      </div>
+            </Button>
+          ))}
+        </Box>
+        <Dialog
+          maxWidth="xs"
+          fullWidth
+          open={isCreateNewComponentDialogOpen}
+          onClose={closeCreateNewComponentDialog}
+        >
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!newComponentName) return;
+              const newComponent = CCComponentStore.create({
+                name: newComponentName,
+              });
+              store.components.register(newComponent);
+              onComponentSelected(newComponent.id);
+            }}
+          >
+            <DialogTitle>Create new component</DialogTitle>
+            <DialogContent>
+              <TextField
+                value={newComponentName}
+                fullWidth
+                onChange={(e) => setNewComponentName(e.target.value)}
+                placeholder="New component name"
+              />
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={closeCreateNewComponentDialog} color="inherit">
+                Cancel
+              </Button>
+              <Button
+                variant="outlined"
+                color="inherit"
+                type="submit"
+                disabled={!newComponentName}
+              >
+                Create
+              </Button>
+            </DialogActions>
+          </form>
+        </Dialog>
+      </Container>
     </div>
   );
 }
