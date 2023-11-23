@@ -423,6 +423,35 @@ export default class CCEvaluation {
     }
   }
 
+  isCyclic(componentId: CCComponentId): boolean {
+    const seen = new Set<CCNodeId>();
+    const finished = new Set<CCNodeId>();
+    const nodes = this.#store.nodes.getNodeIdsByParentComponentId(componentId);
+    const dfs = (nodeId: CCNodeId) => {
+      const node = this.#store.nodes.get(nodeId)!;
+      const pinIds = this.#store.pins.getPinIdsByComponentId(node.componentId);
+      const connectionIds = this.#store.connections.getConnectionIdsByPinId(
+        nodeId,
+        pinIds.find((pinId) => {
+          const pin = this.#store.pins.get(pinId)!;
+          return pin.type === "output";
+        })!
+      );
+      seen.add(nodeId);
+      for (const connectionId of connectionIds!) {
+        const connection = this.#store.connections.get(connectionId)!;
+        const connectedNodeId = connection.to.nodeId;
+        if (!finished.has(connectedNodeId)) {
+          if (seen.has(connectedNodeId)) return true;
+          if (dfs(connectedNodeId)) return true;
+        }
+      }
+      finished.add(nodeId);
+      return false;
+    };
+    return dfs(nodes[0]!);
+  }
+
   evaluateMultipleComponent(
     componentId: CCComponentId,
     input: Map<CCPinId, boolean[]>
@@ -443,6 +472,9 @@ export default class CCEvaluation {
         }
       }
       return outputMap;
+    }
+    if (this.isCyclic(componentId)) {
+      return null;
     }
     const id = CCEvaluation.createMultipleId(componentId, input);
     const cacheHit = this.#inputMultipleCache.get(id);
