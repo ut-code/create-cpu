@@ -73,7 +73,8 @@ export default class CCComponentEditorRendererPort extends CCComponentEditorRend
     this.#pixiParentContainer.addChild(this.#pixiContainer);
     this.#pixiGraphics = new PIXI.Graphics();
     if (this.context.store.pins.get(this.#pinId)!.type === "input") {
-      this.#pixiGraphics.interactive = true;
+      // this.#pixiGraphics.interactive = true;
+      this.#pixiGraphics.eventMode = "dynamic";
       this.#pixiGraphics.cursor = "pointer";
       this.#pixiGraphics.on("pointerdown", this.onClick);
     }
@@ -93,7 +94,8 @@ export default class CCComponentEditorRendererPort extends CCComponentEditorRend
       CCComponentEditorRendererPort.drawingConstants.valueColor;
     this.#pixiValueText.anchor.set(0.5, 0.5);
     if (this.context.store.pins.get(this.#pinId)!.type === "input") {
-      this.#pixiValueText.interactive = true;
+      // this.#pixiValueText.interactive = true;
+      this.#pixiValueText.eventMode = "dynamic";
       this.#pixiValueText.cursor = "pointer";
       this.#pixiValueText.on("pointerdown", this.onClick);
     }

@@ -6,10 +6,14 @@ import { useState } from "react";
 import { Search } from "@mui/icons-material";
 import useAllComponents from "../../store/react/selectors";
 import { useStore } from "../../store/react";
-import type { CCComponentId } from "../../store/component";
+import { isIncluding, type CCComponentId } from "../../store/component";
 import { ccPinTypes } from "../../store/pin";
 import { blackColor, whiteColor } from "../../common/theme";
 import { setDataTransferAsComponent } from "../../common/serialization";
+
+export type SidePanelProps = {
+  editedComponentId: CCComponentId;
+};
 
 function ComponentRenderer({ componentId }: { componentId: CCComponentId }) {
   const store = useStore();
@@ -96,7 +100,8 @@ function ComponentRenderer({ componentId }: { componentId: CCComponentId }) {
   );
 }
 
-export default function SidePanel() {
+export default function SidePanel(sidePanelProps: SidePanelProps) {
+  const { editedComponentId } = sidePanelProps;
   const store = useStore();
   const components = useAllComponents().filter(
     (component) => component.id !== store.components.rootComponentId
@@ -123,6 +128,10 @@ export default function SidePanel() {
       <Box component="ul" sx={{ m: 0, p: 0, listStyleType: "none" }}>
         {components
           .filter((component) => component.name.includes(searchText))
+          .filter((component) => component.id !== editedComponentId)
+          .filter(
+            (component) => !isIncluding(store, component.id, editedComponentId)
+          )
           .map((component) => (
             <Box
               key={component.id}

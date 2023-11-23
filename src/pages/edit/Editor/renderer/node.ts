@@ -69,7 +69,8 @@ export default class CCComponentEditorRendererNode extends CCComponentEditorRend
     this.#simulation = props.simulation;
     this.#multipleSimulation = props.multipleSimulation;
     this.#pixiGraphics = new PIXI.Graphics();
-    this.#pixiGraphics.interactive = true;
+    // this.#pixiGraphics.interactive = true;
+    this.#pixiGraphics.eventMode = "dynamic";
     this.#pixiTexts = this.#createText();
     this.#pixiWorld = new PIXI.Container();
     this.#pixiParentContainer.addChild(this.#pixiWorld);

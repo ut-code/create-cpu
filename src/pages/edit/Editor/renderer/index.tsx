@@ -119,7 +119,8 @@ export default class CCComponentEditorRenderer extends CCComponentEditorRenderer
       pixiParentContainer: this.#pixiWorld,
     });
     this.#pixiApplication.stage.addChild(this.#pixiWorld);
-    this.#pixiApplication.stage.interactive = true;
+    // this.#pixiApplication.stage.interactive = true;
+    this.#pixiApplication.stage.eventMode = "dynamic";
     this.#pixiApplication.stage.hitArea = { contains: () => true }; // Capture events everywhere
     this.#pixiApplication.stage.on("pointerdown", (e) => {
       const { worldPerspective, toWorldPosition } =
@@ -175,12 +176,13 @@ export default class CCComponentEditorRenderer extends CCComponentEditorRenderer
           return;
         }
         case "pin": {
+          const endPointGap = 9;
           this.#creatingConnectionPixiGraphics.clear();
           this.#creatingConnectionPixiGraphics.lineStyle(2, 0x696969);
           const fromPosition = this.#dragState.target.initialPosition;
           const toPosition = fromPosition.add(dragOffset);
           this.#creatingConnectionPixiGraphics.moveTo(
-            fromPosition.x,
+            fromPosition.x + endPointGap,
             fromPosition.y
           );
           const diffX = toPosition.x - fromPosition.x;
@@ -193,7 +195,7 @@ export default class CCComponentEditorRenderer extends CCComponentEditorRenderer
             toPosition.y
           );
           this.#creatingConnectionPixiGraphics.lineTo(
-            toPosition.x,
+            toPosition.x + endPointGap,
             toPosition.y
           );
           return;

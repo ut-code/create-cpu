@@ -126,7 +126,8 @@ export default class CCComponentEditorRendererConnection {
 
   static #createGraphics() {
     const graphics = new PIXI.Graphics();
-    graphics.interactive = true;
+    // graphics.interactive = true;
+    graphics.eventMode = "dynamic";
     graphics.cursor = "pointer";
     graphics.lineStyle(lineWidth, lineColor);
     return graphics;
@@ -174,6 +175,7 @@ export default class CCComponentEditorRendererConnection {
     this.#pixiGraphics.from.lineStyle(lineWidth, lineColor);
     this.#pixiGraphics.middle.lineStyle(lineWidth, lineColor);
     this.#pixiGraphics.to.lineStyle(lineWidth, lineColor);
+    const endPointGap = 9;
     const fromEndPoint = this.#store.connections.get(this.#connectionId)?.from;
     const toEndPoint = this.#store.connections.get(this.#connectionId)?.to;
     const fromPosition = CCComponentEditorRendererNode.getPinAbsolute(
@@ -190,7 +192,7 @@ export default class CCComponentEditorRendererConnection {
     // const diffY = toPosition.y - fromPosition.y;
     this.#pixiGraphics.from.beginFill(lineColor);
     this.#pixiGraphics.from.moveTo(
-      fromPosition.x + lineWidth / 2,
+      fromPosition.x + endPointGap,
       fromPosition.y - lineWidth / 2
     );
     this.#pixiGraphics.from.lineTo(
@@ -202,13 +204,16 @@ export default class CCComponentEditorRendererConnection {
       fromPosition.y + lineWidth / 2
     );
     this.#pixiGraphics.from.lineTo(
-      fromPosition.x + lineWidth / 2,
+      fromPosition.x + endPointGap,
       fromPosition.y + lineWidth / 2
     );
     this.#pixiGraphics.from.endFill();
 
     const fromHitArea = new PIXI.Polygon(
-      new PIXI.Point(fromPosition.x, fromPosition.y - 2 * lineWidth),
+      new PIXI.Point(
+        fromPosition.x + endPointGap,
+        fromPosition.y - 2 * lineWidth
+      ),
       new PIXI.Point(
         fromPosition.x + this.#bentPortionCache * diffX,
         fromPosition.y - 2 * lineWidth
@@ -217,7 +222,10 @@ export default class CCComponentEditorRendererConnection {
         fromPosition.x + this.#bentPortionCache * diffX,
         fromPosition.y + 2 * lineWidth
       ),
-      new PIXI.Point(fromPosition.x, fromPosition.y + 2 * lineWidth)
+      new PIXI.Point(
+        fromPosition.x + endPointGap,
+        fromPosition.y + 2 * lineWidth
+      )
     );
     this.#pixiGraphics.from.hitArea = fromHitArea;
 
@@ -270,22 +278,21 @@ export default class CCComponentEditorRendererConnection {
       toPosition.y - lineWidth / 2
     );
     this.#pixiGraphics.to.lineTo(
-      toPosition.x - lineWidth / 2,
+      toPosition.x - endPointGap,
       toPosition.y - lineWidth / 2
     );
     this.#pixiGraphics.to.lineTo(
-      toPosition.x - lineWidth / 2,
+      toPosition.x - endPointGap,
       toPosition.y + lineWidth / 2
     );
     this.#pixiGraphics.to.lineTo(
       fromPosition.x + this.#bentPortionCache * diffX,
       toPosition.y + lineWidth / 2
     );
-    this.#pixiGraphics.to.lineTo(toPosition.x, toPosition.y);
     this.#pixiGraphics.to.endFill();
 
     const toHitArea = new PIXI.Polygon(
-      new PIXI.Point(toPosition.x, toPosition.y - 2 * lineWidth),
+      new PIXI.Point(toPosition.x - endPointGap, toPosition.y - 2 * lineWidth),
       new PIXI.Point(
         fromPosition.x + this.#bentPortionCache * diffX,
         toPosition.y - 2 * lineWidth
@@ -294,7 +301,7 @@ export default class CCComponentEditorRendererConnection {
         fromPosition.x + this.#bentPortionCache * diffX,
         toPosition.y + 2 * lineWidth
       ),
-      new PIXI.Point(toPosition.x, toPosition.y + 2 * lineWidth)
+      new PIXI.Point(toPosition.x - endPointGap, toPosition.y + 2 * lineWidth)
     );
     this.#pixiGraphics.to.hitArea = toHitArea;
   };

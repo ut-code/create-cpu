@@ -43,7 +43,8 @@ export default class CCComponentEditorRendererNodePin extends CCComponentEditorR
     this.#pixiWorld = new PIXI.Container();
     this.#pixiParentContainer.addChild(this.#pixiWorld);
     this.#pixiGraphics = new PIXI.Graphics();
-    this.#pixiGraphics.interactive = true;
+    // this.#pixiGraphics.interactive = true;
+    this.#pixiGraphics.eventMode = "dynamic";
     this.#pixiGraphics.cursor = "pointer";
     this.#pixiWorld.addChild(this.#pixiGraphics);
     this.#pixiText = pixiText;
