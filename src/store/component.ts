@@ -79,3 +79,28 @@ export class CCComponentStore extends EventEmitter<CCComponentStoreEvents> {
     return [...this.#components.values()];
   }
 }
+
+export function isIncluding(
+  store: CCStore,
+  componentId: CCComponentId,
+  targetComponentId: CCComponentId
+) {
+  const component = store.components.get(componentId)!;
+  if (component.isIntrinsic) return false;
+
+  const checkedComponentIds = new Set<CCComponentId>();
+  const dfs = (_componentId: CCComponentId): boolean => {
+    const nodes = store.nodes.getNodeIdsByParentComponentId(_componentId);
+    for (const nodeId of nodes) {
+      const node = store.nodes.get(nodeId)!;
+      if (!checkedComponentIds.has(node.componentId)) {
+        if (node.componentId === targetComponentId) return true;
+        if (isIncluding(store, node.componentId, targetComponentId))
+          return true;
+        checkedComponentIds.add(node.componentId);
+      }
+    }
+    return false;
+  };
+  return dfs(componentId);
+}

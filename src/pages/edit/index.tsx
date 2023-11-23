@@ -21,7 +21,7 @@ export default function EditPage({
         gridTemplateColumns: "200px max-content 1fr",
       }}
     >
-      <SidePanel />
+      <SidePanel editedComponentId={editedComponentId} />
       <Divider orientation="vertical" />
       <CCComponentEditor
         componentId={editedComponentId}
