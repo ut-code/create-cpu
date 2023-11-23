@@ -24,6 +24,8 @@ export class CCComponentEditorRendererTextBox extends CCComponentEditorRendererB
 
   position: PIXI.Point;
 
+  fontSize = 16;
+
   alignment: "left" | "center" | "right" = "left";
 
   constructor(props: CCComponentEditorRendererTextBoxProps) {
@@ -40,6 +42,14 @@ export class CCComponentEditorRendererTextBox extends CCComponentEditorRendererB
   render() {
     this.#pixiText.position = this.position;
     this.#pixiText.text = this.value;
+    if (this.alignment === "left") {
+      this.#pixiText.anchor.set(0, 0.5);
+    } else if (this.alignment === "center") {
+      this.#pixiText.anchor.set(0.5, 0.5);
+    } else if (this.alignment === "right") {
+      this.#pixiText.anchor.set(1, 0.5);
+    }
+    this.#pixiText.style.fontSize = this.fontSize;
     this.#pixiText.visible = !this.#isInEditMode;
     if (this.#isInEditMode) {
       const htmlInput = this.activateHtmlInput();
