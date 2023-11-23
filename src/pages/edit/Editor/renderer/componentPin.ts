@@ -84,8 +84,8 @@ export default class CCComponentEditorRendererPort extends CCComponentEditorRend
       isEditable: true,
     });
     this.registerChildRenderer(this.#pixiLabelTextBox);
-    // this.#pixiLabelTextBox.style.fontSize =
-    //   CCComponentEditorRendererPort.drawingConstants.fontSize;
+    this.#pixiLabelTextBox.fontSize =
+      CCComponentEditorRendererPort.drawingConstants.fontSize;
     this.#pixiValueText = new PIXI.Text();
     this.#pixiValueText.style.fontSize =
       CCComponentEditorRendererPort.drawingConstants.fontSize;
@@ -187,8 +187,8 @@ export default class CCComponentEditorRendererPort extends CCComponentEditorRend
           (pin.type === "input" ? -1 : 1),
         0
       );
-      this.#pixiLabelTextBox.render();
     }
+    this.#pixiLabelTextBox.render();
 
     this.#pixiGraphics.drawRoundedRect(
       pin.type === "input"
