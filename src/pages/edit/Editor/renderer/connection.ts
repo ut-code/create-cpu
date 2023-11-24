@@ -232,8 +232,7 @@ export default class CCComponentEditorRendererConnection {
     this.#pixiGraphics.middle.beginFill(lineColor);
     this.#pixiGraphics.middle.moveTo(
       fromPosition.x + this.#bentPortionCache * diffX - lineWidth / 2,
-      fromPosition.y +
-        (fromPosition.y < toPosition.y ? -lineWidth / 2 : lineWidth / 2)
+      fromPosition.y + (fromPosition.y < toPosition.y ? -lineWidth : lineWidth)
     );
     this.#pixiGraphics.middle.lineTo(
       fromPosition.x + this.#bentPortionCache * diffX - lineWidth / 2,
@@ -247,8 +246,7 @@ export default class CCComponentEditorRendererConnection {
     );
     this.#pixiGraphics.middle.lineTo(
       fromPosition.x + this.#bentPortionCache * diffX + lineWidth / 2,
-      fromPosition.y +
-        (fromPosition.y < toPosition.y ? -lineWidth / 2 : lineWidth / 2)
+      fromPosition.y + (fromPosition.y < toPosition.y ? -lineWidth : lineWidth)
     );
     this.#pixiGraphics.middle.endFill();
 
