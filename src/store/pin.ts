@@ -32,9 +32,10 @@ export type CCPinIntrinsicImplementation = {
 };
 
 export type CCPinStoreEvents = {
-  didRegister(Pin: CCPin): void;
-  willUnregister(Pin: CCPin): void;
-  didUnregister(Pin: CCPin): void;
+  didRegister(pin: CCPin): void;
+  willUnregister(pin: CCPin): void;
+  didUnregister(pin: CCPin): void;
+  didUpdate(pin: CCPin): void;
 };
 
 export class CCPinStore extends EventEmitter<CCPinStoreEvents> {
@@ -122,6 +123,13 @@ export class CCPinStore extends EventEmitter<CCPinStoreEvents> {
     return [...this.#pins.values()]
       .filter((pin) => pin.componentId === componentId)
       .map((pin) => pin.id);
+  }
+
+  update(id: CCPinId, value: Partial<Pick<CCPin, "name">>): void {
+    const pin = this.#pins.get(id);
+    invariant(pin);
+    this.#pins.set(id, { ...pin, ...value });
+    this.emit("didUpdate", pin);
   }
 
   static create(partialPin: Omit<CCPin, "id">): CCPin {

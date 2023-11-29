@@ -16,10 +16,10 @@ export type CCNode = {
 };
 
 export type CCNodeStoreEvents = {
-  didRegister(Node: CCNode): void;
-  willUnregister(Node: CCNode): void;
-  didUnregister(Node: CCNode): void;
-  didUpdate(Node: CCNode): void;
+  didRegister(node: CCNode): void;
+  willUnregister(node: CCNode): void;
+  didUnregister(node: CCNode): void;
+  didUpdate(node: CCNode): void;
 };
 
 export class CCNodeStore extends EventEmitter<CCNodeStoreEvents> {

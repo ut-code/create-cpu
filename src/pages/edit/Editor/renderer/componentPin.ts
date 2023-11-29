@@ -81,8 +81,10 @@ export default class CCComponentEditorRendererPort extends CCComponentEditorRend
     this.#pixiLabelTextBox = new CCComponentEditorRendererTextBox({
       context: this.context,
       pixiParentContainer: this.#pixiContainer,
-      isEditable: true,
     });
+    this.#pixiLabelTextBox.onChange = (value) => {
+      this.context.store.pins.update(this.#pinId, { name: value });
+    };
     this.registerChildRenderer(this.#pixiLabelTextBox);
     this.#pixiLabelTextBox.fontSize =
       CCComponentEditorRendererPort.drawingConstants.fontSize;
@@ -103,6 +105,9 @@ export default class CCComponentEditorRendererPort extends CCComponentEditorRend
       this.context.componentEditorStore.subscribe(this.render);
     this.#valueBoxWidth =
       CCComponentEditorRendererPort.drawingConstants.valueBoxWidthUnit;
+    this.context.store.pins.on("didUpdate", (pin) => {
+      if (pin.id === this.#pinId) this.render();
+    });
     this.render();
   }
 
@@ -121,6 +126,7 @@ export default class CCComponentEditorRendererPort extends CCComponentEditorRend
     this.#pixiLabelTextBox.value = pin.name;
     const c = CCComponentEditorRendererPort.drawingConstants;
     if (editorState.editorMode === "edit") {
+      this.#pixiLabelTextBox.isEditable = true;
       this.#pixiValueText.visible = false;
       this.#valueBoxWidth = c.valueBoxWidthUnit;
       this.#pixiGraphics.lineStyle(1, editorGridColor);
@@ -134,6 +140,7 @@ export default class CCComponentEditorRendererPort extends CCComponentEditorRend
       );
     } else if (editorState.editorMode === "play") {
       invariant((editorState.editorMode satisfies EditorModePlay) === "play");
+      this.#pixiLabelTextBox.isEditable = false;
       if (pin.type === "input") {
         this.#valueBoxWidth = c.valueBoxWidthUnit;
         this.#pixiValueText.text = editorState.getInputValue(
