@@ -67,9 +67,8 @@ export class CCComponentEditorRendererTextBox extends CCComponentEditorRendererB
     if (this.#isInEditMode) {
       const htmlInput = this.activateHtmlInput();
       htmlInput.style.textAlign = this.alignment;
-      const globalPosition = this.#pixiText.toGlobal(new PIXI.Point(0, 0));
-      htmlInput.style.top = `${globalPosition.y}px`;
-      htmlInput.style.left = `${globalPosition.x}px`;
+      const t = this.#pixiText.worldTransform;
+      htmlInput.style.transform = `matrix(${t.a}, ${t.b}, ${t.c}, ${t.d}, ${t.tx}, ${t.ty})`;
     } else {
       this.deactivateHtmlInput();
     }
