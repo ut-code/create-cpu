@@ -438,7 +438,10 @@ export default class CCComponentEditorRenderer extends CCComponentEditorRenderer
           }
         }
       }
-      const output = this.#simulator.multipleSimulation(input);
+      const output = this.#simulator.multipleSimulation(
+        input,
+        editorState.timeStep
+      );
       if (output == null) return null;
       const nodeOutput = new Map<CCPinId, boolean[]>();
       for (const [outputPinId, outputValue] of output) {

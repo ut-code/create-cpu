@@ -229,6 +229,28 @@ export const distiributeFourBitsIntrinsicComponentOutputPin3: CCPin = {
   implementation: { type: "intrinsic" },
 };
 
+export const flipFlopIntrinsicComponent: CCComponent = {
+  id: "ffffffff-0008-4000-8000-000000000000" as CCComponentId,
+  isIntrinsic: true,
+  name: "FlipFlop",
+};
+
+export const flipFlopIntrinsicComponentInputPin: CCPin = {
+  id: "ffffffff-0008-4000-8000-000000000001" as CCPinId,
+  componentId: flipFlopIntrinsicComponent.id,
+  type: "input",
+  name: "In",
+  implementation: { type: "intrinsic" },
+};
+
+export const flipFlopIntrinsicComponentOutputPin: CCPin = {
+  id: "ffffffff-0008-4000-8000-000000000002" as CCPinId,
+  componentId: flipFlopIntrinsicComponent.id,
+  type: "output",
+  name: "Out",
+  implementation: { type: "intrinsic" },
+};
+
 export function registerIntrinsics(store: CCStore) {
   if (store.components.get(andIntrinsicComponent.id)) return;
   store.components.register(andIntrinsicComponent);
@@ -261,4 +283,7 @@ export function registerIntrinsics(store: CCStore) {
   store.pins.register(distiributeFourBitsIntrinsicComponentOutputPin1);
   store.pins.register(distiributeFourBitsIntrinsicComponentOutputPin2);
   store.pins.register(distiributeFourBitsIntrinsicComponentOutputPin3);
+  store.components.register(flipFlopIntrinsicComponent);
+  store.pins.register(flipFlopIntrinsicComponentInputPin);
+  store.pins.register(flipFlopIntrinsicComponentOutputPin);
 }
