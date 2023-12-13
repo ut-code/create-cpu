@@ -60,9 +60,11 @@ export class CCComponentEditorRendererTextBox extends CCComponentEditorRendererB
     this.#pixiText.style.fontSize = this.fontSize;
     this.#pixiText.visible = !this.#isInEditMode;
     if (this.isEditable) {
-      this.#pixiText.interactive = true;
+      // this.#pixiText.interactive = true;
+      this.#pixiText.eventMode = "dynamic";
     } else {
-      this.#pixiText.interactive = false;
+      // this.#pixiText.interactive = false;
+      this.#pixiText.eventMode = "none";
     }
     if (this.#isInEditMode) {
       const htmlInput = this.activateHtmlInput();
