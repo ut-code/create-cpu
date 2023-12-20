@@ -99,6 +99,7 @@ export class CCPinStore extends EventEmitter<CCPinStoreEvents> {
         }
       }
     });
+    // TODO: create / remove pins when connections are created / removed
   }
 
   register(pin: CCPin): void {
@@ -117,6 +118,17 @@ export class CCPinStore extends EventEmitter<CCPinStoreEvents> {
 
   get(id: CCPinId): CCPin | undefined {
     return this.#pins.get(id);
+  }
+
+  getByImplementationNodeIdAndPinId(nodeId: CCNodeId, pinId: CCPinId): CCPin {
+    const pin = [...this.#pins.values()].find(
+      ({ implementation }) =>
+        implementation.type === "user" &&
+        implementation.nodeId === nodeId &&
+        implementation.pinId === pinId
+    );
+    invariant(pin);
+    return pin;
   }
 
   getPinIdsByComponentId(componentId: CCComponentId): CCPinId[] {

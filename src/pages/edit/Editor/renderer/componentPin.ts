@@ -17,7 +17,7 @@ import CCComponentEditorRendererBase from "./base";
 type CCComponentEditorRendererPortProps = {
   context: CCComponentEditorRendererContext;
   pixiParentContainer: PIXI.Container;
-  nodeId: CCNodeId;
+  nodeId: CCNodeId; // TODO: this might be unnecessary
   pinId: CCPinId;
   position: PIXI.Point;
   simulation: () => Map<CCPinId, boolean>;
