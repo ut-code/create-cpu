@@ -20,6 +20,7 @@ export type InputValueKey = `${CCNodeId},${CCPinId}`;
 
 type State = {
   editorMode: EditorMode;
+  timeStep: number;
   selectedNodeIds: Set<CCNodeId>;
   rangeSelect: RangeSelect;
   setRangeSelect(rangeSelect: RangeSelect): void;
@@ -28,6 +29,8 @@ type State = {
   getInputValue(nodeId: CCNodeId, pinId: CCPinId): boolean;
   setInputValue(nodeId: CCNodeId, pinId: CCPinId, value: boolean): void;
   setEditorMode(mode: EditorMode): void;
+  resetTimeStep(): void;
+  incrementTimeStep(): void;
   selectNode(ids: CCNodeId[], exclusive: boolean): void;
   unselectNode(ids: CCNodeId[]): void;
   selectConnection(ids: CCConnectionId[], exclusive: boolean): void;
@@ -36,6 +39,7 @@ type State = {
 const createStore = () =>
   create<State>((set, get) => ({
     editorMode: "edit",
+    timeStep: 0,
     selectedNodeIds: new Set(),
     rangeSelect: null,
     selectedConnectionIds: new Set(),
@@ -59,6 +63,12 @@ const createStore = () =>
     },
     setEditorMode(mode: EditorMode) {
       set((state) => ({ ...state, editorMode: mode }));
+    },
+    resetTimeStep() {
+      set((state) => ({ ...state, timeStep: 0 }));
+    },
+    incrementTimeStep() {
+      set((state) => ({ ...state, timeStep: state.timeStep + 1 }));
     },
     selectNode(ids: CCNodeId[], exclusive: boolean) {
       set((state) => ({

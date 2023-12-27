@@ -9,6 +9,7 @@ import {
   MenuList,
   Paper,
 } from "@mui/material";
+import SkipNextIcon from "@mui/icons-material/SkipNext";
 import { useEffect, useRef, useState } from "react";
 import invariant from "tiny-invariant";
 import {
@@ -131,14 +132,24 @@ function CCComponentEditorContent({
       <Fab
         style={{ position: "absolute", bottom: "40px", right: "40px" }}
         color="primary"
-        onClick={() =>
+        onClick={() => {
           componentEditorState.setEditorMode(
             componentEditorState.editorMode === "edit" ? "play" : "edit"
-          )
-        }
+          );
+          componentEditorState.resetTimeStep();
+        }}
       >
         {componentEditorState.editorMode === "edit" ? <PlayArrow /> : <Edit />}
       </Fab>
+      {componentEditorState.editorMode === "play" && (
+        <Fab
+          style={{ position: "absolute", bottom: "40px", right: "120px" }}
+          color="primary"
+          onClick={() => componentEditorState.incrementTimeStep()}
+        >
+          <SkipNextIcon />
+        </Fab>
+      )}
       {contextMenuPosition && (
         <ClickAwayListener
           onClickAway={() => {

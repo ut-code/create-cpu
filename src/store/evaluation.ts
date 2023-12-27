@@ -12,6 +12,8 @@ export default class CCEvaluation {
 
   #inputMultipleCache: Map<CCEvaluationId, Map<CCPinId, boolean[]>>;
 
+  #flipFlopValue: Map<CCNodeId, boolean[]> = new Map();
+
   static readonly #cacheSize = 5;
 
   #store: CCStore;
@@ -237,7 +239,8 @@ export default class CCEvaluation {
 
   static createMultipleId(
     componentId: CCComponentId,
-    input: Map<CCPinId, boolean[]>
+    input: Map<CCPinId, boolean[]>,
+    timeStep: number
   ): CCEvaluationId {
     let id = "";
     id += componentId as string;
@@ -254,12 +257,15 @@ export default class CCEvaluation {
         id += "_";
       }
     }
+    id += timeStep;
     return id;
   }
 
   evaluateMultipleIntrinsic(
     componentId: CCComponentId,
-    input: Map<CCPinId, boolean[]>
+    input: Map<CCPinId, boolean[]>,
+    timeStep: number,
+    nodeId?: CCNodeId
   ): Map<CCPinId, boolean[]> | null {
     const component = this.#store.components.get(componentId)!;
     const pinIds = this.#store.pins.getPinIdsByComponentId(componentId);
@@ -416,6 +422,37 @@ export default class CCEvaluation {
         }
         return null;
       }
+      case intrinsics.flipFlopIntrinsicComponent.id: {
+        invariant(pinIds.length === 2);
+        if (timeStep === 0) {
+          this.#flipFlopValue.set(nodeId!, [false]);
+        }
+        const inputValue = input.get(
+          intrinsics.flipFlopIntrinsicComponentInputPin.id
+        );
+
+        const outputValue = this.#flipFlopValue.get(nodeId!);
+
+        this.#flipFlopValue.set(nodeId!, inputValue!);
+
+        const outputMap = new Map<CCPinId, boolean[]>();
+        if (timeStep > 0 && outputValue) {
+          outputMap.set(
+            intrinsics.flipFlopIntrinsicComponentOutputPin.id,
+            outputValue
+          );
+        } else {
+          const initialValue = [];
+          for (let i = 0; i < inputValue!.length; i += 1) {
+            initialValue.push(false);
+          }
+          outputMap.set(
+            intrinsics.flipFlopIntrinsicComponentOutputPin.id,
+            initialValue
+          );
+        }
+        return outputMap;
+      }
       // case "Sample":
       //   return true;
       default:
@@ -454,13 +491,25 @@ export default class CCEvaluation {
 
   evaluateMultipleComponent(
     componentId: CCComponentId,
-    input: Map<CCPinId, boolean[]>
+    input: Map<CCPinId, boolean[]>,
+    timeStep: number,
+    _nodeId?: CCNodeId
   ): Map<CCPinId, boolean[]> | null {
+    const id = CCEvaluation.createMultipleId(componentId, input, timeStep);
+    const cacheHit = this.#inputMultipleCache.get(id);
+    if (cacheHit) {
+      return cacheHit;
+    }
     const component = this.#store.components.get(componentId);
     if (!component) throw new Error(`Component ${component} is not defined.`);
     const pinIds = this.#store.pins.getPinIdsByComponentId(componentId);
     if (component.isIntrinsic) {
-      const outputValue = this.evaluateMultipleIntrinsic(componentId, input);
+      const outputValue = this.evaluateMultipleIntrinsic(
+        componentId,
+        input,
+        timeStep,
+        _nodeId
+      );
       if (!outputValue) {
         return null;
       }
@@ -475,11 +524,6 @@ export default class CCEvaluation {
     }
     if (this.isCyclic(componentId)) {
       return null;
-    }
-    const id = CCEvaluation.createMultipleId(componentId, input);
-    const cacheHit = this.#inputMultipleCache.get(id);
-    if (cacheHit) {
-      return cacheHit;
     }
     const nodeIds =
       this.#store.nodes.getNodeIdsByParentComponentId(componentId);
@@ -552,7 +596,9 @@ export default class CCEvaluation {
       ) {
         const outputs = this.evaluateMultipleComponent(
           currentComponentId,
-          inputValues.get(currentNodeId)!
+          inputValues.get(currentNodeId)!,
+          timeStep,
+          currentNodeId
         );
         if (!outputs) {
           return null;
