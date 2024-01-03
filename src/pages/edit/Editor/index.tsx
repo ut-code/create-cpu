@@ -20,10 +20,14 @@ import {
 } from "@mui/icons-material";
 import { useStore } from "../../../store/react";
 import CCComponentEditorRenderer from "./renderer";
-import type { CCComponentId } from "../../../store/component";
+import { CCComponentStore, type CCComponentId } from "../../../store/component";
 import { parseDataTransferAsComponent } from "../../../common/serialization";
-import { CCNodeStore } from "../../../store/node";
+import { CCNodeStore, type CCNodeId, type CCNode } from "../../../store/node";
 import { ComponentEditorStoreProvider, useComponentEditorStore } from "./store";
+import {
+  CCConnectionStore,
+  type CCConnection,
+} from "../../../store/connection";
 
 export type CCComponentEditorProps = {
   componentId: CCComponentId;
@@ -174,25 +178,94 @@ function CCComponentEditorContent({
             >
               Create a node
             </MenuItem>
-            {(componentEditorState.selectedNodeIds.size !== 0 ||
-              componentEditorState.selectedConnectionIds.size !== 0) && (
+            {componentEditorState.selectedNodeIds.size > 0 && (
               <MenuItem
                 onClick={() => {
-                  store.nodes.unregister([
+                  const oldNodes = [
                     ...componentEditorState.selectedNodeIds,
-                  ]);
+                  ].map((nodeId) => {
+                    const node = store.nodes.get(nodeId);
+                    invariant(node);
+                    return node;
+                  });
+                  const oldConnections = [
+                    ...componentEditorState.selectedConnectionIds,
+                  ].map((connectionId) => {
+                    const connection = store.connections.get(connectionId);
+                    invariant(connection);
+                    return connection;
+                  });
+                  const newComponent = CCComponentStore.create({
+                    name: "New Component",
+                  });
+                  const oldToNewNodeIdMap = new Map<CCNodeId, CCNodeId>();
+                  const newNodes = oldNodes.map<CCNode>((oldNode) => {
+                    const newNode = CCNodeStore.create({
+                      parentComponentId: newComponent.id,
+                      position: oldNode.position,
+                      componentId: oldNode.componentId,
+                    });
+                    oldToNewNodeIdMap.set(oldNode.id, newNode.id);
+                    return newNode;
+                  });
+                  const newConnections = oldConnections.flatMap<CCConnection>(
+                    (oldConnection) => {
+                      const fromNodeId = oldToNewNodeIdMap.get(
+                        oldConnection.from.nodeId
+                      );
+                      const toNodeId = oldToNewNodeIdMap.get(
+                        oldConnection.to.nodeId
+                      );
+                      if (!fromNodeId || !toNodeId) return [];
+                      return CCConnectionStore.create({
+                        parentComponentId: newComponent.id,
+                        from: {
+                          nodeId: fromNodeId,
+                          pinId: oldConnection.from.pinId,
+                        },
+                        to: {
+                          nodeId: toNodeId,
+                          pinId: oldConnection.to.pinId,
+                        },
+                        bentPortion: oldConnection.bentPortion,
+                      });
+                    }
+                  );
+                  store.components.register(newComponent);
+                  for (const node of newNodes) store.nodes.register(node);
+                  for (const connection of newConnections)
+                    store.connections.register(connection);
                   store.connections.unregister([
                     ...componentEditorState.selectedConnectionIds,
                   ]);
-                  componentEditorState.selectNode([], true);
-                  componentEditorState.selectConnection([], false);
+                  store.nodes.unregister([
+                    ...componentEditorState.selectedNodeIds,
+                  ]);
                   setContextMenuPosition(null);
+                  onEditComponent(newComponent.id);
                 }}
               >
-                Delete
+                Create a new component...
               </MenuItem>
             )}
-
+            {componentEditorState.selectedNodeIds.size !== 0 &&
+              componentEditorState.selectedConnectionIds.size !== 0 && (
+                <MenuItem
+                  onClick={() => {
+                    store.nodes.unregister([
+                      ...componentEditorState.selectedNodeIds,
+                    ]);
+                    store.connections.unregister([
+                      ...componentEditorState.selectedConnectionIds,
+                    ]);
+                    componentEditorState.selectNode([], true);
+                    componentEditorState.selectConnection([], false);
+                    setContextMenuPosition(null);
+                  }}
+                >
+                  Delete
+                </MenuItem>
+              )}
             {(() => {
               if (componentEditorState.selectedNodeIds.size !== 1)
                 return undefined;
