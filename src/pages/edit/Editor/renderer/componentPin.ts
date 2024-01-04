@@ -156,8 +156,10 @@ export default class CCComponentEditorRendererPort extends CCComponentEditorRend
             }
             return valueText;
           };
+          invariant(pin.implementation.type === "user");
+          const implementationPinId = pin.implementation.pinId;
           for (const [key, values] of output) {
-            if (key === this.#pinId) {
+            if (key === implementationPinId) {
               this.#pixiValueText.text = createValueText(values);
               this.#valueBoxWidth =
                 c.valueBoxWidthUnit +
