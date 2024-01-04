@@ -23,13 +23,8 @@ export default class CCSimulator {
     this.#evaluation = new CCEvaluation(this.#store);
   }
 
-  simulation = (input: Map<CCPinId, boolean>) => {
-    const output = this.#evaluation.evaluateComponent(this.#componentId, input);
-    return output;
-  };
-
-  multipleSimulation = (input: Map<CCPinId, boolean[]>, timeStep: number) => {
-    const outputs = this.#evaluation.evaluateMultipleComponent(
+  simulation = (input: Map<CCPinId, boolean[]>, timeStep: number) => {
+    const outputs = this.#evaluation.evaluateComponent(
       this.#componentId,
       input,
       timeStep
