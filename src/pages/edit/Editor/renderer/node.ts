@@ -19,8 +19,7 @@ export type CCComponentEditorRendererNodeProps = {
   onDragStart(e: PIXI.FederatedMouseEvent): void;
   onDragStartPin(e: PIXI.FederatedMouseEvent, pinId: CCPinId): void;
   onDragEndPin(e: PIXI.FederatedMouseEvent, pinId: CCPinId): void;
-  simulation(nodeId: CCNodeId): Map<CCPinId, boolean>;
-  multipleSimulation(nodeId: CCNodeId): Map<CCPinId, boolean[]> | null;
+  simulation(nodeId: CCNodeId): Map<CCPinId, boolean[]> | null;
 };
 
 type PixiTexts = {
@@ -58,16 +57,13 @@ export default class CCComponentEditorRendererNode extends CCComponentEditorRend
 
   #pixiWorld: PIXI.Container;
 
-  #simulation: (nodeId: CCNodeId) => Map<CCPinId, boolean>;
-
-  #multipleSimulation: (nodeId: CCNodeId) => Map<CCPinId, boolean[]> | null;
+  #simulation: (nodeId: CCNodeId) => Map<CCPinId, boolean[]> | null;
 
   constructor(props: CCComponentEditorRendererNodeProps) {
     super(props.context);
     this.#nodeId = props.nodeId;
     this.#pixiParentContainer = props.pixiParentContainer;
     this.#simulation = props.simulation;
-    this.#multipleSimulation = props.multipleSimulation;
     this.#pixiGraphics = new PIXI.Graphics();
     // this.#pixiGraphics.interactive = true;
     this.#pixiGraphics.eventMode = "dynamic";
@@ -308,9 +304,6 @@ export default class CCComponentEditorRendererNode extends CCComponentEditorRend
           const simulation = () => {
             return this.#simulation(this.#nodeId);
           };
-          const multipleSimulation = () => {
-            return this.#multipleSimulation(this.#nodeId);
-          };
           const componentPinRenderer =
             new CCComponentEditorRendererComponentPin({
               context: this.context,
@@ -323,7 +316,6 @@ export default class CCComponentEditorRendererNode extends CCComponentEditorRend
                 nodePinId
               ),
               simulation,
-              multipleSimulation,
             });
           newComponentPinRenderers.set(componentPin.id, componentPinRenderer);
         }

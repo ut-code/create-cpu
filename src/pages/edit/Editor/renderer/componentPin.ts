@@ -20,8 +20,7 @@ type CCComponentEditorRendererPortProps = {
   nodeId: CCNodeId; // TODO: this might be unnecessary
   pinId: CCPinId;
   position: PIXI.Point;
-  simulation: () => Map<CCPinId, boolean>;
-  multipleSimulation: () => Map<CCPinId, boolean[]> | null;
+  simulation: () => Map<CCPinId, boolean[]> | null;
 };
 
 export default class CCComponentEditorRendererPort extends CCComponentEditorRendererBase {
@@ -43,11 +42,7 @@ export default class CCComponentEditorRendererPort extends CCComponentEditorRend
 
   readonly #unsubscribeComponentEditorStore: () => void;
 
-  // eslint-disable-next-line
-  // @ts-ignore
-  readonly #simulation: () => Map<CCPinId, boolean>;
-
-  readonly #multipleSimulation: () => Map<CCPinId, boolean[]> | null;
+  readonly #simulation: () => Map<CCPinId, boolean[]> | null;
 
   #valueBoxWidth: number;
 
@@ -67,7 +62,6 @@ export default class CCComponentEditorRendererPort extends CCComponentEditorRend
     this.#pinId = props.pinId;
     this.position = props.position;
     this.#simulation = props.simulation;
-    this.#multipleSimulation = props.multipleSimulation;
     this.#pixiParentContainer = props.pixiParentContainer;
     this.#pixiContainer = new PIXI.Container();
     this.#pixiParentContainer.addChild(this.#pixiContainer);
@@ -153,14 +147,8 @@ export default class CCComponentEditorRendererPort extends CCComponentEditorRend
           : "0";
         this.#pixiGraphics.beginFill(activeColor);
       } else {
-        // const output = this.#simulation();
-        const multipleOutput = this.#multipleSimulation();
-        // for (const [key, value] of output) {
-        //   if (key === this.#pinId) {
-        //     this.#pixiValueText.text = value ? "1" : "0";
-        //   }
-        // }
-        if (multipleOutput) {
+        const output = this.#simulation();
+        if (output) {
           const createValueText = (values: boolean[]) => {
             let valueText = "";
             for (let i = 0; i < values.length; i += 1) {
@@ -168,7 +156,7 @@ export default class CCComponentEditorRendererPort extends CCComponentEditorRend
             }
             return valueText;
           };
-          for (const [key, values] of multipleOutput) {
+          for (const [key, values] of output) {
             if (key === this.#pinId) {
               this.#pixiValueText.text = createValueText(values);
               this.#valueBoxWidth =
