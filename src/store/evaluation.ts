@@ -7,8 +7,15 @@ import * as intrinsics from "./intrinsics";
 
 export type CCEvaluationId = string;
 
+type EvaluationCache = {
+  componentOutputs: Map<CCPinId, boolean[]>;
+  outputPinValues: Map<CCPinId, boolean[]>;
+};
+
 export default class CCEvaluation {
-  #cache: Map<CCEvaluationId, Map<CCPinId, boolean[]>>;
+  #cache: Map<CCEvaluationId, EvaluationCache>;
+
+  #previousValueOfOutputPins: Map<CCPinId, boolean[]> | null;
 
   #flipFlopValue: Map<CCNodeId, boolean[]> = new Map();
 
@@ -17,12 +24,14 @@ export default class CCEvaluation {
   #store: CCStore;
 
   constructor(store: CCStore) {
-    this.#cache = new Map<CCEvaluationId, Map<CCPinId, boolean[]>>();
+    this.#cache = new Map<CCEvaluationId, EvaluationCache>();
+    this.#previousValueOfOutputPins = null;
     this.#store = store;
   }
 
   clear() {
     this.#cache.clear();
+    this.#previousValueOfOutputPins?.clear();
   }
 
   static createId(
@@ -277,6 +286,13 @@ export default class CCEvaluation {
     return dfs(nodes[0]!);
   }
 
+  getCulculatedPinValue(pinId: CCPinId): boolean[] | null {
+    if (this.#previousValueOfOutputPins) {
+      return this.#previousValueOfOutputPins.get(pinId)!;
+    }
+    return null;
+  }
+
   evaluateComponent(
     componentId: CCComponentId,
     input: Map<CCPinId, boolean[]>,
@@ -286,7 +302,8 @@ export default class CCEvaluation {
     const id = CCEvaluation.createId(componentId, input, timeStep);
     const cacheHit = this.#cache.get(id);
     if (cacheHit) {
-      return cacheHit;
+      this.#previousValueOfOutputPins = cacheHit.outputPinValues;
+      return cacheHit.componentOutputs;
     }
     const component = this.#store.components.get(componentId);
     if (!component) throw new Error(`Component ${component} is not defined.`);
@@ -374,6 +391,7 @@ export default class CCEvaluation {
     }
 
     const componentOutputs = new Map<CCPinId, boolean[]>();
+    const outputPinValues = new Map<CCPinId, boolean[]>();
     while (unvisitedNodes.size > 0) {
       const currentNodeId = [...unvisitedNodes][0]!;
       unvisitedNodes.delete(currentNodeId);
@@ -392,6 +410,7 @@ export default class CCEvaluation {
           return null;
         }
         for (const [outputPinId, outputValue] of outputs) {
+          outputPinValues.set(outputPinId, outputValue);
           const connectionIds = this.#store.connections.getConnectionIdsByPinId(
             currentNodeId,
             outputPinId
@@ -429,7 +448,11 @@ export default class CCEvaluation {
     if (this.#cache.size >= CCEvaluation.#cacheSize) {
       this.#cache.delete([...this.#cache.keys()][0]!);
     }
-    this.#cache.set(id, componentOutputs);
+    this.#cache.set(id, {
+      componentOutputs,
+      outputPinValues,
+    });
+    this.#previousValueOfOutputPins = outputPinValues;
     return componentOutputs;
   }
 }
