@@ -4,7 +4,7 @@ import type CCStore from "../../../../store";
 import type { CCPinId } from "../../../../store/pin";
 import type { CCNodeId } from "../../../../store/node";
 import CCComponentEditorRendererNode from "./node";
-import type { ComponentEditorStore } from "../store";
+import type { ComponentEditorStore, EditorMode } from "../store";
 
 export type CCConnectionEndpoint = {
   nodeId: string;
@@ -25,7 +25,10 @@ export default class CCComponentEditorRendererConnection {
     from: PIXI.Graphics;
     middle: PIXI.Graphics;
     to: PIXI.Graphics;
+    value: PIXI.Text;
   };
+
+  #valueText = "";
 
   #bentPortionCache: number;
 
@@ -37,25 +40,32 @@ export default class CCComponentEditorRendererConnection {
 
   #onDragStart: (e: PIXI.FederatedMouseEvent) => void;
 
+  #getPinValue: () => boolean[] | null;
+
   constructor(
     store: CCStore,
     connectionId: CCConnectionId,
     pixiParentContainer: PIXI.Container,
     componentEditorStore: ComponentEditorStore,
-    onDragStart: (e: PIXI.FederatedMouseEvent) => void
+    onDragStart: (e: PIXI.FederatedMouseEvent) => void,
+    getPinValue: () => boolean[] | null
   ) {
     this.#store = store;
     this.#connectionId = connectionId;
     this.#onDragStart = onDragStart;
+    this.#getPinValue = getPinValue;
     this.#pixiGraphics = {
       from: CCComponentEditorRendererConnection.#createGraphics(),
       middle: CCComponentEditorRendererConnection.#createGraphics(),
       to: CCComponentEditorRendererConnection.#createGraphics(),
+      value: new PIXI.Text(this.#valueText, { fontSize: 18 }),
     };
+    this.#pixiGraphics.value.visible = false;
     this.#pixiParentContainer = pixiParentContainer;
     this.#pixiParentContainer.addChild(this.#pixiGraphics.from);
     this.#pixiParentContainer.addChild(this.#pixiGraphics.middle);
     this.#pixiParentContainer.addChild(this.#pixiGraphics.to);
+    this.#pixiParentContainer.addChild(this.#pixiGraphics.value);
 
     this.#pixiGraphics.from.on("pointerdown", (e) => {
       if (e.button === 2) {
@@ -74,6 +84,35 @@ export default class CCComponentEditorRendererConnection {
       if (e.button === 2) {
         this.onPointerDown(e);
       }
+    });
+    const editValueText = (mode: EditorMode) => {
+      if (mode === "play") {
+        const value = this.#getPinValue()
+          ?.map((v) => (v ? "1" : "0"))
+          .join("");
+        this.#pixiGraphics.value.text = value || "";
+        this.#pixiGraphics.value.visible = true;
+      } else {
+        this.#pixiGraphics.value.visible = false;
+      }
+    };
+    this.#pixiGraphics.from.on("mouseover", () => {
+      editValueText(this.#componentEditorStore.getState().editorMode);
+    });
+    this.#pixiGraphics.to.on("mouseover", () => {
+      editValueText(this.#componentEditorStore.getState().editorMode);
+    });
+    this.#pixiGraphics.middle.on("mouseover", () => {
+      editValueText(this.#componentEditorStore.getState().editorMode);
+    });
+    this.#pixiGraphics.from.on("mouseout", () => {
+      this.#pixiGraphics.value.visible = false;
+    });
+    this.#pixiGraphics.middle.on("mouseout", () => {
+      this.#pixiGraphics.value.visible = false;
+    });
+    this.#pixiGraphics.to.on("mouseout", () => {
+      this.#pixiGraphics.value.visible = false;
     });
     this.#bentPortionCache = this.#store.connections.get(
       this.#connectionId
@@ -228,6 +267,14 @@ export default class CCComponentEditorRendererConnection {
       )
     );
     this.#pixiGraphics.from.hitArea = fromHitArea;
+
+    this.#pixiGraphics.value.x =
+      fromPosition.x + this.#bentPortionCache * diffX - lineWidth / 2;
+
+    this.#pixiGraphics.value.y =
+      fromPosition.y < toPosition.y
+        ? fromPosition.y - 20
+        : toPosition.y - 20 - lineWidth / 2;
 
     this.#pixiGraphics.middle.beginFill(lineColor);
     this.#pixiGraphics.middle.moveTo(

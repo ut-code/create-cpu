@@ -32,6 +32,10 @@ export default class CCSimulator {
     return outputs;
   };
 
+  getPinValue = (pinId: CCPinId) => {
+    return this.#evaluation.getCulculatedPinValue(pinId);
+  };
+
   clear() {
     this.#evaluation.clear();
   }
