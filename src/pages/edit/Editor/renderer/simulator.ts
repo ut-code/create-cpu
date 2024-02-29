@@ -1,6 +1,7 @@
 import type CCStore from "../../../../store";
 import type { CCComponentId } from "../../../../store/component";
 import CCEvaluation from "../../../../store/evaluation";
+import type { CCNodeId } from "../../../../store/node";
 import type { CCPinId } from "../../../../store/pin";
 import type { ComponentEditorStore } from "../store";
 
@@ -32,8 +33,8 @@ export default class CCSimulator {
     return outputs;
   };
 
-  getPinValue = (pinId: CCPinId) => {
-    return this.#evaluation.getCulculatedPinValue(pinId);
+  getPinValue = (nodeId: CCNodeId, pinId: CCPinId) => {
+    return this.#evaluation.getCalculatedPinValue(nodeId, pinId);
   };
 
   clear() {

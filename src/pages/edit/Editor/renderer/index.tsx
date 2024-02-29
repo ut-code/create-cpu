@@ -439,8 +439,9 @@ export default class CCComponentEditorRenderer extends CCComponentEditorRenderer
       };
     };
     const getPinValue = () => {
-      const pin = this.context.store.connections.get(connectionId)!.from.pinId;
-      return this.#simulator.getPinValue(pin);
+      const { nodeId, pinId } =
+        this.context.store.connections.get(connectionId)!.from;
+      return this.#simulator.getPinValue(nodeId, pinId);
     };
     const newConnectionRenderer = new CCComponentEditorRendererConnection(
       this.context.store,
