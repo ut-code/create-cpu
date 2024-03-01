@@ -176,13 +176,12 @@ export default class CCComponentEditorRenderer extends CCComponentEditorRenderer
           return;
         }
         case "pin": {
-          const endPointGap = 9;
           this.#creatingConnectionPixiGraphics.clear();
           this.#creatingConnectionPixiGraphics.lineStyle(2, 0x696969);
           const fromPosition = this.#dragState.target.initialPosition;
           const toPosition = fromPosition.add(dragOffset);
           this.#creatingConnectionPixiGraphics.moveTo(
-            fromPosition.x + endPointGap,
+            fromPosition.x,
             fromPosition.y
           );
           const diffX = toPosition.x - fromPosition.x;
@@ -195,7 +194,7 @@ export default class CCComponentEditorRenderer extends CCComponentEditorRenderer
             toPosition.y
           );
           this.#creatingConnectionPixiGraphics.lineTo(
-            toPosition.x + endPointGap,
+            toPosition.x,
             toPosition.y
           );
           return;
@@ -306,8 +305,10 @@ export default class CCComponentEditorRenderer extends CCComponentEditorRenderer
     };
     const onDragStartPin = (e: PIXI.FederatedMouseEvent, pinId: CCPinId) => {
       // const node = this.context.store.nodes.get(nodeId)!;
-      const componentEditorState = this.context.componentEditorStore.getState();
-      if (componentEditorState.editorMode === "play") return;
+      const { toWorldPosition, editorMode } =
+        this.context.componentEditorStore.getState();
+      // const componentEditorState = this.context.componentEditorStore.getState();
+      if (editorMode === "play") return;
       const lineWidth = 2;
       const lineColor = 0x000000;
       // this.#creatingConnectionPixiGraphics.clear();
@@ -325,7 +326,7 @@ export default class CCComponentEditorRenderer extends CCComponentEditorRenderer
           type: "pin",
           pinId,
           nodeId,
-          initialPosition: pinPosition.clone(),
+          initialPosition: toWorldPosition(e.global.clone()),
         },
       };
     };
@@ -438,8 +439,9 @@ export default class CCComponentEditorRenderer extends CCComponentEditorRenderer
       };
     };
     const getPinValue = () => {
-      const pin = this.context.store.connections.get(connectionId)!.from.pinId;
-      return this.#simulator.getPinValue(pin);
+      const { nodeId, pinId } =
+        this.context.store.connections.get(connectionId)!.from;
+      return this.#simulator.getPinValue(nodeId, pinId);
     };
     const newConnectionRenderer = new CCComponentEditorRendererConnection(
       this.context.store,
