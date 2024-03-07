@@ -410,11 +410,13 @@ export default class CCEvaluation {
           return undefined;
         }
         for (const [outputPinId, outputValue] of outputs) {
-          const nodePinValue =
-            outputNodePinValues.get(currentNodeId) ??
-            new Map<CCPinId, boolean[]>();
-          nodePinValue.set(outputPinId, outputValue);
-          outputNodePinValues.set(currentNodeId, nodePinValue);
+          outputNodePinValues.set(
+            currentNodeId,
+            outputNodePinValues
+              .get(currentNodeId)
+              ?.set(outputPinId, outputValue) ||
+              new Map<CCPinId, boolean[]>().set(outputPinId, outputValue)
+          );
           const connectionIds = this.#store.connections.getConnectionIdsByPinId(
             currentNodeId,
             outputPinId
@@ -424,9 +426,9 @@ export default class CCEvaluation {
               const connection = this.#store.connections.get(connectionId)!;
               const connectedNodeId = connection.to.nodeId;
               const connectedPinId = connection.to.pinId;
-              const tmp = inputValues.get(connectedNodeId)!;
-              tmp.set(connectedPinId, outputValue);
-              inputValues.set(connectedNodeId, tmp);
+              inputValues
+                .get(connectedNodeId)!
+                .set(connectedPinId, outputValue);
               foundInputNumber.set(
                 connectedNodeId,
                 foundInputNumber.get(connectedNodeId)! + 1
