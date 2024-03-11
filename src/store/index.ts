@@ -8,6 +8,7 @@ import { CCNodeStore, type CCNode } from "./node";
 import { CCPinStore, type CCPin } from "./pin";
 import { CCConnectionStore, type CCConnection } from "./connection";
 import { registerIntrinsics } from "./intrinsics";
+import TransactionManager from "./transaction";
 
 export type CCStorePropsFromJson = {
   rootComponentId: CCComponentId;
@@ -25,6 +26,8 @@ export default class CCStore {
   pins: CCPinStore;
 
   connections: CCConnectionStore;
+
+  transactionManager = new TransactionManager();
 
   constructor(rootComponent?: CCComponent, props?: CCStorePropsFromJson) {
     if (rootComponent) {

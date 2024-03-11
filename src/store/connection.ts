@@ -2,6 +2,7 @@ import { MultiMap } from "mnemonist";
 import type { Opaque } from "type-fest";
 import EventEmitter from "eventemitter3";
 import invariant from "tiny-invariant";
+import nullthrows from "nullthrows";
 import type CCStore from ".";
 import type { CCNodeId } from "./node";
 import type { CCPinId } from "./pin";
@@ -75,16 +76,19 @@ export class CCConnectionStore extends EventEmitter<CCConnectionStoreEvents> {
     this.emit("didRegister", connection);
   }
 
-  unregister(ids: CCConnectionId[]): void {
-    for (const id of ids) {
-      const connection = this.#connections.get(id);
-      if (!connection) throw new Error(`Connection ${id} not found`);
-      this.emit("willUnregister", connection);
-      this.#parentComponentIdToConnectionIds.remove(
-        connection.parentComponentId,
-        connection.id
-      );
-      this.#connections.delete(id);
+  async unregister(ids: CCConnectionId[]): Promise<void> {
+    const connections = ids.map((id) => nullthrows(this.#connections.get(id)));
+    await this.#store.transactionManager.runInTransaction(() => {
+      for (const connection of connections) {
+        this.emit("willUnregister", connection);
+        this.#parentComponentIdToConnectionIds.remove(
+          connection.parentComponentId,
+          connection.id
+        );
+        this.#connections.delete(connection.id);
+      }
+    });
+    for (const connection of connections) {
       this.emit("didUnregister", connection);
     }
   }

@@ -115,9 +115,11 @@ export default class CCComponentEditorRendererPort extends CCComponentEditorRend
   };
 
   render = () => {
+    const pin = this.context.store.pins.get(this.#pinId);
+    if (!pin) return;
+
     this.#pixiGraphics.clear();
     const editorState = this.context.componentEditorStore.getState();
-    const pin = this.context.store.pins.get(this.#pinId)!;
     this.#pixiContainer.position = this.position;
     this.#pixiLabelTextBox.value = pin.name;
     const c = CCComponentEditorRendererPort.drawingConstants;
