@@ -3,6 +3,7 @@ import EventEmitter from "eventemitter3";
 import invariant from "tiny-invariant";
 import * as PIXI from "pixi.js";
 import { MultiMap } from "mnemonist";
+import nullthrows from "nullthrows";
 import type CCStore from ".";
 import type { CCComponentId } from "./component";
 
@@ -48,13 +49,19 @@ export class CCNodeStore extends EventEmitter<CCNodeStoreEvents> {
     this.emit("didRegister", node);
   }
 
-  unregister(ids: CCNodeId[]): void {
-    for (const id of ids) {
-      const node = this.#nodes.get(id);
-      if (!node) throw new Error(`Node ${id} not found`);
-      this.emit("willUnregister", node);
-      this.#parentComponentIdToNodeIds.remove(node.parentComponentId, node.id);
-      this.#nodes.delete(id);
+  async unregister(ids: CCNodeId[]): Promise<void> {
+    const nodes = ids.map((id) => nullthrows(this.#nodes.get(id)));
+    await this.#store.transactionManager.runInTransaction(() => {
+      for (const node of nodes) {
+        this.emit("willUnregister", node);
+        this.#parentComponentIdToNodeIds.remove(
+          node.parentComponentId,
+          node.id
+        );
+        this.#nodes.delete(node.id);
+      }
+    });
+    for (const node of nodes) {
       this.emit("didUnregister", node);
     }
   }

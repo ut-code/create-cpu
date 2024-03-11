@@ -1,6 +1,7 @@
 import type { Opaque } from "type-fest";
 import EventEmitter from "eventemitter3";
 import invariant from "tiny-invariant";
+import nullthrows from "nullthrows";
 import type CCStore from ".";
 import { type CCComponentId } from "./component";
 import type { CCNodeId } from "./node";
@@ -108,11 +109,12 @@ export class CCPinStore extends EventEmitter<CCPinStoreEvents> {
     this.emit("didRegister", pin);
   }
 
-  unregister(id: CCPinId): void {
-    const pin = this.#pins.get(id);
-    if (!pin) throw new Error(`Pin ${id} not found`);
-    this.emit("willUnregister", pin);
-    this.#pins.delete(id);
+  async unregister(id: CCPinId): Promise<void> {
+    const pin = nullthrows(this.#pins.get(id));
+    await this.#store.transactionManager.runInTransaction(() => {
+      this.emit("willUnregister", pin);
+      this.#pins.delete(id);
+    });
     this.emit("didUnregister", pin);
   }
 
