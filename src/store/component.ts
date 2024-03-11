@@ -19,17 +19,20 @@ export type CCComponentStoreEvents = {
 };
 
 export class CCComponentStore extends EventEmitter<CCComponentStoreEvents> {
+  #store: CCStore;
+
   #components: Map<CCComponentId, CCComponent> = new Map();
 
   readonly rootComponentId: CCComponentId;
 
   constructor(
-    _: CCStore,
+    store: CCStore,
     rootComponent?: CCComponent,
     rootComponentId?: CCComponentId,
     components?: CCComponent[]
   ) {
     super();
+    this.#store = store;
     if (rootComponent) {
       this.rootComponentId = rootComponent.id;
       this.register(rootComponent);
@@ -48,12 +51,14 @@ export class CCComponentStore extends EventEmitter<CCComponentStoreEvents> {
     this.emit("didRegister", component);
   }
 
-  unregister(id: CCComponentId): void {
+  async unregister(id: CCComponentId): Promise<void> {
     invariant(id !== this.rootComponentId);
     const component = this.#components.get(id);
     if (!component) throw new Error(`Component ${id} not found`);
-    this.emit("willUnregister", component);
-    this.#components.delete(id);
+    await this.#store.transactionManager.runInTransaction(() => {
+      this.emit("willUnregister", component);
+      this.#components.delete(id);
+    });
     this.emit("didUnregister", component);
   }
 

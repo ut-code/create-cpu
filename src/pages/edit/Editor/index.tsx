@@ -248,24 +248,26 @@ function CCComponentEditorContent({
                 Create a new component...
               </MenuItem>
             )}
-            {componentEditorState.selectedNodeIds.size !== 0 &&
-              componentEditorState.selectedConnectionIds.size !== 0 && (
-                <MenuItem
-                  onClick={() => {
+            {(componentEditorState.selectedNodeIds.size > 0 ||
+              componentEditorState.selectedConnectionIds.size > 0) && (
+              <MenuItem
+                onClick={() => {
+                  if (componentEditorState.selectedNodeIds.size > 0)
                     store.nodes.unregister([
                       ...componentEditorState.selectedNodeIds,
                     ]);
+                  if (componentEditorState.selectedConnectionIds.size > 0)
                     store.connections.unregister([
                       ...componentEditorState.selectedConnectionIds,
                     ]);
-                    componentEditorState.selectNode([], true);
-                    componentEditorState.selectConnection([], false);
-                    setContextMenuPosition(null);
-                  }}
-                >
-                  Delete
-                </MenuItem>
-              )}
+                  componentEditorState.selectNode([], true);
+                  componentEditorState.selectConnection([], false);
+                  setContextMenuPosition(null);
+                }}
+              >
+                Delete
+              </MenuItem>
+            )}
             {(() => {
               if (componentEditorState.selectedNodeIds.size !== 1)
                 return undefined;

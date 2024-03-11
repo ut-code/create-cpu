@@ -168,7 +168,9 @@ export default class CCComponentEditorRendererNode extends CCComponentEditorRend
   }
 
   render = () => {
-    const node = this.context.store.nodes.get(this.#nodeId)!;
+    const node = this.context.store.nodes.get(this.#nodeId);
+    if (!node) return;
+
     const component = this.context.store.components.get(node.componentId)!;
     const pins = this.context.store.pins
       .getPinIdsByComponentId(component.id)
@@ -259,7 +261,9 @@ export default class CCComponentEditorRendererNode extends CCComponentEditorRend
   };
 
   reconcileChildComponentPinRenderers = () => {
-    const node = this.context.store.nodes.get(this.#nodeId)!;
+    const node = this.context.store.nodes.get(this.#nodeId);
+    if (!node) return;
+
     const nodePinIds = this.context.store.pins
       .getPinIdsByComponentId(node.componentId)
       .filter((pinId) => {
