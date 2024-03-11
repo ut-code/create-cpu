@@ -25,7 +25,7 @@ export default class CCSimulator {
   }
 
   simulation = (input: Map<CCPinId, boolean[]>, timeStep: number) => {
-    const outputs = this.#evaluation.evaluateComponent(
+    const outputs = this.#evaluation.evaluate(
       this.#componentId,
       input,
       timeStep
