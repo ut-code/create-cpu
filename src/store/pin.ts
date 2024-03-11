@@ -120,17 +120,14 @@ export class CCPinStore extends EventEmitter<CCPinStoreEvents> {
     return this.#pins.get(id);
   }
 
-  getByImplementationNodeIdAndPinId(
-    nodeId: CCNodeId,
-    pinId: CCPinId
-  ): CCPin | undefined {
+  getByImplementationNodeIdAndPinId(nodeId: CCNodeId, pinId: CCPinId): CCPin {
     const pin = [...this.#pins.values()].find(
       ({ implementation }) =>
         implementation.type === "user" &&
         implementation.nodeId === nodeId &&
         implementation.pinId === pinId
     );
-    // invariant(pin);
+    invariant(pin);
     return pin;
   }
 

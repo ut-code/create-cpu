@@ -286,11 +286,11 @@ export default class CCEvaluation {
     return dfs(nodes[0]!);
   }
 
-  getCalculatedPinValue(
-    nodeId: CCNodeId,
-    pinId: CCPinId
-  ): boolean[] | undefined {
-    return this.#previousValueOfOutputNodePins?.get(nodeId)?.get(pinId);
+  getCalculatedPinValue(nodeId: CCNodeId, pinId: CCPinId): boolean[] | null {
+    if (this.#previousValueOfOutputNodePins) {
+      return this.#previousValueOfOutputNodePins.get(nodeId)!.get(pinId)!;
+    }
+    return null;
   }
 
   evaluateComponent(
@@ -298,7 +298,7 @@ export default class CCEvaluation {
     input: Map<CCPinId, boolean[]>,
     timeStep: number,
     _nodeId?: CCNodeId
-  ): Map<CCPinId, boolean[]> | undefined {
+  ): Map<CCPinId, boolean[]> | null {
     const id = CCEvaluation.createId(componentId, input, timeStep);
     const cacheHit = this.#cache.get(id);
     if (cacheHit) {
@@ -316,7 +316,7 @@ export default class CCEvaluation {
         _nodeId
       );
       if (!outputValue) {
-        return undefined;
+        return null;
       }
       const outputMap = new Map<CCPinId, boolean[]>();
       for (const pinId of pinIds) {
@@ -328,7 +328,7 @@ export default class CCEvaluation {
       return outputMap;
     }
     if (this.isCyclic(componentId)) {
-      return undefined;
+      return null;
     }
     const nodeIds =
       this.#store.nodes.getNodeIdsByParentComponentId(componentId);
@@ -407,7 +407,7 @@ export default class CCEvaluation {
           currentNodeId
         );
         if (!outputs) {
-          return undefined;
+          return null;
         }
         for (const [outputPinId, outputValue] of outputs) {
           outputNodePinValues.set(

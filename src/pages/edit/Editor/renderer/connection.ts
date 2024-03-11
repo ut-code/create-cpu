@@ -40,7 +40,7 @@ export default class CCComponentEditorRendererConnection {
 
   #onDragStart: (e: PIXI.FederatedMouseEvent) => void;
 
-  #getPinValue: () => boolean[] | undefined;
+  #getPinValue: () => boolean[] | null;
 
   constructor(
     store: CCStore,
@@ -48,7 +48,7 @@ export default class CCComponentEditorRendererConnection {
     pixiParentContainer: PIXI.Container,
     componentEditorStore: ComponentEditorStore,
     onDragStart: (e: PIXI.FederatedMouseEvent) => void,
-    getPinValue: () => boolean[] | undefined
+    getPinValue: () => boolean[] | null
   ) {
     this.#store = store;
     this.#connectionId = connectionId;

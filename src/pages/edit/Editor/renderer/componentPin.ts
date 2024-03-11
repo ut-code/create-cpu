@@ -20,7 +20,7 @@ type CCComponentEditorRendererPortProps = {
   nodeId: CCNodeId; // TODO: this might be unnecessary
   pinId: CCPinId;
   position: PIXI.Point;
-  simulation: () => Map<CCPinId, boolean[]> | undefined;
+  simulation: () => Map<CCPinId, boolean[]> | null;
 };
 
 export default class CCComponentEditorRendererPort extends CCComponentEditorRendererBase {
@@ -42,7 +42,7 @@ export default class CCComponentEditorRendererPort extends CCComponentEditorRend
 
   readonly #unsubscribeComponentEditorStore: () => void;
 
-  readonly #simulation: () => Map<CCPinId, boolean[]> | undefined;
+  readonly #simulation: () => Map<CCPinId, boolean[]> | null;
 
   #valueBoxWidth: number;
 
