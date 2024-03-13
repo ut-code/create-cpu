@@ -10,6 +10,8 @@ export type CCPin = {
   readonly componentId: CCComponentId;
   readonly type: CCPinType;
   readonly implementation: CCPinImplementation;
+  multiplexable: boolean;
+  bits: number;
   name: string;
 };
 
@@ -85,6 +87,8 @@ export class CCPinStore extends EventEmitter<CCPinStoreEvents> {
               nodeId: node.id,
               pinId: implementationPin.id,
             },
+            multiplexable: implementationPin.multiplexable,
+            bits: implementationPin.bits,
           })
         );
       }
