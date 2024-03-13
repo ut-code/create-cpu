@@ -455,16 +455,6 @@ export default class CCComponentEditorRenderer extends CCComponentEditorRenderer
 
   #onConnectionAdded = (connection: CCConnection) => {
     if (connection.parentComponentId !== this.#componentId) return;
-    const fromPin = this.context.store.pins.get(connection.from.pinId)!;
-    const toPin = this.context.store.pins.get(connection.to.pinId)!;
-    if (fromPin.multiplexable) {
-      if (!toPin.multiplexable) {
-        this.context.store.pins.update(fromPin.id, {
-          multiplexable: false,
-          bits: toPin.bits,
-        });
-      }
-    }
     this.#addConnectionRenderer(connection.id);
     this.#simulator.clear();
   };
