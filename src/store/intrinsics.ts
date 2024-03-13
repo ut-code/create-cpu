@@ -15,6 +15,8 @@ export const andIntrinsicComponentInputPinA: CCPin = {
   type: "input",
   name: "A",
   implementation: { type: "intrinsic" },
+  multiplexable: true,
+  bits: 1,
 };
 
 export const andIntrinsicComponentInputPinB: CCPin = {
@@ -23,6 +25,8 @@ export const andIntrinsicComponentInputPinB: CCPin = {
   type: "input",
   name: "B",
   implementation: { type: "intrinsic" },
+  multiplexable: true,
+  bits: 1,
 };
 
 export const andIntrinsicComponentOutputPin: CCPin = {
@@ -31,6 +35,8 @@ export const andIntrinsicComponentOutputPin: CCPin = {
   type: "output",
   name: "Out",
   implementation: { type: "intrinsic" },
+  multiplexable: true,
+  bits: 1,
 };
 
 export const orIntrinsicComponent: CCComponent = {
@@ -45,6 +51,8 @@ export const orIntrinsicComponentInputPinA: CCPin = {
   type: "input",
   name: "A",
   implementation: { type: "intrinsic" },
+  multiplexable: true,
+  bits: 1,
 };
 
 export const orIntrinsicComponentInputPinB: CCPin = {
@@ -53,6 +61,8 @@ export const orIntrinsicComponentInputPinB: CCPin = {
   type: "input",
   name: "B",
   implementation: { type: "intrinsic" },
+  multiplexable: true,
+  bits: 1,
 };
 
 export const orIntrinsicComponentOutputPin: CCPin = {
@@ -61,6 +71,8 @@ export const orIntrinsicComponentOutputPin: CCPin = {
   type: "output",
   name: "Out",
   implementation: { type: "intrinsic" },
+  multiplexable: true,
+  bits: 1,
 };
 
 export const notIntrinsicComponent: CCComponent = {
@@ -75,6 +87,8 @@ export const notIntrinsicComponentInputPin: CCPin = {
   type: "input",
   name: "In",
   implementation: { type: "intrinsic" },
+  multiplexable: true,
+  bits: 1,
 };
 
 export const notIntrinsicComponentOutputPin: CCPin = {
@@ -83,6 +97,8 @@ export const notIntrinsicComponentOutputPin: CCPin = {
   type: "output",
   name: "Out",
   implementation: { type: "intrinsic" },
+  multiplexable: true,
+  bits: 1,
 };
 
 export const xorIntrinsicComponent: CCComponent = {
@@ -97,6 +113,8 @@ export const xorIntrinsicComponentInputPinA: CCPin = {
   type: "input",
   name: "A",
   implementation: { type: "intrinsic" },
+  multiplexable: true,
+  bits: 1,
 };
 
 export const xorIntrinsicComponentInputPinB: CCPin = {
@@ -105,6 +123,8 @@ export const xorIntrinsicComponentInputPinB: CCPin = {
   type: "input",
   name: "B",
   implementation: { type: "intrinsic" },
+  multiplexable: true,
+  bits: 1,
 };
 
 export const xorIntrinsicComponentOutputPin: CCPin = {
@@ -113,6 +133,8 @@ export const xorIntrinsicComponentOutputPin: CCPin = {
   type: "output",
   name: "Out",
   implementation: { type: "intrinsic" },
+  multiplexable: true,
+  bits: 1,
 };
 
 export const inputIntrinsicComponent: CCComponent = {
@@ -127,6 +149,8 @@ export const inputIntrinsicComponentInputPin: CCPin = {
   type: "input",
   name: "In",
   implementation: { type: "intrinsic" },
+  multiplexable: true,
+  bits: 1,
 };
 
 export const inputIntrinsicComponentOutputPin: CCPin = {
@@ -135,6 +159,8 @@ export const inputIntrinsicComponentOutputPin: CCPin = {
   type: "output",
   name: "Out",
   implementation: { type: "intrinsic" },
+  multiplexable: true,
+  bits: 1,
 };
 
 export const fourBitsIntrinsicComponent: CCComponent = {
@@ -149,6 +175,8 @@ export const fourBitsIntrinsicComponentInputPin0: CCPin = {
   type: "input",
   name: "bit0",
   implementation: { type: "intrinsic" },
+  multiplexable: false,
+  bits: 1,
 };
 
 export const fourBitsIntrinsicComponentInputPin1: CCPin = {
@@ -157,6 +185,8 @@ export const fourBitsIntrinsicComponentInputPin1: CCPin = {
   type: "input",
   name: "bit1",
   implementation: { type: "intrinsic" },
+  multiplexable: false,
+  bits: 1,
 };
 
 export const fourBitsIntrinsicComponentInputPin2: CCPin = {
@@ -165,6 +195,8 @@ export const fourBitsIntrinsicComponentInputPin2: CCPin = {
   type: "input",
   name: "bit2",
   implementation: { type: "intrinsic" },
+  multiplexable: false,
+  bits: 1,
 };
 
 export const fourBitsIntrinsicComponentInputPin3: CCPin = {
@@ -173,6 +205,8 @@ export const fourBitsIntrinsicComponentInputPin3: CCPin = {
   type: "input",
   name: "bit3",
   implementation: { type: "intrinsic" },
+  multiplexable: false,
+  bits: 1,
 };
 
 export const fourBitsIntrinsicComponentOutputPin: CCPin = {
@@ -181,6 +215,8 @@ export const fourBitsIntrinsicComponentOutputPin: CCPin = {
   type: "output",
   name: "Out",
   implementation: { type: "intrinsic" },
+  multiplexable: false,
+  bits: 4,
 };
 
 export const distiributeFourBitsIntrinsicComponent: CCComponent = {
@@ -195,6 +231,8 @@ export const distiributeFourBitsIntrinsicComponentInputPin: CCPin = {
   type: "input",
   name: "input",
   implementation: { type: "intrinsic" },
+  multiplexable: false,
+  bits: 4,
 };
 
 export const distiributeFourBitsIntrinsicComponentOutputPin0: CCPin = {
@@ -203,6 +241,8 @@ export const distiributeFourBitsIntrinsicComponentOutputPin0: CCPin = {
   type: "output",
   name: "bit0",
   implementation: { type: "intrinsic" },
+  multiplexable: false,
+  bits: 1,
 };
 
 export const distiributeFourBitsIntrinsicComponentOutputPin1: CCPin = {
@@ -211,6 +251,8 @@ export const distiributeFourBitsIntrinsicComponentOutputPin1: CCPin = {
   type: "output",
   name: "bit1",
   implementation: { type: "intrinsic" },
+  multiplexable: false,
+  bits: 1,
 };
 
 export const distiributeFourBitsIntrinsicComponentOutputPin2: CCPin = {
@@ -219,6 +261,8 @@ export const distiributeFourBitsIntrinsicComponentOutputPin2: CCPin = {
   type: "output",
   name: "bit2",
   implementation: { type: "intrinsic" },
+  multiplexable: false,
+  bits: 1,
 };
 
 export const distiributeFourBitsIntrinsicComponentOutputPin3: CCPin = {
@@ -227,6 +271,8 @@ export const distiributeFourBitsIntrinsicComponentOutputPin3: CCPin = {
   type: "output",
   name: "bit3",
   implementation: { type: "intrinsic" },
+  multiplexable: false,
+  bits: 1,
 };
 
 export const flipFlopIntrinsicComponent: CCComponent = {
@@ -241,6 +287,8 @@ export const flipFlopIntrinsicComponentInputPin: CCPin = {
   type: "input",
   name: "In",
   implementation: { type: "intrinsic" },
+  multiplexable: true,
+  bits: 1,
 };
 
 export const flipFlopIntrinsicComponentOutputPin: CCPin = {
@@ -249,6 +297,8 @@ export const flipFlopIntrinsicComponentOutputPin: CCPin = {
   type: "output",
   name: "Out",
   implementation: { type: "intrinsic" },
+  multiplexable: true,
+  bits: 1,
 };
 
 export function registerIntrinsics(store: CCStore) {

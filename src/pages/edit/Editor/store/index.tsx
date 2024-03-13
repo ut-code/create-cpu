@@ -25,9 +25,9 @@ type State = {
   rangeSelect: RangeSelect;
   setRangeSelect(rangeSelect: RangeSelect): void;
   selectedConnectionIds: Set<CCConnectionId>;
-  inputValues: Map<InputValueKey, boolean>;
-  getInputValue(nodeId: CCNodeId, pinId: CCPinId): boolean;
-  setInputValue(nodeId: CCNodeId, pinId: CCPinId, value: boolean): void;
+  inputValues: Map<InputValueKey, boolean[]>;
+  getInputValue(nodeId: CCNodeId, pinId: CCPinId, bits: number): boolean[];
+  setInputValue(nodeId: CCNodeId, pinId: CCPinId, value: boolean[]): void;
   setEditorMode(mode: EditorMode): void;
   resetTimeStep(): void;
   incrementTimeStep(): void;
@@ -44,10 +44,13 @@ const createStore = () =>
     rangeSelect: null,
     selectedConnectionIds: new Set(),
     inputValues: new Map(),
-    getInputValue(nodeId: CCNodeId, pinId: CCPinId) {
-      return this.inputValues.get(`${nodeId},${pinId}`) ?? false;
+    getInputValue(nodeId: CCNodeId, pinId: CCPinId, bits: number) {
+      return (
+        this.inputValues.get(`${nodeId},${pinId}`) ??
+        new Array(bits).fill(false)
+      );
     },
-    setInputValue(nodeId: CCNodeId, pinId: CCPinId, value: boolean) {
+    setInputValue(nodeId: CCNodeId, pinId: CCPinId, value: boolean[]) {
       set((state) => {
         return {
           ...state,

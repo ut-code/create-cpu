@@ -392,9 +392,10 @@ export default class CCComponentEditorRenderer extends CCComponentEditorRenderer
             ) {
               const inputValue = editorState.getInputValue(
                 implementationNodeId,
-                pinId
+                pinId,
+                pin.bits
               );
-              input.set(pinId, [inputValue]);
+              input.set(pinId, inputValue);
             }
           }
         }

@@ -109,8 +109,24 @@ export default class CCComponentEditorRendererPort extends CCComponentEditorRend
 
   onClick = (e: PIXI.FederatedPointerEvent) => {
     const editorState = this.context.componentEditorStore.getState();
-    const previousValue = editorState.getInputValue(this.#nodeId, this.#pinId);
-    editorState.setInputValue(this.#nodeId, this.#pinId, !previousValue);
+    const previousValue = editorState.getInputValue(
+      this.#nodeId,
+      this.#pinId,
+      this.context.store.pins.get(this.#pinId)!.bits
+    );
+    const increaseValue = (value: boolean[]) => {
+      const newValue = [...value];
+      for (let i = newValue.length - 1; i >= 0; i -= 1) {
+        newValue[i] = !newValue[i];
+        if (newValue[i]) break;
+      }
+      return newValue;
+    };
+    editorState.setInputValue(
+      this.#nodeId,
+      this.#pinId,
+      increaseValue(previousValue)
+    );
     e.preventDefault();
   };
 
@@ -141,12 +157,12 @@ export default class CCComponentEditorRendererPort extends CCComponentEditorRend
       this.#pixiLabelTextBox.isEditable = false;
       if (pin.type === "input") {
         this.#valueBoxWidth = c.valueBoxWidthUnit;
-        this.#pixiValueText.text = editorState.getInputValue(
+        const input = editorState.getInputValue(
           this.#nodeId,
-          this.#pinId
-        )
-          ? "1"
-          : "0";
+          this.#pinId,
+          pin.bits
+        );
+        this.#pixiValueText.text = input.map((v) => (v ? "1" : "0")).join("");
         this.#pixiGraphics.beginFill(activeColor);
       } else {
         const output = this.#simulation();
