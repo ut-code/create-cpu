@@ -119,6 +119,10 @@ export class CCConnectionStore extends EventEmitter<CCConnectionStoreEvents> {
       .map((connection) => connection.id);
   }
 
+  hasNoConnectionOf(nodeId: CCNodeId, pinId: CCPinId): boolean {
+    return this.getConnectionIdsByPinId(nodeId, pinId)?.length === 0;
+  }
+
   static create(partialConnection: Omit<CCConnection, "id">): CCConnection {
     return {
       id: crypto.randomUUID() as CCConnectionId,

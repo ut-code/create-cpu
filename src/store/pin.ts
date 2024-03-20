@@ -65,17 +65,7 @@ export class CCPinStore extends EventEmitter<CCPinStoreEvents> {
       const component = this.#store.components.get(node.componentId)!;
       const storePins = this.#store.pins
         .getPinIdsByComponentId(node.componentId)!
-        .filter((pinId) => {
-          const pin = this.#store.pins.get(pinId)!;
-          return (
-            pin.implementation.type === "intrinsic" ||
-            (pin.implementation.type === "user" &&
-              this.#store.connections.getConnectionIdsByPinId(
-                pin.implementation.nodeId,
-                pin.implementation.pinId
-              )?.length === 0)
-          );
-        });
+        .filter((pinId) => this.isInterfacePin(pinId));
       for (const implementationPinId of storePins) {
         const implementationPin = this.get(implementationPinId)!;
         this.register(
@@ -159,5 +149,17 @@ export class CCPinStore extends EventEmitter<CCPinStoreEvents> {
 
   toArray(): CCPin[] {
     return [...this.#pins.values()];
+  }
+
+  isInterfacePin(pinId: CCPinId): boolean {
+    const pin = this.#store.pins.get(pinId)!;
+    return (
+      pin.implementation.type === "intrinsic" ||
+      (pin.implementation.type === "user" &&
+        this.#store.connections.hasNoConnectionOf(
+          pin.implementation.nodeId,
+          pin.implementation.pinId
+        ))
+    );
   }
 }

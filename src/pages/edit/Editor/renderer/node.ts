@@ -76,17 +76,7 @@ export default class CCComponentEditorRendererNode extends CCComponentEditorRend
     const node = this.context.store.nodes.get(this.#nodeId)!;
     const pinIds = this.context.store.pins
       .getPinIdsByComponentId(node.componentId)
-      .filter((pinId) => {
-        const pin = this.context.store.pins.get(pinId)!;
-        return (
-          pin.implementation.type === "intrinsic" ||
-          (pin.implementation.type === "user" &&
-            this.context.store.connections.getConnectionIdsByPinId(
-              pin.implementation.nodeId,
-              pin.implementation.pinId
-            )?.length === 0)
-        );
-      });
+      .filter((pinId) => this.context.store.pins.isInterfacePin(pinId));
     for (const pinId of pinIds) {
       const pinRenderer = new CCComponentEditorRendererNodePin({
         context: this.context,
@@ -182,13 +172,9 @@ export default class CCComponentEditorRendererNode extends CCComponentEditorRend
       if (pin.implementation.type === "intrinsic") {
         return true;
       }
-      const implementationNodeId = pin.implementation.nodeId;
-      const implementationPinId = pin.implementation.pinId;
-      return (
-        this.context.store.connections.getConnectionIdsByPinId(
-          implementationNodeId,
-          implementationPinId
-        )?.length === 0
+      return this.context.store.connections.hasNoConnectionOf(
+        pin.implementation.nodeId,
+        pin.implementation.pinId
       );
     });
     const outputPins = pins.filter((pin) => {
@@ -198,13 +184,9 @@ export default class CCComponentEditorRendererNode extends CCComponentEditorRend
       if (pin.implementation.type === "intrinsic") {
         return true;
       }
-      const implementationNodeId = pin.implementation.nodeId;
-      const implementationPinId = pin.implementation.pinId;
-      return (
-        this.context.store.connections.getConnectionIdsByPinId(
-          implementationNodeId,
-          implementationPinId
-        )?.length === 0
+      return this.context.store.connections.hasNoConnectionOf(
+        pin.implementation.nodeId,
+        pin.implementation.pinId
       );
     });
     const size = getSize(inputPins.length, outputPins.length);
@@ -266,17 +248,7 @@ export default class CCComponentEditorRendererNode extends CCComponentEditorRend
 
     const nodePinIds = this.context.store.pins
       .getPinIdsByComponentId(node.componentId)
-      .filter((pinId) => {
-        const pin = this.context.store.pins.get(pinId)!;
-        return (
-          pin.implementation.type === "intrinsic" ||
-          (pin.implementation.type === "user" &&
-            this.context.store.connections.getConnectionIdsByPinId(
-              pin.implementation.nodeId,
-              pin.implementation.pinId
-            )?.length === 0)
-        );
-      });
+      .filter((pinId) => this.context.store.pins.isInterfacePin(pinId));
 
     const existingComponentPinRenderers = new Map(this.#componentPinRenderers);
     const newComponentPinRenderers = new Map<
@@ -285,10 +257,10 @@ export default class CCComponentEditorRendererNode extends CCComponentEditorRend
     >();
     for (const nodePinId of nodePinIds) {
       if (
-        this.context.store.connections.getConnectionIdsByPinId(
+        this.context.store.connections.hasNoConnectionOf(
           this.#nodeId,
           nodePinId
-        )?.length === 0
+        )
       ) {
         const componentPin =
           this.context.store.pins.getByImplementationNodeIdAndPinId(
@@ -394,17 +366,7 @@ export default class CCComponentEditorRendererNode extends CCComponentEditorRend
     const component = store.components.get(node.componentId)!;
     const pinIds = store.pins
       .getPinIdsByComponentId(component.id)!
-      .filter((pinId_) => {
-        const pin = store.pins.get(pinId_)!;
-        return (
-          pin.implementation.type === "intrinsic" ||
-          (pin.implementation.type === "user" &&
-            store.connections.getConnectionIdsByPinId(
-              pin.implementation.nodeId,
-              pin.implementation.pinId
-            )?.length === 0)
-        );
-      });
+      .filter((pinId_) => store.pins.isInterfacePin(pinId_));
     const pins = pinIds.map((id) => store.pins.get(id)!);
     const inputPinIds = pins
       .filter((pin) => pin.type === "input")
@@ -442,17 +404,7 @@ export default class CCComponentEditorRendererNode extends CCComponentEditorRend
     const component = store.components.get(node.componentId)!;
     const pinIds = store.pins
       .getPinIdsByComponentId(component.id)!
-      .filter((pinId_) => {
-        const pin = store.pins.get(pinId_)!;
-        return (
-          pin.implementation.type === "intrinsic" ||
-          (pin.implementation.type === "user" &&
-            store.connections.getConnectionIdsByPinId(
-              pin.implementation.nodeId,
-              pin.implementation.pinId
-            )?.length === 0)
-        );
-      });
+      .filter((pinId_) => store.pins.isInterfacePin(pinId_));
     const pins = pinIds.map((id) => store.pins.get(id)!);
     const inputPinIds = pins
       .filter((pin) => pin.type === "input")

@@ -338,12 +338,7 @@ export default class CCComponentEditorRenderer extends CCComponentEditorRenderer
         const anotherPinType = this.context.store.pins.get(anotherPinId)?.type;
         const anotherNodeId = this.#dragState.target.nodeId;
         if (pinType === "input" && anotherPinType === "output") {
-          const inputConnectionIds =
-            this.context.store.connections.getConnectionIdsByPinId(
-              nodeId,
-              pinId
-            );
-          if (inputConnectionIds?.length === 0) {
+          if (this.context.store.connections.hasNoConnectionOf(nodeId, pinId)) {
             const newConnection = CCConnectionStore.create({
               to: { nodeId, pinId },
               from: { nodeId: anotherNodeId, pinId: anotherPinId },
@@ -353,12 +348,12 @@ export default class CCComponentEditorRenderer extends CCComponentEditorRenderer
             this.context.store.connections.register(newConnection);
           }
         } else if (pinType === "output" && anotherPinType === "input") {
-          const inputConnectionIds =
-            this.context.store.connections.getConnectionIdsByPinId(
+          if (
+            this.context.store.connections.hasNoConnectionOf(
               anotherNodeId,
               anotherPinId
-            );
-          if (inputConnectionIds?.length === 0) {
+            )
+          ) {
             const newConnection = CCConnectionStore.create({
               from: { nodeId, pinId },
               to: { nodeId: anotherNodeId, pinId: anotherPinId },

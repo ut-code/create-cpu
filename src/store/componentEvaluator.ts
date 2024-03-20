@@ -299,17 +299,7 @@ export default class CCComponentEvaluator {
       const innerComponentId = node.componentId;
       const innerPinIds = this.#store.pins
         .getPinIdsByComponentId(innerComponentId)
-        .filter((pinId) => {
-          const pin = this.#store.pins.get(pinId)!;
-          return (
-            pin.implementation.type === "intrinsic" ||
-            (pin.implementation.type === "user" &&
-              this.#store.connections.getConnectionIdsByPinId(
-                pin.implementation.nodeId,
-                pin.implementation.pinId
-              )?.length === 0)
-          );
-        });
+        .filter((pinId) => this.#store.pins.isInterfacePin(pinId));
       let inputPinNumber = 0;
       for (const innerPinId of innerPinIds) {
         const innerPin = this.#store.pins.get(innerPinId)!;
@@ -326,10 +316,10 @@ export default class CCComponentEvaluator {
           const connectedNodeId = pin.implementation.nodeId;
           const connectedPinId = pin.implementation.pinId;
           if (
-            this.#store.connections.getConnectionIdsByPinId(
+            this.#store.connections.hasNoConnectionOf(
               connectedNodeId,
               connectedPinId
-            )?.length === 0
+            )
           ) {
             inputValues
               .get(connectedNodeId)!
