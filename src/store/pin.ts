@@ -34,6 +34,10 @@ export type CCPinIntrinsicImplementation = {
   readonly type: "intrinsic";
 };
 
+export type CCPinMultiplexability =
+  | { isMultiplexable: true }
+  | { isMultiplexable: false; multiplicity: number };
+
 export type CCPinStoreEvents = {
   didRegister(pin: CCPin): void;
   willUnregister(pin: CCPin): void;
@@ -148,6 +152,23 @@ export class CCPinStore extends EventEmitter<CCPinStoreEvents> {
     invariant(pin);
     this.#pins.set(id, { ...pin, ...value });
     this.emit("didUpdate", pin);
+  }
+
+  getComponentPinMultiplexability(pinId: CCPinId): CCPinMultiplexability {
+    // eslint-disable-next-line no-console
+    console.log(this, pinId);
+    // TODO: implement
+    return { isMultiplexable: true };
+  }
+
+  getNodePinMultiplexability(
+    pinId: CCPinId,
+    nodeId: CCNodeId
+  ): CCPinMultiplexability {
+    // eslint-disable-next-line no-console
+    console.log(this, pinId, nodeId);
+    // TODO: implement
+    return { isMultiplexable: true };
   }
 
   static create(partialPin: Omit<CCPin, "id">): CCPin {
