@@ -22,11 +22,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       parentComponentId: rootComponent.id,
       componentId: andIntrinsicComponent.id,
       position: new Point(-200, 0),
+      intrinsicVariablePinCount: null,
     });
     const sampleNode2 = CCNodeStore.create({
       parentComponentId: rootComponent.id,
       componentId: notIntrinsicComponent.id,
       position: new Point(200, 0),
+      intrinsicVariablePinCount: null,
     });
     tempStore.nodes.register(sampleNode1);
     tempStore.nodes.register(sampleNode2);
