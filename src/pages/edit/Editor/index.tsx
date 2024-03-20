@@ -93,6 +93,8 @@ function CCComponentEditorContent({
               position: componentEditorState.toWorldPosition(
                 new PIXI.Point(e.nativeEvent.offsetX, e.nativeEvent.offsetY)
               ),
+              // TODO: implement
+              intrinsicVariablePinCount: null,
             })
           );
         }}
@@ -204,6 +206,8 @@ function CCComponentEditorContent({
                       parentComponentId: newComponent.id,
                       position: oldNode.position,
                       componentId: oldNode.componentId,
+                      intrinsicVariablePinCount:
+                        oldNode.intrinsicVariablePinCount,
                     });
                     oldToNewNodeIdMap.set(oldNode.id, newNode.id);
                     return newNode;
