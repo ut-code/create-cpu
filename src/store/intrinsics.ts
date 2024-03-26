@@ -337,3 +337,10 @@ export function registerIntrinsics(store: CCStore) {
   store.pins.register(flipFlopIntrinsicComponentInputPin);
   store.pins.register(flipFlopIntrinsicComponentOutputPin);
 }
+
+export function hasVariablePinCount(componentId: CCComponentId) {
+  return (
+    componentId === fourBitsIntrinsicComponent.id ||
+    componentId === distiributeFourBitsIntrinsicComponent.id
+  );
+}

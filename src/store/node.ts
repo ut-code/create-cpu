@@ -6,6 +6,7 @@ import { MultiMap } from "mnemonist";
 import nullthrows from "nullthrows";
 import type CCStore from ".";
 import type { CCComponentId } from "./component";
+import { hasVariablePinCount } from "./intrinsics";
 
 export type CCNodeId = Opaque<string, "CCNodeId">;
 
@@ -14,6 +15,8 @@ export type CCNode = {
   readonly parentComponentId: CCComponentId;
   readonly componentId: CCComponentId;
   position: PIXI.Point;
+  /** The dynamic pin count exclusive to certain intrinsic components */
+  intrinsicVariablePinCount: number | null;
 };
 
 export type CCNodeStoreEvents = {
@@ -86,6 +89,11 @@ export class CCNodeStore extends EventEmitter<CCNodeStoreEvents> {
   }
 
   static create(partialNode: Omit<CCNode, "id">): CCNode {
+    invariant(
+      hasVariablePinCount(partialNode.componentId)
+        ? partialNode.intrinsicVariablePinCount !== null
+        : partialNode.intrinsicVariablePinCount === null
+    );
     return {
       id: crypto.randomUUID() as CCNodeId,
       ...partialNode,
