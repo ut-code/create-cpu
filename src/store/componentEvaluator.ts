@@ -185,7 +185,18 @@ export default class CCComponentEvaluator {
       case intrinsics.flipFlopIntrinsicComponent.id: {
         invariant(pinIds.length === 2);
         if (timeStep === 0) {
-          this.#flipFlopValue.set(nodeId!, [false]);
+          const multiplicity = this.#store.pins.getNodePinMultiplexability(
+            intrinsics.flipFlopIntrinsicComponentInputPin.id,
+            nodeId!
+          );
+          if (multiplicity.isMultiplexable) {
+            this.#flipFlopValue.set(nodeId!, [false]);
+          } else {
+            this.#flipFlopValue.set(
+              nodeId!,
+              Array.from({ length: multiplicity.multiplicity }, () => false)
+            );
+          }
         }
         const inputValue = input.get(
           intrinsics.flipFlopIntrinsicComponentInputPin.id
