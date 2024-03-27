@@ -70,6 +70,13 @@ export class CCComponentStore extends EventEmitter<CCComponentStoreEvents> {
     return this.#components;
   }
 
+  update(id: CCComponentId, value: Pick<CCComponent, "name">): void {
+    const component = this.#components.get(id);
+    invariant(component);
+    this.#components.set(id, { ...component, ...value });
+    this.emit("didUpdate", component);
+  }
+
   static create(
     partialComponent: Omit<CCComponent, "id" | "isIntrinsic">
   ): CCComponent {

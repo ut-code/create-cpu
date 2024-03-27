@@ -1,16 +1,6 @@
 import { useContext, useRef, useState } from "react";
 import invariant from "tiny-invariant";
-import {
-  Box,
-  Button,
-  Container,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  TextField,
-  Typography,
-} from "@mui/material";
+import { Box, Button, Container, Typography } from "@mui/material";
 import {
   Save as SaveIcon,
   FileOpen as FileOpenIcon,
@@ -20,6 +10,7 @@ import { CCComponentStore, type CCComponentId } from "../../store/component";
 import useAllComponents from "../../store/react/selectors";
 import { storeContext, useStore } from "../../store/react";
 import CCStore, { type CCStorePropsFromJson } from "../../store";
+import { ComponentPropertyDialog } from "../../components/ComponentPropertyDialog";
 
 export type HomePageProps = {
   onComponentSelected: (componentId: CCComponentId) => void;
@@ -31,7 +22,6 @@ export default function HomePage({ onComponentSelected }: HomePageProps) {
   const components = useAllComponents().filter(
     (component) => !component.isIntrinsic
   );
-  const [newComponentName, setNewComponentName] = useState("");
   const downloadStore = () => {
     const storeJSON = store.toJSON();
     const blob = new Blob([storeJSON], {
@@ -64,12 +54,8 @@ export default function HomePage({ onComponentSelected }: HomePageProps) {
 
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const [isCreateNewComponentDialogOpen, setIsCreateNewComponentDialogOpen] =
+  const [isComponentPropertyDialogOpen, setIsComponentPropertyDialogOpen] =
     useState(false);
-  const closeCreateNewComponentDialog = () => {
-    setIsCreateNewComponentDialogOpen(false);
-    setNewComponentName("");
-  };
 
   return (
     <div style={{ overflowY: "auto" }}>
@@ -114,7 +100,7 @@ export default function HomePage({ onComponentSelected }: HomePageProps) {
             <Button
               variant="outlined"
               color="inherit"
-              onClick={() => setIsCreateNewComponentDialogOpen(true)}
+              onClick={() => setIsComponentPropertyDialogOpen(true)}
               startIcon={<AddIcon />}
             >
               Create new...
@@ -148,47 +134,21 @@ export default function HomePage({ onComponentSelected }: HomePageProps) {
             </Button>
           ))}
         </Box>
-        <Dialog
-          maxWidth="xs"
-          fullWidth
-          open={isCreateNewComponentDialogOpen}
-          onClose={closeCreateNewComponentDialog}
-        >
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (!newComponentName) return;
+        {isComponentPropertyDialogOpen && (
+          <ComponentPropertyDialog
+            defaultName=""
+            onAccept={(newName) => {
               const newComponent = CCComponentStore.create({
-                name: newComponentName,
+                name: newName,
               });
               store.components.register(newComponent);
               onComponentSelected(newComponent.id);
             }}
-          >
-            <DialogTitle>Create new component</DialogTitle>
-            <DialogContent>
-              <TextField
-                value={newComponentName}
-                fullWidth
-                onChange={(e) => setNewComponentName(e.target.value)}
-                placeholder="New component name"
-              />
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={closeCreateNewComponentDialog} color="inherit">
-                Cancel
-              </Button>
-              <Button
-                variant="outlined"
-                color="inherit"
-                type="submit"
-                disabled={!newComponentName}
-              >
-                Create
-              </Button>
-            </DialogActions>
-          </form>
-        </Dialog>
+            onCancel={() => {
+              setIsComponentPropertyDialogOpen(false);
+            }}
+          />
+        )}
       </Container>
     </div>
   );
