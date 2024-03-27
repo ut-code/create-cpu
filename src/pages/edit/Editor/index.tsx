@@ -28,6 +28,7 @@ import {
   CCConnectionStore,
   type CCConnection,
 } from "../../../store/connection";
+import { ComponentPropertyDialog } from "../../../components/ComponentPropertyDialog";
 
 export type CCComponentEditorProps = {
   componentId: CCComponentId;
@@ -51,6 +52,8 @@ function CCComponentEditorContent({
 
   const [contextMenuPosition, setContextMenuPosition] =
     useState<PIXI.Point | null>(null);
+  const [isComponentPropertyDialogOpen, setIsComponentPropertyDialogOpen] =
+    useState(false);
 
   useEffect(() => {
     invariant(containerRef.current && overlayAreaRef.current);
@@ -124,7 +127,15 @@ function CCComponentEditorContent({
       >
         <Box sx={{ color: "text.secondary" }}>Components</Box>
         <KeyboardDoubleArrowRight />
-        {component.name}
+        <span>{component.name}</span>
+        <IconButton
+          size="small"
+          onClick={() => {
+            setIsComponentPropertyDialogOpen(true);
+          }}
+        >
+          <Edit fontSize="small" />
+        </IconButton>
         <div aria-hidden style={{ flexGrow: 1 }} />
         <IconButton
           size="small"
@@ -303,6 +314,18 @@ function CCComponentEditorContent({
             })()}
           </MenuList>
         </ClickAwayListener>
+      )}
+      {isComponentPropertyDialogOpen && (
+        <ComponentPropertyDialog
+          defaultName={component.name}
+          onAccept={(newName) => {
+            store.components.update(componentId, { name: newName });
+            setIsComponentPropertyDialogOpen(false);
+          }}
+          onCancel={() => {
+            setIsComponentPropertyDialogOpen(false);
+          }}
+        />
       )}
     </Box>
   );
