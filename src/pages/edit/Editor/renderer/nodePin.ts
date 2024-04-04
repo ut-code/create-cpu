@@ -113,6 +113,7 @@ export default class CCComponentEditorRendererNodePin extends CCComponentEditorR
       new PIXI.Point(edgeSize + hitAreaGap, -hitAreaGap)
     );
     this.#pixiGraphics.hitArea = hitArea;
+    this.#pixiWorld.zIndex = 100;
   }
 
   override destroy() {

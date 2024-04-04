@@ -69,6 +69,7 @@ export default class CCComponentEditorRendererNode extends CCComponentEditorRend
     this.#pixiGraphics.eventMode = "dynamic";
     this.#pixiTexts = this.#createText();
     this.#pixiWorld = new PIXI.Container();
+    this.#pixiWorld.sortableChildren = true;
     this.#pixiParentContainer.addChild(this.#pixiWorld);
     this.#pixiWorld.addChild(this.#pixiGraphics);
     this.#pixiWorld.addChild(this.#pixiTexts.componentName);
