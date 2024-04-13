@@ -124,9 +124,9 @@ export class CCNodeStore extends EventEmitter<CCNodeStoreEvents> {
   }
 
   /**
-   * Create a node
+   * Create node
    * @param partialNode node without `id`
-   * @returns a new node
+   * @returns new node
    */
   static create(partialNode: Omit<CCNode, "id">): CCNode {
     invariant(

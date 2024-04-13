@@ -255,7 +255,7 @@ export default class CCComponentEvaluator {
 
   /**
    * Check if nodes and connections of the component of `componentId` are forming a cycle
-   * @param componentId
+   * @param componentId id of component
    * @returns if nodes and connections of the component of `componentId` are forming a cycle, `true` returns (otherwise `false`)
    */
   isCyclic(componentId: CCComponentId): boolean {

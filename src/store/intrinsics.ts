@@ -345,8 +345,8 @@ export function registerIntrinsics(store: CCStore) {
 
 /**
  * Check if the component has variable pin count
- * @param componentId
- * @returns boolean
+ * @param componentId id of component
+ * @returns if the component has variable pin count, `true` returns (otherwise `false`)
  */
 export function hasVariablePinCount(componentId: CCComponentId) {
   return (
