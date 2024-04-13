@@ -198,9 +198,6 @@ export class CCPinStore extends EventEmitter<CCPinStoreEvents> {
         if (pin.implementation.type === "intrinsic") {
           throw new Error("unreachable");
         }
-        const implementationPin = this.#store.pins.get(
-          pin.implementation.pinId
-        )!;
         return this.getNodePinMultiplexability(
           pin.implementation.pinId,
           pin.implementation.nodeId

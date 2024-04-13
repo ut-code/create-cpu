@@ -6,7 +6,7 @@ import { MultiMap } from "mnemonist";
 import nullthrows from "nullthrows";
 import type CCStore from ".";
 import type { CCComponentId } from "./component";
-import { hasVariablePinCount } from "./intrinsics";
+// import { hasVariablePinCount } from "./intrinsics";
 
 export type CCNodeId = Opaque<string, "CCNodeId">;
 
