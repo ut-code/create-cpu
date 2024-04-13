@@ -14,6 +14,9 @@ export type CCConnectionEndpoint = {
 const lineWidth = 2;
 const lineColor = 0x000000;
 
+/**
+ * Class for rendering connection
+ */
 export default class CCComponentEditorRendererConnection {
   #store: CCStore;
 
@@ -42,6 +45,16 @@ export default class CCComponentEditorRendererConnection {
 
   #getPinValue: () => boolean[] | null;
 
+  /**
+   * Constructor of CCComponentEditorRendererConnection
+   * @param store store
+   * @param connectionId id of connection
+   * @param pixiParentContainer parent container of pixi
+   * @param componentEditorStore store of component editor
+   * @param onDragStart function to be called when drag starts
+   * @param getPinValue function to get value of pin
+   * @returns instance of CCComponentEditorRendererConnection
+   */
   constructor(
     store: CCStore,
     connectionId: CCConnectionId,
@@ -124,6 +137,10 @@ export default class CCComponentEditorRendererConnection {
     this.#store.nodes.on("didUpdate", this.#render);
   }
 
+  /**
+   * Event handler for pointer down
+   * @param e event
+   */
   onPointerDown(e: PIXI.FederatedEvent) {
     if (
       !this.#componentEditorStore
@@ -137,6 +154,9 @@ export default class CCComponentEditorRendererConnection {
     e.stopPropagation();
   }
 
+  /**
+   * Event handler for drag end
+   */
   onDragEnd() {
     const fromEndPoint = this.#store.connections.get(this.#connectionId)?.from;
     const toEndPoint = this.#store.connections.get(this.#connectionId)?.to;
@@ -163,6 +183,10 @@ export default class CCComponentEditorRendererConnection {
     // e.stopPropagation();
   }
 
+  /**
+   * Create new graphics
+   * @returns new graphics
+   */
   static #createGraphics() {
     const graphics = new PIXI.Graphics();
     // graphics.interactive = true;
@@ -172,6 +196,9 @@ export default class CCComponentEditorRendererConnection {
     return graphics;
   }
 
+  /**
+   * Destroy the connection
+   */
   destroy() {
     this.#pixiParentContainer.removeChild(this.#pixiGraphics.from);
     this.#pixiParentContainer.removeChild(this.#pixiGraphics.middle);
@@ -183,6 +210,10 @@ export default class CCComponentEditorRendererConnection {
     this.#store.nodes.off("didUpdate", this.#render);
   }
 
+  /**
+   * Update bent portion
+   * @param offset new offset
+   */
   updateBentPortion(offset: number) {
     this.#offset = offset;
     const fromEndPoint = this.#store.connections.get(this.#connectionId)?.from;
@@ -207,6 +238,9 @@ export default class CCComponentEditorRendererConnection {
     this.#render();
   }
 
+  /**
+   * Render the connection
+   */
   #render = () => {
     this.#pixiGraphics.from.clear();
     this.#pixiGraphics.middle.clear();

@@ -18,6 +18,9 @@ export type CCComponentStoreEvents = {
   didUpdate(component: CCComponent): void;
 };
 
+/**
+ * Store of components
+ */
 export class CCComponentStore extends EventEmitter<CCComponentStoreEvents> {
   #store: CCStore;
 
@@ -25,6 +28,13 @@ export class CCComponentStore extends EventEmitter<CCComponentStoreEvents> {
 
   readonly rootComponentId: CCComponentId;
 
+  /**
+   * Constructor of CCComponentStore
+   * @param store store
+   * @param rootComponent root component
+   * @param rootComponentId id of root component
+   * @param components initial components
+   */
   constructor(
     store: CCStore,
     rootComponent?: CCComponent,
@@ -45,12 +55,20 @@ export class CCComponentStore extends EventEmitter<CCComponentStoreEvents> {
     }
   }
 
+  /**
+   * Register a component
+   * @param component component to be registered
+   */
   register(component: CCComponent): void {
     invariant(!this.#components.has(component.id));
     this.#components.set(component.id, component);
     this.emit("didRegister", component);
   }
 
+  /**
+   * Unregister a component
+   * @param id id of a component to be unregistered
+   */
   async unregister(id: CCComponentId): Promise<void> {
     invariant(id !== this.rootComponentId);
     const component = this.#components.get(id);
@@ -62,14 +80,28 @@ export class CCComponentStore extends EventEmitter<CCComponentStoreEvents> {
     this.emit("didUnregister", component);
   }
 
+  /**
+   * Get a component by CCComponentId
+   * @param id id of component
+   * @returns component of `id`
+   */
   get(id: CCComponentId): CCComponent | undefined {
     return this.#components.get(id);
   }
 
+  /**
+   * Get all of components
+   * @returns map of id and component (read only)
+   */
   getAll(): ReadonlyMap<CCComponentId, CCComponent> {
     return this.#components;
   }
 
+  /**
+   * Update the name of component
+   * @param id id of component
+   * @param value new name
+   */
   update(id: CCComponentId, value: Pick<CCComponent, "name">): void {
     const component = this.#components.get(id);
     invariant(component);
@@ -77,6 +109,11 @@ export class CCComponentStore extends EventEmitter<CCComponentStoreEvents> {
     this.emit("didUpdate", component);
   }
 
+  /**
+   * Create a new component
+   * @param partialComponent component without `id` and `isIntrinsic`
+   * @returns a new component
+   */
   static create(
     partialComponent: Omit<CCComponent, "id" | "isIntrinsic">
   ): CCComponent {
@@ -87,11 +124,22 @@ export class CCComponentStore extends EventEmitter<CCComponentStoreEvents> {
     };
   }
 
+  /**
+   * Get array of components
+   * @returns array of components
+   */
   toArray(): CCComponent[] {
     return [...this.#components.values()];
   }
 }
 
+/**
+ * Check if the component of `componentId` is including the component of `targetComponentId`
+ * @param store store
+ * @param componentId id of component (parent)
+ * @param targetComponentId id of target component (child)
+ * @returns if the component of `componentId` is including the component of `targetComponentId`, `true` returns (otherwise `false`)
+ */
 export function isIncluding(
   store: CCStore,
   componentId: CCComponentId,

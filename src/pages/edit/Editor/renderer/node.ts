@@ -27,12 +27,21 @@ type PixiTexts = {
   pinNames: Map<string, PIXI.Text>;
 };
 
+/**
+ * Get size of node
+ * @param inputPinCount
+ * @param outputPinCount
+ * @returns size
+ */
 const getSize = (inputPinCount: number, outputPinCount: number) =>
   new PIXI.Point(
     200,
     (100 / 3) * (Math.max(inputPinCount, outputPinCount) + 1)
   );
 
+/**
+ * Class for rendering node
+ */
 export default class CCComponentEditorRendererNode extends CCComponentEditorRendererBase {
   #unsubscribeComponentEditorStore: () => void;
 
@@ -59,6 +68,10 @@ export default class CCComponentEditorRendererNode extends CCComponentEditorRend
 
   #simulation: (nodeId: CCNodeId) => Map<CCPinId, boolean[]> | null;
 
+  /**
+   * Constructor of CCComponentEditorRendererNode
+   * @param props
+   */
   constructor(props: CCComponentEditorRendererNodeProps) {
     super(props.context);
     this.#nodeId = props.nodeId;
@@ -69,6 +82,7 @@ export default class CCComponentEditorRendererNode extends CCComponentEditorRend
     this.#pixiGraphics.eventMode = "dynamic";
     this.#pixiTexts = this.#createText();
     this.#pixiWorld = new PIXI.Container();
+    this.#pixiWorld.sortableChildren = true;
     this.#pixiParentContainer.addChild(this.#pixiWorld);
     this.#pixiWorld.addChild(this.#pixiGraphics);
     this.#pixiWorld.addChild(this.#pixiTexts.componentName);
@@ -76,17 +90,7 @@ export default class CCComponentEditorRendererNode extends CCComponentEditorRend
     const node = this.context.store.nodes.get(this.#nodeId)!;
     const pinIds = this.context.store.pins
       .getPinIdsByComponentId(node.componentId)
-      .filter((pinId) => {
-        const pin = this.context.store.pins.get(pinId)!;
-        return (
-          pin.implementation.type === "intrinsic" ||
-          (pin.implementation.type === "user" &&
-            this.context.store.connections.getConnectionIdsByPinId(
-              pin.implementation.nodeId,
-              pin.implementation.pinId
-            )?.length === 0)
-        );
-      });
+      .filter((pinId) => this.context.store.pins.isInterfacePin(pinId));
     for (const pinId of pinIds) {
       const pinRenderer = new CCComponentEditorRendererNodePin({
         context: this.context,
@@ -139,10 +143,18 @@ export default class CCComponentEditorRendererNode extends CCComponentEditorRend
     this.render();
   }
 
+  /**
+   * Event handler for pointer down
+   * @param event event
+   */
   onPointerDown(event: (e: PIXI.FederatedPointerEvent) => void) {
     this.#pixiGraphics.on("pointerdown", event);
   }
 
+  /**
+   * Create text for name
+   * @returns text
+   */
   #createText(): PixiTexts {
     const node = this.context.store.nodes.get(this.#nodeId)!;
     const component = this.context.store.components.get(node.componentId)!;
@@ -167,6 +179,9 @@ export default class CCComponentEditorRendererNode extends CCComponentEditorRend
     return { componentName, pinNames: map };
   }
 
+  /**
+   * Render node
+   */
   render = () => {
     const node = this.context.store.nodes.get(this.#nodeId);
     if (!node) return;
@@ -182,13 +197,9 @@ export default class CCComponentEditorRendererNode extends CCComponentEditorRend
       if (pin.implementation.type === "intrinsic") {
         return true;
       }
-      const implementationNodeId = pin.implementation.nodeId;
-      const implementationPinId = pin.implementation.pinId;
-      return (
-        this.context.store.connections.getConnectionIdsByPinId(
-          implementationNodeId,
-          implementationPinId
-        )?.length === 0
+      return this.context.store.connections.hasNoConnectionOf(
+        pin.implementation.nodeId,
+        pin.implementation.pinId
       );
     });
     const outputPins = pins.filter((pin) => {
@@ -198,13 +209,9 @@ export default class CCComponentEditorRendererNode extends CCComponentEditorRend
       if (pin.implementation.type === "intrinsic") {
         return true;
       }
-      const implementationNodeId = pin.implementation.nodeId;
-      const implementationPinId = pin.implementation.pinId;
-      return (
-        this.context.store.connections.getConnectionIdsByPinId(
-          implementationNodeId,
-          implementationPinId
-        )?.length === 0
+      return this.context.store.connections.hasNoConnectionOf(
+        pin.implementation.nodeId,
+        pin.implementation.pinId
       );
     });
     const size = getSize(inputPins.length, outputPins.length);
@@ -260,23 +267,16 @@ export default class CCComponentEditorRendererNode extends CCComponentEditorRend
     this.#pixiWorld.position = node.position;
   };
 
+  /**
+   * Reconcile child component pin renderers
+   */
   reconcileChildComponentPinRenderers = () => {
     const node = this.context.store.nodes.get(this.#nodeId);
     if (!node) return;
 
     const nodePinIds = this.context.store.pins
       .getPinIdsByComponentId(node.componentId)
-      .filter((pinId) => {
-        const pin = this.context.store.pins.get(pinId)!;
-        return (
-          pin.implementation.type === "intrinsic" ||
-          (pin.implementation.type === "user" &&
-            this.context.store.connections.getConnectionIdsByPinId(
-              pin.implementation.nodeId,
-              pin.implementation.pinId
-            )?.length === 0)
-        );
-      });
+      .filter((pinId) => this.context.store.pins.isInterfacePin(pinId));
 
     const existingComponentPinRenderers = new Map(this.#componentPinRenderers);
     const newComponentPinRenderers = new Map<
@@ -285,10 +285,10 @@ export default class CCComponentEditorRendererNode extends CCComponentEditorRend
     >();
     for (const nodePinId of nodePinIds) {
       if (
-        this.context.store.connections.getConnectionIdsByPinId(
+        this.context.store.connections.hasNoConnectionOf(
           this.#nodeId,
           nodePinId
-        )?.length === 0
+        )
       ) {
         const componentPin =
           this.context.store.pins.getByImplementationNodeIdAndPinId(
@@ -331,6 +331,11 @@ export default class CCComponentEditorRendererNode extends CCComponentEditorRend
     this.#componentPinRenderers = newComponentPinRenderers;
   };
 
+  /**
+   * Judge if the range is selected
+   * @param start_ start
+   * @param end_ end
+   */
   judgeIsRangeSelected(start_: PIXI.Point, end_: PIXI.Point) {
     const { start, end } = rearrangeRangeSelect({ start: start_, end: end_ });
     const node = this.context.store.nodes.get(this.#nodeId)!;
@@ -360,6 +365,9 @@ export default class CCComponentEditorRendererNode extends CCComponentEditorRend
     }
   }
 
+  /**
+   * Destroy node
+   */
   override destroy() {
     super.destroy();
     this.#pixiGraphics.destroy();
@@ -389,22 +397,19 @@ export default class CCComponentEditorRendererNode extends CCComponentEditorRend
     this.#unsubscribeComponentEditorStore();
   }
 
+  /**
+   * Get offset of position of pin in node
+   * @param store store
+   * @param nodeId id of node
+   * @param pinId id of pin
+   * @returns offset
+   */
   static getPinOffset(store: CCStore, nodeId: CCNodeId, pinId: CCPinId): Point {
     const node = store.nodes.get(nodeId)!;
     const component = store.components.get(node.componentId)!;
     const pinIds = store.pins
       .getPinIdsByComponentId(component.id)!
-      .filter((pinId_) => {
-        const pin = store.pins.get(pinId_)!;
-        return (
-          pin.implementation.type === "intrinsic" ||
-          (pin.implementation.type === "user" &&
-            store.connections.getConnectionIdsByPinId(
-              pin.implementation.nodeId,
-              pin.implementation.pinId
-            )?.length === 0)
-        );
-      });
+      .filter((pinId_) => store.pins.isInterfacePin(pinId_));
     const pins = pinIds.map((id) => store.pins.get(id)!);
     const inputPinIds = pins
       .filter((pin) => pin.type === "input")
@@ -433,6 +438,13 @@ export default class CCComponentEditorRendererNode extends CCComponentEditorRend
     throw Error(`pin: ${pinId} not found in node: ${node.id}`);
   }
 
+  /**
+   * Get absolute position of pin in node
+   * @param store store
+   * @param nodeId id of node
+   * @param pinId id of pin
+   * @returns absolute position
+   */
   static getPinAbsolute(
     store: CCStore,
     nodeId: CCNodeId,
@@ -442,17 +454,7 @@ export default class CCComponentEditorRendererNode extends CCComponentEditorRend
     const component = store.components.get(node.componentId)!;
     const pinIds = store.pins
       .getPinIdsByComponentId(component.id)!
-      .filter((pinId_) => {
-        const pin = store.pins.get(pinId_)!;
-        return (
-          pin.implementation.type === "intrinsic" ||
-          (pin.implementation.type === "user" &&
-            store.connections.getConnectionIdsByPinId(
-              pin.implementation.nodeId,
-              pin.implementation.pinId
-            )?.length === 0)
-        );
-      });
+      .filter((pinId_) => store.pins.isInterfacePin(pinId_));
     const pins = pinIds.map((id) => store.pins.get(id)!);
     const inputPinIds = pins
       .filter((pin) => pin.type === "input")

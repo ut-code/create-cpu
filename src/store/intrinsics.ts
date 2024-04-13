@@ -301,6 +301,11 @@ export const flipFlopIntrinsicComponentOutputPin: CCPin = {
   bits: 1,
 };
 
+/**
+ * Register intrinsic components to the store
+ * @param store
+ * @returns void
+ */
 export function registerIntrinsics(store: CCStore) {
   if (store.components.get(andIntrinsicComponent.id)) return;
   store.components.register(andIntrinsicComponent);
@@ -338,6 +343,11 @@ export function registerIntrinsics(store: CCStore) {
   store.pins.register(flipFlopIntrinsicComponentOutputPin);
 }
 
+/**
+ * Check if the component has variable pin count
+ * @param componentId id of component
+ * @returns if the component has variable pin count, `true` returns (otherwise `false`)
+ */
 export function hasVariablePinCount(componentId: CCComponentId) {
   return (
     componentId === fourBitsIntrinsicComponent.id ||

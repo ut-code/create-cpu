@@ -16,6 +16,9 @@ export type CCComponentEditorRendererNodePinProps = {
   onDragEnd(e: PIXI.FederatedMouseEvent, pinId: CCPinId): void;
 };
 
+/**
+ * Class for rendering node pin
+ */
 export default class CCComponentEditorRendererNodePin extends CCComponentEditorRendererBase {
   #pinId: CCPinId;
 
@@ -29,6 +32,10 @@ export default class CCComponentEditorRendererNodePin extends CCComponentEditorR
 
   isSelected = false;
 
+  /**
+   * Constructor of CCComponentEditorRendererNodePin
+   * @param props
+   */
   constructor({
     context,
     pinId,
@@ -59,10 +66,20 @@ export default class CCComponentEditorRendererNodePin extends CCComponentEditorR
     });
   }
 
+  /**
+   * Event handler for pointer down
+   * @param event
+   */
   onPointerDown(event: (e: PIXI.FederatedPointerEvent) => void) {
     this.#pixiGraphics.on("pointerdown", event);
   }
 
+  /**
+   * Render the node pin
+   * @param index index of the pin in node
+   * @param size size of the node
+   * @param pinsLength length of pins in the node
+   */
   render(index: number, size: PIXI.Point, pinsLength: number) {
     const pin = this.context.store.pins.get(this.#pinId)!;
     const gap = 6;
@@ -113,8 +130,12 @@ export default class CCComponentEditorRendererNodePin extends CCComponentEditorR
       new PIXI.Point(edgeSize + hitAreaGap, -hitAreaGap)
     );
     this.#pixiGraphics.hitArea = hitArea;
+    this.#pixiWorld.zIndex = 100;
   }
 
+  /**
+   * Destroy the node pin
+   */
   override destroy() {
     this.#pixiParentContainer.removeChild(this.#pixiWorld);
   }

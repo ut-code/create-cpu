@@ -12,6 +12,9 @@ type EvaluationCache = {
   outputNodePinValues: Map<CCNodeId, Map<CCPinId, boolean[]>>;
 };
 
+/**
+ * Class for evaluation
+ */
 export default class CCEvaluation {
   #cache: Map<CCEvaluationId, EvaluationCache>;
 
@@ -23,6 +26,10 @@ export default class CCEvaluation {
 
   #componentEvaluator: CCComponentEvaluator | null;
 
+  /**
+   * Constructor of CCEvaluation
+   * @param store store
+   */
   constructor(store: CCStore) {
     this.#cache = new Map<CCEvaluationId, EvaluationCache>();
     this.#previousValueOfOutputNodePins = null;
@@ -30,12 +37,22 @@ export default class CCEvaluation {
     this.#componentEvaluator = null;
   }
 
+  /**
+   * Clear the cache and the previous value of output of node pins, and reset the component evaluator
+   */
   clear() {
     this.#cache.clear();
     this.#previousValueOfOutputNodePins?.clear();
     this.#componentEvaluator = null;
   }
 
+  /**
+   * Create id of evaluation for cache
+   * @param componentId id of component
+   * @param input map of input pins and their values
+   * @param timeStep time step
+   * @returns id of evaluation
+   */
   static createId(
     componentId: CCComponentId,
     input: Map<CCPinId, boolean[]>,
@@ -60,6 +77,12 @@ export default class CCEvaluation {
     return id;
   }
 
+  /**
+   * Get the calculated value of a pin
+   * @param nodeId id of node
+   * @param pinId id of pin
+   * @returns calculated value of pin
+   */
   getCalculatedPinValue(nodeId: CCNodeId, pinId: CCPinId): boolean[] | null {
     if (this.#previousValueOfOutputNodePins) {
       return this.#previousValueOfOutputNodePins.get(nodeId)!.get(pinId)!;
@@ -67,6 +90,13 @@ export default class CCEvaluation {
     return null;
   }
 
+  /**
+   * Evaluate the component
+   * @param componentId id of component
+   * @param input map of input pins and their values
+   * @param timeStep time step
+   * @returns map of output pins and their values
+   */
   evaluate(
     componentId: CCComponentId,
     input: Map<CCPinId, boolean[]>,

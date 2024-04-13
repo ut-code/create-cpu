@@ -10,6 +10,9 @@ type ComponentEvaluationResult = {
   readonly outputNodePinValues?: Map<CCNodeId, Map<CCPinId, boolean[]>>;
 };
 
+/**
+ * Class for component evaluator
+ */
 export default class CCComponentEvaluator {
   #flipFlopValue: Map<CCNodeId, boolean[]> = new Map();
 
@@ -17,10 +20,22 @@ export default class CCComponentEvaluator {
 
   #childrenEvaluator: Map<CCNodeId, CCComponentEvaluator> = new Map();
 
+  /**
+   * Constructor of CCComponentEvaluator
+   * @param store store
+   */
   constructor(store: CCStore) {
     this.#store = store;
   }
 
+  /**
+   * Evaluate intrinsic component
+   * @param componentId id of component
+   * @param input map of input pins and their values
+   * @param timeStep time step
+   * @param nodeId id of node
+   * @returns map of output pins and their values
+   */
   evaluateIntrinsic(
     componentId: CCComponentId,
     input: Map<CCPinId, boolean[]>,
@@ -185,7 +200,18 @@ export default class CCComponentEvaluator {
       case intrinsics.flipFlopIntrinsicComponent.id: {
         invariant(pinIds.length === 2);
         if (timeStep === 0) {
-          this.#flipFlopValue.set(nodeId!, [false]);
+          const multiplicity = this.#store.pins.getNodePinMultiplexability(
+            intrinsics.flipFlopIntrinsicComponentInputPin.id,
+            nodeId!
+          );
+          if (multiplicity.isMultiplexable) {
+            this.#flipFlopValue.set(nodeId!, [false]);
+          } else {
+            this.#flipFlopValue.set(
+              nodeId!,
+              Array.from({ length: multiplicity.multiplicity }, () => false)
+            );
+          }
         }
         const inputValue = input.get(
           intrinsics.flipFlopIntrinsicComponentInputPin.id
@@ -227,6 +253,11 @@ export default class CCComponentEvaluator {
     }
   }
 
+  /**
+   * Check if nodes and connections of the component of `componentId` are forming a cycle
+   * @param componentId id of component
+   * @returns if nodes and connections of the component of `componentId` are forming a cycle, `true` returns (otherwise `false`)
+   */
   isCyclic(componentId: CCComponentId): boolean {
     const seen = new Set<CCNodeId>();
     const finished = new Set<CCNodeId>();
@@ -256,6 +287,14 @@ export default class CCComponentEvaluator {
     return dfs(nodes[0]!);
   }
 
+  /**
+   * Evaluate component
+   * @param componentId id of component
+   * @param input map of input pins and their values
+   * @param timeStep time step
+   * @param _nodeId id of node
+   * @returns result of evaluation
+   */
   evaluateComponent(
     componentId: CCComponentId,
     input: Map<CCPinId, boolean[]>,
@@ -299,17 +338,7 @@ export default class CCComponentEvaluator {
       const innerComponentId = node.componentId;
       const innerPinIds = this.#store.pins
         .getPinIdsByComponentId(innerComponentId)
-        .filter((pinId) => {
-          const pin = this.#store.pins.get(pinId)!;
-          return (
-            pin.implementation.type === "intrinsic" ||
-            (pin.implementation.type === "user" &&
-              this.#store.connections.getConnectionIdsByPinId(
-                pin.implementation.nodeId,
-                pin.implementation.pinId
-              )?.length === 0)
-          );
-        });
+        .filter((pinId) => this.#store.pins.isInterfacePin(pinId));
       let inputPinNumber = 0;
       for (const innerPinId of innerPinIds) {
         const innerPin = this.#store.pins.get(innerPinId)!;
@@ -326,10 +355,10 @@ export default class CCComponentEvaluator {
           const connectedNodeId = pin.implementation.nodeId;
           const connectedPinId = pin.implementation.pinId;
           if (
-            this.#store.connections.getConnectionIdsByPinId(
+            this.#store.connections.hasNoConnectionOf(
               connectedNodeId,
               connectedPinId
-            )?.length === 0
+            )
           ) {
             inputValues
               .get(connectedNodeId)!

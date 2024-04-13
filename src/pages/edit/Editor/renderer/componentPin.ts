@@ -14,7 +14,7 @@ import { CCComponentEditorRendererTextBox } from "./textBox";
 import type { CCComponentEditorRendererContext } from "./base";
 import CCComponentEditorRendererBase from "./base";
 
-type CCComponentEditorRendererPortProps = {
+type CCComponentEditorRendererComponentPinProps = {
   context: CCComponentEditorRendererContext;
   pixiParentContainer: PIXI.Container;
   nodeId: CCNodeId; // TODO: this might be unnecessary
@@ -23,7 +23,10 @@ type CCComponentEditorRendererPortProps = {
   simulation: () => Map<CCPinId, boolean[]> | null;
 };
 
-export default class CCComponentEditorRendererPort extends CCComponentEditorRendererBase {
+/**
+ * Class for rendering component pin
+ */
+export default class CCComponentEditorRendererComponentPin extends CCComponentEditorRendererBase {
   readonly #nodeId: CCNodeId;
 
   readonly #pinId: CCPinId;
@@ -56,7 +59,11 @@ export default class CCComponentEditorRendererPort extends CCComponentEditorRend
     valueBoxRadius: 1000,
   } as const;
 
-  constructor(props: CCComponentEditorRendererPortProps) {
+  /**
+   * Constructor of CCComponentEditorRendererComponentPin
+   * @param props
+   */
+  constructor(props: CCComponentEditorRendererComponentPinProps) {
     super(props.context);
     this.#nodeId = props.nodeId;
     this.#pinId = props.pinId;
@@ -82,12 +89,12 @@ export default class CCComponentEditorRendererPort extends CCComponentEditorRend
     };
     this.registerChildRenderer(this.#pixiLabelTextBox);
     this.#pixiLabelTextBox.fontSize =
-      CCComponentEditorRendererPort.drawingConstants.fontSize;
+      CCComponentEditorRendererComponentPin.drawingConstants.fontSize;
     this.#pixiValueText = new PIXI.Text();
     this.#pixiValueText.style.fontSize =
-      CCComponentEditorRendererPort.drawingConstants.fontSize;
+      CCComponentEditorRendererComponentPin.drawingConstants.fontSize;
     this.#pixiValueText.style.fill =
-      CCComponentEditorRendererPort.drawingConstants.valueColor;
+      CCComponentEditorRendererComponentPin.drawingConstants.valueColor;
     this.#pixiValueText.anchor.set(0.5, 0.5);
     if (this.context.store.pins.get(this.#pinId)!.type === "input") {
       // this.#pixiValueText.interactive = true;
@@ -100,13 +107,17 @@ export default class CCComponentEditorRendererPort extends CCComponentEditorRend
     this.#unsubscribeComponentEditorStore =
       this.context.componentEditorStore.subscribe(this.render);
     this.#valueBoxWidth =
-      CCComponentEditorRendererPort.drawingConstants.valueBoxWidthUnit;
+      CCComponentEditorRendererComponentPin.drawingConstants.valueBoxWidthUnit;
     this.context.store.pins.on("didUpdate", (pin) => {
       if (pin.id === this.#pinId) this.render();
     });
     this.render();
   }
 
+  /**
+   * Event handler for clicking the pin
+   * @param e event
+   */
   onClick = (e: PIXI.FederatedPointerEvent) => {
     const editorState = this.context.componentEditorStore.getState();
     const previousValue = editorState.getInputValue(
@@ -130,6 +141,9 @@ export default class CCComponentEditorRendererPort extends CCComponentEditorRend
     e.preventDefault();
   };
 
+  /**
+   * Render the pin
+   */
   render = () => {
     const pin = this.context.store.pins.get(this.#pinId);
     if (!pin) return;
@@ -138,7 +152,7 @@ export default class CCComponentEditorRendererPort extends CCComponentEditorRend
     const editorState = this.context.componentEditorStore.getState();
     this.#pixiContainer.position = this.position;
     this.#pixiLabelTextBox.value = pin.name;
-    const c = CCComponentEditorRendererPort.drawingConstants;
+    const c = CCComponentEditorRendererComponentPin.drawingConstants;
     if (editorState.editorMode === "edit") {
       this.#pixiLabelTextBox.isEditable = true;
       this.#pixiValueText.visible = false;
@@ -219,6 +233,9 @@ export default class CCComponentEditorRendererPort extends CCComponentEditorRend
     this.#pixiGraphics.endFill();
   };
 
+  /**
+   * Destroy the pin
+   */
   override destroy() {
     this.#pixiParentContainer.removeChild(this.#pixiContainer);
     this.context.store.components.off("didUpdate", this.render);

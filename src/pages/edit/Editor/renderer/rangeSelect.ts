@@ -10,6 +10,11 @@ type CCComponentEditorRendererRangeSelectProps = {
   pixiParentContainer: PIXI.Container;
 };
 
+/**
+ * Rearrange range select
+ * @param param0 start and end points
+ * @returns rearranged start and end points
+ */
 export const rearrangeRangeSelect = ({
   start,
   end,
@@ -23,6 +28,9 @@ export const rearrangeRangeSelect = ({
   };
 };
 
+/**
+ * Class for rendering range select
+ */
 export default class CCComponentEditorRendererRangeSelect {
   #store: CCStore;
 
@@ -34,6 +42,10 @@ export default class CCComponentEditorRendererRangeSelect {
 
   #pixiWorld: PIXI.Container;
 
+  /**
+   * Constructor of CCComponentEditorRendererRangeSelect
+   * @param props
+   */
   constructor(props: CCComponentEditorRendererRangeSelectProps) {
     this.#store = props.store;
     this.#componentEditorStore = props.componentEditorStore;
@@ -48,6 +60,9 @@ export default class CCComponentEditorRendererRangeSelect {
     invariant(this.#componentEditorStore);
   }
 
+  /**
+   * Render range select
+   */
   render() {
     const { rangeSelect } = this.#componentEditorStore.getState();
     this.#pixiGraphics.clear();
@@ -68,6 +83,9 @@ export default class CCComponentEditorRendererRangeSelect {
     );
   }
 
+  /**
+   * Destroy range select
+   */
   destroy() {
     this.#pixiGraphics.destroy();
   }
