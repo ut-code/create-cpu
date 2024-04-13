@@ -10,6 +10,9 @@ import { CCConnectionStore, type CCConnection } from "./connection";
 import { registerIntrinsics } from "./intrinsics";
 import TransactionManager from "./transaction";
 
+/**
+ * Properties of CCStore from JSON used when restoring store from JSON
+ */
 export type CCStorePropsFromJson = {
   rootComponentId: CCComponentId;
   components: CCComponent[];
@@ -18,6 +21,9 @@ export type CCStorePropsFromJson = {
   connections: CCConnection[];
 };
 
+/**
+ * Store of components, nodes, pins, and connections
+ */
 export default class CCStore {
   components: CCComponentStore;
 
@@ -29,6 +35,11 @@ export default class CCStore {
 
   transactionManager = new TransactionManager();
 
+  /**
+   * Constructor of CCStore
+   * @param rootComponent root component
+   * @param props properties of store from JSON used when restoring store from JSON
+   */
   constructor(rootComponent?: CCComponent, props?: CCStorePropsFromJson) {
     if (rootComponent) {
       this.components = new CCComponentStore(this, rootComponent);
@@ -51,6 +62,10 @@ export default class CCStore {
     registerIntrinsics(this);
   }
 
+  /**
+   * Get the JSON representation of the store
+   * @returns JSON representation of the store
+   */
   toJSON() {
     return JSON.stringify({
       rootComponentId: this.components.rootComponentId,

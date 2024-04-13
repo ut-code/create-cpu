@@ -10,6 +10,9 @@ type ComponentEvaluationResult = {
   readonly outputNodePinValues?: Map<CCNodeId, Map<CCPinId, boolean[]>>;
 };
 
+/**
+ * Class for component evaluator
+ */
 export default class CCComponentEvaluator {
   #flipFlopValue: Map<CCNodeId, boolean[]> = new Map();
 
@@ -17,10 +20,22 @@ export default class CCComponentEvaluator {
 
   #childrenEvaluator: Map<CCNodeId, CCComponentEvaluator> = new Map();
 
+  /**
+   * Constructor of CCComponentEvaluator
+   * @param store store
+   */
   constructor(store: CCStore) {
     this.#store = store;
   }
 
+  /**
+   * Evaluate intrinsic component
+   * @param componentId id of component
+   * @param input map of input pins and their values
+   * @param timeStep time step
+   * @param nodeId id of node
+   * @returns map of output pins and their values
+   */
   evaluateIntrinsic(
     componentId: CCComponentId,
     input: Map<CCPinId, boolean[]>,
@@ -238,6 +253,11 @@ export default class CCComponentEvaluator {
     }
   }
 
+  /**
+   * Check if nodes and connections of the component of `componentId` are forming a cycle
+   * @param componentId
+   * @returns if nodes and connections of the component of `componentId` are forming a cycle, `true` returns (otherwise `false`)
+   */
   isCyclic(componentId: CCComponentId): boolean {
     const seen = new Set<CCNodeId>();
     const finished = new Set<CCNodeId>();
@@ -267,6 +287,14 @@ export default class CCComponentEvaluator {
     return dfs(nodes[0]!);
   }
 
+  /**
+   * Evaluate component
+   * @param componentId id of component
+   * @param input map of input pins and their values
+   * @param timeStep time step
+   * @param _nodeId id of node
+   * @returns result of evaluation
+   */
   evaluateComponent(
     componentId: CCComponentId,
     input: Map<CCPinId, boolean[]>,

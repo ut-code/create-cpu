@@ -45,11 +45,19 @@ export type CCPinStoreEvents = {
   didUpdate(pin: CCPin): void;
 };
 
+/**
+ * Store of pins
+ */
 export class CCPinStore extends EventEmitter<CCPinStoreEvents> {
   #store: CCStore;
 
   #pins: Map<CCPinId, CCPin> = new Map();
 
+  /**
+   * Constructor of CCPinStore
+   * @param store store
+   * @param pins initial pins
+   */
   constructor(store: CCStore, pins?: CCPin[]) {
     super();
     this.#store = store;
@@ -101,12 +109,20 @@ export class CCPinStore extends EventEmitter<CCPinStoreEvents> {
     // TODO: create / remove pins when connections are created / removed
   }
 
+  /**
+   * Register a pin
+   * @param pin pin to be registered
+   */
   register(pin: CCPin): void {
     invariant(this.#store.components.get(pin.componentId));
     this.#pins.set(pin.id, pin);
     this.emit("didRegister", pin);
   }
 
+  /**
+   * Unregister a pin
+   * @param id id of a pin to be unregistered
+   */
   async unregister(id: CCPinId): Promise<void> {
     const pin = nullthrows(this.#pins.get(id));
     await this.#store.transactionManager.runInTransaction(() => {
@@ -116,10 +132,19 @@ export class CCPinStore extends EventEmitter<CCPinStoreEvents> {
     this.emit("didUnregister", pin);
   }
 
+  /**
+   * Get a pin by id
+   * @param id id of pin
+   * @returns pin of `id`
+   */
   get(id: CCPinId): CCPin | undefined {
     return this.#pins.get(id);
   }
 
+  /**
+   * Get all of pins
+   * @returns all pins
+   */
   getByImplementationNodeIdAndPinId(nodeId: CCNodeId, pinId: CCPinId): CCPin {
     const pin = [...this.#pins.values()].find(
       ({ implementation }) =>
@@ -131,12 +156,22 @@ export class CCPinStore extends EventEmitter<CCPinStoreEvents> {
     return pin;
   }
 
+  /**
+   * Get all of pins by component id
+   * @param componentId id of component
+   * @returns pins of component
+   */
   getPinIdsByComponentId(componentId: CCComponentId): CCPinId[] {
     return [...this.#pins.values()]
       .filter((pin) => pin.componentId === componentId)
       .map((pin) => pin.id);
   }
 
+  /**
+   * Update name of pin
+   * @param id id of a pin to be updated
+   * @param value new name
+   */
   update(id: CCPinId, value: Partial<Pick<CCPin, "name">>): void {
     const pin = this.#pins.get(id);
     invariant(pin);
@@ -144,6 +179,11 @@ export class CCPinStore extends EventEmitter<CCPinStoreEvents> {
     this.emit("didUpdate", pin);
   }
 
+  /**
+   * Get the multiplexability of a component pin
+   * @param pinId id of pin
+   * @returns multiplexability of the pin
+   */
   getComponentPinMultiplexability(pinId: CCPinId): CCPinMultiplexability {
     // eslint-disable-next-line no-console
     console.log(this, pinId);
@@ -151,6 +191,12 @@ export class CCPinStore extends EventEmitter<CCPinStoreEvents> {
     return { isMultiplexable: true };
   }
 
+  /**
+   * Get the multiplexability of a node pin
+   * @param pinId id of pin
+   * @param nodeId id of node
+   * @returns multiplexability of the pin
+   */
   getNodePinMultiplexability(
     pinId: CCPinId,
     nodeId: CCNodeId
@@ -161,6 +207,11 @@ export class CCPinStore extends EventEmitter<CCPinStoreEvents> {
     return { isMultiplexable: true };
   }
 
+  /**
+   * Create a new pin
+   * @param partialPin pin without `id`
+   * @returns a new pin
+   */
   static create(partialPin: Omit<CCPin, "id">): CCPin {
     return {
       id: crypto.randomUUID() as CCPinId,
@@ -168,10 +219,19 @@ export class CCPinStore extends EventEmitter<CCPinStoreEvents> {
     };
   }
 
+  /**
+   * Get array of pins
+   * @returns array of pins
+   */
   toArray(): CCPin[] {
     return [...this.#pins.values()];
   }
 
+  /**
+   * Check if the pin is an interface pin
+   * @param pinId id of pin
+   * @returns if the pin is an interface pin, `true` returns (otherwise `false`)
+   */
   isInterfacePin(pinId: CCPinId): boolean {
     const pin = this.#store.pins.get(pinId)!;
     return (

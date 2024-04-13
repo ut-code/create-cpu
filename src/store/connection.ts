@@ -29,6 +29,9 @@ export type CCConnectionStoreEvents = {
   didUnregister(Connection: CCConnection): void;
 };
 
+/**
+ * Store of connections
+ */
 export class CCConnectionStore extends EventEmitter<CCConnectionStoreEvents> {
   #store: CCStore;
 
@@ -39,6 +42,11 @@ export class CCConnectionStore extends EventEmitter<CCConnectionStoreEvents> {
     CCConnectionId
   >(Set);
 
+  /**
+   * Constructor of CCConnectionStore
+   * @param store store
+   * @param connections initial connections
+   */
   constructor(store: CCStore, connections?: CCConnection[]) {
     super();
     this.#store = store;
@@ -59,6 +67,10 @@ export class CCConnectionStore extends EventEmitter<CCConnectionStoreEvents> {
     });
   }
 
+  /**
+   * Register a connection
+   * @param connection connection to be registered
+   */
   register(connection: CCConnection): void {
     const fromNode = this.#store.nodes.get(connection.from.nodeId);
     const toNode = this.#store.nodes.get(connection.to.nodeId);
@@ -76,6 +88,10 @@ export class CCConnectionStore extends EventEmitter<CCConnectionStoreEvents> {
     this.emit("didRegister", connection);
   }
 
+  /**
+   * Unregister a connection
+   * @param ids ids of connections to be unregistered
+   */
   async unregister(ids: CCConnectionId[]): Promise<void> {
     const connections = ids.map((id) => nullthrows(this.#connections.get(id)));
     await this.#store.transactionManager.runInTransaction(() => {
@@ -93,10 +109,19 @@ export class CCConnectionStore extends EventEmitter<CCConnectionStoreEvents> {
     }
   }
 
+  /**
+   * Get a connection by CCConnectionId
+   * @param id id of connection
+   * @returns connection of `id`
+   */
   get(id: CCConnectionId): CCConnection | undefined {
     return this.#connections.get(id);
   }
 
+  /**
+   * Get all of connections
+   * @returns map of id and connection (read only)
+   */
   getConnectionIdsByParentComponentId(
     parentComponentId: CCComponentId
   ): CCConnectionId[] {
@@ -105,6 +130,12 @@ export class CCConnectionStore extends EventEmitter<CCConnectionStoreEvents> {
     ];
   }
 
+  /**
+   * Get connections by id of node and pin
+   * @param nodeId id of node
+   * @param pinId id of pin
+   * @returns connections connected to the pin of the node
+   */
   getConnectionIdsByPinId(
     nodeId: CCNodeId,
     pinId: CCPinId
@@ -119,10 +150,21 @@ export class CCConnectionStore extends EventEmitter<CCConnectionStoreEvents> {
       .map((connection) => connection.id);
   }
 
+  /**
+   * Check if no connection of the pin of the node existsno connection of the pin of the node exists
+   * @param nodeId id of node
+   * @param pinId id of pin
+   * @returns if no connection of the pin of the node exists, `true` returns (otherwise `false`)
+   */
   hasNoConnectionOf(nodeId: CCNodeId, pinId: CCPinId): boolean {
     return this.getConnectionIdsByPinId(nodeId, pinId)?.length === 0;
   }
 
+  /**
+   * Create a new connection
+   * @param partialConnection connection without `id`
+   * @returns a new connection
+   */
   static create(partialConnection: Omit<CCConnection, "id">): CCConnection {
     return {
       id: crypto.randomUUID() as CCConnectionId,
@@ -130,6 +172,10 @@ export class CCConnectionStore extends EventEmitter<CCConnectionStoreEvents> {
     };
   }
 
+  /**
+   * Get array of connections
+   * @returns array of connections
+   */
   toArray(): CCConnection[] {
     return [...this.#connections.values()];
   }

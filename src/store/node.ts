@@ -26,6 +26,9 @@ export type CCNodeStoreEvents = {
   didUpdate(node: CCNode): void;
 };
 
+/**
+ * Store of nodes
+ */
 export class CCNodeStore extends EventEmitter<CCNodeStoreEvents> {
   #store: CCStore;
 
@@ -33,6 +36,11 @@ export class CCNodeStore extends EventEmitter<CCNodeStoreEvents> {
 
   #parentComponentIdToNodeIds = new MultiMap<CCComponentId, CCNodeId>(Set);
 
+  /**
+   * Constructor of CCNodeStore
+   * @param store store
+   * @param nodes initial nodes
+   */
   constructor(store: CCStore, nodes?: CCNode[]) {
     super();
     this.#store = store;
@@ -44,6 +52,10 @@ export class CCNodeStore extends EventEmitter<CCNodeStoreEvents> {
     }
   }
 
+  /**
+   * Register a node
+   * @param node node to be registered
+   */
   register(node: CCNode): void {
     invariant(this.#store.components.get(node.componentId));
     invariant(this.#store.components.get(node.parentComponentId));
@@ -52,6 +64,10 @@ export class CCNodeStore extends EventEmitter<CCNodeStoreEvents> {
     this.emit("didRegister", node);
   }
 
+  /**
+   * Unregister nodes
+   * @param ids ids of nodes to be unregistered
+   */
   async unregister(ids: CCNodeId[]): Promise<void> {
     const nodes = ids.map((id) => nullthrows(this.#nodes.get(id)));
     await this.#store.transactionManager.runInTransaction(() => {
@@ -69,18 +85,37 @@ export class CCNodeStore extends EventEmitter<CCNodeStoreEvents> {
     }
   }
 
+  /**
+   * Get a node by id
+   * @param id id of node
+   * @returns node of `id`
+   */
   get(id: CCNodeId): CCNode | undefined {
     return this.#nodes.get(id);
   }
 
+  /**
+   * Get all of nodes
+   * @returns all nodes
+   */
   getAll(): CCNode[] {
     return [...this.#nodes.values()];
   }
 
+  /**
+   * Get all of nodes by parent component id
+   * @param parentComponentId id of parent component
+   * @returns nodes of parent component
+   */
   getNodeIdsByParentComponentId(parentComponentId: CCComponentId): CCNodeId[] {
     return [...(this.#parentComponentIdToNodeIds.get(parentComponentId) ?? [])];
   }
 
+  /**
+   * Update position of node
+   * @param id id of node
+   * @param value new position
+   */
   update(id: CCNodeId, value: Pick<CCNode, "position">): void {
     const node = this.#nodes.get(id);
     invariant(node);
@@ -88,6 +123,11 @@ export class CCNodeStore extends EventEmitter<CCNodeStoreEvents> {
     this.emit("didUpdate", node);
   }
 
+  /**
+   * Create a node
+   * @param partialNode node without `id`
+   * @returns a new node
+   */
   static create(partialNode: Omit<CCNode, "id">): CCNode {
     invariant(
       hasVariablePinCount(partialNode.componentId)
@@ -100,6 +140,10 @@ export class CCNodeStore extends EventEmitter<CCNodeStoreEvents> {
     };
   }
 
+  /**
+   * Get array of nodes
+   * @returns array of nodes
+   */
   toArray(): CCNode[] {
     return [...this.#nodes.values()];
   }
