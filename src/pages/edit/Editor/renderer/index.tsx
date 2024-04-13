@@ -46,6 +46,9 @@ export type CCComponentEditorRendererProps = {
   onContextMenu: (position: PIXI.Point) => void;
 };
 
+/**
+ * Class for rendering component editor
+ */
 export default class CCComponentEditorRenderer extends CCComponentEditorRendererBase {
   #unsubscribeComponentEditorStore: () => void;
 
@@ -76,6 +79,10 @@ export default class CCComponentEditorRenderer extends CCComponentEditorRenderer
 
   #simulator: CCSimulator;
 
+  /**
+   * Constructor of CCComponentEditorRenderer
+   * @param props
+   */
   constructor(props: CCComponentEditorRendererProps) {
     super(props.context);
     this.#componentId = props.componentId;
@@ -285,6 +292,10 @@ export default class CCComponentEditorRenderer extends CCComponentEditorRenderer
     this.#render();
   }
 
+  /**
+   * Add node renderer
+   * @param nodeId id of node
+   */
   #addNodeRenderer(nodeId: CCNodeId) {
     if (this.#nodeRenderers.has(nodeId)) return;
     const onDragStart = (e: PIXI.FederatedMouseEvent) => {
@@ -422,6 +433,10 @@ export default class CCComponentEditorRenderer extends CCComponentEditorRenderer
     this.#nodeRenderers.set(nodeId, newNodeRenderer);
   }
 
+  /**
+   * Add connection renderer
+   * @param connectionId id of connection
+   */
   #addConnectionRenderer(connectionId: CCConnectionId) {
     const onDragStart = (e: PIXI.FederatedMouseEvent) => {
       const { toWorldPosition } = this.context.componentEditorStore.getState();
@@ -450,12 +465,20 @@ export default class CCComponentEditorRenderer extends CCComponentEditorRenderer
     this.#connectionRenderers.set(connectionId, newConnectionRenderer);
   }
 
+  /**
+   * Event handler for adding connection
+   * @param connection connection
+   */
   #onConnectionAdded = (connection: CCConnection) => {
     if (connection.parentComponentId !== this.#componentId) return;
     this.#addConnectionRenderer(connection.id);
     this.#simulator.clear();
   };
 
+  /**
+   * Event handler for removing connection
+   * @param connection connection
+   */
   #onConnectionRemoved = (connection: CCConnection) => {
     if (connection.parentComponentId !== this.#componentId) return;
     this.#connectionRenderers.get(connection.id)?.destroy();
@@ -463,12 +486,20 @@ export default class CCComponentEditorRenderer extends CCComponentEditorRenderer
     this.#simulator.clear();
   };
 
+  /**
+   * Event handler for adding node
+   * @param node node
+   */
   #onNodeAdded = (node: CCNode) => {
     if (node.parentComponentId !== this.#componentId) return;
     this.#addNodeRenderer(node.id);
     this.#simulator.clear();
   };
 
+  /**
+   * Event handler for removing node
+   * @param node node
+   */
   #onNodeRemoved = (node: CCNode) => {
     if (node.parentComponentId !== this.#componentId) return;
     this.#nodeRenderers.get(node.id)?.destroy();
@@ -476,6 +507,9 @@ export default class CCComponentEditorRenderer extends CCComponentEditorRenderer
     this.#simulator.clear();
   };
 
+  /**
+   * Render the component editor
+   */
   #render = () => {
     const { worldPerspective, toCanvasPosition } =
       this.context.componentEditorStore.getState();
@@ -486,6 +520,9 @@ export default class CCComponentEditorRenderer extends CCComponentEditorRenderer
     };
   };
 
+  /**
+   * Destroy the component editor
+   */
   // eslint-disable-next-line class-methods-use-this
   override destroy() {
     super.destroy();

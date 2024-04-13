@@ -8,6 +8,9 @@ export type CCComponentEditorRendererTextBoxProps = {
   pixiParentContainer: PIXI.Container;
 };
 
+/**
+ * Class for rendering text box
+ */
 export class CCComponentEditorRendererTextBox extends CCComponentEditorRendererBase {
   #unsubscribeComponentEditorStore: () => void;
 
@@ -31,6 +34,10 @@ export class CCComponentEditorRendererTextBox extends CCComponentEditorRendererB
 
   onChange?: (value: string) => void;
 
+  /**
+   * Constructor of CCComponentEditorRendererTextBox
+   * @param props
+   */
   constructor(props: CCComponentEditorRendererTextBoxProps) {
     super(props.context);
     this.#unsubscribeComponentEditorStore =
@@ -47,6 +54,9 @@ export class CCComponentEditorRendererTextBox extends CCComponentEditorRendererB
     this.render();
   }
 
+  /**
+   * Render text box
+   */
   render() {
     this.#pixiText.position = this.position;
     this.#pixiText.text = this.value;
@@ -76,6 +86,10 @@ export class CCComponentEditorRendererTextBox extends CCComponentEditorRendererB
     }
   }
 
+  /**
+   * Activate HTML input element and return it
+   * @returns HTML input element
+   */
   activateHtmlInput() {
     if (this.#htmlInput) return this.#htmlInput;
     this.#htmlInput = window.document.createElement("input");
@@ -110,12 +124,18 @@ export class CCComponentEditorRendererTextBox extends CCComponentEditorRendererB
     return this.#htmlInput;
   }
 
+  /**
+   * Deactivate HTML input element
+   */
   deactivateHtmlInput() {
     if (!this.#htmlInput) return;
     this.context.overlayArea.removeChild(this.#htmlInput);
     this.#htmlInput = null;
   }
 
+  /**
+   * Destroy the text box
+   */
   override destroy() {
     super.destroy();
     this.deactivateHtmlInput();

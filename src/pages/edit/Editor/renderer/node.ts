@@ -27,12 +27,21 @@ type PixiTexts = {
   pinNames: Map<string, PIXI.Text>;
 };
 
+/**
+ * Get size of node
+ * @param inputPinCount
+ * @param outputPinCount
+ * @returns size
+ */
 const getSize = (inputPinCount: number, outputPinCount: number) =>
   new PIXI.Point(
     200,
     (100 / 3) * (Math.max(inputPinCount, outputPinCount) + 1)
   );
 
+/**
+ * Class for rendering node
+ */
 export default class CCComponentEditorRendererNode extends CCComponentEditorRendererBase {
   #unsubscribeComponentEditorStore: () => void;
 
@@ -59,6 +68,10 @@ export default class CCComponentEditorRendererNode extends CCComponentEditorRend
 
   #simulation: (nodeId: CCNodeId) => Map<CCPinId, boolean[]> | null;
 
+  /**
+   * Constructor of CCComponentEditorRendererNode
+   * @param props
+   */
   constructor(props: CCComponentEditorRendererNodeProps) {
     super(props.context);
     this.#nodeId = props.nodeId;
@@ -130,10 +143,18 @@ export default class CCComponentEditorRendererNode extends CCComponentEditorRend
     this.render();
   }
 
+  /**
+   * Event handler for pointer down
+   * @param event event
+   */
   onPointerDown(event: (e: PIXI.FederatedPointerEvent) => void) {
     this.#pixiGraphics.on("pointerdown", event);
   }
 
+  /**
+   * Create text for name
+   * @returns text
+   */
   #createText(): PixiTexts {
     const node = this.context.store.nodes.get(this.#nodeId)!;
     const component = this.context.store.components.get(node.componentId)!;
@@ -158,6 +179,9 @@ export default class CCComponentEditorRendererNode extends CCComponentEditorRend
     return { componentName, pinNames: map };
   }
 
+  /**
+   * Render node
+   */
   render = () => {
     const node = this.context.store.nodes.get(this.#nodeId);
     if (!node) return;
@@ -243,6 +267,9 @@ export default class CCComponentEditorRendererNode extends CCComponentEditorRend
     this.#pixiWorld.position = node.position;
   };
 
+  /**
+   * Reconcile child component pin renderers
+   */
   reconcileChildComponentPinRenderers = () => {
     const node = this.context.store.nodes.get(this.#nodeId);
     if (!node) return;
@@ -304,6 +331,11 @@ export default class CCComponentEditorRendererNode extends CCComponentEditorRend
     this.#componentPinRenderers = newComponentPinRenderers;
   };
 
+  /**
+   * Judge if the range is selected
+   * @param start_ start
+   * @param end_ end
+   */
   judgeIsRangeSelected(start_: PIXI.Point, end_: PIXI.Point) {
     const { start, end } = rearrangeRangeSelect({ start: start_, end: end_ });
     const node = this.context.store.nodes.get(this.#nodeId)!;
@@ -333,6 +365,9 @@ export default class CCComponentEditorRendererNode extends CCComponentEditorRend
     }
   }
 
+  /**
+   * Destroy node
+   */
   override destroy() {
     super.destroy();
     this.#pixiGraphics.destroy();
@@ -362,6 +397,13 @@ export default class CCComponentEditorRendererNode extends CCComponentEditorRend
     this.#unsubscribeComponentEditorStore();
   }
 
+  /**
+   * Get offset of position of pin in node
+   * @param store store
+   * @param nodeId id of node
+   * @param pinId id of pin
+   * @returns offset
+   */
   static getPinOffset(store: CCStore, nodeId: CCNodeId, pinId: CCPinId): Point {
     const node = store.nodes.get(nodeId)!;
     const component = store.components.get(node.componentId)!;
@@ -396,6 +438,13 @@ export default class CCComponentEditorRendererNode extends CCComponentEditorRend
     throw Error(`pin: ${pinId} not found in node: ${node.id}`);
   }
 
+  /**
+   * Get absolute position of pin in node
+   * @param store store
+   * @param nodeId id of node
+   * @param pinId id of pin
+   * @returns absolute position
+   */
   static getPinAbsolute(
     store: CCStore,
     nodeId: CCNodeId,
