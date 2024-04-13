@@ -5,6 +5,7 @@ import nullthrows from "nullthrows";
 import type CCStore from ".";
 import { type CCComponentId } from "./component";
 import type { CCNodeId } from "./node";
+import * as intrinsic from "./intrinsics";
 
 export type CCPin = {
   readonly id: CCPinId;
@@ -185,10 +186,54 @@ export class CCPinStore extends EventEmitter<CCPinStoreEvents> {
    * @returns multiplexability of the pin
    */
   getComponentPinMultiplexability(pinId: CCPinId): CCPinMultiplexability {
-    // eslint-disable-next-line no-console
-    console.log(this, pinId);
-    // TODO: implement
-    return { isMultiplexable: true };
+    const pin = this.#pins.get(pinId);
+    invariant(pin);
+    switch (pin.id) {
+      case intrinsic.andIntrinsicComponentInputPinA.id:
+      case intrinsic.andIntrinsicComponentInputPinB.id:
+      case intrinsic.andIntrinsicComponentOutputPin.id:
+      case intrinsic.orIntrinsicComponentInputPinA.id:
+      case intrinsic.orIntrinsicComponentInputPinB.id:
+      case intrinsic.orIntrinsicComponentOutputPin.id:
+      case intrinsic.notIntrinsicComponentInputPin.id:
+      case intrinsic.notIntrinsicComponentOutputPin.id:
+      case intrinsic.xorIntrinsicComponentInputPinA.id:
+      case intrinsic.xorIntrinsicComponentInputPinB.id:
+      case intrinsic.xorIntrinsicComponentOutputPin.id:
+      case intrinsic.inputIntrinsicComponentInputPin.id:
+      case intrinsic.inputIntrinsicComponentOutputPin.id:
+      case intrinsic.flipFlopIntrinsicComponentInputPin.id:
+      case intrinsic.flipFlopIntrinsicComponentOutputPin.id: {
+        return { isMultiplexable: true };
+      }
+      case intrinsic.fourBitsIntrinsicComponentInputPin0.id:
+      case intrinsic.fourBitsIntrinsicComponentInputPin1.id:
+      case intrinsic.fourBitsIntrinsicComponentInputPin2.id:
+      case intrinsic.fourBitsIntrinsicComponentInputPin3.id: {
+        return { isMultiplexable: false, multiplicity: 1 };
+      }
+      case intrinsic.fourBitsIntrinsicComponentOutputPin.id: {
+        return { isMultiplexable: false, multiplicity: 4 };
+      }
+      case intrinsic.distiributeFourBitsIntrinsicComponentInputPin.id: {
+        return { isMultiplexable: false, multiplicity: 4 };
+      }
+      case intrinsic.distiributeFourBitsIntrinsicComponentOutputPin0.id:
+      case intrinsic.distiributeFourBitsIntrinsicComponentOutputPin1.id:
+      case intrinsic.distiributeFourBitsIntrinsicComponentOutputPin2.id:
+      case intrinsic.distiributeFourBitsIntrinsicComponentOutputPin3.id: {
+        return { isMultiplexable: false, multiplicity: 1 };
+      }
+      default: {
+        if (pin.implementation.type === "intrinsic") {
+          throw new Error("unreachable");
+        }
+        return this.getNodePinMultiplexability(
+          pin.implementation.pinId,
+          pin.implementation.nodeId
+        );
+      }
+    }
   }
 
   /**
@@ -201,10 +246,53 @@ export class CCPinStore extends EventEmitter<CCPinStoreEvents> {
     pinId: CCPinId,
     nodeId: CCNodeId
   ): CCPinMultiplexability {
-    // eslint-disable-next-line no-console
-    console.log(this, pinId, nodeId);
-    // TODO: implement
-    return { isMultiplexable: true };
+    const traverseNodePinMultiplexability = (
+      pinId_: CCPinId,
+      nodeId_: CCNodeId,
+      seen: Set<CCNodeId>
+    ): CCPinMultiplexability => {
+      seen.add(nodeId);
+      const node = this.#store.nodes.get(nodeId_)!;
+      const nodePinIds = this.#store.pins.getPinIdsByComponentId(
+        node.componentId
+      )!;
+      const givenPinMultiplexability =
+        this.getComponentPinMultiplexability(pinId_);
+      if (!givenPinMultiplexability.isMultiplexable) {
+        return givenPinMultiplexability;
+      }
+      for (const nodePinId of nodePinIds) {
+        const nodePin = this.#store.pins.get(nodePinId)!;
+        const pinMultiplexability =
+          this.getComponentPinMultiplexability(nodePinId);
+        if (pinMultiplexability.isMultiplexable) {
+          const connectionIds = this.#store.connections.getConnectionIdsByPinId(
+            nodeId_,
+            nodePinId
+          )!;
+          for (const connectionId of connectionIds) {
+            const connection = this.#store.connections.get(connectionId)!;
+            const { nodeId: connectedNodeId, pinId: connectedPinId } =
+              nodePin.type === "input" ? connection.from : connection.to;
+            if (seen.has(connectedNodeId)) {
+              // eslint-disable-next-line no-continue
+              continue;
+            }
+            const connectedPinMultiplexability =
+              traverseNodePinMultiplexability(
+                connectedPinId,
+                connectedNodeId,
+                seen
+              );
+            if (!connectedPinMultiplexability.isMultiplexable) {
+              return connectedPinMultiplexability;
+            }
+          }
+        }
+      }
+      return givenPinMultiplexability;
+    };
+    return traverseNodePinMultiplexability(pinId, nodeId, new Set());
   }
 
   /**
