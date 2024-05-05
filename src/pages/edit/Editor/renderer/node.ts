@@ -1,25 +1,27 @@
 // import type { Point } from "pixi.js";
 import * as PIXI from "pixi.js";
 import type { Point } from "pixi.js";
+import nullthrows from "nullthrows";
 import { blackColor, primaryColor, whiteColor } from "../../../../common/theme";
 import type { CCNodeId } from "../../../../store/node";
-import { type CCPinId } from "../../../../store/pin";
+import { type CCComponentPinId } from "../../../../store/componentPin";
 import type CCStore from "../../../../store";
 import CCComponentEditorRendererNodePin from "./nodePin";
-import CCComponentEditorRendererComponentPin from "./componentPin";
+import CCComponentEditorRendererComponentPin from "./pin";
 import { rearrangeRangeSelect } from "./rangeSelect";
 import CCComponentEditorRendererBase, {
   type CCComponentEditorRendererContext,
 } from "./base";
+import type { CCNodePinId } from "../../../../store/nodePin";
 
 export type CCComponentEditorRendererNodeProps = {
   context: CCComponentEditorRendererContext;
   nodeId: CCNodeId;
   pixiParentContainer: PIXI.Container;
   onDragStart(e: PIXI.FederatedMouseEvent): void;
-  onDragStartPin(e: PIXI.FederatedMouseEvent, pinId: CCPinId): void;
-  onDragEndPin(e: PIXI.FederatedMouseEvent, pinId: CCPinId): void;
-  simulation(nodeId: CCNodeId): Map<CCPinId, boolean[]> | null;
+  onDragStartPin(e: PIXI.FederatedMouseEvent, nodePinId: CCNodePinId): void;
+  onDragEndPin(e: PIXI.FederatedMouseEvent, nodePinId: CCNodePinId): void;
+  simulation(nodeId: CCNodeId): Map<CCComponentPinId, boolean[]> | null;
 };
 
 type PixiTexts = {
@@ -57,16 +59,16 @@ export default class CCComponentEditorRendererNode extends CCComponentEditorRend
 
   #pixiTexts: PixiTexts;
 
-  #nodePinRenderers = new Map<CCPinId, CCComponentEditorRendererNodePin>();
+  #nodePinRenderers = new Map<CCNodePinId, CCComponentEditorRendererNodePin>();
 
   #componentPinRenderers = new Map<
-    CCPinId,
+    CCComponentPinId,
     CCComponentEditorRendererComponentPin
   >();
 
   #pixiWorld: PIXI.Container;
 
-  #simulation: (nodeId: CCNodeId) => Map<CCPinId, boolean[]> | null;
+  #simulation: (nodeId: CCNodeId) => Map<CCComponentPinId, boolean[]> | null;
 
   /**
    * Constructor of CCComponentEditorRendererNode
@@ -78,7 +80,6 @@ export default class CCComponentEditorRendererNode extends CCComponentEditorRend
     this.#pixiParentContainer = props.pixiParentContainer;
     this.#simulation = props.simulation;
     this.#pixiGraphics = new PIXI.Graphics();
-    // this.#pixiGraphics.interactive = true;
     this.#pixiGraphics.eventMode = "dynamic";
     this.#pixiTexts = this.#createText();
     this.#pixiWorld = new PIXI.Container();
@@ -88,20 +89,17 @@ export default class CCComponentEditorRendererNode extends CCComponentEditorRend
     this.#pixiWorld.addChild(this.#pixiTexts.componentName);
 
     const node = this.context.store.nodes.get(this.#nodeId)!;
-    const pinIds = this.context.store.pins
-      .getPinIdsByComponentId(node.componentId)
-      .filter((pinId) => this.context.store.pins.isInterfacePin(pinId));
-    for (const pinId of pinIds) {
+    const nodePins = this.context.store.nodePins.getManyByNodeId(node.id);
+    for (const nodePin of nodePins) {
       const pinRenderer = new CCComponentEditorRendererNodePin({
         context: this.context,
-        nodeId: props.nodeId,
-        pinId,
+        nodePinId: nodePin.id,
         pixiParentContainer: this.#pixiWorld,
-        pixiText: this.#pixiTexts.pinNames.get(pinId)!,
+        pixiText: this.#pixiTexts.pinNames.get(nodePin.id)!,
         onDragStart: props.onDragStartPin,
         onDragEnd: props.onDragEndPin,
       });
-      this.#nodePinRenderers.set(pinId, pinRenderer);
+      this.#nodePinRenderers.set(nodePin.id, pinRenderer);
     }
 
     this.reconcileChildComponentPinRenderers();
@@ -158,9 +156,9 @@ export default class CCComponentEditorRendererNode extends CCComponentEditorRend
   #createText(): PixiTexts {
     const node = this.context.store.nodes.get(this.#nodeId)!;
     const component = this.context.store.components.get(node.componentId)!;
-    const pins = this.context.store.pins
-      .getPinIdsByComponentId(component.id)
-      .map((pinId) => this.context.store.pins.get(pinId)!);
+    const componentPins = this.context.store.componentPins.getManyByComponentId(
+      node.componentId
+    );
 
     const componentName = new PIXI.Text(component.name, {
       fontSize: CCComponentEditorRendererNode.#componentNameFontSize * 3,
@@ -168,7 +166,7 @@ export default class CCComponentEditorRendererNode extends CCComponentEditorRend
     componentName.scale.x = 1 / 3;
     componentName.scale.y = 1 / 3;
     const map = new Map<string, PIXI.Text>();
-    for (const pin of pins) {
+    for (const pin of componentPins) {
       const pinText = new PIXI.Text(pin.name, {
         fontSize: CCComponentEditorRendererNode.#edgeNameFontSize * 3,
       });
@@ -185,36 +183,19 @@ export default class CCComponentEditorRendererNode extends CCComponentEditorRend
   render = () => {
     const node = this.context.store.nodes.get(this.#nodeId);
     if (!node) return;
+    const nodePins = this.context.store.nodePins.getManyByNodeId(this.#nodeId);
+    const inputNodePins = nodePins.filter(
+      (nodePin) =>
+        this.context.store.componentPins.get(nodePin.componentPinId)!.type ===
+        "input"
+    );
+    const outputNodePins = nodePins.filter(
+      (nodePin) =>
+        this.context.store.componentPins.get(nodePin.componentPinId)!.type ===
+        "output"
+    );
 
-    const component = this.context.store.components.get(node.componentId)!;
-    const pins = this.context.store.pins
-      .getPinIdsByComponentId(component.id)
-      .map((pinId) => this.context.store.pins.get(pinId)!);
-    const inputPins = pins.filter((pin) => {
-      if (pin.type === "output") {
-        return false;
-      }
-      if (pin.implementation.type === "intrinsic") {
-        return true;
-      }
-      return this.context.store.connections.hasNoConnectionOf(
-        pin.implementation.nodeId,
-        pin.implementation.pinId
-      );
-    });
-    const outputPins = pins.filter((pin) => {
-      if (pin.type === "input") {
-        return false;
-      }
-      if (pin.implementation.type === "intrinsic") {
-        return true;
-      }
-      return this.context.store.connections.hasNoConnectionOf(
-        pin.implementation.nodeId,
-        pin.implementation.pinId
-      );
-    });
-    const size = getSize(inputPins.length, outputPins.length);
+    const size = getSize(inputNodePins.length, outputNodePins.length);
     const borderWidth = 3;
     const outlineWidth = 1;
     this.#pixiGraphics.clear();
@@ -228,13 +209,19 @@ export default class CCComponentEditorRendererNode extends CCComponentEditorRend
     this.#pixiGraphics.endFill();
     const gap = 6;
     const edgeSize = 10;
-    inputPins.forEach((pin, index) => {
-      const pinRenderer = this.#nodePinRenderers.get(pin.id);
-      pinRenderer?.render(index, size, inputPins.length);
+    inputNodePins.forEach((nodePin, index) => {
+      nullthrows(this.#nodePinRenderers.get(nodePin.id)).render(
+        index,
+        size,
+        inputNodePins.length
+      );
     });
-    outputPins.forEach((pin, index) => {
-      const pinRenderer = this.#nodePinRenderers.get(pin.id);
-      pinRenderer?.render(index, size, outputPins.length);
+    outputNodePins.forEach((nodePin, index) => {
+      nullthrows(this.#nodePinRenderers.get(nodePin.id)).render(
+        index,
+        size,
+        inputNodePins.length
+      );
     });
     this.#pixiTexts.componentName.anchor.set(0, 1);
     this.#pixiTexts.componentName.x = -size.x / 2;
@@ -274,27 +261,18 @@ export default class CCComponentEditorRendererNode extends CCComponentEditorRend
     const node = this.context.store.nodes.get(this.#nodeId);
     if (!node) return;
 
-    const nodePinIds = this.context.store.pins
-      .getPinIdsByComponentId(node.componentId)
-      .filter((pinId) => this.context.store.pins.isInterfacePin(pinId));
+    const nodePins = this.context.store.nodePins.getManyByNodeId(this.#nodeId);
 
     const existingComponentPinRenderers = new Map(this.#componentPinRenderers);
     const newComponentPinRenderers = new Map<
-      CCPinId,
+      CCComponentPinId,
       CCComponentEditorRendererComponentPin
     >();
-    for (const nodePinId of nodePinIds) {
-      if (
-        this.context.store.connections.hasNoConnectionOf(
-          this.#nodeId,
-          nodePinId
-        )
-      ) {
-        const componentPin =
-          this.context.store.pins.getByImplementationNodeIdAndPinId(
-            this.#nodeId,
-            nodePinId
-          );
+    for (const nodePin of nodePins) {
+      if (this.context.store.connections.hasNoConnectionOf(nodePin.id)) {
+        const componentPin = this.context.store.componentPins.get(
+          nodePin.componentPinId
+        )!;
         const existingComponentPinRenderer = existingComponentPinRenderers.get(
           componentPin.id
         );
@@ -316,8 +294,7 @@ export default class CCComponentEditorRendererNode extends CCComponentEditorRend
               pinId: componentPin.id,
               position: CCComponentEditorRendererNode.getPinOffset(
                 this.context.store,
-                this.#nodeId,
-                nodePinId
+                nodePin.id
               ),
               simulation,
             });
@@ -339,13 +316,16 @@ export default class CCComponentEditorRendererNode extends CCComponentEditorRend
   judgeIsRangeSelected(start_: PIXI.Point, end_: PIXI.Point) {
     const { start, end } = rearrangeRangeSelect({ start: start_, end: end_ });
     const node = this.context.store.nodes.get(this.#nodeId)!;
-    const component = this.context.store.components.get(node.componentId)!;
-    const pins = this.context.store.pins
-      .getPinIdsByComponentId(component.id)
-      .map((pinId) => this.context.store.pins.get(pinId)!);
-    const inputPins = pins.filter((pin) => pin.type === "input");
-    const outputPins = pins.filter((pin) => pin.type === "output");
-    const size = getSize(inputPins.length, outputPins.length);
+    const componentPins = this.context.store.componentPins.getManyByComponentId(
+      node.componentId
+    );
+    const inputComponentPins = componentPins.filter(
+      (pin) => pin.type === "input"
+    );
+    const outputComponentPins = componentPins.filter(
+      (pin) => pin.type === "output"
+    );
+    const size = getSize(inputComponentPins.length, outputComponentPins.length);
     const nodePosition = node.position;
     const nodePositions = [
       new PIXI.Point(nodePosition.x - size.x / 2, nodePosition.y - size.y / 2),
@@ -401,81 +381,80 @@ export default class CCComponentEditorRendererNode extends CCComponentEditorRend
    * Get offset of position of pin in node
    * @param store store
    * @param nodeId id of node
-   * @param pinId id of pin
+   * @param componentPinId id of pin
    * @returns offset
    */
-  static getPinOffset(store: CCStore, nodeId: CCNodeId, pinId: CCPinId): Point {
-    const node = store.nodes.get(nodeId)!;
+  static getPinOffset(store: CCStore, nodePinId: CCNodePinId): Point {
+    const nodePin = store.nodePins.get(nodePinId)!;
+    const node = store.nodes.get(nodePin.nodeId)!;
     const component = store.components.get(node.componentId)!;
-    const pinIds = store.pins
-      .getPinIdsByComponentId(component.id)!
-      .filter((pinId_) => store.pins.isInterfacePin(pinId_));
-    const pins = pinIds.map((id) => store.pins.get(id)!);
-    const inputPinIds = pins
+    const componentPins = store.componentPins.getManyByComponentId(
+      component.id
+    );
+    const inputComponentPinIds = componentPins
       .filter((pin) => pin.type === "input")
       .map((pin) => pin.id);
-    const inputPinCount = inputPinIds.length;
-    const outputPinIds = pins
+    const inputComponentPinCount = inputComponentPinIds.length;
+    const outputComponentPinIds = componentPins
       .filter((pin) => pin.type === "output")
       .map((pin) => pin.id);
-    const outputPinCount = outputPinIds.length;
-    const size = getSize(inputPinCount, outputPinCount);
-    if (inputPinIds.includes(pinId)) {
-      const pinIndex = inputPinIds.indexOf(pinId);
+    const outputPinCount = outputComponentPinIds.length;
+    const size = getSize(inputComponentPinCount, outputPinCount);
+    if (inputComponentPinIds.includes(nodePin.componentPinId)) {
+      const pinIndex = inputComponentPinIds.indexOf(nodePin.componentPinId);
       return new PIXI.Point(
         -size.x / 2,
-        -size.y / 2 + (size.y / (inputPinCount + 1)) * (pinIndex + 1)
+        -size.y / 2 + (size.y / (inputComponentPinCount + 1)) * (pinIndex + 1)
       );
     }
-    if (outputPinIds.includes(pinId)) {
-      const pinIndex = outputPinIds.indexOf(pinId);
+    if (outputComponentPinIds.includes(nodePin.componentPinId)) {
+      const pinIndex = outputComponentPinIds.indexOf(nodePin.componentPinId);
       return new PIXI.Point(
         size.x / 2,
         -size.y / 2 + (size.y / (outputPinCount + 1)) * (pinIndex + 1)
       );
     }
-
-    throw Error(`pin: ${pinId} not found in node: ${node.id}`);
+    throw Error(
+      `pin: ${nodePin.componentPinId} not found in node: ${nodePin.nodeId}`
+    );
   }
 
   /**
-   * Get absolute position of pin in node
+   * Get absolute position of NodePin
    * @param store store
    * @param nodeId id of node
    * @param pinId id of pin
    * @returns absolute position
    */
-  static getPinAbsolute(
-    store: CCStore,
-    nodeId: CCNodeId,
-    pinId: CCPinId
-  ): Point {
-    const node = store.nodes.get(nodeId)!;
-    const component = store.components.get(node.componentId)!;
-    const pinIds = store.pins
-      .getPinIdsByComponentId(component.id)!
-      .filter((pinId_) => store.pins.isInterfacePin(pinId_));
-    const pins = pinIds.map((id) => store.pins.get(id)!);
-    const inputPinIds = pins
+  static getNodePinAbsolute(store: CCStore, nodePinId: CCNodePinId): Point {
+    const nodePin = nullthrows(store.nodePins.get(nodePinId));
+    const node = nullthrows(store.nodes.get(nodePin.nodeId));
+    const componentPin = nullthrows(
+      store.componentPins.get(nodePin.componentPinId)
+    );
+    const componentPins = store.componentPins.getManyByComponentId(
+      node.componentId
+    );
+    const inputComponentPinIds = componentPins
       .filter((pin) => pin.type === "input")
       .map((pin) => pin.id);
-    const inputPinCount = inputPinIds.length;
-    const outputPinIds = pins
+    const inputComponentPinCount = inputComponentPinIds.length;
+    const outputComponentPinIds = componentPins
       .filter((pin) => pin.type === "output")
       .map((pin) => pin.id);
-    const outputPinCount = outputPinIds.length;
-    const size = getSize(inputPinCount, outputPinCount);
-    if (inputPinIds.includes(pinId)) {
-      const pinIndex = inputPinIds.indexOf(pinId);
+    const outputPinCount = outputComponentPinIds.length;
+    const size = getSize(inputComponentPinCount, outputPinCount);
+    if (componentPin.type === "input") {
+      const pinIndex = inputComponentPinIds.indexOf(componentPin.id);
       return new PIXI.Point(
         node.position.x - size.x / 2,
         node.position.y -
           size.y / 2 +
-          (size.y / (inputPinCount + 1)) * (pinIndex + 1)
+          (size.y / (inputComponentPinCount + 1)) * (pinIndex + 1)
       );
     }
-    if (outputPinIds.includes(pinId)) {
-      const pinIndex = outputPinIds.indexOf(pinId);
+    if (componentPin.type === "output") {
+      const pinIndex = outputComponentPinIds.indexOf(componentPin.id);
       return new PIXI.Point(
         node.position.x + size.x / 2,
         node.position.y -
@@ -484,6 +463,6 @@ export default class CCComponentEditorRendererNode extends CCComponentEditorRend
       );
     }
 
-    throw Error(`pin: ${pinId} not found in node: ${node.id}`);
+    throw Error(`pin: ${componentPin.id} not found in node: ${node.id}`);
   }
 }

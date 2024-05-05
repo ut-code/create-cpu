@@ -2,7 +2,7 @@ import * as PIXI from "pixi.js";
 import invariant from "tiny-invariant";
 import type { EditorModePlay } from "../store";
 import type { CCNodeId } from "../../../../store/node";
-import type { CCPinId } from "../../../../store/pin";
+import type { CCComponentPinId } from "../../../../store/componentPin";
 import {
   activeColor,
   editorGridColor,
@@ -18,9 +18,9 @@ type CCComponentEditorRendererComponentPinProps = {
   context: CCComponentEditorRendererContext;
   pixiParentContainer: PIXI.Container;
   nodeId: CCNodeId; // TODO: this might be unnecessary
-  pinId: CCPinId;
+  pinId: CCComponentPinId;
   position: PIXI.Point;
-  simulation: () => Map<CCPinId, boolean[]> | null;
+  simulation: () => Map<CCComponentPinId, boolean[]> | null;
 };
 
 /**
@@ -29,7 +29,7 @@ type CCComponentEditorRendererComponentPinProps = {
 export default class CCComponentEditorRendererComponentPin extends CCComponentEditorRendererBase {
   readonly #nodeId: CCNodeId;
 
-  readonly #pinId: CCPinId;
+  readonly #pinId: CCComponentPinId;
 
   position: PIXI.Point;
 
@@ -45,7 +45,7 @@ export default class CCComponentEditorRendererComponentPin extends CCComponentEd
 
   readonly #unsubscribeComponentEditorStore: () => void;
 
-  readonly #simulation: () => Map<CCPinId, boolean[]> | null;
+  readonly #simulation: () => Map<CCComponentPinId, boolean[]> | null;
 
   #valueBoxWidth: number;
 
@@ -73,7 +73,7 @@ export default class CCComponentEditorRendererComponentPin extends CCComponentEd
     this.#pixiContainer = new PIXI.Container();
     this.#pixiParentContainer.addChild(this.#pixiContainer);
     this.#pixiGraphics = new PIXI.Graphics();
-    if (this.context.store.pins.get(this.#pinId)!.type === "input") {
+    if (this.context.store.componentPins.get(this.#pinId)!.type === "input") {
       // this.#pixiGraphics.interactive = true;
       this.#pixiGraphics.eventMode = "dynamic";
       this.#pixiGraphics.cursor = "pointer";
@@ -85,7 +85,7 @@ export default class CCComponentEditorRendererComponentPin extends CCComponentEd
       pixiParentContainer: this.#pixiContainer,
     });
     this.#pixiLabelTextBox.onChange = (value) => {
-      this.context.store.pins.update(this.#pinId, { name: value });
+      this.context.store.componentPins.update(this.#pinId, { name: value });
     };
     this.registerChildRenderer(this.#pixiLabelTextBox);
     this.#pixiLabelTextBox.fontSize =
@@ -96,7 +96,7 @@ export default class CCComponentEditorRendererComponentPin extends CCComponentEd
     this.#pixiValueText.style.fill =
       CCComponentEditorRendererComponentPin.drawingConstants.valueColor;
     this.#pixiValueText.anchor.set(0.5, 0.5);
-    if (this.context.store.pins.get(this.#pinId)!.type === "input") {
+    if (this.context.store.componentPins.get(this.#pinId)!.type === "input") {
       // this.#pixiValueText.interactive = true;
       this.#pixiValueText.eventMode = "dynamic";
       this.#pixiValueText.cursor = "pointer";
@@ -108,7 +108,7 @@ export default class CCComponentEditorRendererComponentPin extends CCComponentEd
       this.context.componentEditorStore.subscribe(this.render);
     this.#valueBoxWidth =
       CCComponentEditorRendererComponentPin.drawingConstants.valueBoxWidthUnit;
-    this.context.store.pins.on("didUpdate", (pin) => {
+    this.context.store.componentPins.on("didUpdate", (pin) => {
       if (pin.id === this.#pinId) this.render();
     });
     this.render();
@@ -123,7 +123,7 @@ export default class CCComponentEditorRendererComponentPin extends CCComponentEd
     const previousValue = editorState.getInputValue(
       this.#nodeId,
       this.#pinId,
-      this.context.store.pins.get(this.#pinId)!.bits
+      this.context.store.componentPins.get(this.#pinId)!.bits
     );
     const increaseValue = (value: boolean[]) => {
       const newValue = [...value];
@@ -145,7 +145,7 @@ export default class CCComponentEditorRendererComponentPin extends CCComponentEd
    * Render the pin
    */
   render = () => {
-    const pin = this.context.store.pins.get(this.#pinId);
+    const pin = this.context.store.componentPins.get(this.#pinId);
     if (!pin) return;
 
     this.#pixiGraphics.clear();

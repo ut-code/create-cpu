@@ -2,7 +2,7 @@ import { createContext, useContext, useState } from "react";
 import invariant from "tiny-invariant";
 import { create } from "zustand";
 import PIXI from "pixi.js";
-import type { CCPinId } from "../../../../store/pin";
+import type { CCComponentPinId } from "../../../../store/componentPin";
 import type { CCNodeId } from "../../../../store/node";
 import type { CCConnectionId } from "../../../../store/connection";
 import {
@@ -16,7 +16,7 @@ export type EditorModePlay = "play";
 
 export type RangeSelect = { start: PIXI.Point; end: PIXI.Point } | null;
 
-export type InputValueKey = `${CCNodeId},${CCPinId}`;
+export type InputValueKey = `${CCNodeId},${CCComponentPinId}`;
 
 type State = {
   editorMode: EditorMode;
@@ -26,8 +26,16 @@ type State = {
   setRangeSelect(rangeSelect: RangeSelect): void;
   selectedConnectionIds: Set<CCConnectionId>;
   inputValues: Map<InputValueKey, boolean[]>;
-  getInputValue(nodeId: CCNodeId, pinId: CCPinId, bits: number): boolean[];
-  setInputValue(nodeId: CCNodeId, pinId: CCPinId, value: boolean[]): void;
+  getInputValue(
+    nodeId: CCNodeId,
+    pinId: CCComponentPinId,
+    bits: number
+  ): boolean[];
+  setInputValue(
+    nodeId: CCNodeId,
+    pinId: CCComponentPinId,
+    value: boolean[]
+  ): void;
   setEditorMode(mode: EditorMode): void;
   resetTimeStep(): void;
   incrementTimeStep(): void;
@@ -44,13 +52,13 @@ const createStore = () =>
     rangeSelect: null,
     selectedConnectionIds: new Set(),
     inputValues: new Map(),
-    getInputValue(nodeId: CCNodeId, pinId: CCPinId, bits: number) {
+    getInputValue(nodeId: CCNodeId, pinId: CCComponentPinId, bits: number) {
       return (
         this.inputValues.get(`${nodeId},${pinId}`) ??
         new Array(bits).fill(false)
       );
     },
-    setInputValue(nodeId: CCNodeId, pinId: CCPinId, value: boolean[]) {
+    setInputValue(nodeId: CCNodeId, pinId: CCComponentPinId, value: boolean[]) {
       set((state) => {
         return {
           ...state,

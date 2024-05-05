@@ -1,7 +1,8 @@
 import * as PIXI from "pixi.js";
+import nullthrows from "nullthrows";
 import type { CCConnectionId } from "../../../../store/connection";
 import type CCStore from "../../../../store";
-import type { CCPinId } from "../../../../store/pin";
+import type { CCComponentPinId } from "../../../../store/componentPin";
 import type { CCNodeId } from "../../../../store/node";
 import CCComponentEditorRendererNode from "./node";
 import type { ComponentEditorStore, EditorMode } from "../store";
@@ -158,17 +159,24 @@ export default class CCComponentEditorRendererConnection {
    * Event handler for drag end
    */
   onDragEnd() {
-    const fromEndPoint = this.#store.connections.get(this.#connectionId)?.from;
-    const toEndPoint = this.#store.connections.get(this.#connectionId)?.to;
+    const connection = nullthrows(
+      this.#store.connections.get(this.#connectionId)
+    );
+    const fromEndPoint = nullthrows(
+      this.#store.connections.get(this.#connectionId)
+    ).from;
+    const toEndPoint = nullthrows(
+      this.#store.connections.get(this.#connectionId)
+    ).to;
     const fromPosition = CCComponentEditorRendererNode.getPinAbsolute(
       this.#store,
       fromEndPoint?.nodeId as CCNodeId,
-      fromEndPoint?.pinId as CCPinId
+      fromEndPoint?.pinId as CCComponentPinId
     );
     const toPosition = CCComponentEditorRendererNode.getPinAbsolute(
       this.#store,
       toEndPoint?.nodeId as CCNodeId,
-      toEndPoint?.pinId as CCPinId
+      toEndPoint?.pinId as CCComponentPinId
     );
     const diffX = toPosition.x - fromPosition.x;
     this.#bentPortionCache = this.#temporaryBentPortion + this.#offset / diffX;
@@ -221,12 +229,12 @@ export default class CCComponentEditorRendererConnection {
     const fromPosition = CCComponentEditorRendererNode.getPinAbsolute(
       this.#store,
       fromEndPoint?.nodeId as CCNodeId,
-      fromEndPoint?.pinId as CCPinId
+      fromEndPoint?.pinId as CCComponentPinId
     );
     const toPosition = CCComponentEditorRendererNode.getPinAbsolute(
       this.#store,
       toEndPoint?.nodeId as CCNodeId,
-      toEndPoint?.pinId as CCPinId
+      toEndPoint?.pinId as CCComponentPinId
     );
     const diffX = toPosition.x - fromPosition.x;
     this.#bentPortionCache = this.#temporaryBentPortion + offset / diffX;
@@ -254,12 +262,12 @@ export default class CCComponentEditorRendererConnection {
     const fromPosition = CCComponentEditorRendererNode.getPinAbsolute(
       this.#store,
       fromEndPoint?.nodeId as CCNodeId,
-      fromEndPoint?.pinId as CCPinId
+      fromEndPoint?.pinId as CCComponentPinId
     );
     const toPosition = CCComponentEditorRendererNode.getPinAbsolute(
       this.#store,
       toEndPoint?.nodeId as CCNodeId,
-      toEndPoint?.pinId as CCPinId
+      toEndPoint?.pinId as CCComponentPinId
     );
     const diffX = toPosition.x - fromPosition.x;
     // const diffY = toPosition.y - fromPosition.y;

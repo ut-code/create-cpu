@@ -5,7 +5,8 @@ import {
   type CCComponentId,
 } from "./component";
 import { CCNodeStore, type CCNode } from "./node";
-import { CCPinStore, type CCPin } from "./pin";
+import { CCComponentPinStore, type CCComponentPin } from "./componentPin";
+import { CCNodePinStore, type CCNodePin } from "./nodePin";
 import { CCConnectionStore, type CCConnection } from "./connection";
 import { registerIntrinsics } from "./intrinsics";
 import TransactionManager from "./transaction";
@@ -17,7 +18,8 @@ export type CCStorePropsFromJson = {
   rootComponentId: CCComponentId;
   components: CCComponent[];
   nodes: CCNode[];
-  pins: CCPin[];
+  componentPins: CCComponentPin[];
+  nodePins: CCNodePin[];
   connections: CCConnection[];
 };
 
@@ -29,7 +31,9 @@ export default class CCStore {
 
   nodes: CCNodeStore;
 
-  pins: CCPinStore;
+  componentPins: CCComponentPinStore;
+
+  nodePins: CCNodePinStore;
 
   connections: CCConnectionStore;
 
@@ -44,11 +48,19 @@ export default class CCStore {
     if (rootComponent) {
       this.components = new CCComponentStore(this, rootComponent);
       this.nodes = new CCNodeStore(this);
-      this.pins = new CCPinStore(this);
+      this.componentPins = new CCComponentPinStore(this);
+      this.nodePins = new CCNodePinStore(this);
       this.connections = new CCConnectionStore(this);
     } else {
       invariant(props);
-      const { rootComponentId, components, nodes, pins, connections } = props;
+      const {
+        rootComponentId,
+        components,
+        nodes,
+        componentPins,
+        nodePins,
+        connections,
+      } = props;
       this.components = new CCComponentStore(
         this,
         undefined,
@@ -56,7 +68,8 @@ export default class CCStore {
         components
       );
       this.nodes = new CCNodeStore(this, nodes);
-      this.pins = new CCPinStore(this, pins);
+      this.componentPins = new CCComponentPinStore(this, componentPins);
+      this.nodePins = new CCNodePinStore(this, nodePins);
       this.connections = new CCConnectionStore(this, connections);
     }
     registerIntrinsics(this);
@@ -71,7 +84,8 @@ export default class CCStore {
       rootComponentId: this.components.rootComponentId,
       components: this.components.toArray(),
       nodes: this.nodes.toArray(),
-      pins: this.pins.toArray(),
+      componentPins: this.componentPins.toArray(),
+      nodePins: this.nodePins.toArray(),
       connections: this.connections.toArray(),
     });
   }

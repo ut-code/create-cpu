@@ -1,13 +1,14 @@
 import invariant from "tiny-invariant";
 import type CCStore from ".";
 import type { CCComponentId } from "./component";
-import type { CCPinId } from "./pin";
+import type { CCComponentPinId } from "./componentPin";
 import type { CCNodeId } from "./node";
 import * as intrinsics from "./intrinsics";
+import type { CCNodePin, CCNodePinId } from "./nodePin";
 
 type ComponentEvaluationResult = {
-  readonly output: Map<CCPinId, boolean[]>;
-  readonly outputNodePinValues?: Map<CCNodeId, Map<CCPinId, boolean[]>>;
+  readonly output: Map<CCNodePinId, boolean[]>;
+  readonly outputNodePinValues?: Map<CCNodePinId, boolean[]>;
 };
 
 /**
@@ -38,37 +39,64 @@ export default class CCComponentEvaluator {
    */
   evaluateIntrinsic(
     componentId: CCComponentId,
-    input: Map<CCPinId, boolean[]>,
+    input: Map<CCNodePinId, boolean[]>,
     timeStep: number,
-    nodeId?: CCNodeId
-  ): Map<CCPinId, boolean[]> | null {
+    nodeId: CCNodeId
+  ): Map<CCNodePinId, boolean[]> | null {
     const component = this.#store.components.get(componentId)!;
-    const pinIds = this.#store.pins.getPinIdsByComponentId(componentId);
+    const pinIds =
+      this.#store.componentPins.getPinIdsByComponentId(componentId);
+    const nodePins = this.#store.nodePins.getManyByNodeId(nodeId);
+    const store = this.#store;
+    const inputNodePins = nodePins.filter((nodePin: CCNodePin) => {
+      const componentPin = store.componentPins.get(nodePin.componentPinId)!;
+      return componentPin.type === "input";
+    });
+    const outputNodePins = nodePins.filter((nodePin: CCNodePin) => {
+      const componentPin = store.componentPins.get(nodePin.componentPinId)!;
+      return componentPin.type === "output";
+    });
     switch (component.id) {
       case intrinsics.notIntrinsicComponent.id: {
         invariant(pinIds.length === 2);
-        const inputValue = input.get(
-          intrinsics.notIntrinsicComponentInputPin.id
-        );
+        const inputPinId = inputNodePins.find(
+          (nodePin: CCNodePin) =>
+            nodePin.componentPinId ===
+            intrinsics.notIntrinsicComponentInputPin.id
+        )!.id;
+        const inputValue = input.get(inputPinId);
+        const outputPinId = outputNodePins.find(
+          (nodePin: CCNodePin) =>
+            nodePin.componentPinId ===
+            intrinsics.notIntrinsicComponentOutputPin.id
+        )!.id;
         const outputValue = [];
         for (const value of inputValue!) {
           outputValue.push(!value);
         }
-        const outputMap = new Map<CCPinId, boolean[]>();
-        outputMap.set(
-          intrinsics.notIntrinsicComponentOutputPin.id,
-          outputValue
-        );
+        const outputMap = new Map<CCNodePinId, boolean[]>();
+        outputMap.set(outputPinId, outputValue);
         return outputMap;
       }
       case intrinsics.andIntrinsicComponent.id: {
         invariant(pinIds.length === 3);
-        const inputValue0 = input.get(
-          intrinsics.andIntrinsicComponentInputPinA.id
-        );
-        const inputValue1 = input.get(
-          intrinsics.andIntrinsicComponentInputPinB.id
-        );
+        const inputPinId0 = inputNodePins.find(
+          (nodePin: CCNodePin) =>
+            nodePin.componentPinId ===
+            intrinsics.andIntrinsicComponentInputPinA.id
+        )!.id;
+        const inputPinId1 = inputNodePins.find(
+          (nodePin: CCNodePin) =>
+            nodePin.componentPinId ===
+            intrinsics.andIntrinsicComponentInputPinB.id
+        )!.id;
+        const inputValue0 = input.get(inputPinId0);
+        const inputValue1 = input.get(inputPinId1);
+        const outputPinId = outputNodePins.find(
+          (nodePin: CCNodePin) =>
+            nodePin.componentPinId ===
+            intrinsics.andIntrinsicComponentOutputPin.id
+        )!.id;
         const outputValue = [];
         if (inputValue0!.length !== inputValue1!.length) {
           return null;
@@ -76,80 +104,122 @@ export default class CCComponentEvaluator {
         for (let i = 0; i < inputValue0!.length; i += 1) {
           outputValue.push(inputValue0![i]! && inputValue1![i]!);
         }
-        const outputMap = new Map<CCPinId, boolean[]>();
-        outputMap.set(
-          intrinsics.andIntrinsicComponentOutputPin.id,
-          outputValue
-        );
+        const outputMap = new Map<CCNodePinId, boolean[]>();
+        outputMap.set(outputPinId, outputValue);
         return outputMap;
       }
       case intrinsics.orIntrinsicComponent.id: {
         invariant(pinIds.length === 3);
-        const inputValue0 = input.get(
-          intrinsics.orIntrinsicComponentInputPinA.id
-        );
-        const inputValue1 = input.get(
-          intrinsics.orIntrinsicComponentInputPinB.id
-        );
+        const inputPinId0 = inputNodePins.find(
+          (nodePin: CCNodePin) =>
+            nodePin.componentPinId ===
+            intrinsics.orIntrinsicComponentInputPinA.id
+        )!.id;
+        const inputPinId1 = inputNodePins.find(
+          (nodePin: CCNodePin) =>
+            nodePin.componentPinId ===
+            intrinsics.orIntrinsicComponentInputPinB.id
+        )!.id;
+        const inputValue0 = input.get(inputPinId0);
+        const inputValue1 = input.get(inputPinId1);
+        const outputPinId = outputNodePins.find(
+          (nodePin: CCNodePin) =>
+            nodePin.componentPinId ===
+            intrinsics.orIntrinsicComponentOutputPin.id
+        )!.id;
+        const outputValue = [];
         if (inputValue0!.length !== inputValue1!.length) {
           return null;
         }
-        const outputValue = [];
         for (let i = 0; i < inputValue0!.length; i += 1) {
           outputValue.push(inputValue0![i]! || inputValue1![i]!);
         }
-        const outputMap = new Map<CCPinId, boolean[]>();
-        outputMap.set(intrinsics.orIntrinsicComponentOutputPin.id, outputValue);
+        const outputMap = new Map<CCNodePinId, boolean[]>();
+        outputMap.set(outputPinId, outputValue);
         return outputMap;
       }
       case intrinsics.xorIntrinsicComponent.id: {
         invariant(pinIds.length === 3);
-        const inputValue0 = input.get(
-          intrinsics.xorIntrinsicComponentInputPinA.id
-        );
-        const inputValue1 = input.get(
-          intrinsics.xorIntrinsicComponentInputPinB.id
-        );
+        const inputPinId0 = inputNodePins.find(
+          (nodePin: CCNodePin) =>
+            nodePin.componentPinId ===
+            intrinsics.xorIntrinsicComponentInputPinA.id
+        )!.id;
+        const inputPinId1 = inputNodePins.find(
+          (nodePin: CCNodePin) =>
+            nodePin.componentPinId ===
+            intrinsics.xorIntrinsicComponentInputPinB.id
+        )!.id;
+        const inputValue0 = input.get(inputPinId0);
+        const inputValue1 = input.get(inputPinId1);
+        const outputPinId = outputNodePins.find(
+          (nodePin: CCNodePin) =>
+            nodePin.componentPinId ===
+            intrinsics.xorIntrinsicComponentOutputPin.id
+        )!.id;
+        const outputValue = [];
         if (inputValue0!.length !== inputValue1!.length) {
           return null;
         }
-        const outputValue = [];
         for (let i = 0; i < inputValue0!.length; i += 1) {
           outputValue.push(inputValue0![i]! !== inputValue1![i]!);
         }
-        const outputMap = new Map<CCPinId, boolean[]>();
-        outputMap.set(
-          intrinsics.xorIntrinsicComponentOutputPin.id,
-          outputValue
-        );
+        const outputMap = new Map<CCNodePinId, boolean[]>();
+        outputMap.set(outputPinId, outputValue);
         return outputMap;
       }
       case intrinsics.inputIntrinsicComponent.id: {
         invariant(pinIds.length === 2);
-        const inputValue = input.get(
-          intrinsics.inputIntrinsicComponentInputPin.id
-        );
-        const outputMap = new Map<CCPinId, boolean[]>();
-        outputMap.set(
-          intrinsics.inputIntrinsicComponentOutputPin.id,
-          inputValue!
-        );
+        const inputPinId = inputNodePins.find(
+          (nodePin: CCNodePin) =>
+            nodePin.componentPinId ===
+            intrinsics.inputIntrinsicComponentInputPin.id
+        )!.id;
+        const inputValue = input.get(inputPinId);
+        const outputPinId = outputNodePins.find(
+          (nodePin: CCNodePin) =>
+            nodePin.componentPinId ===
+            intrinsics.inputIntrinsicComponentOutputPin.id
+        )!.id;
+        const outputValue = [];
+        for (const value of inputValue!) {
+          outputValue.push(!value);
+        }
+        const outputMap = new Map<CCNodePinId, boolean[]>();
+        outputMap.set(outputPinId, outputValue);
         return outputMap;
       }
       case intrinsics.fourBitsIntrinsicComponent.id: {
         invariant(pinIds.length === 5);
-        const inputValue0 = input.get(
-          intrinsics.fourBitsIntrinsicComponentInputPin0.id
-        );
-        const inputValue1 = input.get(
-          intrinsics.fourBitsIntrinsicComponentInputPin1.id
-        );
-        const inputValue2 = input.get(
-          intrinsics.fourBitsIntrinsicComponentInputPin2.id
-        );
-        const inputValue3 = input.get(
-          intrinsics.fourBitsIntrinsicComponentInputPin3.id
-        );
+        const inputPinId0 = inputNodePins.find(
+          (nodePin: CCNodePin) =>
+            nodePin.componentPinId ===
+            intrinsics.fourBitsIntrinsicComponentInputPin0.id
+        )!.id;
+        const inputPinId1 = inputNodePins.find(
+          (nodePin: CCNodePin) =>
+            nodePin.componentPinId ===
+            intrinsics.fourBitsIntrinsicComponentInputPin1.id
+        )!.id;
+        const inputPinId2 = inputNodePins.find(
+          (nodePin: CCNodePin) =>
+            nodePin.componentPinId ===
+            intrinsics.fourBitsIntrinsicComponentInputPin2.id
+        )!.id;
+        const inputPinId3 = inputNodePins.find(
+          (nodePin: CCNodePin) =>
+            nodePin.componentPinId ===
+            intrinsics.fourBitsIntrinsicComponentInputPin3.id
+        )!.id;
+        const inputValue0 = input.get(inputPinId0);
+        const inputValue1 = input.get(inputPinId1);
+        const inputValue2 = input.get(inputPinId2);
+        const inputValue3 = input.get(inputPinId3);
+        const outputPinId = outputNodePins.find(
+          (nodePin: CCNodePin) =>
+            nodePin.componentPinId ===
+            intrinsics.fourBitsIntrinsicComponentOutputPin.id
+        )!.id;
         if (
           inputValue0!.length === 1 &&
           inputValue1!.length === 1 &&
@@ -161,49 +231,60 @@ export default class CCComponentEvaluator {
           outputValue.push(inputValue2![0]!);
           outputValue.push(inputValue1![0]!);
           outputValue.push(inputValue0![0]!);
-          const outputMap = new Map<CCPinId, boolean[]>();
-          outputMap.set(
-            intrinsics.fourBitsIntrinsicComponentOutputPin.id,
-            outputValue
-          );
+          const outputMap = new Map<CCNodePinId, boolean[]>();
+          outputMap.set(outputPinId, outputValue);
           return outputMap;
         }
         return null;
       }
-      case intrinsics.distiributeFourBitsIntrinsicComponent.id: {
+      case intrinsics.distributeFourBitsIntrinsicComponent.id: {
         invariant(pinIds.length === 5);
-        const inputValue = input.get(
-          intrinsics.distiributeFourBitsIntrinsicComponentInputPin.id
-        );
+        const inputPinId = inputNodePins.find(
+          (nodePin: CCNodePin) =>
+            nodePin.componentPinId ===
+            intrinsics.distributeFourBitsIntrinsicComponentInputPin.id
+        )!.id;
+        const inputValue = input.get(inputPinId);
+        const outputPinId0 = inputNodePins.find(
+          (nodePin: CCNodePin) =>
+            nodePin.componentPinId ===
+            intrinsics.distributeFourBitsIntrinsicComponentOutputPin0.id
+        )!.id;
+        const outputPinId1 = inputNodePins.find(
+          (nodePin: CCNodePin) =>
+            nodePin.componentPinId ===
+            intrinsics.distributeFourBitsIntrinsicComponentOutputPin1.id
+        )!.id;
+        const outputPinId2 = inputNodePins.find(
+          (nodePin: CCNodePin) =>
+            nodePin.componentPinId ===
+            intrinsics.distributeFourBitsIntrinsicComponentOutputPin2.id
+        )!.id;
+        const outputPinId3 = inputNodePins.find(
+          (nodePin: CCNodePin) =>
+            nodePin.componentPinId ===
+            intrinsics.distributeFourBitsIntrinsicComponentOutputPin3.id
+        )!.id;
         if (inputValue!.length === 4) {
-          const outputMap = new Map<CCPinId, boolean[]>();
-          outputMap.set(
-            intrinsics.distiributeFourBitsIntrinsicComponentOutputPin0.id,
-            [inputValue![3]!]
-          );
-          outputMap.set(
-            intrinsics.distiributeFourBitsIntrinsicComponentOutputPin1.id,
-            [inputValue![2]!]
-          );
-          outputMap.set(
-            intrinsics.distiributeFourBitsIntrinsicComponentOutputPin2.id,
-            [inputValue![1]!]
-          );
-          outputMap.set(
-            intrinsics.distiributeFourBitsIntrinsicComponentOutputPin3.id,
-            [inputValue![0]!]
-          );
+          const outputMap = new Map<CCNodePinId, boolean[]>();
+          outputMap.set(outputPinId0, [inputValue![3]!]);
+          outputMap.set(outputPinId1, [inputValue![2]!]);
+          outputMap.set(outputPinId2, [inputValue![1]!]);
+          outputMap.set(outputPinId3, [inputValue![0]!]);
           return outputMap;
         }
         return null;
       }
       case intrinsics.flipFlopIntrinsicComponent.id: {
         invariant(pinIds.length === 2);
+        const inputPinId = inputNodePins.find(
+          (nodePin: CCNodePin) =>
+            nodePin.componentPinId ===
+            intrinsics.flipFlopIntrinsicComponentInputPin.id
+        )!.id;
         if (timeStep === 0) {
-          const multiplicity = this.#store.pins.getNodePinMultiplexability(
-            intrinsics.flipFlopIntrinsicComponentInputPin.id,
-            nodeId!
-          );
+          const multiplicity =
+            this.#store.nodePins.getNodePinMultiplexability(inputPinId);
           if (multiplicity.isMultiplexable) {
             this.#flipFlopValue.set(nodeId!, [false]);
           } else {
@@ -213,9 +294,13 @@ export default class CCComponentEvaluator {
             );
           }
         }
-        const inputValue = input.get(
-          intrinsics.flipFlopIntrinsicComponentInputPin.id
-        );
+        const inputValue = input.get(inputPinId);
+
+        const outputPinId = inputNodePins.find(
+          (nodePin: CCNodePin) =>
+            nodePin.componentPinId ===
+            intrinsics.flipFlopIntrinsicComponentOutputPin.id
+        )!.id;
 
         const outputValue = this.#flipFlopValue.get(nodeId!);
 
@@ -223,26 +308,18 @@ export default class CCComponentEvaluator {
           this.#flipFlopValue.set(nodeId!, inputValue!);
         }
 
-        const outputMap = new Map<CCPinId, boolean[]>();
+        const outputMap = new Map<CCNodePinId, boolean[]>();
         if (timeStep > 0 && outputValue) {
-          outputMap.set(
-            intrinsics.flipFlopIntrinsicComponentOutputPin.id,
-            outputValue
-          );
+          outputMap.set(outputPinId, outputValue);
         } else if (inputValue) {
           const initialValue = [];
           for (let i = 0; i < inputValue!.length; i += 1) {
             initialValue.push(false);
           }
-          outputMap.set(
-            intrinsics.flipFlopIntrinsicComponentOutputPin.id,
-            initialValue
-          );
+          outputMap.set(outputPinId, initialValue);
         } else {
           // TODO: decide length of value (temporary: 1 bit)
-          outputMap.set(intrinsics.flipFlopIntrinsicComponentOutputPin.id, [
-            false,
-          ]);
+          outputMap.set(outputPinId, [false]);
         }
         return outputMap;
       }
@@ -264,11 +341,13 @@ export default class CCComponentEvaluator {
     const nodes = this.#store.nodes.getNodeIdsByParentComponentId(componentId);
     const dfs = (nodeId: CCNodeId) => {
       const node = this.#store.nodes.get(nodeId)!;
-      const pinIds = this.#store.pins.getPinIdsByComponentId(node.componentId);
+      const pinIds = this.#store.componentPins.getPinIdsByComponentId(
+        node.componentId
+      );
       const connectionIds = this.#store.connections.getConnectionIdsByPinId(
         nodeId,
         pinIds.find((pinId) => {
-          const pin = this.#store.pins.get(pinId)!;
+          const pin = this.#store.componentPins.get(pinId)!;
           return pin.type === "output";
         })!
       );
@@ -296,52 +375,47 @@ export default class CCComponentEvaluator {
    * @returns result of evaluation
    */
   evaluateComponent(
-    componentId: CCComponentId,
-    input: Map<CCPinId, boolean[]>,
-    timeStep: number,
-    _nodeId?: CCNodeId
+    nodeId: CCNodeId,
+    input: Map<CCNodePinId, boolean[]>,
+    timeStep: number
   ): ComponentEvaluationResult | null {
-    const component = this.#store.components.get(componentId);
+    const node = this.#store.nodes.get(nodeId)!;
+    const component = this.#store.components.get(node.componentId);
     if (!component) throw new Error(`Component ${component} is not defined.`);
-    const pinIds = this.#store.pins.getPinIdsByComponentId(componentId);
+    // const pinIds = this.#store.componentPins.getPinIdsByComponentId(
+    //   component.id
+    // );
+    const nodePins = this.#store.nodePins.getManyByNodeId(nodeId);
     if (component.isIntrinsic) {
-      const outputValue = this.evaluateIntrinsic(
-        componentId,
+      const output = this.evaluateIntrinsic(
+        component.id,
         input,
         timeStep,
-        _nodeId
+        nodeId
       );
-      if (!outputValue) {
+      if (!output) {
         return null;
-      }
-      const output = new Map<CCPinId, boolean[]>();
-      for (const pinId of pinIds) {
-        const pin = this.#store.pins.get(pinId)!;
-        if (pin.type === "output") {
-          output.set(pinId, outputValue.get(pinId)!);
-        }
       }
       return { output };
     }
     if (this.isCyclic(componentId)) {
       return null;
     }
-    const nodeIds =
-      this.#store.nodes.getNodeIdsByParentComponentId(componentId);
+    const nodeIds = this.#store.nodes.getManyByParentComponentId(component.id);
     const foundInputNumber = new Map<CCNodeId, number>();
     const inputNumber = new Map<CCNodeId, number>();
-    const inputValues = new Map<CCNodeId, Map<CCPinId, boolean[]>>();
+    const inputValues = new Map<CCNodePinId, boolean[]>();
     for (const nodeId of nodeIds) {
       foundInputNumber.set(nodeId, 0);
-      inputValues.set(nodeId, new Map<CCPinId, boolean[]>());
+      inputValues.set(nodeId, new Map<CCComponentPinId, boolean[]>());
       const node = this.#store.nodes.get(nodeId)!;
       const innerComponentId = node.componentId;
-      const innerPinIds = this.#store.pins
+      const innerPinIds = this.#store.componentPins
         .getPinIdsByComponentId(innerComponentId)
-        .filter((pinId) => this.#store.pins.isInterfacePin(pinId));
+        .filter((pinId) => this.#store.componentPins.isInterfacePin(pinId));
       let inputPinNumber = 0;
       for (const innerPinId of innerPinIds) {
-        const innerPin = this.#store.pins.get(innerPinId)!;
+        const innerPin = this.#store.componentPins.get(innerPinId)!;
         if (innerPin.type === "input") {
           inputPinNumber += 1;
         }
@@ -349,7 +423,7 @@ export default class CCComponentEvaluator {
       inputNumber.set(nodeId, inputPinNumber);
     }
     for (const pinId of pinIds) {
-      const pin = this.#store.pins.get(pinId)!;
+      const pin = this.#store.componentPins.get(pinId)!;
       if (pin.type === "input") {
         if (pin.implementation.type === "user") {
           const connectedNodeId = pin.implementation.nodeId;
@@ -376,8 +450,11 @@ export default class CCComponentEvaluator {
       unevaluatedNodes.add(nodeId);
     }
 
-    const output = new Map<CCPinId, boolean[]>();
-    const outputNodePinValues = new Map<CCNodeId, Map<CCPinId, boolean[]>>();
+    const output = new Map<CCComponentPinId, boolean[]>();
+    const outputNodePinValues = new Map<
+      CCNodeId,
+      Map<CCComponentPinId, boolean[]>
+    >();
     const visitedFlipFlops = new Set<CCNodeId>();
 
     while (unevaluatedNodes.size > 0) {
@@ -411,7 +488,10 @@ export default class CCComponentEvaluator {
             outputNodePinValues
               .get(currentNodeId)
               ?.set(outputPinId, outputValue) ||
-              new Map<CCPinId, boolean[]>().set(outputPinId, outputValue)
+              new Map<CCComponentPinId, boolean[]>().set(
+                outputPinId,
+                outputValue
+              )
           );
           if (!visitedFlipFlops.has(currentNodeId)) {
             const connectionIds =
@@ -434,7 +514,7 @@ export default class CCComponentEvaluator {
               }
             } else {
               const parentComponentPinId = pinIds.find((pinId) => {
-                const pin = this.#store.pins.get(pinId)!;
+                const pin = this.#store.componentPins.get(pinId)!;
                 return (
                   pin.type === "output" &&
                   pin.implementation.type === "user" &&
@@ -477,7 +557,10 @@ export default class CCComponentEvaluator {
             outputNodePinValues
               .get(currentNodeId)
               ?.set(outputPinId, outputValue) ||
-              new Map<CCPinId, boolean[]>().set(outputPinId, outputValue)
+              new Map<CCComponentPinId, boolean[]>().set(
+                outputPinId,
+                outputValue
+              )
           );
           const connectionIds = this.#store.connections.getConnectionIdsByPinId(
             currentNodeId,
@@ -498,7 +581,7 @@ export default class CCComponentEvaluator {
             }
           } else {
             const parentComponentPinId = pinIds.find((pinId) => {
-              const pin = this.#store.pins.get(pinId)!;
+              const pin = this.#store.componentPins.get(pinId)!;
               return (
                 pin.type === "output" &&
                 pin.implementation.type === "user" &&

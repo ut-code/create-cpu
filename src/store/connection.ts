@@ -5,20 +5,21 @@ import invariant from "tiny-invariant";
 import nullthrows from "nullthrows";
 import type CCStore from ".";
 import type { CCNodeId } from "./node";
-import type { CCPinId } from "./pin";
+import type { CCComponentPinId } from "./componentPin";
 import type { CCComponentId } from "./component";
+import type { CCNodePinId } from "./nodePin";
 
 export type CCConnectionId = Opaque<string, "CCConnectionId">;
 
 export type CCConnectionEndpoint = {
   readonly nodeId: CCNodeId;
-  readonly pinId: CCPinId;
+  readonly pinId: CCComponentPinId;
 };
 
 export type CCConnection = {
   readonly id: CCConnectionId;
-  readonly from: CCConnectionEndpoint;
-  readonly to: CCConnectionEndpoint;
+  readonly from: CCNodePinId;
+  readonly to: CCNodePinId;
   readonly parentComponentId: CCComponentId;
   bentPortion: number;
 };
@@ -58,8 +59,8 @@ export class CCConnectionStore extends EventEmitter<CCConnectionStoreEvents> {
     this.#store.nodes.on("willUnregister", (node) => {
       for (const connection of this.#connections.values()) {
         if (
-          connection.from.nodeId === node.id ||
-          connection.to.nodeId === node.id
+          this.#store.nodes.getNodeIdByNodePinId(connection.from) === node.id ||
+          this.#store.nodes.getNodeIdByNodePinId(connection.to) === node.id
         ) {
           this.unregister([connection.id]);
         }
@@ -72,14 +73,12 @@ export class CCConnectionStore extends EventEmitter<CCConnectionStoreEvents> {
    * @param connection connection to be registered
    */
   register(connection: CCConnection): void {
-    const fromNode = this.#store.nodes.get(connection.from.nodeId);
-    const toNode = this.#store.nodes.get(connection.to.nodeId);
-    const fromPin = this.#store.pins.get(connection.from.pinId);
-    const toPin = this.#store.pins.get(connection.to.pinId);
-    invariant(fromNode && toNode && fromPin && toPin);
+    const fromNodeId = this.#store.nodePins.get(connection.from)!.nodeId;
+    const toNodeId = this.#store.nodePins.get(connection.to)!.nodeId;
+    const fromNode = this.#store.nodes.get(fromNodeId);
+    const toNode = this.#store.nodes.get(toNodeId);
+    invariant(fromNode && toNode);
     invariant(fromNode.parentComponentId === toNode.parentComponentId);
-    invariant(fromPin.componentId === fromNode.componentId);
-    invariant(toPin.componentId === toNode.componentId);
     this.#connections.set(connection.id, connection);
     this.#parentComponentIdToConnectionIds.set(
       connection.parentComponentId,
@@ -136,18 +135,13 @@ export class CCConnectionStore extends EventEmitter<CCConnectionStoreEvents> {
    * @param pinId id of pin
    * @returns connections connected to the pin of the node
    */
-  getConnectionIdsByPinId(
-    nodeId: CCNodeId,
-    pinId: CCPinId
-  ): CCConnectionId[] | undefined {
-    return [...this.#connections.values()]
-      .filter(
-        (connection) =>
-          (connection.from.nodeId === nodeId &&
-            connection.from.pinId === pinId) ||
-          (connection.to.nodeId === nodeId && connection.to.pinId === pinId)
-      )
-      .map((connection) => connection.id);
+  getConnectionsByNodePinId(
+    nodePinId: CCNodePinId
+  ): CCConnection[] | undefined {
+    return [...this.#connections.values()].filter(
+      (connection) =>
+        connection.from === nodePinId || connection.to === nodePinId
+    );
   }
 
   /**
@@ -156,8 +150,8 @@ export class CCConnectionStore extends EventEmitter<CCConnectionStoreEvents> {
    * @param pinId id of pin
    * @returns if no connection of the pin of the node exists, `true` returns (otherwise `false`)
    */
-  hasNoConnectionOf(nodeId: CCNodeId, pinId: CCPinId): boolean {
-    return this.getConnectionIdsByPinId(nodeId, pinId)?.length === 0;
+  hasNoConnectionOf(nodePinId: CCNodePinId): boolean {
+    return this.getConnectionsByNodePinId(nodePinId)?.length === 0;
   }
 
   /**

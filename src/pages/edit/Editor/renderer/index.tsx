@@ -11,7 +11,7 @@ import {
 } from "../../../../store/connection";
 import CCComponentEditorRendererConnection from "./connection";
 import CCComponentEditorRendererRangeSelect from "./rangeSelect";
-import type { CCPinId } from "../../../../store/pin";
+import type { CCComponentPinId } from "../../../../store/componentPin";
 import CCSimulator from "./simulator";
 import type { CCComponentEditorRendererContext } from "./base";
 import CCComponentEditorRendererBase from "./base";
@@ -27,7 +27,7 @@ type DragState = {
       }
     | {
         type: "pin";
-        pinId: CCPinId;
+        pinId: CCComponentPinId;
         nodeId: CCNodeId;
         initialPosition: PIXI.Point;
       }
@@ -314,7 +314,10 @@ export default class CCComponentEditorRenderer extends CCComponentEditorRenderer
         },
       };
     };
-    const onDragStartPin = (e: PIXI.FederatedMouseEvent, pinId: CCPinId) => {
+    const onDragStartPin = (
+      e: PIXI.FederatedMouseEvent,
+      pinId: CCComponentPinId
+    ) => {
       // const node = this.context.store.nodes.get(nodeId)!;
       const { toWorldPosition, editorMode } =
         this.context.componentEditorStore.getState();
@@ -341,12 +344,16 @@ export default class CCComponentEditorRenderer extends CCComponentEditorRenderer
         },
       };
     };
-    const onDragEndPin = (_: PIXI.FederatedMouseEvent, pinId: CCPinId) => {
+    const onDragEndPin = (
+      _: PIXI.FederatedMouseEvent,
+      pinId: CCComponentPinId
+    ) => {
       this.#creatingConnectionPixiGraphics?.clear();
-      const pinType = this.context.store.pins.get(pinId)?.type;
+      const pinType = this.context.store.componentPins.get(pinId)?.type;
       if (this.#dragState?.target.type === "pin") {
         const anotherPinId = this.#dragState.target.pinId;
-        const anotherPinType = this.context.store.pins.get(anotherPinId)?.type;
+        const anotherPinType =
+          this.context.store.componentPins.get(anotherPinId)?.type;
         const anotherNodeId = this.#dragState.target.nodeId;
         if (pinType === "input" && anotherPinType === "output") {
           if (this.context.store.connections.hasNoConnectionOf(nodeId, pinId)) {
@@ -380,12 +387,12 @@ export default class CCComponentEditorRenderer extends CCComponentEditorRenderer
 
     const simulation = (targetNodeId: CCNodeId) => {
       const editorState = this.context.componentEditorStore.getState();
-      const pinIds = this.context.store.pins.getPinIdsByComponentId(
+      const pinIds = this.context.store.componentPins.getPinIdsByComponentId(
         this.#componentId
       );
-      const input = new Map<CCPinId, boolean[]>();
+      const input = new Map<CCComponentPinId, boolean[]>();
       for (const pinId of pinIds) {
-        const pin = this.context.store.pins.get(pinId)!;
+        const pin = this.context.store.componentPins.get(pinId)!;
         if (pin.type === "input") {
           if (pin.implementation.type === "user") {
             const implementationNodeId = pin.implementation.nodeId;
@@ -408,9 +415,9 @@ export default class CCComponentEditorRenderer extends CCComponentEditorRenderer
       }
       const output = this.#simulator.simulation(input, editorState.timeStep);
       if (output == null) return null;
-      const nodeOutput = new Map<CCPinId, boolean[]>();
+      const nodeOutput = new Map<CCComponentPinId, boolean[]>();
       for (const [outputPinId, outputValue] of output) {
-        const pin = this.context.store.pins.get(outputPinId)!;
+        const pin = this.context.store.componentPins.get(outputPinId)!;
         if (
           pin.implementation.type === "user" &&
           pin.implementation.nodeId === targetNodeId

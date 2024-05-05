@@ -2,10 +2,10 @@ import type { Opaque } from "type-fest";
 import EventEmitter from "eventemitter3";
 import invariant from "tiny-invariant";
 import * as PIXI from "pixi.js";
-import { MultiMap } from "mnemonist";
 import nullthrows from "nullthrows";
 import type CCStore from ".";
 import type { CCComponentId } from "./component";
+import type { CCNodePinId } from "./nodePin";
 // import { hasVariablePinCount } from "./intrinsics";
 
 export type CCNodeId = Opaque<string, "CCNodeId">;
@@ -34,8 +34,6 @@ export class CCNodeStore extends EventEmitter<CCNodeStoreEvents> {
 
   #nodes: Map<CCNodeId, CCNode> = new Map();
 
-  #parentComponentIdToNodeIds = new MultiMap<CCComponentId, CCNodeId>(Set);
-
   /**
    * Constructor of CCNodeStore
    * @param store store
@@ -60,7 +58,6 @@ export class CCNodeStore extends EventEmitter<CCNodeStoreEvents> {
     invariant(this.#store.components.get(node.componentId));
     invariant(this.#store.components.get(node.parentComponentId));
     this.#nodes.set(node.id, node);
-    this.#parentComponentIdToNodeIds.set(node.parentComponentId, node.id);
     this.emit("didRegister", node);
   }
 
@@ -73,10 +70,6 @@ export class CCNodeStore extends EventEmitter<CCNodeStoreEvents> {
     await this.#store.transactionManager.runInTransaction(() => {
       for (const node of nodes) {
         this.emit("willUnregister", node);
-        this.#parentComponentIdToNodeIds.remove(
-          node.parentComponentId,
-          node.id
-        );
         this.#nodes.delete(node.id);
       }
     });
@@ -106,9 +99,25 @@ export class CCNodeStore extends EventEmitter<CCNodeStoreEvents> {
    * Get all of nodes by parent component id
    * @param parentComponentId id of parent component
    * @returns nodes of parent component
+   * @deprecated in favor of {@link getManyByParentComponentId}
    */
   getNodeIdsByParentComponentId(parentComponentId: CCComponentId): CCNodeId[] {
-    return [...(this.#parentComponentIdToNodeIds.get(parentComponentId) ?? [])];
+    return this.getManyByParentComponentId(parentComponentId).map(
+      (node) => node.id
+    );
+  }
+
+  getManyByParentComponentId(parentComponentId: CCComponentId): CCNode[] {
+    return [...this.#nodes.values()].filter(
+      (node) => node.parentComponentId === parentComponentId
+    );
+  }
+
+  /**
+   * @deprecated in favor of {this.#store.nodePin.get(nodePinId).nodeId}
+   */
+  getNodeIdByNodePinId(nodePinId: CCNodePinId): CCNodeId | undefined {
+    return this.#store.nodePins.get(nodePinId)?.nodeId;
   }
 
   /**

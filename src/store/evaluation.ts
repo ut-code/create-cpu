@@ -1,15 +1,15 @@
 import invariant from "tiny-invariant";
 import type CCStore from ".";
 import type { CCComponentId } from "./component";
-import type { CCPinId } from "./pin";
+import type { CCComponentPinId } from "./componentPin";
 import type { CCNodeId } from "./node";
 import CCComponentEvaluator from "./componentEvaluator";
 
 export type CCEvaluationId = string;
 
 type EvaluationCache = {
-  output: Map<CCPinId, boolean[]>;
-  outputNodePinValues: Map<CCNodeId, Map<CCPinId, boolean[]>>;
+  output: Map<CCComponentPinId, boolean[]>;
+  outputNodePinValues: Map<CCNodeId, Map<CCComponentPinId, boolean[]>>;
 };
 
 /**
@@ -18,7 +18,10 @@ type EvaluationCache = {
 export default class CCEvaluation {
   #cache: Map<CCEvaluationId, EvaluationCache>;
 
-  #previousValueOfOutputNodePins: Map<CCNodeId, Map<CCPinId, boolean[]>> | null;
+  #previousValueOfOutputNodePins: Map<
+    CCNodeId,
+    Map<CCComponentPinId, boolean[]>
+  > | null;
 
   static readonly #cacheSize = 5;
 
@@ -55,7 +58,7 @@ export default class CCEvaluation {
    */
   static createId(
     componentId: CCComponentId,
-    input: Map<CCPinId, boolean[]>,
+    input: Map<CCComponentPinId, boolean[]>,
     timeStep: number
   ): CCEvaluationId {
     let id = "";
@@ -83,7 +86,10 @@ export default class CCEvaluation {
    * @param pinId id of pin
    * @returns calculated value of pin
    */
-  getCalculatedPinValue(nodeId: CCNodeId, pinId: CCPinId): boolean[] | null {
+  getCalculatedPinValue(
+    nodeId: CCNodeId,
+    pinId: CCComponentPinId
+  ): boolean[] | null {
     if (this.#previousValueOfOutputNodePins) {
       return this.#previousValueOfOutputNodePins.get(nodeId)!.get(pinId)!;
     }
@@ -99,9 +105,9 @@ export default class CCEvaluation {
    */
   evaluate(
     componentId: CCComponentId,
-    input: Map<CCPinId, boolean[]>,
+    input: Map<CCComponentPinId, boolean[]>,
     timeStep: number
-  ): Map<CCPinId, boolean[]> | null {
+  ): Map<CCComponentPinId, boolean[]> | null {
     const id = CCEvaluation.createId(componentId, input, timeStep);
     const cacheHit = this.#cache.get(id);
     if (cacheHit) {
