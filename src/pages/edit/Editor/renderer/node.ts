@@ -7,7 +7,7 @@ import type { CCNodeId } from "../../../../store/node";
 import { type CCComponentPinId } from "../../../../store/componentPin";
 import type CCStore from "../../../../store";
 import CCComponentEditorRendererNodePin from "./nodePin";
-import CCComponentEditorRendererComponentPin from "./pin";
+import CCComponentEditorRendererComponentPin from "./componentPin";
 import { rearrangeRangeSelect } from "./rangeSelect";
 import CCComponentEditorRendererBase, {
   type CCComponentEditorRendererContext,

@@ -1,13 +1,12 @@
 import type { Opaque } from "type-fest";
 import EventEmitter from "eventemitter3";
+import nullthrows from "nullthrows";
 import invariant from "tiny-invariant";
 import type { CCNodeId } from "./node";
-import type {
-  CCComponentPinId,
-  CCPinMultiplexability,
-  CCPinStoreEvents,
-} from "./componentPin";
+import type { CCComponentPinId, CCPinMultiplexability } from "./componentPin";
 import type CCStore from ".";
+
+export type CCNodePinId = Opaque<string, "CCNodePinId">;
 
 export type CCNodePin = {
   id: CCNodePinId;
@@ -15,78 +14,80 @@ export type CCNodePin = {
   componentPinId: CCComponentPinId;
 };
 
-export type CCNodePinId = Opaque<string, "CCNodePinId">;
+export type CCNodePinStoreEvents = {
+  didRegister(pin: CCNodePin): void;
+  willUnregister(pin: CCNodePin): void;
+  didUnregister(pin: CCNodePin): void;
+};
 
-export class CCNodePinStore extends EventEmitter<CCPinStoreEvents> {
+export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
   #store: CCStore;
 
-  #pins: Map<CCNodePinId, CCNodePin> = new Map();
+  #nodePins: Map<CCNodePinId, CCNodePin> = new Map();
 
   /**
    * Constructor of CCNodePinStore
    * @param store store
-   * @param pins initial pins
+   * @param nodePins initial pins
    */
-  constructor(store: CCStore, pins?: CCNodePin[]) {
+  constructor(store: CCStore, nodePins?: CCNodePin[]) {
     super();
     this.#store = store;
-    if (pins) {
-      for (const pin of pins) {
+    if (nodePins) {
+      for (const pin of nodePins) {
         this.register(pin);
       }
     }
+    this.#store.nodes.on("didRegister", (node) => {
+      const componentPins = this.#store.componentPins.getManyByComponentId(
+        node.componentId
+      );
+      for (const componentPin of componentPins) {
+        this.register(
+          CCNodePinStore.create({
+            nodeId: node.id,
+            componentPinId: componentPin.id,
+          })
+        );
+      }
+    });
     this.#store.nodes.on("willUnregister", (node) => {
-      for (const pin of this.#pins.values()) {
+      for (const pin of this.#nodePins.values()) {
         if (pin.nodeId === node.id) {
           this.unregister(pin.id);
         }
       }
     });
-    this.#store.nodes.on("didRegister", (node) => {
-      const component = this.#store.components.get(node.componentId)!;
-      const storePins = this.#store.componentPins.getPinIdsByComponentId(
-        node.componentId
-      )!;
-      // .filter((pinId) => this.isInterfacePin(pinId));
-      for (const implementationPinId of storePins) {
-        const implementationPin = this.get(implementationPinId)!;
+    this.#store.componentPins.on("didRegister", (componentPin) => {
+      for (const node of this.#store.nodes.getManyByComponentId(
+        componentPin.componentId
+      )) {
         this.register(
           CCNodePinStore.create({
-            name: `${component.name} ${implementationPin.name}`,
-            componentId: node.parentComponentId,
-            type: implementationPin.type,
-            implementation: {
-              type: "user",
-              nodeId: node.id,
-              pinId: implementationPin.id,
-            },
-            multiplexable: implementationPin.multiplexable,
-            bits: implementationPin.bits,
+            nodeId: node.id,
+            componentPinId: componentPin.id,
           })
         );
       }
     });
-    // this.#store.nodes.on("willUnregister", (node) => {
-    //   for (const pin of this.#pins.values()) {
-    //     if (
-    //       pin.implementation.type === "user" &&
-    //       pin.implementation.nodeId === node.id
-    //     ) {
-    //       this.unregister(pin.id);
-    //     }
-    //   }
-    // });
-    // TODO: create / remove pins when connections are created / removed
+    this.#store.componentPins.on("willUnregister", (componentPin) => {
+      for (const pin of this.#nodePins.values()) {
+        if (pin.componentPinId === componentPin.id) {
+          this.unregister(pin.id);
+        }
+      }
+    });
   }
 
   /**
    * Register a pin
-   * @param pin pin to be registered
+   * @param nodePin pin to be registered
    */
-  register(pin: CCNodePin): void {
-    // invariant(this.#store.components.get(pin.componentId));
-    // this.#pins.set(pin.id, pin);
-    // this.emit("didRegister", pin);
+  register(nodePin: CCNodePin): void {
+    invariant(this.#store.componentPins.get(nodePin.componentPinId));
+    invariant(this.#store.nodes.get(nodePin.nodeId));
+    this.#nodePins.set(nodePin.id, nodePin);
+    this.emit("didRegister", nodePin);
   }
 
   /**
@@ -94,12 +95,12 @@ export class CCNodePinStore extends EventEmitter<CCPinStoreEvents> {
    * @param id id of a pin to be unregistered
    */
   async unregister(id: CCNodePinId): Promise<void> {
-    const pin = nullthrows(this.#pins.get(id));
+    const nodePin = nullthrows(this.#nodePins.get(id));
     await this.#store.transactionManager.runInTransaction(() => {
-      this.emit("willUnregister", pin);
-      this.#pins.delete(id);
+      this.emit("willUnregister", nodePin);
+      this.#nodePins.delete(nodePin.id);
     });
-    this.emit("didUnregister", pin);
+    this.emit("didUnregister", nodePin);
   }
 
   /**
@@ -108,7 +109,7 @@ export class CCNodePinStore extends EventEmitter<CCPinStoreEvents> {
    * @returns pin of `id`
    */
   get(id: CCNodePinId): CCNodePin | undefined {
-    return this.#pins.get(id);
+    return this.#nodePins.get(id);
   }
 
   /**
@@ -119,7 +120,7 @@ export class CCNodePinStore extends EventEmitter<CCPinStoreEvents> {
     nodeId: CCNodeId,
     componentPinId: CCComponentPinId
   ): CCNodePin {
-    const pin = [...this.#pins.values()].find(
+    const pin = [...this.#nodePins.values()].find(
       (candidate) =>
         candidate.nodeId === nodeId &&
         candidate.componentPinId === componentPinId
@@ -134,7 +135,7 @@ export class CCNodePinStore extends EventEmitter<CCPinStoreEvents> {
    * @returns pins of component
    */
   getManyByNodeId(nodeId: CCNodeId): CCNodePin[] {
-    return [...this.#pins.values()].filter((pin) => pin.nodeId === nodeId);
+    return [...this.#nodePins.values()].filter((pin) => pin.nodeId === nodeId);
   }
 
   /**
@@ -207,6 +208,6 @@ export class CCNodePinStore extends EventEmitter<CCPinStoreEvents> {
    * @returns array of pins
    */
   toArray(): CCNodePin[] {
-    return [...this.#pins.values()];
+    return [...this.#nodePins.values()];
   }
 }

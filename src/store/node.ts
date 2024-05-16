@@ -113,6 +113,12 @@ export class CCNodeStore extends EventEmitter<CCNodeStoreEvents> {
     );
   }
 
+  getManyByComponentId(componentId: CCComponentId): CCNode[] {
+    return [...this.#nodes.values()].filter(
+      (node) => node.componentId === componentId
+    );
+  }
+
   /**
    * @deprecated in favor of {this.#store.nodePin.get(nodePinId).nodeId}
    */

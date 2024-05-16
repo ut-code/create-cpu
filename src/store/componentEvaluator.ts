@@ -1,7 +1,6 @@
 import invariant from "tiny-invariant";
 import type CCStore from ".";
 import type { CCComponentId } from "./component";
-import type { CCComponentPinId } from "./componentPin";
 import type { CCNodeId } from "./node";
 import * as intrinsics from "./intrinsics";
 import type { CCNodePin, CCNodePinId } from "./nodePin";
@@ -38,12 +37,12 @@ export default class CCComponentEvaluator {
    * @returns map of output pins and their values
    */
   evaluateIntrinsic(
-    componentId: CCComponentId,
+    nodeId: CCNodeId,
     input: Map<CCNodePinId, boolean[]>,
-    timeStep: number,
-    nodeId: CCNodeId
+    timeStep: number
   ): Map<CCNodePinId, boolean[]> | null {
-    const component = this.#store.components.get(componentId)!;
+    const node = this.#store.nodes.get(nodeId)!;
+    const { componentId } = node;
     const pinIds =
       this.#store.componentPins.getPinIdsByComponentId(componentId);
     const nodePins = this.#store.nodePins.getManyByNodeId(nodeId);
@@ -56,7 +55,7 @@ export default class CCComponentEvaluator {
       const componentPin = store.componentPins.get(nodePin.componentPinId)!;
       return componentPin.type === "output";
     });
-    switch (component.id) {
+    switch (componentId) {
       case intrinsics.notIntrinsicComponent.id: {
         invariant(pinIds.length === 2);
         const inputPinId = inputNodePins.find(
@@ -326,7 +325,7 @@ export default class CCComponentEvaluator {
       // case "Sample":
       //   return true;
       default:
-        throw new Error(`invalid component (${component.name})`);
+        throw new Error(`invalid component (${componentId})`);
     }
   }
 
@@ -338,24 +337,23 @@ export default class CCComponentEvaluator {
   isCyclic(componentId: CCComponentId): boolean {
     const seen = new Set<CCNodeId>();
     const finished = new Set<CCNodeId>();
-    const nodes = this.#store.nodes.getNodeIdsByParentComponentId(componentId);
+    const nodes = this.#store.nodes.getManyByParentComponentId(componentId);
     const dfs = (nodeId: CCNodeId) => {
       const node = this.#store.nodes.get(nodeId)!;
-      const pinIds = this.#store.componentPins.getPinIdsByComponentId(
-        node.componentId
-      );
-      const connectionIds = this.#store.connections.getConnectionIdsByPinId(
-        nodeId,
-        pinIds.find((pinId) => {
-          const pin = this.#store.componentPins.get(pinId)!;
-          return pin.type === "output";
-        })!
+      const pins = this.#store.nodePins.getManyByNodeId(node.id);
+      const connections = this.#store.connections.getConnectionsByNodePinId(
+        pins.find((pin: CCNodePin) => {
+          const componentPin = this.#store.componentPins.get(
+            pin.componentPinId
+          )!;
+          return componentPin.type === "output";
+        })!.id
       );
       seen.add(nodeId);
-      for (const connectionId of connectionIds!) {
-        const connection = this.#store.connections.get(connectionId)!;
-        const connectedNodeId = connection.to.nodeId;
-        if (!finished.has(connectedNodeId)) {
+      for (const connection of connections!) {
+        const connectedNodePin = this.#store.nodePins.get(connection.to)!;
+        const connectedNodeId = connectedNodePin.nodeId;
+        if (!finished.has(connectedNodePin.nodeId)) {
           if (seen.has(connectedNodeId)) return true;
           if (dfs(connectedNodeId)) return true;
         }
@@ -363,7 +361,7 @@ export default class CCComponentEvaluator {
       finished.add(nodeId);
       return false;
     };
-    return dfs(nodes[0]!);
+    return dfs(nodes[0]!.id);
   }
 
   /**
@@ -385,76 +383,60 @@ export default class CCComponentEvaluator {
     // const pinIds = this.#store.componentPins.getPinIdsByComponentId(
     //   component.id
     // );
-    const nodePins = this.#store.nodePins.getManyByNodeId(nodeId);
     if (component.isIntrinsic) {
-      const output = this.evaluateIntrinsic(
-        component.id,
-        input,
-        timeStep,
-        nodeId
-      );
+      const output = this.evaluateIntrinsic(nodeId, input, timeStep);
       if (!output) {
         return null;
       }
       return { output };
     }
-    if (this.isCyclic(componentId)) {
+    if (this.isCyclic(component.id)) {
       return null;
     }
-    const nodeIds = this.#store.nodes.getManyByParentComponentId(component.id);
+    const nodePins = this.#store.nodePins.getManyByNodeId(nodeId);
+    const children = this.#store.nodes.getManyByParentComponentId(component.id);
     const foundInputNumber = new Map<CCNodeId, number>();
     const inputNumber = new Map<CCNodeId, number>();
     const inputValues = new Map<CCNodePinId, boolean[]>();
-    for (const nodeId of nodeIds) {
-      foundInputNumber.set(nodeId, 0);
-      inputValues.set(nodeId, new Map<CCComponentPinId, boolean[]>());
-      const node = this.#store.nodes.get(nodeId)!;
-      const innerComponentId = node.componentId;
-      const innerPinIds = this.#store.componentPins
-        .getPinIdsByComponentId(innerComponentId)
-        .filter((pinId) => this.#store.componentPins.isInterfacePin(pinId));
+    for (const child of children) {
+      foundInputNumber.set(child.id, 0);
+      const innerPins = this.#store.nodePins.getManyByNodeId(child.id);
       let inputPinNumber = 0;
-      for (const innerPinId of innerPinIds) {
-        const innerPin = this.#store.componentPins.get(innerPinId)!;
-        if (innerPin.type === "input") {
+      for (const innerPin of innerPins) {
+        const componentPin = this.#store.componentPins.get(
+          innerPin.componentPinId
+        )!;
+        if (componentPin.type === "input") {
           inputPinNumber += 1;
         }
       }
-      inputNumber.set(nodeId, inputPinNumber);
+      inputNumber.set(child.id, inputPinNumber);
     }
-    for (const pinId of pinIds) {
-      const pin = this.#store.componentPins.get(pinId)!;
-      if (pin.type === "input") {
-        if (pin.implementation.type === "user") {
-          const connectedNodeId = pin.implementation.nodeId;
-          const connectedPinId = pin.implementation.pinId;
-          if (
-            this.#store.connections.hasNoConnectionOf(
-              connectedNodeId,
-              connectedPinId
-            )
-          ) {
-            inputValues
-              .get(connectedNodeId)!
-              .set(connectedPinId, input.get(pinId)!);
-            foundInputNumber.set(
-              connectedNodeId,
-              foundInputNumber.get(connectedNodeId)! + 1
-            );
-          }
-        }
+    for (const nodePin of nodePins) {
+      const componentPin = this.#store.componentPins.get(
+        nodePin.componentPinId
+      )!;
+      if (componentPin.type === "input" && componentPin.implementation) {
+        const connectedNodePin = this.#store.nodePins.get(
+          componentPin.implementation
+        )!;
+        inputValues.set(connectedNodePin.id, input.get(nodePin.id)!);
+        foundInputNumber.set(
+          connectedNodePin.nodeId,
+          foundInputNumber.get(connectedNodePin.nodeId)! + 1
+        );
       }
     }
     const unevaluatedNodes = new Set<CCNodeId>();
-    for (const nodeId of nodeIds) {
-      unevaluatedNodes.add(nodeId);
+    for (const child of children) {
+      unevaluatedNodes.add(child.id);
     }
 
-    const output = new Map<CCComponentPinId, boolean[]>();
-    const outputNodePinValues = new Map<
-      CCNodeId,
-      Map<CCComponentPinId, boolean[]>
-    >();
+    const output = new Map<CCNodePinId, boolean[]>();
+    // const outputNodePinValues = new Map<
+    //   CCNodeId,
+    //   Map<CCComponentPinId, boolean[]>
+    // >();
     const visitedFlipFlops = new Set<CCNodeId>();
 
     while (unevaluatedNodes.size > 0) {
@@ -474,55 +456,49 @@ export default class CCComponentEvaluator {
         }
         const evaluator = this.#childrenEvaluator.get(currentNodeId)!;
         const result = evaluator.evaluateComponent(
-          currentComponentId,
-          inputValues.get(currentNodeId)!,
-          timeStep,
-          currentNodeId
+          currentNodeId,
+          inputValues,
+          timeStep
         );
         if (!result) {
           return null;
         }
         for (const [outputPinId, outputValue] of result.output) {
-          outputNodePinValues.set(
-            currentNodeId,
-            outputNodePinValues
-              .get(currentNodeId)
-              ?.set(outputPinId, outputValue) ||
-              new Map<CCComponentPinId, boolean[]>().set(
-                outputPinId,
-                outputValue
-              )
-          );
+          // outputNodePinValues.set(
+          //   currentNodeId,
+          //   outputNodePinValues
+          //     .get(currentNodeId)
+          //     ?.set(outputPinId, outputValue) ||
+          //     new Map<CCComponentPinId, boolean[]>().set(
+          //       outputPinId,
+          //       outputValue
+          //     )
+          // );
           if (!visitedFlipFlops.has(currentNodeId)) {
-            const connectionIds =
-              this.#store.connections.getConnectionIdsByPinId(
-                currentNodeId,
-                outputPinId
-              )!;
-            if (connectionIds.length !== 0) {
-              for (const connectionId of connectionIds) {
-                const connection = this.#store.connections.get(connectionId)!;
-                const connectedNodeId = connection.to.nodeId;
-                const connectedPinId = connection.to.pinId;
-                inputValues
-                  .get(connectedNodeId)!
-                  .set(connectedPinId, outputValue);
+            const connections =
+              this.#store.connections.getConnectionsByNodePinId(outputPinId)!;
+            if (connections.length !== 0) {
+              for (const connection of connections) {
+                const connectedNodePin = this.#store.nodePins.get(
+                  connection.to
+                )!;
+                inputValues.set(connectedNodePin.id, outputValue);
                 foundInputNumber.set(
-                  connectedNodeId,
-                  foundInputNumber.get(connectedNodeId)! + 1
+                  connectedNodePin.nodeId,
+                  foundInputNumber.get(connectedNodePin.nodeId)! + 1
                 );
               }
             } else {
-              const parentComponentPinId = pinIds.find((pinId) => {
-                const pin = this.#store.componentPins.get(pinId)!;
+              const parentNodePin = nodePins.find((nodePin) => {
+                const componentPin = this.#store.componentPins.get(
+                  nodePin.componentPinId
+                )!;
                 return (
-                  pin.type === "output" &&
-                  pin.implementation.type === "user" &&
-                  pin.implementation.nodeId === currentNodeId &&
-                  pin.implementation.pinId === outputPinId
+                  componentPin.type === "output" &&
+                  componentPin.implementation === outputPinId
                 );
               })!;
-              output.set(parentComponentPinId, outputValue);
+              output.set(parentNodePin.id, outputValue);
             }
             if (
               currentComponentId === intrinsics.flipFlopIntrinsicComponent.id
@@ -543,53 +519,55 @@ export default class CCComponentEvaluator {
         }
         const evaluator = this.#childrenEvaluator.get(currentNodeId)!;
         const result = evaluator.evaluateComponent(
-          currentComponentId,
-          inputValues.get(currentNodeId)!,
-          timeStep,
-          currentNodeId
+          currentNodeId,
+          inputValues,
+          timeStep
         );
         if (!result) {
           return null;
         }
         for (const [outputPinId, outputValue] of result.output) {
-          outputNodePinValues.set(
-            currentNodeId,
-            outputNodePinValues
-              .get(currentNodeId)
-              ?.set(outputPinId, outputValue) ||
-              new Map<CCComponentPinId, boolean[]>().set(
-                outputPinId,
-                outputValue
-              )
-          );
-          const connectionIds = this.#store.connections.getConnectionIdsByPinId(
-            currentNodeId,
-            outputPinId
-          )!;
-          if (connectionIds.length !== 0) {
-            for (const connectionId of connectionIds) {
-              const connection = this.#store.connections.get(connectionId)!;
-              const connectedNodeId = connection.to.nodeId;
-              const connectedPinId = connection.to.pinId;
-              inputValues
-                .get(connectedNodeId)!
-                .set(connectedPinId, outputValue);
-              foundInputNumber.set(
-                connectedNodeId,
-                foundInputNumber.get(connectedNodeId)! + 1
-              );
+          // outputNodePinValues.set(
+          //   currentNodeId,
+          //   outputNodePinValues
+          //     .get(currentNodeId)
+          //     ?.set(outputPinId, outputValue) ||
+          //     new Map<CCComponentPinId, boolean[]>().set(
+          //       outputPinId,
+          //       outputValue
+          //     )
+          // );
+          if (!visitedFlipFlops.has(currentNodeId)) {
+            const connections =
+              this.#store.connections.getConnectionsByNodePinId(outputPinId)!;
+            if (connections.length !== 0) {
+              for (const connection of connections) {
+                const connectedNodePin = this.#store.nodePins.get(
+                  connection.to
+                )!;
+                inputValues.set(connectedNodePin.id, outputValue);
+                foundInputNumber.set(
+                  connectedNodePin.nodeId,
+                  foundInputNumber.get(connectedNodePin.nodeId)! + 1
+                );
+              }
+            } else {
+              const parentNodePin = nodePins.find((nodePin) => {
+                const componentPin = this.#store.componentPins.get(
+                  nodePin.componentPinId
+                )!;
+                return (
+                  componentPin.type === "output" &&
+                  componentPin.implementation === outputPinId
+                );
+              })!;
+              output.set(parentNodePin.id, outputValue);
             }
-          } else {
-            const parentComponentPinId = pinIds.find((pinId) => {
-              const pin = this.#store.componentPins.get(pinId)!;
-              return (
-                pin.type === "output" &&
-                pin.implementation.type === "user" &&
-                pin.implementation.nodeId === currentNodeId &&
-                pin.implementation.pinId === outputPinId
-              );
-            })!;
-            output.set(parentComponentPinId, outputValue);
+            if (
+              currentComponentId === intrinsics.flipFlopIntrinsicComponent.id
+            ) {
+              visitedFlipFlops.add(currentNodeId);
+            }
           }
         }
         visitedFlipFlops.add(currentNodeId);
@@ -598,6 +576,6 @@ export default class CCComponentEvaluator {
         unevaluatedNodes.add(currentNodeId);
       }
     }
-    return { output, outputNodePinValues };
+    return { output };
   }
 }

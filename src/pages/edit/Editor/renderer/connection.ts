@@ -2,8 +2,6 @@ import * as PIXI from "pixi.js";
 import nullthrows from "nullthrows";
 import type { CCConnectionId } from "../../../../store/connection";
 import type CCStore from "../../../../store";
-import type { CCComponentPinId } from "../../../../store/componentPin";
-import type { CCNodeId } from "../../../../store/node";
 import CCComponentEditorRendererNode from "./node";
 import type { ComponentEditorStore, EditorMode } from "../store";
 
@@ -159,24 +157,19 @@ export default class CCComponentEditorRendererConnection {
    * Event handler for drag end
    */
   onDragEnd() {
-    const connection = nullthrows(
-      this.#store.connections.get(this.#connectionId)
-    );
     const fromEndPoint = nullthrows(
       this.#store.connections.get(this.#connectionId)
     ).from;
     const toEndPoint = nullthrows(
       this.#store.connections.get(this.#connectionId)
     ).to;
-    const fromPosition = CCComponentEditorRendererNode.getPinAbsolute(
+    const fromPosition = CCComponentEditorRendererNode.getNodePinAbsolute(
       this.#store,
-      fromEndPoint?.nodeId as CCNodeId,
-      fromEndPoint?.pinId as CCComponentPinId
+      fromEndPoint
     );
-    const toPosition = CCComponentEditorRendererNode.getPinAbsolute(
+    const toPosition = CCComponentEditorRendererNode.getNodePinAbsolute(
       this.#store,
-      toEndPoint?.nodeId as CCNodeId,
-      toEndPoint?.pinId as CCComponentPinId
+      toEndPoint
     );
     const diffX = toPosition.x - fromPosition.x;
     this.#bentPortionCache = this.#temporaryBentPortion + this.#offset / diffX;
@@ -224,17 +217,19 @@ export default class CCComponentEditorRendererConnection {
    */
   updateBentPortion(offset: number) {
     this.#offset = offset;
-    const fromEndPoint = this.#store.connections.get(this.#connectionId)?.from;
-    const toEndPoint = this.#store.connections.get(this.#connectionId)?.to;
-    const fromPosition = CCComponentEditorRendererNode.getPinAbsolute(
-      this.#store,
-      fromEndPoint?.nodeId as CCNodeId,
-      fromEndPoint?.pinId as CCComponentPinId
+    const fromEndPoint = nullthrows(
+      this.#store.connections.get(this.#connectionId)?.from
     );
-    const toPosition = CCComponentEditorRendererNode.getPinAbsolute(
+    const toEndPoint = nullthrows(
+      this.#store.connections.get(this.#connectionId)?.to
+    );
+    const fromPosition = CCComponentEditorRendererNode.getNodePinAbsolute(
       this.#store,
-      toEndPoint?.nodeId as CCNodeId,
-      toEndPoint?.pinId as CCComponentPinId
+      fromEndPoint
+    );
+    const toPosition = CCComponentEditorRendererNode.getNodePinAbsolute(
+      this.#store,
+      toEndPoint
     );
     const diffX = toPosition.x - fromPosition.x;
     this.#bentPortionCache = this.#temporaryBentPortion + offset / diffX;
@@ -257,17 +252,19 @@ export default class CCComponentEditorRendererConnection {
     this.#pixiGraphics.middle.lineStyle(lineWidth, lineColor);
     this.#pixiGraphics.to.lineStyle(lineWidth, lineColor);
     const endPointGap = 9;
-    const fromEndPoint = this.#store.connections.get(this.#connectionId)?.from;
-    const toEndPoint = this.#store.connections.get(this.#connectionId)?.to;
-    const fromPosition = CCComponentEditorRendererNode.getPinAbsolute(
-      this.#store,
-      fromEndPoint?.nodeId as CCNodeId,
-      fromEndPoint?.pinId as CCComponentPinId
+    const fromEndPoint = nullthrows(
+      this.#store.connections.get(this.#connectionId)?.from
     );
-    const toPosition = CCComponentEditorRendererNode.getPinAbsolute(
+    const toEndPoint = nullthrows(
+      this.#store.connections.get(this.#connectionId)?.to
+    );
+    const fromPosition = CCComponentEditorRendererNode.getNodePinAbsolute(
       this.#store,
-      toEndPoint?.nodeId as CCNodeId,
-      toEndPoint?.pinId as CCComponentPinId
+      fromEndPoint
+    );
+    const toPosition = CCComponentEditorRendererNode.getNodePinAbsolute(
+      this.#store,
+      toEndPoint
     );
     const diffX = toPosition.x - fromPosition.x;
     // const diffY = toPosition.y - fromPosition.y;

@@ -40,7 +40,7 @@ export type CCPinMultiplexability =
   | { isMultiplexable: true }
   | { isMultiplexable: false; multiplicity: number };
 
-export type CCPinStoreEvents = {
+export type CCComponentPinStoreEvents = {
   didRegister(pin: CCComponentPin): void;
   willUnregister(pin: CCComponentPin): void;
   didUnregister(pin: CCComponentPin): void;
@@ -50,7 +50,7 @@ export type CCPinStoreEvents = {
 /**
  * Store of pins
  */
-export class CCComponentPinStore extends EventEmitter<CCPinStoreEvents> {
+export class CCComponentPinStore extends EventEmitter<CCComponentPinStoreEvents> {
   #store: CCStore;
 
   #pins: Map<CCComponentPinId, CCComponentPin> = new Map();

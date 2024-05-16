@@ -29,7 +29,7 @@ type CCComponentEditorRendererComponentPinProps = {
 export default class CCComponentEditorRendererComponentPin extends CCComponentEditorRendererBase {
   readonly #nodeId: CCNodeId;
 
-  readonly #pinId: CCComponentPinId;
+  readonly #componentPinId: CCComponentPinId;
 
   position: PIXI.Point;
 
@@ -66,14 +66,17 @@ export default class CCComponentEditorRendererComponentPin extends CCComponentEd
   constructor(props: CCComponentEditorRendererComponentPinProps) {
     super(props.context);
     this.#nodeId = props.nodeId;
-    this.#pinId = props.pinId;
+    this.#componentPinId = props.pinId;
     this.position = props.position;
     this.#simulation = props.simulation;
     this.#pixiParentContainer = props.pixiParentContainer;
     this.#pixiContainer = new PIXI.Container();
     this.#pixiParentContainer.addChild(this.#pixiContainer);
     this.#pixiGraphics = new PIXI.Graphics();
-    if (this.context.store.componentPins.get(this.#pinId)!.type === "input") {
+    if (
+      this.context.store.componentPins.get(this.#componentPinId)!.type ===
+      "input"
+    ) {
       // this.#pixiGraphics.interactive = true;
       this.#pixiGraphics.eventMode = "dynamic";
       this.#pixiGraphics.cursor = "pointer";
@@ -85,7 +88,9 @@ export default class CCComponentEditorRendererComponentPin extends CCComponentEd
       pixiParentContainer: this.#pixiContainer,
     });
     this.#pixiLabelTextBox.onChange = (value) => {
-      this.context.store.componentPins.update(this.#pinId, { name: value });
+      this.context.store.componentPins.update(this.#componentPinId, {
+        name: value,
+      });
     };
     this.registerChildRenderer(this.#pixiLabelTextBox);
     this.#pixiLabelTextBox.fontSize =
@@ -96,7 +101,10 @@ export default class CCComponentEditorRendererComponentPin extends CCComponentEd
     this.#pixiValueText.style.fill =
       CCComponentEditorRendererComponentPin.drawingConstants.valueColor;
     this.#pixiValueText.anchor.set(0.5, 0.5);
-    if (this.context.store.componentPins.get(this.#pinId)!.type === "input") {
+    if (
+      this.context.store.componentPins.get(this.#componentPinId)!.type ===
+      "input"
+    ) {
       // this.#pixiValueText.interactive = true;
       this.#pixiValueText.eventMode = "dynamic";
       this.#pixiValueText.cursor = "pointer";
@@ -109,7 +117,7 @@ export default class CCComponentEditorRendererComponentPin extends CCComponentEd
     this.#valueBoxWidth =
       CCComponentEditorRendererComponentPin.drawingConstants.valueBoxWidthUnit;
     this.context.store.componentPins.on("didUpdate", (pin) => {
-      if (pin.id === this.#pinId) this.render();
+      if (pin.id === this.#componentPinId) this.render();
     });
     this.render();
   }
@@ -122,8 +130,8 @@ export default class CCComponentEditorRendererComponentPin extends CCComponentEd
     const editorState = this.context.componentEditorStore.getState();
     const previousValue = editorState.getInputValue(
       this.#nodeId,
-      this.#pinId,
-      this.context.store.componentPins.get(this.#pinId)!.bits
+      this.#componentPinId,
+      this.context.store.componentPins.get(this.#componentPinId)!.bits
     );
     const increaseValue = (value: boolean[]) => {
       const newValue = [...value];
@@ -135,7 +143,7 @@ export default class CCComponentEditorRendererComponentPin extends CCComponentEd
     };
     editorState.setInputValue(
       this.#nodeId,
-      this.#pinId,
+      this.#componentPinId,
       increaseValue(previousValue)
     );
     e.preventDefault();
@@ -145,7 +153,7 @@ export default class CCComponentEditorRendererComponentPin extends CCComponentEd
    * Render the pin
    */
   render = () => {
-    const pin = this.context.store.componentPins.get(this.#pinId);
+    const pin = this.context.store.componentPins.get(this.#componentPinId);
     if (!pin) return;
 
     this.#pixiGraphics.clear();
@@ -173,7 +181,7 @@ export default class CCComponentEditorRendererComponentPin extends CCComponentEd
         this.#valueBoxWidth = c.valueBoxWidthUnit;
         const input = editorState.getInputValue(
           this.#nodeId,
-          this.#pinId,
+          this.#componentPinId,
           pin.bits
         );
         this.#pixiValueText.text = input.map((v) => (v ? "1" : "0")).join("");
@@ -188,10 +196,10 @@ export default class CCComponentEditorRendererComponentPin extends CCComponentEd
             }
             return valueText;
           };
-          invariant(pin.implementation.type === "user");
-          const implementationPinId = pin.implementation.pinId;
+          invariant(pin.implementation);
+          const implementationNodePinId = pin.implementation;
           for (const [key, values] of output) {
-            if (key === implementationPinId) {
+            if (key === implementationNodePinId) {
               this.#pixiValueText.text = createValueText(values);
               this.#valueBoxWidth =
                 c.valueBoxWidthUnit +
