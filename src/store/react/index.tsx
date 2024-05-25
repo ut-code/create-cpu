@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, useState } from "react";
+import { createContext, useContext, useState } from "react";
 import invariant from "tiny-invariant";
 import { Point } from "pixi.js";
 import CCStore from "..";
@@ -7,13 +7,10 @@ import { CCNodeStore } from "../node";
 import { andIntrinsicComponent, notIntrinsicComponent } from "../intrinsics";
 // import { CCConnectionStore } from "../connection";
 
-export const storeContext = createContext<{
-  store: CCStore | null;
-  setStore: React.Dispatch<React.SetStateAction<CCStore>> | null;
-}>({ store: null, setStore: null });
+export const storeContext = createContext<CCStore | null>(null);
 
 export function StoreProvider({ children }: { children: React.ReactNode }) {
-  const [store, setStore] = useState(() => {
+  const [store] = useState(() => {
     const rootComponent = CCComponentStore.create({
       name: "Root",
     });
@@ -34,20 +31,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     tempStore.nodes.register(sampleNode2);
     return tempStore;
   });
-  const value = useMemo(() => ({ store, setStore }), [store, setStore]);
   return (
-    <storeContext.Provider value={value}>{children}</storeContext.Provider>
+    <storeContext.Provider value={store}>{children}</storeContext.Provider>
   );
 }
 
-export function useStore(newStore?: CCStore) {
-  const { store, setStore } = useContext(storeContext);
-  if (newStore) {
-    if (newStore && setStore) {
-      setStore(newStore);
-    }
-    return newStore;
-  }
+export function useStore() {
+  const store = useContext(storeContext);
   invariant(store);
   return store;
 }

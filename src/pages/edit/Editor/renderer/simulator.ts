@@ -1,9 +1,9 @@
 import type CCStore from "../../../../store";
 import type { CCComponentId } from "../../../../store/component";
 import CCEvaluation from "../../../../store/evaluation";
-import type { CCNodeId } from "../../../../store/node";
 import type { CCComponentPinId } from "../../../../store/componentPin";
 import type { ComponentEditorStore } from "../store";
+import type { CCNodePinId } from "../../../../store/nodePin";
 
 type CCSimulatorProps = {
   store: CCStore;
@@ -44,16 +44,6 @@ export default class CCSimulator {
       timeStep
     );
     return outputs;
-  };
-
-  /**
-   * Get value of pin
-   * @param nodeId id of node
-   * @param pinId id of pin
-   * @returns value of pin
-   */
-  getPinValue = (nodeId: CCNodeId, pinId: CCComponentPinId) => {
-    return this.#evaluation.getCalculatedPinValue(nodeId, pinId);
   };
 
   /**

@@ -396,25 +396,25 @@ export default class CCComponentEditorRenderer extends CCComponentEditorRenderer
 
     const simulation = (targetNodeId: CCNodeId) => {
       const editorState = this.context.componentEditorStore.getState();
-      const pinIds = this.context.store.componentPins.getPinIdsByComponentId(
-        this.#componentId
-      );
+      const nodePins =
+        this.context.store.nodePins.getManyByNodeId(targetNodeId);
       const input = new Map<CCComponentPinId, boolean[]>();
-      for (const pinId of pinIds) {
-        const pin = this.context.store.componentPins.get(pinId)!;
-        if (pin.type === "input") {
+      for (const nodePin of nodePins) {
+        const componentPin = this.context.store.componentPins.get(
+          nodePin.componentPinId
+        )!;
+        if (componentPin.type === "input") {
           // is pin implemented by user
-          if (pin.implementation !== null) {
-            if (
-              this.context.store.connections.getConnectionsByNodePinId(
-                pin.implementation
-              )!.length === 0
-            ) {
-              const inputValue = editorState.getInputValue(
-                implementationNodeId,
-                pinId,
-                pin.bits
-              );
+          if (componentPin.implementation !== null) {
+            if (this.context.store.connections.hasNoConnectionOf(nodePin.id)) {
+              const multiplexability =
+                this.context.store.nodePins.getNodePinMultiplexability(
+                  nodePin.id
+                );
+              const bits = multiplexability.isMultiplexable
+                ? 1
+                : multiplexability.multiplicity;
+              const inputValue = editorState.getInputValue(nodePin.id);
               input.set(pinId, inputValue);
             }
           }
@@ -465,7 +465,7 @@ export default class CCComponentEditorRenderer extends CCComponentEditorRenderer
     };
     const getPinValue = () => {
       const nodePinId = this.context.store.connections.get(connectionId)!.from;
-      return this.#simulator.getPinValue(nodeId, pinId);
+      return this.#simulator.getPinValue(nodePinId);
     };
     const newConnectionRenderer = new CCComponentEditorRendererConnection(
       this.context.store,

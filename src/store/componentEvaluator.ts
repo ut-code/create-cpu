@@ -4,9 +4,10 @@ import type { CCComponentId } from "./component";
 import type { CCNodeId } from "./node";
 import * as intrinsics from "./intrinsics";
 import type { CCNodePin, CCNodePinId } from "./nodePin";
+import type { CCComponentPinId } from "./componentPin";
 
 type ComponentEvaluationResult = {
-  readonly output: Map<CCNodePinId, boolean[]>;
+  readonly output: Map<CCComponentPinId, boolean[]>;
   readonly outputNodePinValues?: Map<CCNodePinId, boolean[]>;
 };
 
@@ -372,23 +373,20 @@ export default class CCComponentEvaluator {
    * @param _nodeId id of node
    * @returns result of evaluation
    */
-  evaluateComponent(
+  evaluateNode(
     nodeId: CCNodeId,
     input: Map<CCNodePinId, boolean[]>,
     timeStep: number
-  ): ComponentEvaluationResult | null {
+  ): Map<CCNodePinId, boolean[]> | null {
     const node = this.#store.nodes.get(nodeId)!;
     const component = this.#store.components.get(node.componentId);
     if (!component) throw new Error(`Component ${component} is not defined.`);
-    // const pinIds = this.#store.componentPins.getPinIdsByComponentId(
-    //   component.id
-    // );
     if (component.isIntrinsic) {
       const output = this.evaluateIntrinsic(nodeId, input, timeStep);
       if (!output) {
         return null;
       }
-      return { output };
+      return output;
     }
     if (this.isCyclic(component.id)) {
       return null;
@@ -433,10 +431,6 @@ export default class CCComponentEvaluator {
     }
 
     const output = new Map<CCNodePinId, boolean[]>();
-    // const outputNodePinValues = new Map<
-    //   CCNodeId,
-    //   Map<CCComponentPinId, boolean[]>
-    // >();
     const visitedFlipFlops = new Set<CCNodeId>();
 
     while (unevaluatedNodes.size > 0) {
@@ -455,7 +449,7 @@ export default class CCComponentEvaluator {
           );
         }
         const evaluator = this.#childrenEvaluator.get(currentNodeId)!;
-        const result = evaluator.evaluateComponent(
+        const result = evaluator.evaluateNode(
           currentNodeId,
           inputValues,
           timeStep
@@ -463,17 +457,7 @@ export default class CCComponentEvaluator {
         if (!result) {
           return null;
         }
-        for (const [outputPinId, outputValue] of result.output) {
-          // outputNodePinValues.set(
-          //   currentNodeId,
-          //   outputNodePinValues
-          //     .get(currentNodeId)
-          //     ?.set(outputPinId, outputValue) ||
-          //     new Map<CCComponentPinId, boolean[]>().set(
-          //       outputPinId,
-          //       outputValue
-          //     )
-          // );
+        for (const [outputPinId, outputValue] of result) {
           if (!visitedFlipFlops.has(currentNodeId)) {
             const connections =
               this.#store.connections.getConnectionsByNodePinId(outputPinId)!;
@@ -518,7 +502,7 @@ export default class CCComponentEvaluator {
           );
         }
         const evaluator = this.#childrenEvaluator.get(currentNodeId)!;
-        const result = evaluator.evaluateComponent(
+        const result = evaluator.evaluateNode(
           currentNodeId,
           inputValues,
           timeStep
@@ -526,17 +510,7 @@ export default class CCComponentEvaluator {
         if (!result) {
           return null;
         }
-        for (const [outputPinId, outputValue] of result.output) {
-          // outputNodePinValues.set(
-          //   currentNodeId,
-          //   outputNodePinValues
-          //     .get(currentNodeId)
-          //     ?.set(outputPinId, outputValue) ||
-          //     new Map<CCComponentPinId, boolean[]>().set(
-          //       outputPinId,
-          //       outputValue
-          //     )
-          // );
+        for (const [outputPinId, outputValue] of result) {
           if (!visitedFlipFlops.has(currentNodeId)) {
             const connections =
               this.#store.connections.getConnectionsByNodePinId(outputPinId)!;
@@ -576,6 +550,120 @@ export default class CCComponentEvaluator {
         unevaluatedNodes.add(currentNodeId);
       }
     }
-    return { output };
+    return output;
+  }
+
+  evaluateComponent(
+    componentId: CCComponentId,
+    input: Map<CCComponentPinId, boolean[]>,
+    timeStep: number
+  ): ComponentEvaluationResult | null {
+    const component = this.#store.components.get(componentId);
+    if (!component) throw new Error(`Component ${component} is not defined.`);
+    if (this.isCyclic(component.id)) {
+      return null;
+    }
+    const componentPins =
+      this.#store.componentPins.getManyByComponentId(componentId);
+    const children = this.#store.nodes.getManyByParentComponentId(component.id);
+    const foundInputNumber = new Map<CCNodeId, number>();
+    const inputNumber = new Map<CCNodeId, number>();
+    const inputValues = new Map<CCNodePinId, boolean[]>();
+    for (const child of children) {
+      foundInputNumber.set(child.id, 0);
+      const innerPins = this.#store.nodePins.getManyByNodeId(child.id);
+      let inputPinNumber = 0;
+      for (const innerPin of innerPins) {
+        const componentPin = this.#store.componentPins.get(
+          innerPin.componentPinId
+        )!;
+        if (componentPin.type === "input") {
+          inputPinNumber += 1;
+        }
+      }
+      inputNumber.set(child.id, inputPinNumber);
+    }
+    for (const componentPin of componentPins) {
+      if (componentPin.type === "input" && componentPin.implementation) {
+        const connectedNodePin = this.#store.nodePins.get(
+          componentPin.implementation
+        )!;
+        inputValues.set(connectedNodePin.id, input.get(componentPin.id)!);
+        foundInputNumber.set(
+          connectedNodePin.nodeId,
+          foundInputNumber.get(connectedNodePin.nodeId)! + 1
+        );
+      }
+    }
+    const unevaluatedNodes = new Set<CCNodeId>();
+    for (const child of children) {
+      unevaluatedNodes.add(child.id);
+    }
+
+    const output = new Map<CCComponentPinId, boolean[]>();
+    const outputNodePinValues = new Map<CCNodePinId, boolean[]>();
+    const visitedFlipFlops = new Set<CCNodeId>();
+
+    while (unevaluatedNodes.size > 0) {
+      const currentNodeId = [...unevaluatedNodes][0]!;
+      unevaluatedNodes.delete(currentNodeId);
+      const currentNode = this.#store.nodes.get(currentNodeId)!;
+      const currentComponentId = currentNode.componentId;
+
+      if (
+        inputNumber.get(currentNodeId)! === foundInputNumber.get(currentNodeId)!
+      ) {
+        if (!this.#childrenEvaluator.has(currentNodeId)) {
+          this.#childrenEvaluator.set(
+            currentNodeId,
+            new CCComponentEvaluator(this.#store)
+          );
+        }
+        const evaluator = this.#childrenEvaluator.get(currentNodeId)!;
+        const result = evaluator.evaluateNode(
+          currentNodeId,
+          inputValues,
+          timeStep
+        );
+        if (!result) {
+          return null;
+        }
+        for (const [outputPinId, outputValue] of result) {
+          outputNodePinValues.set(outputPinId, outputValue);
+          if (!visitedFlipFlops.has(currentNodeId)) {
+            const connections =
+              this.#store.connections.getConnectionsByNodePinId(outputPinId)!;
+            if (connections.length !== 0) {
+              for (const connection of connections) {
+                const connectedNodePin = this.#store.nodePins.get(
+                  connection.to
+                )!;
+                inputValues.set(connectedNodePin.id, outputValue);
+                foundInputNumber.set(
+                  connectedNodePin.nodeId,
+                  foundInputNumber.get(connectedNodePin.nodeId)! + 1
+                );
+              }
+            } else {
+              const parentComponentPin = componentPins.find((componentPin) => {
+                return (
+                  componentPin.type === "output" &&
+                  componentPin.implementation === outputPinId
+                );
+              })!;
+              output.set(parentComponentPin.id, outputValue);
+            }
+            if (
+              currentComponentId === intrinsics.flipFlopIntrinsicComponent.id
+            ) {
+              visitedFlipFlops.add(currentNodeId);
+            }
+          }
+        }
+      } else {
+        unevaluatedNodes.add(currentNodeId);
+      }
+    }
+    return { output, outputNodePinValues };
   }
 }

@@ -88,14 +88,6 @@ export class CCNodeStore extends EventEmitter<CCNodeStoreEvents> {
   }
 
   /**
-   * Get all of nodes
-   * @returns all nodes
-   */
-  getAll(): CCNode[] {
-    return [...this.#nodes.values()];
-  }
-
-  /**
    * Get all of nodes by parent component id
    * @param parentComponentId id of parent component
    * @returns nodes of parent component

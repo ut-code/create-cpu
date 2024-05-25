@@ -27,8 +27,6 @@ type CCComponentEditorRendererComponentPinProps = {
  * Class for rendering component pin
  */
 export default class CCComponentEditorRendererComponentPin extends CCComponentEditorRendererBase {
-  readonly #nodeId: CCNodeId;
-
   readonly #componentPinId: CCComponentPinId;
 
   position: PIXI.Point;
@@ -65,7 +63,6 @@ export default class CCComponentEditorRendererComponentPin extends CCComponentEd
    */
   constructor(props: CCComponentEditorRendererComponentPinProps) {
     super(props.context);
-    this.#nodeId = props.nodeId;
     this.#componentPinId = props.pinId;
     this.position = props.position;
     this.#simulation = props.simulation;
@@ -127,12 +124,14 @@ export default class CCComponentEditorRendererComponentPin extends CCComponentEd
    * @param e event
    */
   onClick = (e: PIXI.FederatedPointerEvent) => {
-    const editorState = this.context.componentEditorStore.getState();
-    const previousValue = editorState.getInputValue(
-      this.#nodeId,
-      this.#componentPinId,
-      this.context.store.componentPins.get(this.#componentPinId)!.bits
+    const componentPin = this.context.store.componentPins.get(
+      this.#componentPinId
     );
+    invariant(componentPin);
+    invariant(componentPin.implementation);
+    const editorState = this.context.componentEditorStore.getState();
+    const previousValue = editorState.getInputValue(this.#componentPinId);
+    invariant(previousValue);
     const increaseValue = (value: boolean[]) => {
       const newValue = [...value];
       for (let i = newValue.length - 1; i >= 0; i -= 1) {
@@ -142,7 +141,6 @@ export default class CCComponentEditorRendererComponentPin extends CCComponentEd
       return newValue;
     };
     editorState.setInputValue(
-      this.#nodeId,
       this.#componentPinId,
       increaseValue(previousValue)
     );
@@ -179,11 +177,8 @@ export default class CCComponentEditorRendererComponentPin extends CCComponentEd
       this.#pixiLabelTextBox.isEditable = false;
       if (pin.type === "input") {
         this.#valueBoxWidth = c.valueBoxWidthUnit;
-        const input = editorState.getInputValue(
-          this.#nodeId,
-          this.#componentPinId,
-          pin.bits
-        );
+        const input = editorState.getInputValue(this.#componentPinId);
+        invariant(input);
         this.#pixiValueText.text = input.map((v) => (v ? "1" : "0")).join("");
         this.#pixiGraphics.beginFill(activeColor);
       } else {
@@ -196,10 +191,8 @@ export default class CCComponentEditorRendererComponentPin extends CCComponentEd
             }
             return valueText;
           };
-          invariant(pin.implementation);
-          const implementationNodePinId = pin.implementation;
           for (const [key, values] of output) {
-            if (key === implementationNodePinId) {
+            if (key === this.#componentPinId) {
               this.#pixiValueText.text = createValueText(values);
               this.#valueBoxWidth =
                 c.valueBoxWidthUnit +
