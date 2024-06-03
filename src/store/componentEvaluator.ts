@@ -5,17 +5,21 @@ import type { CCNodeId } from "./node";
 import * as intrinsics from "./intrinsics";
 import type { CCNodePin, CCNodePinId } from "./nodePin";
 import type { CCComponentPinId } from "./componentPin";
+import type {
+  SimulationFrame,
+  SimulationValue,
+} from "../pages/edit/Editor/store";
 
 type ComponentEvaluationResult = {
-  readonly output: Map<CCComponentPinId, boolean[]>;
-  readonly outputNodePinValues?: Map<CCNodePinId, boolean[]>;
+  readonly output: Map<CCComponentPinId, SimulationValue>;
+  readonly outputNodePinValues?: Map<CCNodePinId, SimulationValue>;
 };
 
 /**
  * Class for component evaluator
  */
 export default class CCComponentEvaluator {
-  #flipFlopValue: Map<CCNodeId, boolean[]> = new Map();
+  #flipFlopValue: Map<CCNodeId, SimulationValue> = new Map();
 
   #store: CCStore;
 
@@ -39,9 +43,9 @@ export default class CCComponentEvaluator {
    */
   evaluateIntrinsic(
     nodeId: CCNodeId,
-    input: Map<CCNodePinId, boolean[]>,
+    input: Map<CCNodePinId, SimulationValue>,
     timeStep: number
-  ): Map<CCNodePinId, boolean[]> | null {
+  ): Map<CCNodePinId, SimulationValue> | null {
     const node = this.#store.nodes.get(nodeId)!;
     const { componentId } = node;
     const pinIds =
@@ -74,7 +78,7 @@ export default class CCComponentEvaluator {
         for (const value of inputValue!) {
           outputValue.push(!value);
         }
-        const outputMap = new Map<CCNodePinId, boolean[]>();
+        const outputMap = new Map<CCNodePinId, SimulationValue>();
         outputMap.set(outputPinId, outputValue);
         return outputMap;
       }
@@ -104,7 +108,7 @@ export default class CCComponentEvaluator {
         for (let i = 0; i < inputValue0!.length; i += 1) {
           outputValue.push(inputValue0![i]! && inputValue1![i]!);
         }
-        const outputMap = new Map<CCNodePinId, boolean[]>();
+        const outputMap = new Map<CCNodePinId, SimulationValue>();
         outputMap.set(outputPinId, outputValue);
         return outputMap;
       }
@@ -134,7 +138,7 @@ export default class CCComponentEvaluator {
         for (let i = 0; i < inputValue0!.length; i += 1) {
           outputValue.push(inputValue0![i]! || inputValue1![i]!);
         }
-        const outputMap = new Map<CCNodePinId, boolean[]>();
+        const outputMap = new Map<CCNodePinId, SimulationValue>();
         outputMap.set(outputPinId, outputValue);
         return outputMap;
       }
@@ -164,7 +168,7 @@ export default class CCComponentEvaluator {
         for (let i = 0; i < inputValue0!.length; i += 1) {
           outputValue.push(inputValue0![i]! !== inputValue1![i]!);
         }
-        const outputMap = new Map<CCNodePinId, boolean[]>();
+        const outputMap = new Map<CCNodePinId, SimulationValue>();
         outputMap.set(outputPinId, outputValue);
         return outputMap;
       }
@@ -185,7 +189,7 @@ export default class CCComponentEvaluator {
         for (const value of inputValue!) {
           outputValue.push(!value);
         }
-        const outputMap = new Map<CCNodePinId, boolean[]>();
+        const outputMap = new Map<CCNodePinId, SimulationValue>();
         outputMap.set(outputPinId, outputValue);
         return outputMap;
       }
@@ -231,7 +235,7 @@ export default class CCComponentEvaluator {
           outputValue.push(inputValue2![0]!);
           outputValue.push(inputValue1![0]!);
           outputValue.push(inputValue0![0]!);
-          const outputMap = new Map<CCNodePinId, boolean[]>();
+          const outputMap = new Map<CCNodePinId, SimulationValue>();
           outputMap.set(outputPinId, outputValue);
           return outputMap;
         }
@@ -266,7 +270,7 @@ export default class CCComponentEvaluator {
             intrinsics.distributeFourBitsIntrinsicComponentOutputPin3.id
         )!.id;
         if (inputValue!.length === 4) {
-          const outputMap = new Map<CCNodePinId, boolean[]>();
+          const outputMap = new Map<CCNodePinId, SimulationValue>();
           outputMap.set(outputPinId0, [inputValue![3]!]);
           outputMap.set(outputPinId1, [inputValue![2]!]);
           outputMap.set(outputPinId2, [inputValue![1]!]);
@@ -308,7 +312,7 @@ export default class CCComponentEvaluator {
           this.#flipFlopValue.set(nodeId!, inputValue!);
         }
 
-        const outputMap = new Map<CCNodePinId, boolean[]>();
+        const outputMap = new Map<CCNodePinId, SimulationValue>();
         if (timeStep > 0 && outputValue) {
           outputMap.set(outputPinId, outputValue);
         } else if (inputValue) {
@@ -375,9 +379,9 @@ export default class CCComponentEvaluator {
    */
   evaluateNode(
     nodeId: CCNodeId,
-    input: Map<CCNodePinId, boolean[]>,
+    input: Map<CCNodePinId, SimulationValue>,
     timeStep: number
-  ): Map<CCNodePinId, boolean[]> | null {
+  ): Map<CCNodePinId, SimulationValue> | null {
     const node = this.#store.nodes.get(nodeId)!;
     const component = this.#store.components.get(node.componentId);
     if (!component) throw new Error(`Component ${component} is not defined.`);
@@ -395,7 +399,7 @@ export default class CCComponentEvaluator {
     const children = this.#store.nodes.getManyByParentComponentId(component.id);
     const foundInputNumber = new Map<CCNodeId, number>();
     const inputNumber = new Map<CCNodeId, number>();
-    const inputValues = new Map<CCNodePinId, boolean[]>();
+    const inputValues = new Map<CCNodePinId, SimulationValue>();
     for (const child of children) {
       foundInputNumber.set(child.id, 0);
       const innerPins = this.#store.nodePins.getManyByNodeId(child.id);
@@ -430,7 +434,7 @@ export default class CCComponentEvaluator {
       unevaluatedNodes.add(child.id);
     }
 
-    const output = new Map<CCNodePinId, boolean[]>();
+    const output = new Map<CCNodePinId, SimulationValue>();
     const visitedFlipFlops = new Set<CCNodeId>();
 
     while (unevaluatedNodes.size > 0) {
@@ -555,7 +559,7 @@ export default class CCComponentEvaluator {
 
   evaluateComponent(
     componentId: CCComponentId,
-    input: Map<CCComponentPinId, boolean[]>,
+    input: Map<CCComponentPinId, SimulationValue>,
     timeStep: number
   ): ComponentEvaluationResult | null {
     const component = this.#store.components.get(componentId);
@@ -568,7 +572,7 @@ export default class CCComponentEvaluator {
     const children = this.#store.nodes.getManyByParentComponentId(component.id);
     const foundInputNumber = new Map<CCNodeId, number>();
     const inputNumber = new Map<CCNodeId, number>();
-    const inputValues = new Map<CCNodePinId, boolean[]>();
+    const inputValues = new Map<CCNodePinId, SimulationValue>();
     for (const child of children) {
       foundInputNumber.set(child.id, 0);
       const innerPins = this.#store.nodePins.getManyByNodeId(child.id);
@@ -600,8 +604,8 @@ export default class CCComponentEvaluator {
       unevaluatedNodes.add(child.id);
     }
 
-    const output = new Map<CCComponentPinId, boolean[]>();
-    const outputNodePinValues = new Map<CCNodePinId, boolean[]>();
+    const output = new Map<CCComponentPinId, SimulationValue>();
+    const outputNodePinValues = new Map<CCNodePinId, SimulationValue>();
     const visitedFlipFlops = new Set<CCNodeId>();
 
     while (unevaluatedNodes.size > 0) {
@@ -666,4 +670,574 @@ export default class CCComponentEvaluator {
     }
     return { output, outputNodePinValues };
   }
+}
+
+function simulateIntrinsic(
+  store: CCStore,
+  nodeId: CCNodeId,
+  inputValues: Map<CCNodePinId, SimulationValue>,
+  parentPreviousFrame: SimulationFrame | null
+): Map<CCNodePinId, SimulationValue> | null {
+  const node = store.nodes.get(nodeId)!;
+  const { componentId } = node;
+  const pinIds = store.componentPins.getPinIdsByComponentId(componentId);
+  const nodePins = store.nodePins.getManyByNodeId(nodeId);
+  const inputNodePins = nodePins.filter((nodePin: CCNodePin) => {
+    const componentPin = store.componentPins.get(nodePin.componentPinId)!;
+    return componentPin.type === "input";
+  });
+  const outputNodePins = nodePins.filter((nodePin: CCNodePin) => {
+    const componentPin = store.componentPins.get(nodePin.componentPinId)!;
+    return componentPin.type === "output";
+  });
+  switch (componentId) {
+    case intrinsics.notIntrinsicComponent.id: {
+      invariant(pinIds.length === 2);
+      const inputPinId = inputNodePins.find(
+        (nodePin: CCNodePin) =>
+          nodePin.componentPinId === intrinsics.notIntrinsicComponentInputPin.id
+      )!.id;
+      const inputValue = inputValues.get(inputPinId);
+      const outputPinId = outputNodePins.find(
+        (nodePin: CCNodePin) =>
+          nodePin.componentPinId ===
+          intrinsics.notIntrinsicComponentOutputPin.id
+      )!.id;
+      const outputValue = [];
+      for (const value of inputValue!) {
+        outputValue.push(!value);
+      }
+      const outputValues = new Map<CCNodePinId, SimulationValue>();
+      outputValues.set(outputPinId, outputValue);
+      return outputValues;
+    }
+    case intrinsics.andIntrinsicComponent.id: {
+      invariant(pinIds.length === 3);
+      const inputPinId0 = inputNodePins.find(
+        (nodePin: CCNodePin) =>
+          nodePin.componentPinId ===
+          intrinsics.andIntrinsicComponentInputPinA.id
+      )!.id;
+      const inputPinId1 = inputNodePins.find(
+        (nodePin: CCNodePin) =>
+          nodePin.componentPinId ===
+          intrinsics.andIntrinsicComponentInputPinB.id
+      )!.id;
+      const inputValue0 = inputValues.get(inputPinId0);
+      const inputValue1 = inputValues.get(inputPinId1);
+      const outputPinId = outputNodePins.find(
+        (nodePin: CCNodePin) =>
+          nodePin.componentPinId ===
+          intrinsics.andIntrinsicComponentOutputPin.id
+      )!.id;
+      const outputValue = [];
+      if (inputValue0!.length !== inputValue1!.length) {
+        return null;
+      }
+      for (let i = 0; i < inputValue0!.length; i += 1) {
+        outputValue.push(inputValue0![i]! && inputValue1![i]!);
+      }
+      const outputValues = new Map<CCNodePinId, SimulationValue>();
+      outputValues.set(outputPinId, outputValue);
+      return outputValues;
+    }
+    case intrinsics.orIntrinsicComponent.id: {
+      invariant(pinIds.length === 3);
+      const inputPinId0 = inputNodePins.find(
+        (nodePin: CCNodePin) =>
+          nodePin.componentPinId === intrinsics.orIntrinsicComponentInputPinA.id
+      )!.id;
+      const inputPinId1 = inputNodePins.find(
+        (nodePin: CCNodePin) =>
+          nodePin.componentPinId === intrinsics.orIntrinsicComponentInputPinB.id
+      )!.id;
+      const inputValue0 = inputValues.get(inputPinId0);
+      const inputValue1 = inputValues.get(inputPinId1);
+      const outputPinId = outputNodePins.find(
+        (nodePin: CCNodePin) =>
+          nodePin.componentPinId === intrinsics.orIntrinsicComponentOutputPin.id
+      )!.id;
+      const outputValue = [];
+      if (inputValue0!.length !== inputValue1!.length) {
+        return null;
+      }
+      for (let i = 0; i < inputValue0!.length; i += 1) {
+        outputValue.push(inputValue0![i]! || inputValue1![i]!);
+      }
+      const outputValues = new Map<CCNodePinId, SimulationValue>();
+      outputValues.set(outputPinId, outputValue);
+      return outputValues;
+    }
+    case intrinsics.xorIntrinsicComponent.id: {
+      invariant(pinIds.length === 3);
+      const inputPinId0 = inputNodePins.find(
+        (nodePin: CCNodePin) =>
+          nodePin.componentPinId ===
+          intrinsics.xorIntrinsicComponentInputPinA.id
+      )!.id;
+      const inputPinId1 = inputNodePins.find(
+        (nodePin: CCNodePin) =>
+          nodePin.componentPinId ===
+          intrinsics.xorIntrinsicComponentInputPinB.id
+      )!.id;
+      const inputValue0 = inputValues.get(inputPinId0);
+      const inputValue1 = inputValues.get(inputPinId1);
+      const outputPinId = outputNodePins.find(
+        (nodePin: CCNodePin) =>
+          nodePin.componentPinId ===
+          intrinsics.xorIntrinsicComponentOutputPin.id
+      )!.id;
+      const outputValue = [];
+      if (inputValue0!.length !== inputValue1!.length) {
+        return null;
+      }
+      for (let i = 0; i < inputValue0!.length; i += 1) {
+        outputValue.push(inputValue0![i]! !== inputValue1![i]!);
+      }
+      const outputValues = new Map<CCNodePinId, SimulationValue>();
+      outputValues.set(outputPinId, outputValue);
+      return outputValues;
+    }
+    case intrinsics.inputIntrinsicComponent.id: {
+      invariant(pinIds.length === 2);
+      const inputPinId = inputNodePins.find(
+        (nodePin: CCNodePin) =>
+          nodePin.componentPinId ===
+          intrinsics.inputIntrinsicComponentInputPin.id
+      )!.id;
+      const inputValue = inputValues.get(inputPinId);
+      const outputPinId = outputNodePins.find(
+        (nodePin: CCNodePin) =>
+          nodePin.componentPinId ===
+          intrinsics.inputIntrinsicComponentOutputPin.id
+      )!.id;
+      const outputValue = [];
+      for (const value of inputValue!) {
+        outputValue.push(!value);
+      }
+      const outputValues = new Map<CCNodePinId, SimulationValue>();
+      outputValues.set(outputPinId, outputValue);
+      return outputValues;
+    }
+    case intrinsics.fourBitsIntrinsicComponent.id: {
+      invariant(pinIds.length === 5);
+      const inputPinId0 = inputNodePins.find(
+        (nodePin: CCNodePin) =>
+          nodePin.componentPinId ===
+          intrinsics.fourBitsIntrinsicComponentInputPin0.id
+      )!.id;
+      const inputPinId1 = inputNodePins.find(
+        (nodePin: CCNodePin) =>
+          nodePin.componentPinId ===
+          intrinsics.fourBitsIntrinsicComponentInputPin1.id
+      )!.id;
+      const inputPinId2 = inputNodePins.find(
+        (nodePin: CCNodePin) =>
+          nodePin.componentPinId ===
+          intrinsics.fourBitsIntrinsicComponentInputPin2.id
+      )!.id;
+      const inputPinId3 = inputNodePins.find(
+        (nodePin: CCNodePin) =>
+          nodePin.componentPinId ===
+          intrinsics.fourBitsIntrinsicComponentInputPin3.id
+      )!.id;
+      const inputValue0 = inputValues.get(inputPinId0);
+      const inputValue1 = inputValues.get(inputPinId1);
+      const inputValue2 = inputValues.get(inputPinId2);
+      const inputValue3 = inputValues.get(inputPinId3);
+      const outputPinId = outputNodePins.find(
+        (nodePin: CCNodePin) =>
+          nodePin.componentPinId ===
+          intrinsics.fourBitsIntrinsicComponentOutputPin.id
+      )!.id;
+      if (
+        inputValue0!.length === 1 &&
+        inputValue1!.length === 1 &&
+        inputValue2!.length === 1 &&
+        inputValue3!.length === 1
+      ) {
+        const outputValue = [];
+        outputValue.push(inputValue3![0]!);
+        outputValue.push(inputValue2![0]!);
+        outputValue.push(inputValue1![0]!);
+        outputValue.push(inputValue0![0]!);
+        const outputValues = new Map<CCNodePinId, SimulationValue>();
+        outputValues.set(outputPinId, outputValue);
+        return outputValues;
+      }
+      return null;
+    }
+    case intrinsics.distributeFourBitsIntrinsicComponent.id: {
+      invariant(pinIds.length === 5);
+      const inputPinId = inputNodePins.find(
+        (nodePin: CCNodePin) =>
+          nodePin.componentPinId ===
+          intrinsics.distributeFourBitsIntrinsicComponentInputPin.id
+      )!.id;
+      const inputValue = inputValues.get(inputPinId);
+      const outputPinId0 = inputNodePins.find(
+        (nodePin: CCNodePin) =>
+          nodePin.componentPinId ===
+          intrinsics.distributeFourBitsIntrinsicComponentOutputPin0.id
+      )!.id;
+      const outputPinId1 = inputNodePins.find(
+        (nodePin: CCNodePin) =>
+          nodePin.componentPinId ===
+          intrinsics.distributeFourBitsIntrinsicComponentOutputPin1.id
+      )!.id;
+      const outputPinId2 = inputNodePins.find(
+        (nodePin: CCNodePin) =>
+          nodePin.componentPinId ===
+          intrinsics.distributeFourBitsIntrinsicComponentOutputPin2.id
+      )!.id;
+      const outputPinId3 = inputNodePins.find(
+        (nodePin: CCNodePin) =>
+          nodePin.componentPinId ===
+          intrinsics.distributeFourBitsIntrinsicComponentOutputPin3.id
+      )!.id;
+      if (inputValue!.length === 4) {
+        const outputValues = new Map<CCNodePinId, SimulationValue>();
+        outputValues.set(outputPinId0, [inputValue![3]!]);
+        outputValues.set(outputPinId1, [inputValue![2]!]);
+        outputValues.set(outputPinId2, [inputValue![1]!]);
+        outputValues.set(outputPinId3, [inputValue![0]!]);
+        return outputValues;
+      }
+      return null;
+    }
+    case intrinsics.flipFlopIntrinsicComponent.id: {
+      invariant(pinIds.length === 2);
+      const inputPinId = inputNodePins.find(
+        (nodePin: CCNodePin) =>
+          nodePin.componentPinId ===
+          intrinsics.flipFlopIntrinsicComponentInputPin.id
+      )!.id;
+      const outputPinId = outputNodePins.find(
+        (nodePin: CCNodePin) =>
+          nodePin.componentPinId ===
+          intrinsics.flipFlopIntrinsicComponentOutputPin.id
+      )!.id;
+      const outputValues = new Map<CCNodePinId, SimulationValue>();
+
+      if (!parentPreviousFrame) {
+        const multiplicity =
+          store.nodePins.getNodePinMultiplexability(inputPinId);
+        if (multiplicity.isMultiplexable) {
+          outputValues.set(outputPinId, [false]);
+        } else {
+          outputValues.set(
+            outputPinId,
+            Array.from({ length: multiplicity.multiplicity }, () => false)
+          );
+        }
+      } else {
+        const previousValue = parentPreviousFrame.nodes.get(nodeId)!.pins;
+        const previousInputValue = previousValue.get(inputPinId)!;
+        outputValues.set(outputPinId, previousInputValue);
+      }
+      return outputValues;
+    }
+    // case "Sample":
+    //   return true;
+    default:
+      throw new Error(`invalid component (${componentId})`);
+  }
+}
+
+function simulateNode(
+  store: CCStore,
+  nodeId: CCNodeId,
+  inputValues: Map<CCNodePinId, SimulationValue>,
+  previousFrame: SimulationFrame | null
+): {
+  outputValues: Map<CCNodePinId, SimulationValue>;
+  pins: Map<CCNodePinId, SimulationValue>;
+  child: SimulationFrame | null;
+} | null {
+  const node = store.nodes.get(nodeId)!;
+  const component = store.components.get(node.componentId);
+  if (!component) throw new Error(`Component ${component} is not defined.`);
+  if (component.isIntrinsic) {
+    const outputValues = simulateIntrinsic(
+      store,
+      nodeId,
+      inputValues,
+      previousFrame
+    );
+    if (!outputValues) {
+      return null;
+    }
+    const pins = new Map<CCNodePinId, SimulationValue>();
+    for (const [key, value] of inputValues) {
+      pins.set(key, value);
+    }
+    for (const [key, value] of outputValues) {
+      pins.set(key, value);
+    }
+    return { outputValues, pins, child: null };
+  }
+  const childMap = new Map<
+    CCNodeId,
+    {
+      pins: Map<CCNodePinId, SimulationValue>;
+      /** null if intrinsic */
+      child: SimulationFrame | null;
+    }
+  >();
+  const nodePins = store.nodePins.getManyByNodeId(nodeId);
+  const children = store.nodes.getManyByParentComponentId(component.id);
+  const foundInputNumber = new Map<CCNodeId, number>();
+  const nodePinInputNumber = new Map<CCNodeId, number>();
+  const nodePinInputValues = new Map<CCNodePinId, SimulationValue>();
+  for (const child of children) {
+    foundInputNumber.set(child.id, 0);
+    const innerPins = store.nodePins.getManyByNodeId(child.id);
+    let inputPinNumber = 0;
+    for (const innerPin of innerPins) {
+      const componentPin = store.componentPins.get(innerPin.componentPinId)!;
+      if (componentPin.type === "input") {
+        inputPinNumber += 1;
+      }
+    }
+    nodePinInputNumber.set(child.id, inputPinNumber);
+  }
+  for (const nodePin of nodePins) {
+    const componentPin = store.componentPins.get(nodePin.componentPinId)!;
+    if (componentPin.type === "input" && componentPin.implementation) {
+      const connectedNodePin = store.nodePins.get(componentPin.implementation)!;
+      nodePinInputValues.set(connectedNodePin.id, inputValues.get(nodePin.id)!);
+      foundInputNumber.set(
+        connectedNodePin.nodeId,
+        foundInputNumber.get(connectedNodePin.nodeId)! + 1
+      );
+    }
+  }
+  const unevaluatedNodes = new Set<CCNodeId>();
+  for (const child of children) {
+    unevaluatedNodes.add(child.id);
+  }
+
+  const outputValues = new Map<CCNodePinId, SimulationValue>();
+  const visitedFlipFlops = new Set<CCNodeId>();
+
+  while (unevaluatedNodes.size > 0) {
+    const currentNodeId = [...unevaluatedNodes][0]!;
+    unevaluatedNodes.delete(currentNodeId);
+    const currentNode = store.nodes.get(currentNodeId)!;
+    const currentComponentId = currentNode.componentId;
+
+    if (
+      nodePinInputNumber.get(currentNodeId)! ===
+      foundInputNumber.get(currentNodeId)!
+    ) {
+      const result = simulateNode(
+        store,
+        currentNodeId,
+        nodePinInputValues,
+        previousFrame!.nodes.get(currentNodeId)!.child
+      );
+      if (!result) {
+        return null;
+      }
+      childMap.set(currentNodeId, result);
+      for (const [outputPinId, outputValue] of result.outputValues) {
+        if (!visitedFlipFlops.has(currentNodeId)) {
+          const connections =
+            store.connections.getConnectionsByNodePinId(outputPinId)!;
+          if (connections.length !== 0) {
+            for (const connection of connections) {
+              const connectedNodePin = store.nodePins.get(connection.to)!;
+              nodePinInputValues.set(connectedNodePin.id, outputValue);
+              foundInputNumber.set(
+                connectedNodePin.nodeId,
+                foundInputNumber.get(connectedNodePin.nodeId)! + 1
+              );
+            }
+          } else {
+            const parentNodePin = nodePins.find((nodePin) => {
+              const componentPin = store.componentPins.get(
+                nodePin.componentPinId
+              )!;
+              return (
+                componentPin.type === "output" &&
+                componentPin.implementation === outputPinId
+              );
+            })!;
+            outputValues.set(parentNodePin.id, outputValue);
+          }
+          if (currentComponentId === intrinsics.flipFlopIntrinsicComponent.id) {
+            visitedFlipFlops.add(currentNodeId);
+          }
+        }
+      }
+    } else if (
+      currentComponentId === intrinsics.flipFlopIntrinsicComponent.id &&
+      !visitedFlipFlops.has(currentNodeId)
+    ) {
+      const result = simulateNode(
+        store,
+        currentNodeId,
+        nodePinInputValues,
+        previousFrame!.nodes.get(currentNodeId)!.child
+      );
+      if (!result) {
+        return null;
+      }
+      childMap.set(currentNodeId, result);
+      for (const [outputPinId, outputValue] of result.outputValues) {
+        if (!visitedFlipFlops.has(currentNodeId)) {
+          const connections =
+            store.connections.getConnectionsByNodePinId(outputPinId)!;
+          if (connections.length !== 0) {
+            for (const connection of connections) {
+              const connectedNodePin = store.nodePins.get(connection.to)!;
+              nodePinInputValues.set(connectedNodePin.id, outputValue);
+              foundInputNumber.set(
+                connectedNodePin.nodeId,
+                foundInputNumber.get(connectedNodePin.nodeId)! + 1
+              );
+            }
+          } else {
+            const parentNodePin = nodePins.find((nodePin) => {
+              const componentPin = store.componentPins.get(
+                nodePin.componentPinId
+              )!;
+              return (
+                componentPin.type === "output" &&
+                componentPin.implementation === outputPinId
+              );
+            })!;
+            outputValues.set(parentNodePin.id, outputValue);
+          }
+          if (currentComponentId === intrinsics.flipFlopIntrinsicComponent.id) {
+            visitedFlipFlops.add(currentNodeId);
+          }
+        }
+      }
+      visitedFlipFlops.add(currentNodeId);
+      unevaluatedNodes.add(currentNodeId);
+    } else {
+      unevaluatedNodes.add(currentNodeId);
+    }
+  }
+
+  const pins = new Map<CCNodePinId, SimulationValue>();
+  for (const [key, value] of inputValues) {
+    pins.set(key, value);
+  }
+  for (const [key, value] of outputValues) {
+    pins.set(key, value);
+  }
+  const child = { componentId: node.componentId, nodes: childMap };
+  return { outputValues, pins, child };
+}
+
+export function simulateComponent(
+  store: CCStore,
+  componentId: CCComponentId,
+  inputValues: Map<CCComponentPinId, SimulationValue>,
+  previousFrame: SimulationFrame | null
+): SimulationFrame | null {
+  const component = store.components.get(componentId);
+  if (!component) throw new Error(`Component ${component} is not defined.`);
+  const childMap = new Map<
+    CCNodeId,
+    {
+      pins: Map<CCNodePinId, SimulationValue>;
+      /** null if intrinsic */
+      child: SimulationFrame | null;
+    }
+  >();
+  const componentPins = store.componentPins.getManyByComponentId(componentId);
+  const children = store.nodes.getManyByParentComponentId(component.id);
+  const foundInputNumber = new Map<CCNodeId, number>();
+  const nodePinInputNumber = new Map<CCNodeId, number>();
+  const nodePinInputValues = new Map<CCNodePinId, SimulationValue>();
+  for (const child of children) {
+    foundInputNumber.set(child.id, 0);
+    const innerPins = store.nodePins.getManyByNodeId(child.id);
+    let inputPinNumber = 0;
+    for (const innerPin of innerPins) {
+      const componentPin = store.componentPins.get(innerPin.componentPinId)!;
+      if (componentPin.type === "input") {
+        inputPinNumber += 1;
+      }
+    }
+    nodePinInputNumber.set(child.id, inputPinNumber);
+  }
+  for (const componentPin of componentPins) {
+    if (componentPin.type === "input" && componentPin.implementation) {
+      const connectedNodePin = store.nodePins.get(componentPin.implementation)!;
+      nodePinInputValues.set(
+        connectedNodePin.id,
+        inputValues.get(componentPin.id)!
+      );
+      foundInputNumber.set(
+        connectedNodePin.nodeId,
+        foundInputNumber.get(connectedNodePin.nodeId)! + 1
+      );
+    }
+  }
+  const unevaluatedNodes = new Set<CCNodeId>();
+  for (const child of children) {
+    unevaluatedNodes.add(child.id);
+  }
+
+  const outputValues = new Map<CCComponentPinId, SimulationValue>();
+  const outputNodePinValues = new Map<CCNodePinId, SimulationValue>();
+  const visitedFlipFlops = new Set<CCNodeId>();
+
+  while (unevaluatedNodes.size > 0) {
+    const currentNodeId = [...unevaluatedNodes][0]!;
+    unevaluatedNodes.delete(currentNodeId);
+    const currentNode = store.nodes.get(currentNodeId)!;
+    const currentComponentId = currentNode.componentId;
+
+    if (
+      nodePinInputNumber.get(currentNodeId)! ===
+      foundInputNumber.get(currentNodeId)!
+    ) {
+      const result = simulateNode(
+        store,
+        currentNodeId,
+        nodePinInputValues,
+        previousFrame!.nodes.get(currentNodeId)!.child
+      );
+      if (!result) {
+        return null;
+      }
+      childMap.set(currentNodeId, result);
+      for (const [outputPinId, outputValue] of result.outputValues) {
+        outputNodePinValues.set(outputPinId, outputValue);
+        if (!visitedFlipFlops.has(currentNodeId)) {
+          const connections =
+            store.connections.getConnectionsByNodePinId(outputPinId)!;
+          if (connections.length !== 0) {
+            for (const connection of connections) {
+              const connectedNodePin = store.nodePins.get(connection.to)!;
+              nodePinInputValues.set(connectedNodePin.id, outputValue);
+              foundInputNumber.set(
+                connectedNodePin.nodeId,
+                foundInputNumber.get(connectedNodePin.nodeId)! + 1
+              );
+            }
+          } else {
+            const parentComponentPin = componentPins.find((componentPin) => {
+              return (
+                componentPin.type === "output" &&
+                componentPin.implementation === outputPinId
+              );
+            })!;
+            outputValues.set(parentComponentPin.id, outputValue);
+          }
+          if (currentComponentId === intrinsics.flipFlopIntrinsicComponent.id) {
+            visitedFlipFlops.add(currentNodeId);
+          }
+        }
+      }
+    } else {
+      unevaluatedNodes.add(currentNodeId);
+    }
+  }
+  return { componentId, nodes: childMap };
 }

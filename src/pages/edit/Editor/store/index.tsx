@@ -13,7 +13,7 @@ import { useStore } from "../../../../store/react";
 import type CCStore from "../../../../store";
 import type { CCNodePinId } from "../../../../store/nodePin";
 import type { CCComponentId } from "../../../../store/component";
-import CCEvaluation from "../../../../store/evaluation";
+import { simulateComponent } from "../../../../store/componentEvaluator";
 
 export type EditorMode = EditorModeEdit | EditorModePlay;
 export type EditorModeEdit = "edit";
@@ -41,8 +41,8 @@ type State = {
   selectConnection(ids: CCConnectionId[], exclusive: boolean): void;
 } & WorldPerspectiveStoreMixin;
 
-type SimulationValue = boolean[];
-type SimulationFrame = {
+export type SimulationValue = boolean[];
+export type SimulationFrame = {
   componentId: CCComponentId;
   nodes: Map<
     CCNodeId,
@@ -55,7 +55,7 @@ type SimulationFrame = {
 };
 
 function createEditorStore(componentId: CCComponentId, store: CCStore) {
-  let simulationCacheKey: string = "";
+  let simulationCacheKey = "";
   /** index = timeStep */
   let simulationCachedFrames: SimulationFrame[] = [];
 
@@ -118,10 +118,10 @@ function createEditorStore(componentId: CCComponentId, store: CCStore) {
       }));
     },
     ...worldPerspectiveStoreMixin(set, get),
-    getNodePinValue(nodePinId: CCNodePinId): boolean[] {
+    getNodePinValue(nodePinId: CCNodePinId): SimulationValue {
       return [];
     },
-    getComponentPinValue(componentPinId: CCComponentPinId): boolean[] {
+    getComponentPinValue(componentPinId: CCComponentPinId): SimulationValue {
       return [];
     },
   }));
@@ -148,17 +148,13 @@ function createEditorStore(componentId: CCComponentId, store: CCStore) {
     ) {
       const previousFrame = simulationCachedFrames[timeStep - 1] ?? null;
 
-      function simulateComponent(
-        componentId: CCComponentId,
-        inputValues: Map<CCComponentPinId, SimulationValue>,
-        previousFrame: SimulationFrame | null
-      ) {
-        const evaluation = new CCEvaluation(store);
-        evaluation.evaluate(componentId, inputValues)
-      }
-
       simulationCachedFrames.push(
-        simulateComponent(componentId, editorState.inputValues, previousFrame)
+        simulateComponent(
+          store,
+          componentId,
+          editorState.inputValues,
+          previousFrame
+        )!
       );
     }
   };
