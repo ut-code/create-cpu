@@ -2,7 +2,6 @@ import invariant from "tiny-invariant";
 import type CCStore from ".";
 import type { CCComponentId } from "./component";
 import type { CCComponentPinId } from "./componentPin";
-import type { CCNodePinId } from "./nodePin";
 import CCComponentEvaluator from "./componentEvaluator";
 
 export type CCEvaluationId = string;

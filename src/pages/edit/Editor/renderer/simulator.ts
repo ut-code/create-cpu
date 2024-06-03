@@ -3,7 +3,6 @@ import type { CCComponentId } from "../../../../store/component";
 import CCEvaluation from "../../../../store/evaluation";
 import type { CCComponentPinId } from "../../../../store/componentPin";
 import type { ComponentEditorStore } from "../store";
-import type { CCNodePinId } from "../../../../store/nodePin";
 
 type CCSimulatorProps = {
   store: CCStore;

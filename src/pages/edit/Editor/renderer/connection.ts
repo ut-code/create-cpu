@@ -3,7 +3,11 @@ import nullthrows from "nullthrows";
 import type { CCConnectionId } from "../../../../store/connection";
 import type CCStore from "../../../../store";
 import CCComponentEditorRendererNode from "./node";
-import type { ComponentEditorStore, EditorMode } from "../store";
+import type {
+  ComponentEditorStore,
+  EditorMode,
+  SimulationValue,
+} from "../store";
 
 export type CCConnectionEndpoint = {
   nodeId: string;
@@ -42,7 +46,7 @@ export default class CCComponentEditorRendererConnection {
 
   #onDragStart: (e: PIXI.FederatedMouseEvent) => void;
 
-  #getPinValue: () => boolean[] | null;
+  #getPinValue: () => SimulationValue | undefined;
 
   /**
    * Constructor of CCComponentEditorRendererConnection
@@ -60,7 +64,7 @@ export default class CCComponentEditorRendererConnection {
     pixiParentContainer: PIXI.Container,
     componentEditorStore: ComponentEditorStore,
     onDragStart: (e: PIXI.FederatedMouseEvent) => void,
-    getPinValue: () => boolean[] | null
+    getPinValue: () => SimulationValue | undefined
   ) {
     this.#store = store;
     this.#connectionId = connectionId;

@@ -30,15 +30,19 @@ type State = {
   rangeSelect: RangeSelect;
   setRangeSelect(rangeSelect: RangeSelect): void;
   selectedConnectionIds: Set<CCConnectionId>;
-  inputValues: Map<InputValueKey, boolean[]>;
-  getInputValue(nodePinId: CCComponentPinId): boolean[] | undefined;
-  setInputValue(nodePinId: CCComponentPinId, value: boolean[]): void;
+  inputValues: Map<InputValueKey, SimulationValue>;
+  getInputValue(componentPinId: CCComponentPinId): SimulationValue | undefined;
+  setInputValue(componentPinId: CCComponentPinId, value: SimulationValue): void;
   setEditorMode(mode: EditorMode): void;
   resetTimeStep(): void;
   incrementTimeStep(): void;
   selectNode(ids: CCNodeId[], exclusive: boolean): void;
   unselectNode(ids: CCNodeId[]): void;
   selectConnection(ids: CCConnectionId[], exclusive: boolean): void;
+  getNodePinValue(nodePinId: CCNodePinId): SimulationValue | undefined;
+  getComponentPinValue(
+    componentPinId: CCComponentPinId
+  ): SimulationValue | undefined;
 } & WorldPerspectiveStoreMixin;
 
 export type SimulationValue = boolean[];
@@ -70,7 +74,7 @@ function createEditorStore(componentId: CCComponentId, store: CCStore) {
     getInputValue(componentPinId: CCComponentPinId) {
       return this.inputValues.get(componentPinId);
     },
-    setInputValue(componentPinId: CCComponentPinId, value: boolean[]) {
+    setInputValue(componentPinId: CCComponentPinId, value: SimulationValue) {
       set((state) => {
         return {
           ...state,
@@ -118,11 +122,20 @@ function createEditorStore(componentId: CCComponentId, store: CCStore) {
       }));
     },
     ...worldPerspectiveStoreMixin(set, get),
-    getNodePinValue(nodePinId: CCNodePinId): SimulationValue {
-      return [];
+    getNodePinValue(nodePinId: CCNodePinId): SimulationValue | undefined {
+      const { nodeId } = store.nodePins.get(nodePinId)!;
+      const editorState = editorStore.getState();
+      return simulationCachedFrames[editorState.timeStep]!.nodes.get(
+        nodeId
+      )!.pins.get(nodePinId);
     },
-    getComponentPinValue(componentPinId: CCComponentPinId): SimulationValue {
-      return [];
+    getComponentPinValue(
+      componentPinId: CCComponentPinId
+    ): SimulationValue | undefined {
+      const componentPin = store.componentPins.get(componentPinId)!;
+      invariant(componentPin.implementation);
+      const nodePinId = componentPin.implementation;
+      return this.getNodePinValue(nodePinId);
     },
   }));
 

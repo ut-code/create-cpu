@@ -12,9 +12,10 @@ import {
 import CCComponentEditorRendererConnection from "./connection";
 import CCComponentEditorRendererRangeSelect from "./rangeSelect";
 import type { CCComponentPinId } from "../../../../store/componentPin";
-import CCSimulator from "./simulator";
+// import CCSimulator from "./simulator";
 import type { CCComponentEditorRendererContext } from "./base";
 import CCComponentEditorRendererBase from "./base";
+import type { CCNodePinId } from "../../../../store/nodePin";
 
 type DragState = {
   startPosition: PIXI.Point;
@@ -77,7 +78,7 @@ export default class CCComponentEditorRenderer extends CCComponentEditorRenderer
 
   #creatingConnectionPixiGraphics: PIXI.Graphics;
 
-  #simulator: CCSimulator;
+  // #simulator: CCSimulator;
 
   /**
    * Constructor of CCComponentEditorRenderer
@@ -87,11 +88,11 @@ export default class CCComponentEditorRenderer extends CCComponentEditorRenderer
     super(props.context);
     this.#componentId = props.componentId;
     this.#htmlContainer = props.htmlContainer;
-    this.#simulator = new CCSimulator({
-      store: this.context.store,
-      componentEditorStore: this.context.componentEditorStore,
-      componentId: this.#componentId,
-    });
+    // this.#simulator = new CCSimulator({
+    //   store: this.context.store,
+    //   componentEditorStore: this.context.componentEditorStore,
+    //   componentId: this.#componentId,
+    // });
     invariant(this.context.store.components.get(props.componentId));
 
     const rect = this.#htmlContainer.getBoundingClientRect();
@@ -316,7 +317,7 @@ export default class CCComponentEditorRenderer extends CCComponentEditorRenderer
     };
     const onDragStartPin = (
       e: PIXI.FederatedMouseEvent,
-      pinId: CCComponentPinId
+      nodePinId: CCNodePinId
     ) => {
       // const node = this.context.store.nodes.get(nodeId)!;
       const { toWorldPosition, editorMode } =
@@ -330,17 +331,15 @@ export default class CCComponentEditorRenderer extends CCComponentEditorRenderer
       this.#creatingConnectionPixiGraphics.lineStyle(lineWidth, lineColor);
       const pinPosition = CCComponentEditorRendererNode.getNodePinAbsolute(
         this.context.store,
-        this.context.store.nodePins.getByImplementationNodeIdAndPinId(
-          nodeId,
-          pinId
-        ).id
+        nodePinId
       );
       this.#creatingConnectionPixiGraphics.moveTo(pinPosition.x, pinPosition.y);
+      const { componentPinId } = this.context.store.nodePins.get(nodePinId)!;
       this.#dragState = {
         startPosition: e.global.clone(),
         target: {
           type: "pin",
-          pinId,
+          pinId: componentPinId,
           nodeId,
           initialPosition: toWorldPosition(e.global.clone()),
         },
@@ -348,10 +347,12 @@ export default class CCComponentEditorRenderer extends CCComponentEditorRenderer
     };
     const onDragEndPin = (
       _: PIXI.FederatedMouseEvent,
-      pinId: CCComponentPinId
+      nodePinId: CCNodePinId
     ) => {
       this.#creatingConnectionPixiGraphics?.clear();
-      const pinType = this.context.store.componentPins.get(pinId)?.type;
+      const { componentPinId } = this.context.store.nodePins.get(nodePinId)!;
+      const pinType =
+        this.context.store.componentPins.get(componentPinId)?.type;
       if (this.#dragState?.target.type === "pin") {
         const anotherPinId = this.#dragState.target.pinId;
         const anotherPinType =
@@ -361,11 +362,6 @@ export default class CCComponentEditorRenderer extends CCComponentEditorRenderer
           this.context.store.nodePins.getByImplementationNodeIdAndPinId(
             anotherNodeId,
             anotherPinId
-          );
-        const { id: nodePinId } =
-          this.context.store.nodePins.getByImplementationNodeIdAndPinId(
-            nodeId,
-            pinId
           );
         if (pinType === "input" && anotherPinType === "output") {
           if (this.context.store.connections.hasNoConnectionOf(nodePinId)) {
@@ -394,46 +390,46 @@ export default class CCComponentEditorRenderer extends CCComponentEditorRenderer
       this.#dragState = null;
     };
 
-    const simulation = (targetNodeId: CCNodeId) => {
-      const editorState = this.context.componentEditorStore.getState();
-      const nodePins =
-        this.context.store.nodePins.getManyByNodeId(targetNodeId);
-      const input = new Map<CCComponentPinId, boolean[]>();
-      for (const nodePin of nodePins) {
-        const componentPin = this.context.store.componentPins.get(
-          nodePin.componentPinId
-        )!;
-        if (componentPin.type === "input") {
-          // is pin implemented by user
-          if (componentPin.implementation !== null) {
-            if (this.context.store.connections.hasNoConnectionOf(nodePin.id)) {
-              const multiplexability =
-                this.context.store.nodePins.getNodePinMultiplexability(
-                  nodePin.id
-                );
-              const bits = multiplexability.isMultiplexable
-                ? 1
-                : multiplexability.multiplicity;
-              const inputValue = editorState.getInputValue(nodePin.id);
-              input.set(pinId, inputValue);
-            }
-          }
-        }
-      }
-      const output = this.#simulator.simulation(input, editorState.timeStep);
-      if (output == null) return null;
-      const nodeOutput = new Map<CCComponentPinId, boolean[]>();
-      for (const [outputPinId, outputValue] of output) {
-        const pin = this.context.store.componentPins.get(outputPinId)!;
-        if (
-          pin.implementation.type === "user" &&
-          pin.implementation.nodeId === targetNodeId
-        ) {
-          nodeOutput.set(pin.implementation.pinId, outputValue);
-        }
-      }
-      return nodeOutput;
-    };
+    // const simulation = (targetNodeId: CCNodeId) => {
+    //   const editorState = this.context.componentEditorStore.getState();
+    //   const nodePins =
+    //     this.context.store.nodePins.getManyByNodeId(targetNodeId);
+    //   const input = new Map<CCComponentPinId, boolean[]>();
+    //   for (const nodePin of nodePins) {
+    //     const componentPin = this.context.store.componentPins.get(
+    //       nodePin.componentPinId
+    //     )!;
+    //     if (componentPin.type === "input") {
+    //       // is pin implemented by user
+    //       if (componentPin.implementation !== null) {
+    //         if (this.context.store.connections.hasNoConnectionOf(nodePin.id)) {
+    //           const multiplexability =
+    //             this.context.store.nodePins.getNodePinMultiplexability(
+    //               nodePin.id
+    //             );
+    //           const bits = multiplexability.isMultiplexable
+    //             ? 1
+    //             : multiplexability.multiplicity;
+    //           const inputValue = editorState.getInputValue(nodePin.id);
+    //           input.set(pinId, inputValue);
+    //         }
+    //       }
+    //     }
+    //   }
+    //   const output = this.#simulator.simulation(input, editorState.timeStep);
+    //   if (output == null) return null;
+    //   const nodeOutput = new Map<CCComponentPinId, boolean[]>();
+    //   for (const [outputPinId, outputValue] of output) {
+    //     const pin = this.context.store.componentPins.get(outputPinId)!;
+    //     if (
+    //       pin.implementation.type === "user" &&
+    //       pin.implementation.nodeId === targetNodeId
+    //     ) {
+    //       nodeOutput.set(pin.implementation.pinId, outputValue);
+    //     }
+    //   }
+    //   return nodeOutput;
+    // };
 
     const newNodeRenderer = new CCComponentEditorRendererNode({
       context: this.context,
@@ -442,7 +438,7 @@ export default class CCComponentEditorRenderer extends CCComponentEditorRenderer
       onDragStart,
       onDragStartPin,
       onDragEndPin,
-      simulation,
+      // simulation,
     });
     this.#nodeRenderers.set(nodeId, newNodeRenderer);
   }
@@ -465,7 +461,9 @@ export default class CCComponentEditorRenderer extends CCComponentEditorRenderer
     };
     const getPinValue = () => {
       const nodePinId = this.context.store.connections.get(connectionId)!.from;
-      return this.#simulator.getPinValue(nodePinId);
+      return this.context.componentEditorStore
+        .getState()
+        .getNodePinValue(nodePinId);
     };
     const newConnectionRenderer = new CCComponentEditorRendererConnection(
       this.context.store,
@@ -485,7 +483,7 @@ export default class CCComponentEditorRenderer extends CCComponentEditorRenderer
   #onConnectionAdded = (connection: CCConnection) => {
     if (connection.parentComponentId !== this.#componentId) return;
     this.#addConnectionRenderer(connection.id);
-    this.#simulator.clear();
+    // this.#simulator.clear();
   };
 
   /**
@@ -496,7 +494,7 @@ export default class CCComponentEditorRenderer extends CCComponentEditorRenderer
     if (connection.parentComponentId !== this.#componentId) return;
     this.#connectionRenderers.get(connection.id)?.destroy();
     this.#connectionRenderers.delete(connection.id);
-    this.#simulator.clear();
+    // this.#simulator.clear();
   };
 
   /**
@@ -506,7 +504,7 @@ export default class CCComponentEditorRenderer extends CCComponentEditorRenderer
   #onNodeAdded = (node: CCNode) => {
     if (node.parentComponentId !== this.#componentId) return;
     this.#addNodeRenderer(node.id);
-    this.#simulator.clear();
+    // this.#simulator.clear();
   };
 
   /**
@@ -517,7 +515,7 @@ export default class CCComponentEditorRenderer extends CCComponentEditorRenderer
     if (node.parentComponentId !== this.#componentId) return;
     this.#nodeRenderers.get(node.id)?.destroy();
     this.#nodeRenderers.delete(node.id);
-    this.#simulator.clear();
+    // this.#simulator.clear();
   };
 
   /**
