@@ -150,7 +150,7 @@ export function isIncluding(
 
   const checkedComponentIds = new Set<CCComponentId>();
   const dfs = (_componentId: CCComponentId): boolean => {
-    const nodes = store.nodes.getManyByComponentId(_componentId);
+    const nodes = store.nodes.getManyByParentComponentId(_componentId);
     for (const node of nodes) {
       if (!checkedComponentIds.has(node.componentId)) {
         if (node.componentId === targetComponentId) return true;

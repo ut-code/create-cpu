@@ -220,7 +220,7 @@ export default class CCComponentEditorRendererNode extends CCComponentEditorRend
       nullthrows(this.#nodePinRenderers.get(nodePin.id)).render(
         index,
         size,
-        inputNodePins.length
+        outputNodePins.length
       );
     });
     this.#pixiTexts.componentName.anchor.set(0, 1);
