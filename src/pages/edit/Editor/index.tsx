@@ -338,8 +338,9 @@ function CCComponentEditorContent({
 }
 
 export default function CCComponentEditor(props: CCComponentEditorProps) {
+  const { componentId } = props;
   return (
-    <ComponentEditorStoreProvider>
+    <ComponentEditorStoreProvider componentId={componentId}>
       <CCComponentEditorContent {...props} />
     </ComponentEditorStoreProvider>
   );

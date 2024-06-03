@@ -259,8 +259,8 @@ export default class CCComponentEditorRenderer extends CCComponentEditorRenderer
     });
 
     this.context.store.nodes
-      .getNodeIdsByParentComponentId(this.#componentId)
-      .forEach((nodeId) => this.#addNodeRenderer(nodeId));
+      .getManyByComponentId(this.#componentId)
+      .forEach((node) => this.#addNodeRenderer(node.id));
     this.context.store.nodes.on("didRegister", this.#onNodeAdded);
     this.context.store.nodes.on("didUnregister", this.#onNodeRemoved);
 

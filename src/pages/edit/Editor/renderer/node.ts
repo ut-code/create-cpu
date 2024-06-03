@@ -95,7 +95,7 @@ export default class CCComponentEditorRendererNode extends CCComponentEditorRend
         context: this.context,
         nodePinId: nodePin.id,
         pixiParentContainer: this.#pixiWorld,
-        pixiText: this.#pixiTexts.pinNames.get(nodePin.id)!,
+        pixiText: this.#pixiTexts.pinNames.get(nodePin.componentPinId)!,
         onDragStart: props.onDragStartPin,
         onDragEnd: props.onDragEndPin,
       });
