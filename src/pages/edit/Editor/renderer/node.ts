@@ -21,7 +21,6 @@ export type CCComponentEditorRendererNodeProps = {
   onDragStart(e: PIXI.FederatedMouseEvent): void;
   onDragStartPin(e: PIXI.FederatedMouseEvent, nodePinId: CCNodePinId): void;
   onDragEndPin(e: PIXI.FederatedMouseEvent, nodePinId: CCNodePinId): void;
-  // simulation(nodeId: CCNodeId): Map<CCComponentPinId, boolean[]> | null;
 };
 
 type PixiTexts = {
@@ -68,8 +67,6 @@ export default class CCComponentEditorRendererNode extends CCComponentEditorRend
 
   #pixiWorld: PIXI.Container;
 
-  // #simulation: (nodeId: CCNodeId) => Map<CCComponentPinId, boolean[]> | null;
-
   /**
    * Constructor of CCComponentEditorRendererNode
    * @param props
@@ -78,7 +75,6 @@ export default class CCComponentEditorRendererNode extends CCComponentEditorRend
     super(props.context);
     this.#nodeId = props.nodeId;
     this.#pixiParentContainer = props.pixiParentContainer;
-    // this.#simulation = props.simulation;
     this.#pixiGraphics = new PIXI.Graphics();
     this.#pixiGraphics.eventMode = "dynamic";
     this.#pixiTexts = this.#createText();
@@ -283,9 +279,11 @@ export default class CCComponentEditorRendererNode extends CCComponentEditorRend
           );
           existingComponentPinRenderers.delete(componentPin.id);
         } else {
-          // const simulation = () => {
-          //   return this.#simulation(this.#nodeId);
-          // };
+          const getPinValue = () => {
+            return this.context.componentEditorStore
+              .getState()
+              .getNodePinValue(nodePin.id);
+          };
           const componentPinRenderer =
             new CCComponentEditorRendererComponentPin({
               context: this.context,
@@ -296,7 +294,7 @@ export default class CCComponentEditorRendererNode extends CCComponentEditorRend
                 this.context.store,
                 nodePin.id
               ),
-              // simulation,
+              getPinValue,
             });
           newComponentPinRenderers.set(componentPin.id, componentPinRenderer);
         }

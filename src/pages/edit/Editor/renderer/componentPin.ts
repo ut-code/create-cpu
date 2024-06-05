@@ -20,7 +20,7 @@ type CCComponentEditorRendererComponentPinProps = {
   nodeId: CCNodeId; // TODO: this might be unnecessary
   pinId: CCComponentPinId;
   position: PIXI.Point;
-  // simulation: () => Map<CCComponentPinId, boolean[]> | null;
+  getPinValue: () => boolean[] | undefined;
 };
 
 /**
@@ -43,7 +43,7 @@ export default class CCComponentEditorRendererComponentPin extends CCComponentEd
 
   readonly #unsubscribeComponentEditorStore: () => void;
 
-  // readonly #simulation: () => Map<CCComponentPinId, boolean[]> | null;
+  readonly #getPinValue: () => boolean[] | undefined;
 
   #valueBoxWidth: number;
 
@@ -65,7 +65,6 @@ export default class CCComponentEditorRendererComponentPin extends CCComponentEd
     super(props.context);
     this.#componentPinId = props.pinId;
     this.position = props.position;
-    // this.#simulation = props.simulation;
     this.#pixiParentContainer = props.pixiParentContainer;
     this.#pixiContainer = new PIXI.Container();
     this.#pixiParentContainer.addChild(this.#pixiContainer);
@@ -116,6 +115,7 @@ export default class CCComponentEditorRendererComponentPin extends CCComponentEd
     this.context.store.componentPins.on("didUpdate", (pin) => {
       if (pin.id === this.#componentPinId) this.render();
     });
+    this.#getPinValue = props.getPinValue;
     this.render();
   }
 
@@ -189,9 +189,7 @@ export default class CCComponentEditorRendererComponentPin extends CCComponentEd
           }
           return valueText;
         };
-        const outputValue = editorState.getComponentPinValue(
-          this.#componentPinId
-        );
+        const outputValue = this.#getPinValue();
         if (outputValue) {
           this.#pixiValueText.text = createValueText(outputValue);
           this.#valueBoxWidth =
@@ -202,30 +200,6 @@ export default class CCComponentEditorRendererComponentPin extends CCComponentEd
           this.#pixiValueText.text = "";
           this.#pixiGraphics.beginFill(errorColor);
         }
-
-        // const output = this.#simulation();
-        // if (output) {
-        //   const createValueText = (values: boolean[]) => {
-        //     let valueText = "";
-        //     for (let i = 0; i < values.length; i += 1) {
-        //       valueText += values[i] ? "1" : "0";
-        //     }
-        //     return valueText;
-        //   };
-        //   for (const [key, values] of output) {
-        //     if (key === this.#componentPinId) {
-        //       this.#pixiValueText.text = createValueText(values);
-        //       this.#valueBoxWidth =
-        //         c.valueBoxWidthUnit +
-        //         ((values.length - 1) * c.valueBoxWidthUnit) / 4;
-        //       break;
-        //     }
-        //   }
-        //   this.#pixiGraphics.beginFill(grayColor.darken2);
-        // } else {
-        //   this.#pixiValueText.text = "";
-        //   this.#pixiGraphics.beginFill(errorColor);
-        // }
       }
       this.#pixiLabelTextBox.alignment =
         pin.type === "input" ? "right" : "left";

@@ -390,47 +390,6 @@ export default class CCComponentEditorRenderer extends CCComponentEditorRenderer
       this.#dragState = null;
     };
 
-    // const simulation = (targetNodeId: CCNodeId) => {
-    //   const editorState = this.context.componentEditorStore.getState();
-    //   const nodePins =
-    //     this.context.store.nodePins.getManyByNodeId(targetNodeId);
-    //   const input = new Map<CCComponentPinId, boolean[]>();
-    //   for (const nodePin of nodePins) {
-    //     const componentPin = this.context.store.componentPins.get(
-    //       nodePin.componentPinId
-    //     )!;
-    //     if (componentPin.type === "input") {
-    //       // is pin implemented by user
-    //       if (componentPin.implementation !== null) {
-    //         if (this.context.store.connections.hasNoConnectionOf(nodePin.id)) {
-    //           const multiplexability =
-    //             this.context.store.nodePins.getNodePinMultiplexability(
-    //               nodePin.id
-    //             );
-    //           const bits = multiplexability.isMultiplexable
-    //             ? 1
-    //             : multiplexability.multiplicity;
-    //           const inputValue = editorState.getInputValue(nodePin.id);
-    //           input.set(pinId, inputValue);
-    //         }
-    //       }
-    //     }
-    //   }
-    //   const output = this.#simulator.simulation(input, editorState.timeStep);
-    //   if (output == null) return null;
-    //   const nodeOutput = new Map<CCComponentPinId, boolean[]>();
-    //   for (const [outputPinId, outputValue] of output) {
-    //     const pin = this.context.store.componentPins.get(outputPinId)!;
-    //     if (
-    //       pin.implementation.type === "user" &&
-    //       pin.implementation.nodeId === targetNodeId
-    //     ) {
-    //       nodeOutput.set(pin.implementation.pinId, outputValue);
-    //     }
-    //   }
-    //   return nodeOutput;
-    // };
-
     const newNodeRenderer = new CCComponentEditorRendererNode({
       context: this.context,
       nodeId,
@@ -438,7 +397,6 @@ export default class CCComponentEditorRenderer extends CCComponentEditorRenderer
       onDragStart,
       onDragStartPin,
       onDragEndPin,
-      // simulation,
     });
     this.#nodeRenderers.set(nodeId, newNodeRenderer);
   }
