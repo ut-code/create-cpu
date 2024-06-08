@@ -89,12 +89,17 @@ export class CCComponentPinStore extends EventEmitter<CCComponentPinStoreEvents>
       if (toComponentPin) this.unregister(toComponentPin.id);
     });
     this.#store.connections.on("willUnregister", (connection) => {
-      this.register(this.createForNodePin(connection.to));
+      const toNodePin = this.#store.nodePins.get(connection.to);
+      if (toNodePin) {
+        this.register(this.createForNodePin(connection.to));
+      }
       // output pins can have multiple connections
       // so we need to check if the connection is the last one
+      const fromNodePin = this.#store.nodePins.get(connection.from);
       if (
         this.#store.connections.getConnectionsByNodePinId(connection.from)
-          .length === 1
+          .length === 1 &&
+        fromNodePin
       ) {
         this.register(this.createForNodePin(connection.from));
       }

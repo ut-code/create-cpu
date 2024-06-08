@@ -54,7 +54,7 @@ export class CCConnectionStore extends EventEmitter<CCConnectionStoreEvents> {
   }
 
   mount() {
-    this.#store.nodePins.on("willUnregister", (nodePin) => {
+    this.#store.nodePins.on("didUnregister", (nodePin) => {
       const connections = this.getConnectionsByNodePinId(nodePin.id);
       if (connections.length > 0) {
         this.unregister(connections.map((connection) => connection.id));
