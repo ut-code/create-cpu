@@ -813,7 +813,7 @@ function simulateIntrinsic(
       )!.id;
       const outputValue = [];
       for (const value of inputValue!) {
-        outputValue.push(!value);
+        outputValue.push(value);
       }
       const outputValues = new Map<CCNodePinId, SimulationValue>();
       outputValues.set(outputPinId, outputValue);
@@ -964,6 +964,7 @@ function simulateNode(
       inputValues,
       previousFrame
     );
+    console.log(outputValues);
     if (!outputValues) {
       return null;
     }
@@ -1030,11 +1031,14 @@ function simulateNode(
       nodePinInputNumber.get(currentNodeId)! ===
       foundInputNumber.get(currentNodeId)!
     ) {
+      const frame = previousFrame
+        ? previousFrame!.nodes.get(currentNodeId)!.child
+        : null;
       const result = simulateNode(
         store,
         currentNodeId,
         nodePinInputValues,
-        previousFrame!.nodes.get(currentNodeId)!.child
+        frame
       );
       if (!result) {
         return null;
@@ -1074,11 +1078,14 @@ function simulateNode(
       currentComponentId === intrinsics.flipFlopIntrinsicComponent.id &&
       !visitedFlipFlops.has(currentNodeId)
     ) {
+      const frame = previousFrame
+        ? previousFrame?.nodes.get(currentNodeId)!.child
+        : null;
       const result = simulateNode(
         store,
         currentNodeId,
         nodePinInputValues,
-        previousFrame!.nodes.get(currentNodeId)!.child
+        frame
       );
       if (!result) {
         return null;
@@ -1138,6 +1145,8 @@ export function simulateComponent(
   inputValues: Map<CCComponentPinId, SimulationValue>,
   previousFrame: SimulationFrame | null
 ): SimulationFrame | null {
+  // return null;
+  console.log(previousFrame);
   const component = store.components.get(componentId);
   if (!component) throw new Error(`Component ${component} is not defined.`);
   const childMap = new Map<
@@ -1192,16 +1201,24 @@ export function simulateComponent(
     unevaluatedNodes.delete(currentNodeId);
     const currentNode = store.nodes.get(currentNodeId)!;
     const currentComponentId = currentNode.componentId;
+    const currentComponent = store.components.get(currentComponentId)!;
 
     if (
       nodePinInputNumber.get(currentNodeId)! ===
       foundInputNumber.get(currentNodeId)!
     ) {
+      const frame = (() => {
+        if (!previousFrame) return null;
+        if (currentComponent.isIntrinsic) {
+          return previousFrame;
+        }
+        return previousFrame.nodes.get(currentNodeId)!.child;
+      })();
       const result = simulateNode(
         store,
         currentNodeId,
         nodePinInputValues,
-        previousFrame!.nodes.get(currentNodeId)!.child
+        frame
       );
       if (!result) {
         return null;

@@ -16,7 +16,7 @@ export type SidePanelProps = {
 };
 
 function ComponentRenderer({ componentId }: { componentId: CCComponentId }) {
-  const store = useStore();
+  const { store } = useStore();
   const component = store.components.get(componentId);
   invariant(component);
   const pins = store.componentPins
@@ -92,10 +92,8 @@ function ComponentRenderer({ componentId }: { componentId: CCComponentId }) {
 
 export default function SidePanel(sidePanelProps: SidePanelProps) {
   const { editedComponentId } = sidePanelProps;
-  const store = useStore();
-  const components = useAllComponents().filter(
-    (component) => component.id !== store.components.rootComponentId
-  );
+  const { store } = useStore();
+  const components = useAllComponents();
   const [searchText, setSearchText] = useState("");
 
   return (

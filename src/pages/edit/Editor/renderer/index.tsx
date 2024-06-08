@@ -417,19 +417,12 @@ export default class CCComponentEditorRenderer extends CCComponentEditorRenderer
         },
       };
     };
-    const getPinValue = () => {
-      const nodePinId = this.context.store.connections.get(connectionId)!.from;
-      return this.context.componentEditorStore
-        .getState()
-        .getNodePinValue(nodePinId);
-    };
     const newConnectionRenderer = new CCComponentEditorRendererConnection(
       this.context.store,
       connectionId,
       this.#pixiWorld,
-      this.context.componentEditorStore,
-      onDragStart,
-      getPinValue
+      this.context,
+      onDragStart
     );
     this.#connectionRenderers.set(connectionId, newConnectionRenderer);
   }

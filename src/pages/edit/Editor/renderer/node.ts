@@ -257,6 +257,11 @@ export default class CCComponentEditorRendererNode extends CCComponentEditorRend
     const node = this.context.store.nodes.get(this.#nodeId);
     if (!node) return;
 
+    const parentComponent = this.context.store.components.get(
+      node.parentComponentId
+    )!;
+    const parentComponentPins =
+      this.context.store.componentPins.getManyByComponentId(parentComponent.id);
     const nodePins = this.context.store.nodePins.getManyByNodeId(this.#nodeId);
 
     const existingComponentPinRenderers = new Map(this.#componentPinRenderers);
@@ -266,37 +271,34 @@ export default class CCComponentEditorRendererNode extends CCComponentEditorRend
     >();
     for (const nodePin of nodePins) {
       if (this.context.store.connections.hasNoConnectionOf(nodePin.id)) {
-        const componentPin = this.context.store.componentPins.get(
-          nodePin.componentPinId
+        const parentComponentPin = parentComponentPins.find(
+          (pin) => pin.implementation === nodePin.id
         )!;
         const existingComponentPinRenderer = existingComponentPinRenderers.get(
-          componentPin.id
+          parentComponentPin.id
         );
         if (existingComponentPinRenderer) {
           newComponentPinRenderers.set(
-            componentPin.id,
+            parentComponentPin.id,
             existingComponentPinRenderer
           );
-          existingComponentPinRenderers.delete(componentPin.id);
+          existingComponentPinRenderers.delete(parentComponentPin.id);
         } else {
-          const getPinValue = () => {
-            return this.context.componentEditorStore
-              .getState()
-              .getNodePinValue(nodePin.id);
-          };
           const componentPinRenderer =
             new CCComponentEditorRendererComponentPin({
               context: this.context,
               pixiParentContainer: this.#pixiWorld,
               nodeId: this.#nodeId,
-              pinId: componentPin.id,
+              pinId: parentComponentPin.id,
               position: CCComponentEditorRendererNode.getPinOffset(
                 this.context.store,
                 nodePin.id
               ),
-              getPinValue,
             });
-          newComponentPinRenderers.set(componentPin.id, componentPinRenderer);
+          newComponentPinRenderers.set(
+            parentComponentPin.id,
+            componentPinRenderer
+          );
         }
       }
     }

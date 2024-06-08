@@ -20,7 +20,6 @@ type CCComponentEditorRendererComponentPinProps = {
   nodeId: CCNodeId; // TODO: this might be unnecessary
   pinId: CCComponentPinId;
   position: PIXI.Point;
-  getPinValue: () => boolean[] | undefined;
 };
 
 /**
@@ -42,8 +41,6 @@ export default class CCComponentEditorRendererComponentPin extends CCComponentEd
   readonly #pixiValueText: PIXI.Text;
 
   readonly #unsubscribeComponentEditorStore: () => void;
-
-  readonly #getPinValue: () => boolean[] | undefined;
 
   #valueBoxWidth: number;
 
@@ -115,7 +112,6 @@ export default class CCComponentEditorRendererComponentPin extends CCComponentEd
     this.context.store.componentPins.on("didUpdate", (pin) => {
       if (pin.id === this.#componentPinId) this.render();
     });
-    this.#getPinValue = props.getPinValue;
     this.render();
   }
 
@@ -189,7 +185,9 @@ export default class CCComponentEditorRendererComponentPin extends CCComponentEd
           }
           return valueText;
         };
-        const outputValue = this.#getPinValue();
+        const outputValue = editorState.getComponentPinValue(
+          this.#componentPinId
+        );
         if (outputValue) {
           this.#pixiValueText.text = createValueText(outputValue);
           this.#valueBoxWidth =

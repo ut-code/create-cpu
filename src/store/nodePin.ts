@@ -30,14 +30,18 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
    * @param store store
    * @param nodePins initial pins
    */
-  constructor(store: CCStore, nodePins?: CCNodePin[]) {
+  constructor(store: CCStore) {
     super();
     this.#store = store;
-    if (nodePins) {
-      for (const pin of nodePins) {
-        this.register(pin);
-      }
+  }
+
+  import(nodePins: CCNodePin[]) {
+    for (const nodePin of nodePins) {
+      this.register(nodePin);
     }
+  }
+
+  mount() {
     this.#store.nodes.on("didRegister", (node) => {
       const componentPins = this.#store.componentPins.getManyByComponentId(
         node.componentId

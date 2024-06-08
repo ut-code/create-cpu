@@ -31,7 +31,7 @@ type State = {
   setRangeSelect(rangeSelect: RangeSelect): void;
   selectedConnectionIds: Set<CCConnectionId>;
   inputValues: Map<InputValueKey, SimulationValue>;
-  getInputValue(componentPinId: CCComponentPinId): SimulationValue | undefined;
+  getInputValue(componentPinId: CCComponentPinId): SimulationValue;
   setInputValue(componentPinId: CCComponentPinId, value: SimulationValue): void;
   setEditorMode(mode: EditorMode): void;
   resetTimeStep(): void;
@@ -69,10 +69,21 @@ function createEditorStore(componentId: CCComponentId, store: CCStore) {
     selectedNodeIds: new Set(),
     rangeSelect: null,
     selectedConnectionIds: new Set(),
+    /** @private */
     inputValues: new Map(),
-    /** @deprecated */
     getInputValue(componentPinId: CCComponentPinId) {
-      return this.inputValues.get(componentPinId);
+      const value = this.inputValues.get(componentPinId);
+      if (!value) {
+        const multiplexability =
+          store.componentPins.getComponentPinMultiplexability(componentPinId);
+        if (multiplexability.isMultiplexable) {
+          const newValue = [false];
+          return newValue;
+        }
+        const newValue = new Array(multiplexability.multiplicity).fill(false);
+        return newValue;
+      }
+      return value;
     },
     setInputValue(componentPinId: CCComponentPinId, value: SimulationValue) {
       set((state) => {
@@ -139,7 +150,9 @@ function createEditorStore(componentId: CCComponentId, store: CCStore) {
     },
   }));
 
-  const simulationHandler = () => {
+  const executeSimulation = () => {
+    if (editorStore.getState().editorMode !== "play") return;
+
     const newSimulationCacheKey =
       store.nodes
         .toArray()
@@ -148,35 +161,42 @@ function createEditorStore(componentId: CCComponentId, store: CCStore) {
       store.connections
         .toArray()
         .map((connection) => connection.id)
+        .join() +
+      [...editorStore.getState().inputValues.entries()]
+        .map(([key, value]) => key + value.join())
         .join();
-    const editorState = editorStore.getState();
     if (newSimulationCacheKey !== simulationCacheKey) {
       simulationCacheKey = newSimulationCacheKey;
       simulationCachedFrames = [];
     }
+
+    const editorState = editorStore.getState();
+    let isUpdated = false;
     for (
       let timeStep = simulationCachedFrames.length;
       timeStep <= editorState.timeStep;
       timeStep += 1
     ) {
+      console.log(timeStep);
       const previousFrame = simulationCachedFrames[timeStep - 1] ?? null;
-
+      const inputValues = new Map();
+      const pins = store.componentPins.getManyByComponentId(componentId);
+      for (const pin of pins) {
+        inputValues.set(pin.id, editorState.getInputValue(pin.id));
+      }
       simulationCachedFrames.push(
-        simulateComponent(
-          store,
-          componentId,
-          editorState.inputValues,
-          previousFrame
-        )!
+        simulateComponent(store, componentId, inputValues, previousFrame)!
       );
+      isUpdated = true;
     }
+    if (isUpdated) editorStore.setState((s) => ({ ...s }));
   };
-  store.nodes.on("didRegister", simulationHandler);
-  store.nodes.on("didUpdate", simulationHandler);
-  store.nodes.on("didUnregister", simulationHandler);
-  store.connections.on("didRegister", simulationHandler);
-  store.connections.on("didUnregister", simulationHandler);
-  editorStore.subscribe(simulationHandler);
+  store.nodes.on("didRegister", executeSimulation);
+  store.nodes.on("didUpdate", executeSimulation);
+  store.nodes.on("didUnregister", executeSimulation);
+  store.connections.on("didRegister", executeSimulation);
+  store.connections.on("didUnregister", executeSimulation);
+  editorStore.subscribe(executeSimulation);
 
   return editorStore;
 }
@@ -192,7 +212,7 @@ export function ComponentEditorStoreProvider({
   componentId: CCComponentId;
   children: React.ReactNode;
 }) {
-  const store = useStore();
+  const { store } = useStore();
   const [editorStore] = useState(() => createEditorStore(componentId, store));
   return <context.Provider value={editorStore}>{children}</context.Provider>;
 }

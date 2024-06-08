@@ -1,4 +1,3 @@
-import { MultiMap } from "mnemonist";
 import type { Opaque } from "type-fest";
 import EventEmitter from "eventemitter3";
 import invariant from "tiny-invariant";
@@ -38,32 +37,27 @@ export class CCConnectionStore extends EventEmitter<CCConnectionStoreEvents> {
 
   #connections: Map<CCConnectionId, CCConnection> = new Map();
 
-  #parentComponentIdToConnectionIds = new MultiMap<
-    CCComponentId,
-    CCConnectionId
-  >(Set);
-
   /**
    * Constructor of CCConnectionStore
    * @param store store
    * @param connections initial connections
    */
-  constructor(store: CCStore, connections?: CCConnection[]) {
+  constructor(store: CCStore) {
     super();
     this.#store = store;
-    if (connections) {
-      for (const connection of connections) {
-        this.register(connection);
-      }
+  }
+
+  import(connections: CCConnection[]): void {
+    for (const connection of connections) {
+      this.#connections.set(connection.id, connection);
     }
-    this.#store.nodes.on("willUnregister", (node) => {
-      for (const connection of this.#connections.values()) {
-        if (
-          this.#store.nodes.getNodeIdByNodePinId(connection.from) === node.id ||
-          this.#store.nodes.getNodeIdByNodePinId(connection.to) === node.id
-        ) {
-          this.unregister([connection.id]);
-        }
+  }
+
+  mount() {
+    this.#store.nodePins.on("willUnregister", (nodePin) => {
+      const connections = this.getConnectionsByNodePinId(nodePin.id);
+      if (connections.length > 0) {
+        this.unregister(connections.map((connection) => connection.id));
       }
     });
   }
@@ -80,10 +74,6 @@ export class CCConnectionStore extends EventEmitter<CCConnectionStoreEvents> {
     invariant(fromNode && toNode);
     invariant(fromNode.parentComponentId === toNode.parentComponentId);
     this.#connections.set(connection.id, connection);
-    this.#parentComponentIdToConnectionIds.set(
-      connection.parentComponentId,
-      connection.id
-    );
     this.emit("didRegister", connection);
   }
 
@@ -96,10 +86,6 @@ export class CCConnectionStore extends EventEmitter<CCConnectionStoreEvents> {
     await this.#store.transactionManager.runInTransaction(() => {
       for (const connection of connections) {
         this.emit("willUnregister", connection);
-        this.#parentComponentIdToConnectionIds.remove(
-          connection.parentComponentId,
-          connection.id
-        );
         this.#connections.delete(connection.id);
       }
     });
@@ -124,9 +110,11 @@ export class CCConnectionStore extends EventEmitter<CCConnectionStoreEvents> {
   getConnectionIdsByParentComponentId(
     parentComponentId: CCComponentId
   ): CCConnectionId[] {
-    return [
-      ...(this.#parentComponentIdToConnectionIds.get(parentComponentId) ?? []),
-    ];
+    return [...this.#connections.values()]
+      .filter(
+        (connection) => connection.parentComponentId === parentComponentId
+      )
+      .map((connection) => connection.id);
   }
 
   /**
@@ -135,9 +123,7 @@ export class CCConnectionStore extends EventEmitter<CCConnectionStoreEvents> {
    * @param pinId id of pin
    * @returns connections connected to the pin of the node
    */
-  getConnectionsByNodePinId(
-    nodePinId: CCNodePinId
-  ): CCConnection[] | undefined {
+  getConnectionsByNodePinId(nodePinId: CCNodePinId): CCConnection[] {
     return [...this.#connections.values()].filter(
       (connection) =>
         connection.from === nodePinId || connection.to === nodePinId
@@ -149,9 +135,10 @@ export class CCConnectionStore extends EventEmitter<CCConnectionStoreEvents> {
    * @param nodeId id of node
    * @param pinId id of pin
    * @returns if no connection of the pin of the node exists, `true` returns (otherwise `false`)
+   * @deprecated in favor of {@link getConnectionsByNodePinId}
    */
   hasNoConnectionOf(nodePinId: CCNodePinId): boolean {
-    return this.getConnectionsByNodePinId(nodePinId)?.length === 0;
+    return this.getConnectionsByNodePinId(nodePinId).length === 0;
   }
 
   /**

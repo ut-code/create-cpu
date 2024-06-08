@@ -26,8 +26,6 @@ export class CCComponentStore extends EventEmitter<CCComponentStoreEvents> {
 
   #components: Map<CCComponentId, CCComponent> = new Map();
 
-  readonly rootComponentId: CCComponentId;
-
   /**
    * Constructor of CCComponentStore
    * @param store store
@@ -35,25 +33,19 @@ export class CCComponentStore extends EventEmitter<CCComponentStoreEvents> {
    * @param rootComponentId id of root component
    * @param components initial components
    */
-  constructor(
-    store: CCStore,
-    rootComponent?: CCComponent,
-    rootComponentId?: CCComponentId,
-    components?: CCComponent[]
-  ) {
+  constructor(store: CCStore) {
     super();
     this.#store = store;
-    if (rootComponent) {
-      this.rootComponentId = rootComponent.id;
-      this.register(rootComponent);
-    } else {
-      invariant(rootComponentId && components);
-      this.rootComponentId = rootComponentId;
-      for (const component of components) {
-        this.register(component);
-      }
+  }
+
+  import(components: CCComponent[]) {
+    for (const component of components) {
+      this.register(component);
     }
   }
+
+  // eslint-disable-next-line class-methods-use-this, @typescript-eslint/no-empty-function
+  mount() {}
 
   /**
    * Register a component
@@ -70,7 +62,6 @@ export class CCComponentStore extends EventEmitter<CCComponentStoreEvents> {
    * @param id id of a component to be unregistered
    */
   async unregister(id: CCComponentId): Promise<void> {
-    invariant(id !== this.rootComponentId);
     const component = this.#components.get(id);
     if (!component) throw new Error(`Component ${id} not found`);
     await this.#store.transactionManager.runInTransaction(() => {

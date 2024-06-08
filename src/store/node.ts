@@ -5,8 +5,6 @@ import * as PIXI from "pixi.js";
 import nullthrows from "nullthrows";
 import type CCStore from ".";
 import type { CCComponentId } from "./component";
-import type { CCNodePinId } from "./nodePin";
-// import { hasVariablePinCount } from "./intrinsics";
 
 export type CCNodeId = Opaque<string, "CCNodeId">;
 
@@ -39,16 +37,20 @@ export class CCNodeStore extends EventEmitter<CCNodeStoreEvents> {
    * @param store store
    * @param nodes initial nodes
    */
-  constructor(store: CCStore, nodes?: CCNode[]) {
+  constructor(store: CCStore) {
     super();
     this.#store = store;
-    if (nodes) {
-      for (const node of nodes) {
-        node.position = new PIXI.Point(node.position.x, node.position.y);
-        this.register(node);
-      }
+  }
+
+  import(nodes: CCNode[]): void {
+    for (const node of nodes) {
+      node.position = new PIXI.Point(node.position.x, node.position.y);
+      this.register(node);
     }
   }
+
+  // eslint-disable-next-line class-methods-use-this, @typescript-eslint/no-empty-function
+  mount() {}
 
   /**
    * Register a node
@@ -109,13 +111,6 @@ export class CCNodeStore extends EventEmitter<CCNodeStoreEvents> {
     return [...this.#nodes.values()].filter(
       (node) => node.componentId === componentId
     );
-  }
-
-  /**
-   * @deprecated in favor of {this.#store.nodePin.get(nodePinId).nodeId}
-   */
-  getNodeIdByNodePinId(nodePinId: CCNodePinId): CCNodeId | undefined {
-    return this.#store.nodePins.get(nodePinId)?.nodeId;
   }
 
   /**

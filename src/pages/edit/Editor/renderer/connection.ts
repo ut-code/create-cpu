@@ -3,11 +3,10 @@ import nullthrows from "nullthrows";
 import type { CCConnectionId } from "../../../../store/connection";
 import type CCStore from "../../../../store";
 import CCComponentEditorRendererNode from "./node";
-import type {
-  ComponentEditorStore,
-  EditorMode,
-  SimulationValue,
-} from "../store";
+import type { EditorMode } from "../store";
+import CCComponentEditorRendererBase, {
+  type CCComponentEditorRendererContext,
+} from "./base";
 
 export type CCConnectionEndpoint = {
   nodeId: string;
@@ -20,7 +19,7 @@ const lineColor = 0x000000;
 /**
  * Class for rendering connection
  */
-export default class CCComponentEditorRendererConnection {
+export default class CCComponentEditorRendererConnection extends CCComponentEditorRendererBase {
   #store: CCStore;
 
   #connectionId: CCConnectionId;
@@ -42,11 +41,7 @@ export default class CCComponentEditorRendererConnection {
 
   #offset: number;
 
-  #componentEditorStore: ComponentEditorStore;
-
   #onDragStart: (e: PIXI.FederatedMouseEvent) => void;
-
-  #getPinValue: () => SimulationValue | undefined;
 
   /**
    * Constructor of CCComponentEditorRendererConnection
@@ -62,14 +57,13 @@ export default class CCComponentEditorRendererConnection {
     store: CCStore,
     connectionId: CCConnectionId,
     pixiParentContainer: PIXI.Container,
-    componentEditorStore: ComponentEditorStore,
-    onDragStart: (e: PIXI.FederatedMouseEvent) => void,
-    getPinValue: () => SimulationValue | undefined
+    context: CCComponentEditorRendererContext,
+    onDragStart: (e: PIXI.FederatedMouseEvent) => void
   ) {
+    super(context);
     this.#store = store;
     this.#connectionId = connectionId;
     this.#onDragStart = onDragStart;
-    this.#getPinValue = getPinValue;
     this.#pixiGraphics = {
       from: CCComponentEditorRendererConnection.#createGraphics(),
       middle: CCComponentEditorRendererConnection.#createGraphics(),
@@ -103,9 +97,11 @@ export default class CCComponentEditorRendererConnection {
     });
     const editValueText = (mode: EditorMode) => {
       if (mode === "play") {
-        const value = this.#getPinValue()
-          ?.map((v) => (v ? "1" : "0"))
-          .join("");
+        const connection = this.#store.connections.get(this.#connectionId)!;
+        const inputValue = this.context.componentEditorStore
+          .getState()
+          .getNodePinValue(connection.from)!;
+        const value = inputValue.map((v) => (v ? "1" : "0")).join("");
         this.#pixiGraphics.value.text = value || "";
         this.#pixiGraphics.value.visible = true;
       } else {
@@ -113,13 +109,13 @@ export default class CCComponentEditorRendererConnection {
       }
     };
     this.#pixiGraphics.from.on("mouseover", () => {
-      editValueText(this.#componentEditorStore.getState().editorMode);
+      editValueText(this.context.componentEditorStore.getState().editorMode);
     });
     this.#pixiGraphics.to.on("mouseover", () => {
-      editValueText(this.#componentEditorStore.getState().editorMode);
+      editValueText(this.context.componentEditorStore.getState().editorMode);
     });
     this.#pixiGraphics.middle.on("mouseover", () => {
-      editValueText(this.#componentEditorStore.getState().editorMode);
+      editValueText(this.context.componentEditorStore.getState().editorMode);
     });
     this.#pixiGraphics.from.on("mouseout", () => {
       this.#pixiGraphics.value.visible = false;
@@ -135,7 +131,6 @@ export default class CCComponentEditorRendererConnection {
     )!.bentPortion;
     this.#temporaryBentPortion = this.#bentPortionCache;
     this.#offset = 0;
-    this.#componentEditorStore = componentEditorStore;
     this.#render();
     this.#store.nodes.on("didUpdate", this.#render);
   }
@@ -146,11 +141,11 @@ export default class CCComponentEditorRendererConnection {
    */
   onPointerDown(e: PIXI.FederatedEvent) {
     if (
-      !this.#componentEditorStore
+      !this.context.componentEditorStore
         .getState()
         .selectedConnectionIds.has(this.#connectionId)
     ) {
-      this.#componentEditorStore
+      this.context.componentEditorStore
         .getState()
         .selectConnection([this.#connectionId], false);
     }
@@ -204,7 +199,7 @@ export default class CCComponentEditorRendererConnection {
   /**
    * Destroy the connection
    */
-  destroy() {
+  override destroy() {
     this.#pixiParentContainer.removeChild(this.#pixiGraphics.from);
     this.#pixiParentContainer.removeChild(this.#pixiGraphics.middle);
     this.#pixiParentContainer.removeChild(this.#pixiGraphics.to);
@@ -249,6 +244,8 @@ export default class CCComponentEditorRendererConnection {
    * Render the connection
    */
   #render = () => {
+    const connection = this.#store.connections.get(this.#connectionId);
+    if (!connection) return;
     this.#pixiGraphics.from.clear();
     this.#pixiGraphics.middle.clear();
     this.#pixiGraphics.to.clear();
@@ -256,12 +253,8 @@ export default class CCComponentEditorRendererConnection {
     this.#pixiGraphics.middle.lineStyle(lineWidth, lineColor);
     this.#pixiGraphics.to.lineStyle(lineWidth, lineColor);
     const endPointGap = 9;
-    const fromEndPoint = nullthrows(
-      this.#store.connections.get(this.#connectionId)?.from
-    );
-    const toEndPoint = nullthrows(
-      this.#store.connections.get(this.#connectionId)?.to
-    );
+    const fromEndPoint = nullthrows(connection.from);
+    const toEndPoint = nullthrows(connection.to);
     const fromPosition = CCComponentEditorRendererNode.getNodePinAbsolute(
       this.#store,
       fromEndPoint

@@ -1,9 +1,5 @@
 import invariant from "tiny-invariant";
-import {
-  CCComponentStore,
-  type CCComponent,
-  type CCComponentId,
-} from "./component";
+import { CCComponentStore, type CCComponent } from "./component";
 import { CCNodeStore, type CCNode } from "./node";
 import { CCComponentPinStore, type CCComponentPin } from "./componentPin";
 import { CCNodePinStore, type CCNodePin } from "./nodePin";
@@ -15,7 +11,6 @@ import TransactionManager from "./transaction";
  * Properties of CCStore from JSON used when restoring store from JSON
  */
 export type CCStorePropsFromJson = {
-  rootComponentId: CCComponentId;
   components: CCComponent[];
   nodes: CCNode[];
   componentPins: CCComponentPin[];
@@ -44,35 +39,27 @@ export default class CCStore {
    * @param rootComponent root component
    * @param props properties of store from JSON used when restoring store from JSON
    */
-  constructor(rootComponent?: CCComponent, props?: CCStorePropsFromJson) {
-    if (rootComponent) {
-      this.components = new CCComponentStore(this, rootComponent);
-      this.nodes = new CCNodeStore(this);
-      this.componentPins = new CCComponentPinStore(this);
-      this.nodePins = new CCNodePinStore(this);
-      this.connections = new CCConnectionStore(this);
-    } else {
+  constructor(props?: CCStorePropsFromJson) {
+    this.components = new CCComponentStore(this);
+    this.nodes = new CCNodeStore(this);
+    this.componentPins = new CCComponentPinStore(this);
+    this.nodePins = new CCNodePinStore(this);
+    this.connections = new CCConnectionStore(this);
+    if (props) {
       invariant(props);
-      const {
-        rootComponentId,
-        components,
-        nodes,
-        componentPins,
-        nodePins,
-        connections,
-      } = props;
-      this.components = new CCComponentStore(
-        this,
-        undefined,
-        rootComponentId,
-        components
-      );
-      this.nodes = new CCNodeStore(this, nodes);
-      this.componentPins = new CCComponentPinStore(this, componentPins);
-      this.nodePins = new CCNodePinStore(this, nodePins);
-      this.connections = new CCConnectionStore(this, connections);
+      const { components, nodes, componentPins, nodePins, connections } = props;
+      this.components.import(components);
+      this.nodes.import(nodes);
+      this.componentPins.import(componentPins);
+      this.nodePins.import(nodePins);
+      this.connections.import(connections);
     }
     registerIntrinsics(this);
+    this.components.mount();
+    this.nodes.mount();
+    this.componentPins.mount();
+    this.nodePins.mount();
+    this.connections.mount();
   }
 
   /**
@@ -81,7 +68,6 @@ export default class CCStore {
    */
   toJSON() {
     return JSON.stringify({
-      rootComponentId: this.components.rootComponentId,
       components: this.components.toArray(),
       nodes: this.nodes.toArray(),
       componentPins: this.componentPins.toArray(),

@@ -12,7 +12,9 @@ export type CCComponentPin = {
   readonly componentId: CCComponentId;
   readonly type: CCPinType;
   readonly implementation: CCPinImplementation;
+  /** @deprecated should only be defined for intrinsic components  */
   multiplexable: boolean;
+  /** @deprecated should only be defined for intrinsic components  */
   bits: number;
   name: string;
 };
@@ -60,57 +62,43 @@ export class CCComponentPinStore extends EventEmitter<CCComponentPinStoreEvents>
    * @param store store
    * @param pins initial pins
    */
-  constructor(store: CCStore, pins?: CCComponentPin[]) {
+  constructor(store: CCStore) {
     super();
     this.#store = store;
-    if (pins) {
-      for (const pin of pins) {
-        this.register(pin);
-      }
+  }
+
+  import(componentPins: CCComponentPin[]): void {
+    for (const pin of componentPins) {
+      this.#pins.set(pin.id, pin);
     }
-    this.#store.components.on("willUnregister", (component) => {
-      for (const pin of this.#pins.values()) {
-        if (pin.componentId === component.id) {
-          this.unregister(pin.id);
-        }
+  }
+
+  mount() {
+    this.#store.nodePins.on("didRegister", (nodePin) => {
+      this.register(this.createForNodePin(nodePin.id));
+    });
+    this.#store.nodePins.on("willUnregister", (nodePin) => {
+      const pin = this.getByImplementation(nodePin.id);
+      if (pin) this.unregister(pin.id);
+    });
+    this.#store.connections.on("didRegister", (connection) => {
+      const { from, to } = connection;
+      const fromComponentPin = this.getByImplementation(from);
+      if (fromComponentPin) this.unregister(fromComponentPin.id);
+      const toComponentPin = this.getByImplementation(to);
+      if (toComponentPin) this.unregister(toComponentPin.id);
+    });
+    this.#store.connections.on("willUnregister", (connection) => {
+      this.register(this.createForNodePin(connection.to));
+      // output pins can have multiple connections
+      // so we need to check if the connection is the last one
+      if (
+        this.#store.connections.getConnectionsByNodePinId(connection.from)
+          .length === 1
+      ) {
+        this.register(this.createForNodePin(connection.from));
       }
     });
-    // this.#store.nodes.on("didRegister", (node) => {
-    //   const component = this.#store.components.get(node.componentId)!;
-    //   const storePins = this.#store.componentPins
-    //     .getPinIdsByComponentId(node.componentId)!
-    //     .filter((pinId) => this.isInterfacePin(pinId));
-    //   for (const implementationPinId of storePins) {
-    //     const implementationPin = this.get(implementationPinId)!;
-    //     this.register(
-    //       CCComponentPinStore.create({
-    //         name: `${component.name} ${implementationPin.name}`,
-    //         componentId: node.parentComponentId,
-    //         type: implementationPin.type,
-    //         implementation: {
-    //           type: "user",
-    //           nodeId: node.id,
-    //           pinId: implementationPin.id,
-    //         },
-    //         multiplexable: implementationPin.multiplexable,
-    //         bits: implementationPin.bits,
-    //       })
-    //     );
-    //   }
-    // });
-    this.#store.nodes.on("willUnregister", (node) => {
-      for (const pin of this.#pins.values()) {
-        if (pin.implementation) {
-          const nodeId = this.#store.nodes.getNodeIdByNodePinId(
-            pin.implementation
-          );
-          if (nodeId === node.id) {
-            this.unregister(pin.id);
-          }
-        }
-      }
-    });
-    // TODO: create / remove pins when connections are created / removed
   }
 
   /**
@@ -121,6 +109,22 @@ export class CCComponentPinStore extends EventEmitter<CCComponentPinStoreEvents>
     invariant(this.#store.components.get(pin.componentId));
     this.#pins.set(pin.id, pin);
     this.emit("didRegister", pin);
+  }
+
+  createForNodePin(nodePinId: CCNodePinId): CCComponentPin {
+    const targetNodePin = this.#store.nodePins.get(nodePinId)!;
+    const targetComponentPin = this.#store.componentPins.get(
+      targetNodePin.componentPinId
+    )!;
+    const targetNode = this.#store.nodes.get(targetNodePin.nodeId)!;
+    return CCComponentPinStore.create({
+      type: targetComponentPin.type,
+      componentId: targetNode.parentComponentId,
+      name: targetComponentPin.name,
+      implementation: targetNodePin.id,
+      multiplexable: false, // dummy
+      bits: 1, // dummy
+    });
   }
 
   /**
@@ -175,6 +179,14 @@ export class CCComponentPinStore extends EventEmitter<CCComponentPinStoreEvents>
   getManyByComponentId(componentId: CCComponentId): CCComponentPin[] {
     return [...this.#pins.values()].filter(
       (pin) => pin.componentId === componentId
+    );
+  }
+
+  getByImplementation(implementation: CCNodePinId): CCComponentPin | null {
+    return (
+      [...this.#pins.values()].find(
+        (pin) => pin.implementation === implementation
+      ) ?? null
     );
   }
 

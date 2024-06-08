@@ -45,7 +45,7 @@ function CCComponentEditorContent({
   const rendererRef = useRef<CCComponentEditorRenderer>();
   const containerRef = useRef<HTMLDivElement>(null);
   const overlayAreaRef = useRef<HTMLDivElement>(null);
-  const store = useStore();
+  const { store } = useStore();
   const componentEditorStore = useComponentEditorStore();
   const componentEditorState = componentEditorStore();
   const component = store.components.get(componentId);

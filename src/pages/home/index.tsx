@@ -1,5 +1,4 @@
-import { useContext, useRef, useState } from "react";
-import invariant from "tiny-invariant";
+import { useRef, useState } from "react";
 import { Box, Button, Container, Typography } from "@mui/material";
 import {
   Save as SaveIcon,
@@ -8,8 +7,8 @@ import {
 } from "@mui/icons-material";
 import { CCComponentStore, type CCComponentId } from "../../store/component";
 import useAllComponents from "../../store/react/selectors";
-import { storeContext, useStore } from "../../store/react";
-import CCStore, { type CCStorePropsFromJson } from "../../store";
+import { useStore } from "../../store/react";
+import { type CCStorePropsFromJson } from "../../store";
 import { ComponentPropertyDialog } from "../../components/ComponentPropertyDialog";
 
 export type HomePageProps = {
@@ -17,8 +16,7 @@ export type HomePageProps = {
 };
 
 export default function HomePage({ onComponentSelected }: HomePageProps) {
-  const store = useStore();
-  const { setStore } = useContext(storeContext);
+  const { store, resetStore } = useStore();
   const components = useAllComponents().filter(
     (component) => !component.isIntrinsic
   );
@@ -42,12 +40,7 @@ export default function HomePage({ onComponentSelected }: HomePageProps) {
     reader.onload = () => {
       const storeJSON = reader.result as string;
       const storeData = JSON.parse(storeJSON);
-      const downloadedStore = new CCStore(
-        undefined,
-        storeData as CCStorePropsFromJson
-      );
-      invariant(setStore);
-      setStore(downloadedStore);
+      resetStore(storeData as CCStorePropsFromJson);
     };
     reader.readAsText(file);
   };
