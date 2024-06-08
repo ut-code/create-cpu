@@ -1,53 +1,39 @@
-import { createContext, useContext, useMemo, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import invariant from "tiny-invariant";
-import { Point } from "pixi.js";
-import CCStore from "..";
-import { CCComponentStore } from "../component";
-import { CCNodeStore } from "../node";
-import { andIntrinsicComponent, notIntrinsicComponent } from "../intrinsics";
-// import { CCConnectionStore } from "../connection";
+import CCStore, { type CCStorePropsFromJson } from "..";
 
-export const storeContext = createContext<{
-  store: CCStore | null;
-  setStore: React.Dispatch<React.SetStateAction<CCStore>> | null;
-}>({ store: null, setStore: null });
+function useContextValue() {
+  const [store, setStore] = useState(() => new CCStore());
+
+  // For debugging
+  useEffect(() => {
+    // eslint-disable-next-line no-underscore-dangle, @typescript-eslint/no-explicit-any
+    (window as any)._store = store;
+  }, [store]);
+
+  const resetStore = useCallback((props: CCStorePropsFromJson) => {
+    setStore(new CCStore(props));
+  }, []);
+  return useMemo(() => ({ store, resetStore }), [store, resetStore]);
+}
+
+const context = createContext<ReturnType<typeof useContextValue> | null>(null);
 
 export function StoreProvider({ children }: { children: React.ReactNode }) {
-  const [store, setStore] = useState(() => {
-    const rootComponent = CCComponentStore.create({
-      name: "Root",
-    });
-    const tempStore = new CCStore(rootComponent);
-    const sampleNode1 = CCNodeStore.create({
-      parentComponentId: rootComponent.id,
-      componentId: andIntrinsicComponent.id,
-      position: new Point(-200, 0),
-      intrinsicVariablePinCount: null,
-    });
-    const sampleNode2 = CCNodeStore.create({
-      parentComponentId: rootComponent.id,
-      componentId: notIntrinsicComponent.id,
-      position: new Point(200, 0),
-      intrinsicVariablePinCount: null,
-    });
-    tempStore.nodes.register(sampleNode1);
-    tempStore.nodes.register(sampleNode2);
-    return tempStore;
-  });
-  const value = useMemo(() => ({ store, setStore }), [store, setStore]);
   return (
-    <storeContext.Provider value={value}>{children}</storeContext.Provider>
+    <context.Provider value={useContextValue()}>{children}</context.Provider>
   );
 }
 
-export function useStore(newStore?: CCStore) {
-  const { store, setStore } = useContext(storeContext);
-  if (newStore) {
-    if (newStore && setStore) {
-      setStore(newStore);
-    }
-    return newStore;
-  }
+export function useStore() {
+  const store = useContext(context);
   invariant(store);
   return store;
 }

@@ -1,6 +1,5 @@
 import * as PIXI from "pixi.js";
-import type { CCPinId } from "../../../../store/pin";
-import type { CCNodeId } from "../../../../store/node";
+import type { CCNodePinId } from "../../../../store/nodePin";
 import { blackColor, whiteColor, primaryColor } from "../../../../common/theme";
 import CCComponentEditorRendererBase, {
   type CCComponentEditorRendererContext,
@@ -8,19 +7,18 @@ import CCComponentEditorRendererBase, {
 
 export type CCComponentEditorRendererNodePinProps = {
   context: CCComponentEditorRendererContext;
-  nodeId: CCNodeId;
-  pinId: CCPinId;
+  nodePinId: CCNodePinId;
   pixiParentContainer: PIXI.Container;
   pixiText: PIXI.Text;
-  onDragStart(e: PIXI.FederatedMouseEvent, pinId: CCPinId): void;
-  onDragEnd(e: PIXI.FederatedMouseEvent, pinId: CCPinId): void;
+  onDragStart(e: PIXI.FederatedMouseEvent, nodePinId: CCNodePinId): void;
+  onDragEnd(e: PIXI.FederatedMouseEvent, nodePinId: CCNodePinId): void;
 };
 
 /**
  * Class for rendering node pin
  */
 export default class CCComponentEditorRendererNodePin extends CCComponentEditorRendererBase {
-  #pinId: CCPinId;
+  #nodePinId: CCNodePinId;
 
   #pixiParentContainer: PIXI.Container;
 
@@ -38,14 +36,14 @@ export default class CCComponentEditorRendererNodePin extends CCComponentEditorR
    */
   constructor({
     context,
-    pinId,
+    nodePinId,
     pixiParentContainer,
     pixiText,
     onDragStart,
     onDragEnd,
   }: CCComponentEditorRendererNodePinProps) {
     super(context);
-    this.#pinId = pinId;
+    this.#nodePinId = nodePinId;
     this.#pixiParentContainer = pixiParentContainer;
     this.#pixiWorld = new PIXI.Container();
     this.#pixiParentContainer.addChild(this.#pixiWorld);
@@ -57,11 +55,11 @@ export default class CCComponentEditorRendererNodePin extends CCComponentEditorR
     this.#pixiText = pixiText;
     this.#pixiWorld.addChild(this.#pixiText);
     this.#pixiGraphics.on("pointerdown", (e) => {
-      onDragStart(e, pinId);
+      onDragStart(e, nodePinId);
       e.stopPropagation();
     });
     this.#pixiGraphics.on("pointerup", (e) => {
-      onDragEnd(e, pinId);
+      onDragEnd(e, nodePinId);
       e.stopPropagation();
     });
   }
@@ -81,12 +79,15 @@ export default class CCComponentEditorRendererNodePin extends CCComponentEditorR
    * @param pinsLength length of pins in the node
    */
   render(index: number, size: PIXI.Point, pinsLength: number) {
-    const pin = this.context.store.pins.get(this.#pinId)!;
+    const nodePin = this.context.store.nodePins.get(this.#nodePinId)!;
+    const componentPin = this.context.store.componentPins.get(
+      nodePin.componentPinId
+    )!;
     const gap = 6;
     const edgeSize = 10;
     const borderWidth = 3;
     const edgeGap = size.y / (pinsLength + 1);
-    const sign = pin.type === "input" ? 1 : -1;
+    const sign = componentPin.type === "input" ? 1 : -1;
     const position = {
       x: -(sign * size.x) / 2 - edgeSize / 2 - (sign * borderWidth) / 2,
       y: -size.y / 2 + edgeGap * (index + 1) - edgeSize / 2,
@@ -101,11 +102,11 @@ export default class CCComponentEditorRendererNodePin extends CCComponentEditorR
     this.#pixiGraphics.drawRoundedRect(0, 0, edgeSize, edgeSize, 2);
     this.#pixiGraphics.endFill();
     if (this.#pixiText) {
-      if (pin.type === "input") {
+      if (componentPin.type === "input") {
         this.#pixiText.x = edgeSize + gap;
         this.#pixiText.y = 0;
         this.#pixiText.anchor.set(0, 0.25);
-      } else if (pin.type === "output") {
+      } else if (componentPin.type === "output") {
         this.#pixiText.x = -gap;
         this.#pixiText.y = 0;
         this.#pixiText.anchor.set(1, 0.25);

@@ -7,7 +7,7 @@ import { Search } from "@mui/icons-material";
 import useAllComponents from "../../store/react/selectors";
 import { useStore } from "../../store/react";
 import { isIncluding, type CCComponentId } from "../../store/component";
-import { ccPinTypes } from "../../store/pin";
+import { ccPinTypes } from "../../store/componentPin";
 import { blackColor, whiteColor } from "../../common/theme";
 import { setDataTransferAsComponent } from "../../common/serialization";
 
@@ -16,13 +16,13 @@ export type SidePanelProps = {
 };
 
 function ComponentRenderer({ componentId }: { componentId: CCComponentId }) {
-  const store = useStore();
+  const { store } = useStore();
   const component = store.components.get(componentId);
   invariant(component);
-  const pins = store.pins
+  const pins = store.componentPins
     .getPinIdsByComponentId(componentId)
-    .filter((pinId) => store.pins.isInterfacePin(pinId))
-    .map((ccPinId) => nullthrows(store.pins.get(ccPinId)));
+    .filter((pinId) => store.componentPins.isInterfacePin(pinId))
+    .map((ccPinId) => nullthrows(store.componentPins.get(ccPinId)));
 
   return (
     <div aria-label="Component" role="img">
@@ -92,10 +92,8 @@ function ComponentRenderer({ componentId }: { componentId: CCComponentId }) {
 
 export default function SidePanel(sidePanelProps: SidePanelProps) {
   const { editedComponentId } = sidePanelProps;
-  const store = useStore();
-  const components = useAllComponents().filter(
-    (component) => component.id !== store.components.rootComponentId
-  );
+  const { store } = useStore();
+  const components = useAllComponents();
   const [searchText, setSearchText] = useState("");
 
   return (

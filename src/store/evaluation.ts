@@ -1,26 +1,22 @@
 import invariant from "tiny-invariant";
 import type CCStore from ".";
 import type { CCComponentId } from "./component";
-import type { CCPinId } from "./pin";
-import type { CCNodeId } from "./node";
+import type { CCComponentPinId } from "./componentPin";
 import CCComponentEvaluator from "./componentEvaluator";
 
 export type CCEvaluationId = string;
 
-type EvaluationCache = {
-  output: Map<CCPinId, boolean[]>;
-  outputNodePinValues: Map<CCNodeId, Map<CCPinId, boolean[]>>;
-};
+// type EvaluationCache = {
+//   output: Map<CCComponentPinId, boolean[]>;
+// };
 
 /**
  * Class for evaluation
  */
 export default class CCEvaluation {
-  #cache: Map<CCEvaluationId, EvaluationCache>;
+  // #cache: Map<CCEvaluationId, EvaluationCache>;
 
-  #previousValueOfOutputNodePins: Map<CCNodeId, Map<CCPinId, boolean[]>> | null;
-
-  static readonly #cacheSize = 5;
+  // static readonly #cacheSize = 5;
 
   #store: CCStore;
 
@@ -31,8 +27,8 @@ export default class CCEvaluation {
    * @param store store
    */
   constructor(store: CCStore) {
-    this.#cache = new Map<CCEvaluationId, EvaluationCache>();
-    this.#previousValueOfOutputNodePins = null;
+    // this.#cache = new Map<CCEvaluationId, EvaluationCache>();
+    // this.#previousValueOfOutputNodePins = null;
     this.#store = store;
     this.#componentEvaluator = null;
   }
@@ -41,8 +37,8 @@ export default class CCEvaluation {
    * Clear the cache and the previous value of output of node pins, and reset the component evaluator
    */
   clear() {
-    this.#cache.clear();
-    this.#previousValueOfOutputNodePins?.clear();
+    // this.#cache.clear();
+    // this.#previousValueOfOutputNodePins?.clear();
     this.#componentEvaluator = null;
   }
 
@@ -55,7 +51,7 @@ export default class CCEvaluation {
    */
   static createId(
     componentId: CCComponentId,
-    input: Map<CCPinId, boolean[]>,
+    input: Map<CCComponentPinId, boolean[]>,
     timeStep: number
   ): CCEvaluationId {
     let id = "";
@@ -83,12 +79,12 @@ export default class CCEvaluation {
    * @param pinId id of pin
    * @returns calculated value of pin
    */
-  getCalculatedPinValue(nodeId: CCNodeId, pinId: CCPinId): boolean[] | null {
-    if (this.#previousValueOfOutputNodePins) {
-      return this.#previousValueOfOutputNodePins.get(nodeId)!.get(pinId)!;
-    }
-    return null;
-  }
+  // getCalculatedPinValue(nodePinId: CCNodePinId): boolean[] | null {
+  //   if (this.#previousValueOfOutputNodePins) {
+  //     return this.#previousValueOfOutputNodePins.get(nodePinId)!;
+  //   }
+  //   return null;
+  // }
 
   /**
    * Evaluate the component
@@ -99,29 +95,22 @@ export default class CCEvaluation {
    */
   evaluate(
     componentId: CCComponentId,
-    input: Map<CCPinId, boolean[]>,
+    input: Map<CCComponentPinId, boolean[]>,
     timeStep: number
-  ): Map<CCPinId, boolean[]> | null {
-    const id = CCEvaluation.createId(componentId, input, timeStep);
-    const cacheHit = this.#cache.get(id);
-    if (cacheHit) {
-      this.#previousValueOfOutputNodePins = cacheHit.outputNodePinValues;
-      return cacheHit.output;
-    }
+  ): Map<CCComponentPinId, boolean[]> | null {
     if (!this.#componentEvaluator) {
       this.#componentEvaluator = new CCComponentEvaluator(this.#store);
     }
     const { output, outputNodePinValues } =
       this.#componentEvaluator.evaluateComponent(componentId, input, timeStep)!;
     invariant(outputNodePinValues);
-    if (this.#cache.size >= CCEvaluation.#cacheSize) {
-      this.#cache.delete([...this.#cache.keys()][0]!);
-    }
-    this.#cache.set(id, {
-      output,
-      outputNodePinValues,
-    });
-    this.#previousValueOfOutputNodePins = outputNodePinValues!;
+    // if (this.#cache.size >= CCEvaluation.#cacheSize) {
+    //   this.#cache.delete([...this.#cache.keys()][0]!);
+    // }
+    // this.#cache.set(id, {
+    //   output,
+    //   outputNodePinValues,
+    // });
     return output;
   }
 }

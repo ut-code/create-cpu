@@ -1,7 +1,7 @@
 /* eslint-disable max-classes-per-file */
 import type CCStore from ".";
 import type { CCComponent, CCComponentId } from "./component";
-import type { CCPin, CCPinId } from "./pin";
+import type { CCComponentPin, CCComponentPinId } from "./componentPin";
 
 export const andIntrinsicComponent: CCComponent = {
   id: "ffffffff-0001-4000-8000-000000000000" as CCComponentId,
@@ -9,32 +9,32 @@ export const andIntrinsicComponent: CCComponent = {
   name: "And",
 };
 
-export const andIntrinsicComponentInputPinA: CCPin = {
-  id: "ffffffff-0001-4000-8000-000000000001" as CCPinId,
+export const andIntrinsicComponentInputPinA: CCComponentPin = {
+  id: "ffffffff-0001-4000-8000-000000000001" as CCComponentPinId,
   componentId: andIntrinsicComponent.id,
   type: "input",
   name: "A",
-  implementation: { type: "intrinsic" },
+  implementation: null,
   multiplexable: true,
   bits: 1,
 };
 
-export const andIntrinsicComponentInputPinB: CCPin = {
-  id: "ffffffff-0001-4000-8000-000000000002" as CCPinId,
+export const andIntrinsicComponentInputPinB: CCComponentPin = {
+  id: "ffffffff-0001-4000-8000-000000000002" as CCComponentPinId,
   componentId: andIntrinsicComponent.id,
   type: "input",
   name: "B",
-  implementation: { type: "intrinsic" },
+  implementation: null,
   multiplexable: true,
   bits: 1,
 };
 
-export const andIntrinsicComponentOutputPin: CCPin = {
-  id: "ffffffff-0001-4000-8000-000000000003" as CCPinId,
+export const andIntrinsicComponentOutputPin: CCComponentPin = {
+  id: "ffffffff-0001-4000-8000-000000000003" as CCComponentPinId,
   componentId: andIntrinsicComponent.id,
   type: "output",
   name: "Out",
-  implementation: { type: "intrinsic" },
+  implementation: null,
   multiplexable: true,
   bits: 1,
 };
@@ -45,32 +45,32 @@ export const orIntrinsicComponent: CCComponent = {
   name: "Or",
 };
 
-export const orIntrinsicComponentInputPinA: CCPin = {
-  id: "ffffffff-0002-4000-8000-000000000001" as CCPinId,
+export const orIntrinsicComponentInputPinA: CCComponentPin = {
+  id: "ffffffff-0002-4000-8000-000000000001" as CCComponentPinId,
   componentId: orIntrinsicComponent.id,
   type: "input",
   name: "A",
-  implementation: { type: "intrinsic" },
+  implementation: null,
   multiplexable: true,
   bits: 1,
 };
 
-export const orIntrinsicComponentInputPinB: CCPin = {
-  id: "ffffffff-0002-4000-8000-000000000002" as CCPinId,
+export const orIntrinsicComponentInputPinB: CCComponentPin = {
+  id: "ffffffff-0002-4000-8000-000000000002" as CCComponentPinId,
   componentId: orIntrinsicComponent.id,
   type: "input",
   name: "B",
-  implementation: { type: "intrinsic" },
+  implementation: null,
   multiplexable: true,
   bits: 1,
 };
 
-export const orIntrinsicComponentOutputPin: CCPin = {
-  id: "ffffffff-0002-4000-8000-000000000003" as CCPinId,
+export const orIntrinsicComponentOutputPin: CCComponentPin = {
+  id: "ffffffff-0002-4000-8000-000000000003" as CCComponentPinId,
   componentId: orIntrinsicComponent.id,
   type: "output",
   name: "Out",
-  implementation: { type: "intrinsic" },
+  implementation: null,
   multiplexable: true,
   bits: 1,
 };
@@ -81,22 +81,22 @@ export const notIntrinsicComponent: CCComponent = {
   name: "Not",
 };
 
-export const notIntrinsicComponentInputPin: CCPin = {
-  id: "ffffffff-0003-4000-8000-000000000001" as CCPinId,
+export const notIntrinsicComponentInputPin: CCComponentPin = {
+  id: "ffffffff-0003-4000-8000-000000000001" as CCComponentPinId,
   componentId: notIntrinsicComponent.id,
   type: "input",
   name: "In",
-  implementation: { type: "intrinsic" },
+  implementation: null,
   multiplexable: true,
   bits: 1,
 };
 
-export const notIntrinsicComponentOutputPin: CCPin = {
-  id: "ffffffff-0003-4000-8000-000000000002" as CCPinId,
+export const notIntrinsicComponentOutputPin: CCComponentPin = {
+  id: "ffffffff-0003-4000-8000-000000000002" as CCComponentPinId,
   componentId: notIntrinsicComponent.id,
   type: "output",
   name: "Out",
-  implementation: { type: "intrinsic" },
+  implementation: null,
   multiplexable: true,
   bits: 1,
 };
@@ -107,32 +107,32 @@ export const xorIntrinsicComponent: CCComponent = {
   name: "Xor",
 };
 
-export const xorIntrinsicComponentInputPinA: CCPin = {
-  id: "ffffffff-0004-4000-8000-000000000001" as CCPinId,
+export const xorIntrinsicComponentInputPinA: CCComponentPin = {
+  id: "ffffffff-0004-4000-8000-000000000001" as CCComponentPinId,
   componentId: xorIntrinsicComponent.id,
   type: "input",
   name: "A",
-  implementation: { type: "intrinsic" },
+  implementation: null,
   multiplexable: true,
   bits: 1,
 };
 
-export const xorIntrinsicComponentInputPinB: CCPin = {
-  id: "ffffffff-0004-4000-8000-000000000002" as CCPinId,
+export const xorIntrinsicComponentInputPinB: CCComponentPin = {
+  id: "ffffffff-0004-4000-8000-000000000002" as CCComponentPinId,
   componentId: xorIntrinsicComponent.id,
   type: "input",
   name: "B",
-  implementation: { type: "intrinsic" },
+  implementation: null,
   multiplexable: true,
   bits: 1,
 };
 
-export const xorIntrinsicComponentOutputPin: CCPin = {
-  id: "ffffffff-0004-4000-8000-000000000003" as CCPinId,
+export const xorIntrinsicComponentOutputPin: CCComponentPin = {
+  id: "ffffffff-0004-4000-8000-000000000003" as CCComponentPinId,
   componentId: xorIntrinsicComponent.id,
   type: "output",
   name: "Out",
-  implementation: { type: "intrinsic" },
+  implementation: null,
   multiplexable: true,
   bits: 1,
 };
@@ -143,22 +143,22 @@ export const inputIntrinsicComponent: CCComponent = {
   name: "Input",
 };
 
-export const inputIntrinsicComponentInputPin: CCPin = {
-  id: "ffffffff-0005-4000-8000-000000000001" as CCPinId,
+export const inputIntrinsicComponentInputPin: CCComponentPin = {
+  id: "ffffffff-0005-4000-8000-000000000001" as CCComponentPinId,
   componentId: inputIntrinsicComponent.id,
   type: "input",
   name: "In",
-  implementation: { type: "intrinsic" },
+  implementation: null,
   multiplexable: true,
   bits: 1,
 };
 
-export const inputIntrinsicComponentOutputPin: CCPin = {
-  id: "ffffffff-0005-4000-8000-000000000002" as CCPinId,
+export const inputIntrinsicComponentOutputPin: CCComponentPin = {
+  id: "ffffffff-0005-4000-8000-000000000002" as CCComponentPinId,
   componentId: inputIntrinsicComponent.id,
   type: "output",
   name: "Out",
-  implementation: { type: "intrinsic" },
+  implementation: null,
   multiplexable: true,
   bits: 1,
 };
@@ -169,108 +169,108 @@ export const fourBitsIntrinsicComponent: CCComponent = {
   name: "FourBits",
 };
 
-export const fourBitsIntrinsicComponentInputPin0: CCPin = {
-  id: "ffffffff-0006-4000-8000-000000000001" as CCPinId,
+export const fourBitsIntrinsicComponentInputPin0: CCComponentPin = {
+  id: "ffffffff-0006-4000-8000-000000000001" as CCComponentPinId,
   componentId: fourBitsIntrinsicComponent.id,
   type: "input",
   name: "bit0",
-  implementation: { type: "intrinsic" },
+  implementation: null,
   multiplexable: false,
   bits: 1,
 };
 
-export const fourBitsIntrinsicComponentInputPin1: CCPin = {
-  id: "ffffffff-0006-4000-8000-000000000002" as CCPinId,
+export const fourBitsIntrinsicComponentInputPin1: CCComponentPin = {
+  id: "ffffffff-0006-4000-8000-000000000002" as CCComponentPinId,
   componentId: fourBitsIntrinsicComponent.id,
   type: "input",
   name: "bit1",
-  implementation: { type: "intrinsic" },
+  implementation: null,
   multiplexable: false,
   bits: 1,
 };
 
-export const fourBitsIntrinsicComponentInputPin2: CCPin = {
-  id: "ffffffff-0006-4000-8000-000000000003" as CCPinId,
+export const fourBitsIntrinsicComponentInputPin2: CCComponentPin = {
+  id: "ffffffff-0006-4000-8000-000000000003" as CCComponentPinId,
   componentId: fourBitsIntrinsicComponent.id,
   type: "input",
   name: "bit2",
-  implementation: { type: "intrinsic" },
+  implementation: null,
   multiplexable: false,
   bits: 1,
 };
 
-export const fourBitsIntrinsicComponentInputPin3: CCPin = {
-  id: "ffffffff-0006-4000-8000-000000000004" as CCPinId,
+export const fourBitsIntrinsicComponentInputPin3: CCComponentPin = {
+  id: "ffffffff-0006-4000-8000-000000000004" as CCComponentPinId,
   componentId: fourBitsIntrinsicComponent.id,
   type: "input",
   name: "bit3",
-  implementation: { type: "intrinsic" },
+  implementation: null,
   multiplexable: false,
   bits: 1,
 };
 
-export const fourBitsIntrinsicComponentOutputPin: CCPin = {
-  id: "ffffffff-0006-4000-8000-000000000005" as CCPinId,
+export const fourBitsIntrinsicComponentOutputPin: CCComponentPin = {
+  id: "ffffffff-0006-4000-8000-000000000005" as CCComponentPinId,
   componentId: fourBitsIntrinsicComponent.id,
   type: "output",
   name: "Out",
-  implementation: { type: "intrinsic" },
+  implementation: null,
   multiplexable: false,
   bits: 4,
 };
 
-export const distiributeFourBitsIntrinsicComponent: CCComponent = {
+export const distributeFourBitsIntrinsicComponent: CCComponent = {
   id: "ffffffff-0007-4000-8000-000000000000" as CCComponentId,
   isIntrinsic: true,
   name: "DistributeFourBits",
 };
 
-export const distiributeFourBitsIntrinsicComponentInputPin: CCPin = {
-  id: "ffffffff-0007-4000-8000-000000000001" as CCPinId,
-  componentId: distiributeFourBitsIntrinsicComponent.id,
+export const distributeFourBitsIntrinsicComponentInputPin: CCComponentPin = {
+  id: "ffffffff-0007-4000-8000-000000000001" as CCComponentPinId,
+  componentId: distributeFourBitsIntrinsicComponent.id,
   type: "input",
   name: "input",
-  implementation: { type: "intrinsic" },
+  implementation: null,
   multiplexable: false,
   bits: 4,
 };
 
-export const distiributeFourBitsIntrinsicComponentOutputPin0: CCPin = {
-  id: "ffffffff-0007-4000-8000-000000000002" as CCPinId,
-  componentId: distiributeFourBitsIntrinsicComponent.id,
+export const distributeFourBitsIntrinsicComponentOutputPin0: CCComponentPin = {
+  id: "ffffffff-0007-4000-8000-000000000002" as CCComponentPinId,
+  componentId: distributeFourBitsIntrinsicComponent.id,
   type: "output",
   name: "bit0",
-  implementation: { type: "intrinsic" },
+  implementation: null,
   multiplexable: false,
   bits: 1,
 };
 
-export const distiributeFourBitsIntrinsicComponentOutputPin1: CCPin = {
-  id: "ffffffff-0007-4000-8000-000000000003" as CCPinId,
-  componentId: distiributeFourBitsIntrinsicComponent.id,
+export const distributeFourBitsIntrinsicComponentOutputPin1: CCComponentPin = {
+  id: "ffffffff-0007-4000-8000-000000000003" as CCComponentPinId,
+  componentId: distributeFourBitsIntrinsicComponent.id,
   type: "output",
   name: "bit1",
-  implementation: { type: "intrinsic" },
+  implementation: null,
   multiplexable: false,
   bits: 1,
 };
 
-export const distiributeFourBitsIntrinsicComponentOutputPin2: CCPin = {
-  id: "ffffffff-0007-4000-8000-000000000004" as CCPinId,
-  componentId: distiributeFourBitsIntrinsicComponent.id,
+export const distributeFourBitsIntrinsicComponentOutputPin2: CCComponentPin = {
+  id: "ffffffff-0007-4000-8000-000000000004" as CCComponentPinId,
+  componentId: distributeFourBitsIntrinsicComponent.id,
   type: "output",
   name: "bit2",
-  implementation: { type: "intrinsic" },
+  implementation: null,
   multiplexable: false,
   bits: 1,
 };
 
-export const distiributeFourBitsIntrinsicComponentOutputPin3: CCPin = {
-  id: "ffffffff-0007-4000-8000-000000000005" as CCPinId,
-  componentId: distiributeFourBitsIntrinsicComponent.id,
+export const distributeFourBitsIntrinsicComponentOutputPin3: CCComponentPin = {
+  id: "ffffffff-0007-4000-8000-000000000005" as CCComponentPinId,
+  componentId: distributeFourBitsIntrinsicComponent.id,
   type: "output",
   name: "bit3",
-  implementation: { type: "intrinsic" },
+  implementation: null,
   multiplexable: false,
   bits: 1,
 };
@@ -281,22 +281,22 @@ export const flipFlopIntrinsicComponent: CCComponent = {
   name: "FlipFlop",
 };
 
-export const flipFlopIntrinsicComponentInputPin: CCPin = {
-  id: "ffffffff-0008-4000-8000-000000000001" as CCPinId,
+export const flipFlopIntrinsicComponentInputPin: CCComponentPin = {
+  id: "ffffffff-0008-4000-8000-000000000001" as CCComponentPinId,
   componentId: flipFlopIntrinsicComponent.id,
   type: "input",
   name: "In",
-  implementation: { type: "intrinsic" },
+  implementation: null,
   multiplexable: true,
   bits: 1,
 };
 
-export const flipFlopIntrinsicComponentOutputPin: CCPin = {
-  id: "ffffffff-0008-4000-8000-000000000002" as CCPinId,
+export const flipFlopIntrinsicComponentOutputPin: CCComponentPin = {
+  id: "ffffffff-0008-4000-8000-000000000002" as CCComponentPinId,
   componentId: flipFlopIntrinsicComponent.id,
   type: "output",
   name: "Out",
-  implementation: { type: "intrinsic" },
+  implementation: null,
   multiplexable: true,
   bits: 1,
 };
@@ -309,38 +309,38 @@ export const flipFlopIntrinsicComponentOutputPin: CCPin = {
 export function registerIntrinsics(store: CCStore) {
   if (store.components.get(andIntrinsicComponent.id)) return;
   store.components.register(andIntrinsicComponent);
-  store.pins.register(andIntrinsicComponentInputPinA);
-  store.pins.register(andIntrinsicComponentInputPinB);
-  store.pins.register(andIntrinsicComponentOutputPin);
+  store.componentPins.register(andIntrinsicComponentInputPinA);
+  store.componentPins.register(andIntrinsicComponentInputPinB);
+  store.componentPins.register(andIntrinsicComponentOutputPin);
   store.components.register(orIntrinsicComponent);
-  store.pins.register(orIntrinsicComponentInputPinA);
-  store.pins.register(orIntrinsicComponentInputPinB);
-  store.pins.register(orIntrinsicComponentOutputPin);
+  store.componentPins.register(orIntrinsicComponentInputPinA);
+  store.componentPins.register(orIntrinsicComponentInputPinB);
+  store.componentPins.register(orIntrinsicComponentOutputPin);
   store.components.register(notIntrinsicComponent);
-  store.pins.register(notIntrinsicComponentInputPin);
-  store.pins.register(notIntrinsicComponentOutputPin);
+  store.componentPins.register(notIntrinsicComponentInputPin);
+  store.componentPins.register(notIntrinsicComponentOutputPin);
   store.components.register(xorIntrinsicComponent);
-  store.pins.register(xorIntrinsicComponentInputPinA);
-  store.pins.register(xorIntrinsicComponentInputPinB);
-  store.pins.register(xorIntrinsicComponentOutputPin);
+  store.componentPins.register(xorIntrinsicComponentInputPinA);
+  store.componentPins.register(xorIntrinsicComponentInputPinB);
+  store.componentPins.register(xorIntrinsicComponentOutputPin);
   store.components.register(inputIntrinsicComponent);
-  store.pins.register(inputIntrinsicComponentInputPin);
-  store.pins.register(inputIntrinsicComponentOutputPin);
+  store.componentPins.register(inputIntrinsicComponentInputPin);
+  store.componentPins.register(inputIntrinsicComponentOutputPin);
   store.components.register(fourBitsIntrinsicComponent);
-  store.pins.register(fourBitsIntrinsicComponentInputPin0);
-  store.pins.register(fourBitsIntrinsicComponentInputPin1);
-  store.pins.register(fourBitsIntrinsicComponentInputPin2);
-  store.pins.register(fourBitsIntrinsicComponentInputPin3);
-  store.pins.register(fourBitsIntrinsicComponentOutputPin);
-  store.components.register(distiributeFourBitsIntrinsicComponent);
-  store.pins.register(distiributeFourBitsIntrinsicComponentInputPin);
-  store.pins.register(distiributeFourBitsIntrinsicComponentOutputPin0);
-  store.pins.register(distiributeFourBitsIntrinsicComponentOutputPin1);
-  store.pins.register(distiributeFourBitsIntrinsicComponentOutputPin2);
-  store.pins.register(distiributeFourBitsIntrinsicComponentOutputPin3);
+  store.componentPins.register(fourBitsIntrinsicComponentInputPin0);
+  store.componentPins.register(fourBitsIntrinsicComponentInputPin1);
+  store.componentPins.register(fourBitsIntrinsicComponentInputPin2);
+  store.componentPins.register(fourBitsIntrinsicComponentInputPin3);
+  store.componentPins.register(fourBitsIntrinsicComponentOutputPin);
+  store.components.register(distributeFourBitsIntrinsicComponent);
+  store.componentPins.register(distributeFourBitsIntrinsicComponentInputPin);
+  store.componentPins.register(distributeFourBitsIntrinsicComponentOutputPin0);
+  store.componentPins.register(distributeFourBitsIntrinsicComponentOutputPin1);
+  store.componentPins.register(distributeFourBitsIntrinsicComponentOutputPin2);
+  store.componentPins.register(distributeFourBitsIntrinsicComponentOutputPin3);
   store.components.register(flipFlopIntrinsicComponent);
-  store.pins.register(flipFlopIntrinsicComponentInputPin);
-  store.pins.register(flipFlopIntrinsicComponentOutputPin);
+  store.componentPins.register(flipFlopIntrinsicComponentInputPin);
+  store.componentPins.register(flipFlopIntrinsicComponentOutputPin);
 }
 
 /**
@@ -351,6 +351,6 @@ export function registerIntrinsics(store: CCStore) {
 export function hasVariablePinCount(componentId: CCComponentId) {
   return (
     componentId === fourBitsIntrinsicComponent.id ||
-    componentId === distiributeFourBitsIntrinsicComponent.id
+    componentId === distributeFourBitsIntrinsicComponent.id
   );
 }

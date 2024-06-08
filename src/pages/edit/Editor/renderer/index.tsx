@@ -11,10 +11,11 @@ import {
 } from "../../../../store/connection";
 import CCComponentEditorRendererConnection from "./connection";
 import CCComponentEditorRendererRangeSelect from "./rangeSelect";
-import type { CCPinId } from "../../../../store/pin";
-import CCSimulator from "./simulator";
+import type { CCComponentPinId } from "../../../../store/componentPin";
+// import CCSimulator from "./simulator";
 import type { CCComponentEditorRendererContext } from "./base";
 import CCComponentEditorRendererBase from "./base";
+import type { CCNodePinId } from "../../../../store/nodePin";
 
 type DragState = {
   startPosition: PIXI.Point;
@@ -27,7 +28,7 @@ type DragState = {
       }
     | {
         type: "pin";
-        pinId: CCPinId;
+        pinId: CCComponentPinId;
         nodeId: CCNodeId;
         initialPosition: PIXI.Point;
       }
@@ -77,7 +78,7 @@ export default class CCComponentEditorRenderer extends CCComponentEditorRenderer
 
   #creatingConnectionPixiGraphics: PIXI.Graphics;
 
-  #simulator: CCSimulator;
+  // #simulator: CCSimulator;
 
   /**
    * Constructor of CCComponentEditorRenderer
@@ -87,11 +88,11 @@ export default class CCComponentEditorRenderer extends CCComponentEditorRenderer
     super(props.context);
     this.#componentId = props.componentId;
     this.#htmlContainer = props.htmlContainer;
-    this.#simulator = new CCSimulator({
-      store: this.context.store,
-      componentEditorStore: this.context.componentEditorStore,
-      componentId: this.#componentId,
-    });
+    // this.#simulator = new CCSimulator({
+    //   store: this.context.store,
+    //   componentEditorStore: this.context.componentEditorStore,
+    //   componentId: this.#componentId,
+    // });
     invariant(this.context.store.components.get(props.componentId));
 
     const rect = this.#htmlContainer.getBoundingClientRect();
@@ -258,8 +259,8 @@ export default class CCComponentEditorRenderer extends CCComponentEditorRenderer
     });
 
     this.context.store.nodes
-      .getNodeIdsByParentComponentId(this.#componentId)
-      .forEach((nodeId) => this.#addNodeRenderer(nodeId));
+      .getManyByParentComponentId(this.#componentId)
+      .forEach((node) => this.#addNodeRenderer(node.id));
     this.context.store.nodes.on("didRegister", this.#onNodeAdded);
     this.context.store.nodes.on("didUnregister", this.#onNodeRemoved);
 
@@ -314,7 +315,10 @@ export default class CCComponentEditorRenderer extends CCComponentEditorRenderer
         },
       };
     };
-    const onDragStartPin = (e: PIXI.FederatedMouseEvent, pinId: CCPinId) => {
+    const onDragStartPin = (
+      e: PIXI.FederatedMouseEvent,
+      nodePinId: CCNodePinId
+    ) => {
       // const node = this.context.store.nodes.get(nodeId)!;
       const { toWorldPosition, editorMode } =
         this.context.componentEditorStore.getState();
@@ -325,34 +329,45 @@ export default class CCComponentEditorRenderer extends CCComponentEditorRenderer
       // this.#creatingConnectionPixiGraphics.clear();
       this.#pixiWorld.addChild(this.#creatingConnectionPixiGraphics);
       this.#creatingConnectionPixiGraphics.lineStyle(lineWidth, lineColor);
-      const pinPosition = CCComponentEditorRendererNode.getPinAbsolute(
+      const pinPosition = CCComponentEditorRendererNode.getNodePinAbsolute(
         this.context.store,
-        nodeId,
-        pinId
+        nodePinId
       );
       this.#creatingConnectionPixiGraphics.moveTo(pinPosition.x, pinPosition.y);
+      const { componentPinId } = this.context.store.nodePins.get(nodePinId)!;
       this.#dragState = {
         startPosition: e.global.clone(),
         target: {
           type: "pin",
-          pinId,
+          pinId: componentPinId,
           nodeId,
           initialPosition: toWorldPosition(e.global.clone()),
         },
       };
     };
-    const onDragEndPin = (_: PIXI.FederatedMouseEvent, pinId: CCPinId) => {
+    const onDragEndPin = (
+      _: PIXI.FederatedMouseEvent,
+      nodePinId: CCNodePinId
+    ) => {
       this.#creatingConnectionPixiGraphics?.clear();
-      const pinType = this.context.store.pins.get(pinId)?.type;
+      const { componentPinId } = this.context.store.nodePins.get(nodePinId)!;
+      const pinType =
+        this.context.store.componentPins.get(componentPinId)?.type;
       if (this.#dragState?.target.type === "pin") {
         const anotherPinId = this.#dragState.target.pinId;
-        const anotherPinType = this.context.store.pins.get(anotherPinId)?.type;
+        const anotherPinType =
+          this.context.store.componentPins.get(anotherPinId)?.type;
         const anotherNodeId = this.#dragState.target.nodeId;
+        const { id: anotherNodePinId } =
+          this.context.store.nodePins.getByImplementationNodeIdAndPinId(
+            anotherNodeId,
+            anotherPinId
+          );
         if (pinType === "input" && anotherPinType === "output") {
-          if (this.context.store.connections.hasNoConnectionOf(nodeId, pinId)) {
+          if (this.context.store.connections.hasNoConnectionOf(nodePinId)) {
             const newConnection = CCConnectionStore.create({
-              to: { nodeId, pinId },
-              from: { nodeId: anotherNodeId, pinId: anotherPinId },
+              to: nodePinId,
+              from: anotherNodePinId,
               parentComponentId: this.#componentId,
               bentPortion: 0.5,
             });
@@ -360,14 +375,11 @@ export default class CCComponentEditorRenderer extends CCComponentEditorRenderer
           }
         } else if (pinType === "output" && anotherPinType === "input") {
           if (
-            this.context.store.connections.hasNoConnectionOf(
-              anotherNodeId,
-              anotherPinId
-            )
+            this.context.store.connections.hasNoConnectionOf(anotherNodePinId)
           ) {
             const newConnection = CCConnectionStore.create({
-              from: { nodeId, pinId },
-              to: { nodeId: anotherNodeId, pinId: anotherPinId },
+              from: nodePinId,
+              to: anotherNodePinId,
               parentComponentId: this.#componentId,
               bentPortion: 0.5,
             });
@@ -378,49 +390,6 @@ export default class CCComponentEditorRenderer extends CCComponentEditorRenderer
       this.#dragState = null;
     };
 
-    const simulation = (targetNodeId: CCNodeId) => {
-      const editorState = this.context.componentEditorStore.getState();
-      const pinIds = this.context.store.pins.getPinIdsByComponentId(
-        this.#componentId
-      );
-      const input = new Map<CCPinId, boolean[]>();
-      for (const pinId of pinIds) {
-        const pin = this.context.store.pins.get(pinId)!;
-        if (pin.type === "input") {
-          if (pin.implementation.type === "user") {
-            const implementationNodeId = pin.implementation.nodeId;
-            const implementationPinId = pin.implementation.pinId;
-            if (
-              this.context.store.connections.getConnectionIdsByPinId(
-                implementationNodeId,
-                implementationPinId
-              )!.length === 0
-            ) {
-              const inputValue = editorState.getInputValue(
-                implementationNodeId,
-                pinId,
-                pin.bits
-              );
-              input.set(pinId, inputValue);
-            }
-          }
-        }
-      }
-      const output = this.#simulator.simulation(input, editorState.timeStep);
-      if (output == null) return null;
-      const nodeOutput = new Map<CCPinId, boolean[]>();
-      for (const [outputPinId, outputValue] of output) {
-        const pin = this.context.store.pins.get(outputPinId)!;
-        if (
-          pin.implementation.type === "user" &&
-          pin.implementation.nodeId === targetNodeId
-        ) {
-          nodeOutput.set(pin.implementation.pinId, outputValue);
-        }
-      }
-      return nodeOutput;
-    };
-
     const newNodeRenderer = new CCComponentEditorRendererNode({
       context: this.context,
       nodeId,
@@ -428,7 +397,6 @@ export default class CCComponentEditorRenderer extends CCComponentEditorRenderer
       onDragStart,
       onDragStartPin,
       onDragEndPin,
-      simulation,
     });
     this.#nodeRenderers.set(nodeId, newNodeRenderer);
   }
@@ -449,18 +417,12 @@ export default class CCComponentEditorRenderer extends CCComponentEditorRenderer
         },
       };
     };
-    const getPinValue = () => {
-      const { nodeId, pinId } =
-        this.context.store.connections.get(connectionId)!.from;
-      return this.#simulator.getPinValue(nodeId, pinId);
-    };
     const newConnectionRenderer = new CCComponentEditorRendererConnection(
       this.context.store,
       connectionId,
       this.#pixiWorld,
-      this.context.componentEditorStore,
-      onDragStart,
-      getPinValue
+      this.context,
+      onDragStart
     );
     this.#connectionRenderers.set(connectionId, newConnectionRenderer);
   }
@@ -472,7 +434,7 @@ export default class CCComponentEditorRenderer extends CCComponentEditorRenderer
   #onConnectionAdded = (connection: CCConnection) => {
     if (connection.parentComponentId !== this.#componentId) return;
     this.#addConnectionRenderer(connection.id);
-    this.#simulator.clear();
+    // this.#simulator.clear();
   };
 
   /**
@@ -483,7 +445,7 @@ export default class CCComponentEditorRenderer extends CCComponentEditorRenderer
     if (connection.parentComponentId !== this.#componentId) return;
     this.#connectionRenderers.get(connection.id)?.destroy();
     this.#connectionRenderers.delete(connection.id);
-    this.#simulator.clear();
+    // this.#simulator.clear();
   };
 
   /**
@@ -493,7 +455,7 @@ export default class CCComponentEditorRenderer extends CCComponentEditorRenderer
   #onNodeAdded = (node: CCNode) => {
     if (node.parentComponentId !== this.#componentId) return;
     this.#addNodeRenderer(node.id);
-    this.#simulator.clear();
+    // this.#simulator.clear();
   };
 
   /**
@@ -504,7 +466,7 @@ export default class CCComponentEditorRenderer extends CCComponentEditorRenderer
     if (node.parentComponentId !== this.#componentId) return;
     this.#nodeRenderers.get(node.id)?.destroy();
     this.#nodeRenderers.delete(node.id);
-    this.#simulator.clear();
+    // this.#simulator.clear();
   };
 
   /**

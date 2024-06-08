@@ -2,7 +2,7 @@ import { useCallback, useSyncExternalStore } from "react";
 import { useStore } from ".";
 
 export default function useAllComponents() {
-  const store = useStore();
+  const { store } = useStore();
   const getSnapshot = useCallback(() => store.components.getAll(), [store]);
   const subscribe = useCallback(
     (onStoreChange: () => void) => {

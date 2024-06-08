@@ -18,6 +18,7 @@ import {
   KeyboardDoubleArrowRight,
   PlayArrow,
 } from "@mui/icons-material";
+import nullthrows from "nullthrows";
 import { useStore } from "../../../store/react";
 import CCComponentEditorRenderer from "./renderer";
 import { CCComponentStore, type CCComponentId } from "../../../store/component";
@@ -44,7 +45,7 @@ function CCComponentEditorContent({
   const rendererRef = useRef<CCComponentEditorRenderer>();
   const containerRef = useRef<HTMLDivElement>(null);
   const overlayAreaRef = useRef<HTMLDivElement>(null);
-  const store = useStore();
+  const { store } = useStore();
   const componentEditorStore = useComponentEditorStore();
   const componentEditorState = componentEditorStore();
   const component = store.components.get(componentId);
@@ -211,6 +212,7 @@ function CCComponentEditorContent({
                   const newComponent = CCComponentStore.create({
                     name: "New Component",
                   });
+                  store.components.register(newComponent);
                   const oldToNewNodeIdMap = new Map<CCNodeId, CCNodeId>();
                   const newNodes = oldNodes.map<CCNode>((oldNode) => {
                     const newNode = CCNodeStore.create({
@@ -223,31 +225,35 @@ function CCComponentEditorContent({
                     oldToNewNodeIdMap.set(oldNode.id, newNode.id);
                     return newNode;
                   });
+                  for (const node of newNodes) store.nodes.register(node);
                   const newConnections = oldConnections.flatMap<CCConnection>(
                     (oldConnection) => {
-                      const fromNodeId = oldToNewNodeIdMap.get(
-                        oldConnection.from.nodeId
+                      const oldFromNodePin = nullthrows(
+                        store.nodePins.get(oldConnection.from)
                       );
-                      const toNodeId = oldToNewNodeIdMap.get(
-                        oldConnection.to.nodeId
+                      const oldToNodePin = nullthrows(
+                        store.nodePins.get(oldConnection.to)
                       );
-                      if (!fromNodeId || !toNodeId) return [];
+                      const newFromNodeId = nullthrows(
+                        oldToNewNodeIdMap.get(oldFromNodePin.nodeId)
+                      );
+                      const newToNodeId = nullthrows(
+                        oldToNewNodeIdMap.get(oldToNodePin.nodeId)
+                      );
                       return CCConnectionStore.create({
                         parentComponentId: newComponent.id,
-                        from: {
-                          nodeId: fromNodeId,
-                          pinId: oldConnection.from.pinId,
-                        },
-                        to: {
-                          nodeId: toNodeId,
-                          pinId: oldConnection.to.pinId,
-                        },
+                        from: store.nodePins.getByImplementationNodeIdAndPinId(
+                          newFromNodeId,
+                          oldFromNodePin.componentPinId
+                        ).id,
+                        to: store.nodePins.getByImplementationNodeIdAndPinId(
+                          newToNodeId,
+                          oldToNodePin.componentPinId
+                        ).id,
                         bentPortion: oldConnection.bentPortion,
                       });
                     }
                   );
-                  store.components.register(newComponent);
-                  for (const node of newNodes) store.nodes.register(node);
                   for (const connection of newConnections)
                     store.connections.register(connection);
                   store.connections.unregister([
@@ -332,8 +338,9 @@ function CCComponentEditorContent({
 }
 
 export default function CCComponentEditor(props: CCComponentEditorProps) {
+  const { componentId } = props;
   return (
-    <ComponentEditorStoreProvider>
+    <ComponentEditorStoreProvider componentId={componentId}>
       <CCComponentEditorContent {...props} />
     </ComponentEditorStoreProvider>
   );
