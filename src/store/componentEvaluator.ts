@@ -964,7 +964,6 @@ function simulateNode(
       inputValues,
       previousFrame
     );
-    console.log(outputValues);
     if (!outputValues) {
       return null;
     }
@@ -1027,17 +1026,34 @@ function simulateNode(
     const currentNode = store.nodes.get(currentNodeId)!;
     const currentComponentId = currentNode.componentId;
 
-    if (
+    const inputsReady =
       nodePinInputNumber.get(currentNodeId)! ===
-      foundInputNumber.get(currentNodeId)!
-    ) {
+      foundInputNumber.get(currentNodeId)!;
+    const isUnvisitedFlipFlop =
+      currentComponentId === intrinsics.flipFlopIntrinsicComponent.id &&
+      !visitedFlipFlops.has(currentNodeId);
+
+    if (inputsReady || isUnvisitedFlipFlop) {
       const frame = previousFrame
         ? previousFrame!.nodes.get(currentNodeId)!.child
         : null;
+      const currentNodePinInputValues = new Map<CCNodePinId, SimulationValue>();
+      const currentNodePins = store.nodePins
+        .getManyByNodeId(currentNodeId)!
+        .filter((nodePin) => {
+          const componentPin = store.componentPins.get(nodePin.componentPinId)!;
+          return componentPin.type === "input";
+        });
+      for (const nodePin of currentNodePins) {
+        currentNodePinInputValues.set(
+          nodePin.id,
+          nodePinInputValues.get(nodePin.id)!
+        );
+      }
       const result = simulateNode(
         store,
         currentNodeId,
-        nodePinInputValues,
+        currentNodePinInputValues,
         frame
       );
       if (!result) {
@@ -1074,55 +1090,10 @@ function simulateNode(
           }
         }
       }
-    } else if (
-      currentComponentId === intrinsics.flipFlopIntrinsicComponent.id &&
-      !visitedFlipFlops.has(currentNodeId)
-    ) {
-      const frame = previousFrame
-        ? previousFrame?.nodes.get(currentNodeId)!.child
-        : null;
-      const result = simulateNode(
-        store,
-        currentNodeId,
-        nodePinInputValues,
-        frame
-      );
-      if (!result) {
-        return null;
+      if (!inputsReady) {
+        visitedFlipFlops.add(currentNodeId);
+        unevaluatedNodes.add(currentNodeId);
       }
-      childMap.set(currentNodeId, result);
-      for (const [outputPinId, outputValue] of result.outputValues) {
-        if (!visitedFlipFlops.has(currentNodeId)) {
-          const connections =
-            store.connections.getConnectionsByNodePinId(outputPinId)!;
-          if (connections.length !== 0) {
-            for (const connection of connections) {
-              const connectedNodePin = store.nodePins.get(connection.to)!;
-              nodePinInputValues.set(connectedNodePin.id, outputValue);
-              foundInputNumber.set(
-                connectedNodePin.nodeId,
-                foundInputNumber.get(connectedNodePin.nodeId)! + 1
-              );
-            }
-          } else {
-            const parentNodePin = nodePins.find((nodePin) => {
-              const componentPin = store.componentPins.get(
-                nodePin.componentPinId
-              )!;
-              return (
-                componentPin.type === "output" &&
-                componentPin.implementation === outputPinId
-              );
-            })!;
-            outputValues.set(parentNodePin.id, outputValue);
-          }
-          if (currentComponentId === intrinsics.flipFlopIntrinsicComponent.id) {
-            visitedFlipFlops.add(currentNodeId);
-          }
-        }
-      }
-      visitedFlipFlops.add(currentNodeId);
-      unevaluatedNodes.add(currentNodeId);
     } else {
       unevaluatedNodes.add(currentNodeId);
     }
@@ -1145,8 +1116,6 @@ export function simulateComponent(
   inputValues: Map<CCComponentPinId, SimulationValue>,
   previousFrame: SimulationFrame | null
 ): SimulationFrame | null {
-  // return null;
-  console.log(previousFrame);
   const component = store.components.get(componentId);
   if (!component) throw new Error(`Component ${component} is not defined.`);
   const childMap = new Map<
@@ -1193,7 +1162,6 @@ export function simulateComponent(
   }
 
   const outputValues = new Map<CCComponentPinId, SimulationValue>();
-  const outputNodePinValues = new Map<CCNodePinId, SimulationValue>();
   const visitedFlipFlops = new Set<CCNodeId>();
 
   while (unevaluatedNodes.size > 0) {
@@ -1203,10 +1171,14 @@ export function simulateComponent(
     const currentComponentId = currentNode.componentId;
     const currentComponent = store.components.get(currentComponentId)!;
 
-    if (
+    const inputsReady =
       nodePinInputNumber.get(currentNodeId)! ===
-      foundInputNumber.get(currentNodeId)!
-    ) {
+      foundInputNumber.get(currentNodeId)!;
+    const isUnvisitedFlipFlop =
+      currentComponentId === intrinsics.flipFlopIntrinsicComponent.id &&
+      !visitedFlipFlops.has(currentNodeId);
+
+    if (inputsReady || isUnvisitedFlipFlop) {
       const frame = (() => {
         if (!previousFrame) return null;
         if (currentComponent.isIntrinsic) {
@@ -1214,10 +1186,23 @@ export function simulateComponent(
         }
         return previousFrame.nodes.get(currentNodeId)!.child;
       })();
+      const currentNodePinInputValues = new Map<CCNodePinId, SimulationValue>();
+      const currentNodePins = store.nodePins
+        .getManyByNodeId(currentNodeId)!
+        .filter((nodePin) => {
+          const componentPin = store.componentPins.get(nodePin.componentPinId)!;
+          return componentPin.type === "input";
+        });
+      for (const nodePin of currentNodePins) {
+        currentNodePinInputValues.set(
+          nodePin.id,
+          nodePinInputValues.get(nodePin.id)!
+        );
+      }
       const result = simulateNode(
         store,
         currentNodeId,
-        nodePinInputValues,
+        currentNodePinInputValues,
         frame
       );
       if (!result) {
@@ -1225,7 +1210,6 @@ export function simulateComponent(
       }
       childMap.set(currentNodeId, result);
       for (const [outputPinId, outputValue] of result.outputValues) {
-        outputNodePinValues.set(outputPinId, outputValue);
         if (!visitedFlipFlops.has(currentNodeId)) {
           const connections =
             store.connections.getConnectionsByNodePinId(outputPinId)!;
@@ -1251,6 +1235,10 @@ export function simulateComponent(
             visitedFlipFlops.add(currentNodeId);
           }
         }
+      }
+      if (!inputsReady) {
+        visitedFlipFlops.add(currentNodeId);
+        unevaluatedNodes.add(currentNodeId);
       }
     } else {
       unevaluatedNodes.add(currentNodeId);
