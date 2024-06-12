@@ -117,6 +117,12 @@ export class CCConnectionStore extends EventEmitter<CCConnectionStoreEvents> {
       .map((connection) => connection.id);
   }
 
+  getManyByParentComponentId(parentComponentId: CCComponentId): CCConnection[] {
+    return [...this.#connections.values()].filter(
+      (connection) => connection.parentComponentId === parentComponentId
+    );
+  }
+
   /**
    * Get connections by id of node and pin
    * @param nodeId id of node
