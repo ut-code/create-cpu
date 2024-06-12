@@ -154,3 +154,72 @@ export function isIncluding(
   };
   return dfs(componentId);
 }
+
+function validateComponent(store: CCStore, componentId: CCComponentId) {
+  const component = store.components.get(componentId)!;
+  if (component.isIntrinsic) return;
+
+  const nodes = store.nodes.getManyByParentComponentId(componentId);
+  const connections = store.connections.getManyByParentComponentId(componentId);
+  const parentComponentPins =
+    store.componentPins.getManyByComponentId(componentId);
+
+  // check nodePins and componentPins of each node
+  for (const node of nodes) {
+    const nodePins = new Set(store.nodePins.getManyByNodeId(node.id));
+    const componentPinIds = new Set(
+      store.componentPins
+        .getManyByComponentId(node.componentId)
+        .map((pin) => pin.id)
+    );
+    invariant(componentPinIds.size === nodePins.size);
+    for (const nodePin of nodePins) {
+      invariant(componentPinIds.has(nodePin.componentPinId));
+
+      // check whether each nodePin without connections corresponds to a parentComponentPin
+      // and nodePin with connections corresponds to no parentComponentPin
+      const connectionsAssociatedWithNodePin =
+        store.connections.getConnectionsByNodePinId(nodePin.id);
+      const parentComponentPin = parentComponentPins.find(
+        (pin) => pin.implementation === nodePin.id
+      );
+      if (connectionsAssociatedWithNodePin.length === 0) {
+        invariant(parentComponentPin);
+      } else {
+        invariant(!parentComponentPin);
+      }
+    }
+  }
+
+  // check whether each connection has valid nodePins and componentPins
+  for (const connection of connections) {
+    const fromNodePin = store.nodePins.get(connection.from);
+    const toNodePin = store.nodePins.get(connection.to);
+    invariant(fromNodePin && toNodePin);
+    invariant(fromNodePin.nodeId !== toNodePin.nodeId);
+    const fromComponentPin = store.componentPins.get(
+      fromNodePin.componentPinId
+    );
+    const toComponentPin = store.componentPins.get(toNodePin.componentPinId);
+    invariant(fromComponentPin && toComponentPin);
+    invariant(fromComponentPin.type !== toComponentPin.type);
+  }
+
+  // check whether implementation of each componentPin has no connections
+  for (const componentPin of parentComponentPins) {
+    invariant(componentPin.implementation);
+    const implementationNodePin = store.nodePins.get(
+      componentPin.implementation
+    );
+    invariant(implementationNodePin);
+    const connectionsAssociatedWithNodePin =
+      store.connections.getConnectionsByNodePinId(implementationNodePin.id);
+    invariant(connectionsAssociatedWithNodePin.length === 0);
+  }
+}
+
+export function validateAllComponents(store: CCStore) {
+  for (const component of store.components.toArray()) {
+    validateComponent(store, component.id);
+  }
+}
