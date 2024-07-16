@@ -177,7 +177,6 @@ function createEditorStore(componentId: CCComponentId, store: CCStore) {
       timeStep <= editorState.timeStep;
       timeStep += 1
     ) {
-      console.log(timeStep);
       const previousFrame = simulationCachedFrames[timeStep - 1] ?? null;
       const inputValues = new Map();
       const pins = store.componentPins.getManyByComponentId(componentId);

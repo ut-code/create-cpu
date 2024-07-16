@@ -25,6 +25,8 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 
   #nodePins: Map<CCNodePinId, CCNodePin> = new Map();
 
+  #markedAsDeleted: Set<CCNodePinId> = new Set();
+
   /**
    * Constructor of CCNodePinStore
    * @param store store
@@ -100,11 +102,13 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
    */
   async unregister(id: CCNodePinId): Promise<void> {
     const nodePin = nullthrows(this.#nodePins.get(id));
+    this.#markedAsDeleted.add(id);
     await this.#store.transactionManager.runInTransaction(() => {
       this.emit("willUnregister", nodePin);
       this.#nodePins.delete(nodePin.id);
     });
     this.emit("didUnregister", nodePin);
+    this.#markedAsDeleted.delete(id);
   }
 
   /**
@@ -193,6 +197,10 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
       return givenPinMultiplexability;
     };
     return traverseNodePinMultiplexability(nodePinId, new Set());
+  }
+
+  isMarkedAsDeleted(id: CCNodePinId) {
+    return this.#markedAsDeleted.has(id);
   }
 
   /**
