@@ -198,7 +198,7 @@ export default class CCComponentEvaluator {
         const inputPinId0 = inputNodePins.find(
           (nodePin: CCNodePin) =>
             nodePin.componentPinId ===
-            intrinsics.fourBitsIntrinsicComponentInputPin0.id
+            intrinsics.fourBitsIntrinsicComponentInputPin.id
         )!.id;
         const inputPinId1 = inputNodePins.find(
           (nodePin: CCNodePin) =>
@@ -252,7 +252,7 @@ export default class CCComponentEvaluator {
         const outputPinId0 = inputNodePins.find(
           (nodePin: CCNodePin) =>
             nodePin.componentPinId ===
-            intrinsics.distributeFourBitsIntrinsicComponentOutputPin0.id
+            intrinsics.distributeFourBitsIntrinsicComponentOutputPin.id
         )!.id;
         const outputPinId1 = inputNodePins.find(
           (nodePin: CCNodePin) =>
@@ -824,7 +824,7 @@ function simulateIntrinsic(
       const inputPinId0 = inputNodePins.find(
         (nodePin: CCNodePin) =>
           nodePin.componentPinId ===
-          intrinsics.fourBitsIntrinsicComponentInputPin0.id
+          intrinsics.fourBitsIntrinsicComponentInputPin.id
       )!.id;
       const inputPinId1 = inputNodePins.find(
         (nodePin: CCNodePin) =>
@@ -878,7 +878,7 @@ function simulateIntrinsic(
       const outputPinId0 = inputNodePins.find(
         (nodePin: CCNodePin) =>
           nodePin.componentPinId ===
-          intrinsics.distributeFourBitsIntrinsicComponentOutputPin0.id
+          intrinsics.distributeFourBitsIntrinsicComponentOutputPin.id
       )!.id;
       const outputPinId1 = inputNodePins.find(
         (nodePin: CCNodePin) =>

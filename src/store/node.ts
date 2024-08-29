@@ -5,6 +5,7 @@ import * as PIXI from "pixi.js";
 import nullthrows from "nullthrows";
 import type CCStore from ".";
 import type { CCComponentId } from "./component";
+import type { CCNodePinId } from "./nodePin";
 
 export type CCNodeId = Opaque<string, "CCNodeId">;
 
@@ -15,6 +16,7 @@ export type CCNode = {
   position: PIXI.Point;
   /** The dynamic pin count exclusive to certain intrinsic components */
   intrinsicVariablePinCount: number | null;
+  variablePins: CCNodePinId[] | null;
 };
 
 export type CCNodeStoreEvents = {

@@ -5,6 +5,7 @@ import invariant from "tiny-invariant";
 import type { CCNodeId } from "./node";
 import type { CCComponentPinId, CCPinMultiplexability } from "./componentPin";
 import type CCStore from ".";
+import * as intrinsic from "./intrinsics";
 
 export type CCNodePinId = Opaque<string, "CCNodePinId">;
 
@@ -163,6 +164,17 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
       const nodePins = this.getManyByNodeId(node.id);
       const givenPinMultiplexability =
         this.#store.componentPins.getComponentPinMultiplexability(pinId);
+      if (givenPinMultiplexability === "undecidable") {
+        if (pinId === intrinsic.fourBitsIntrinsicComponentOutputPin.id) {
+          return { isMultiplexable: false, multiplicity: nodePins.length - 1 };
+        }
+        if (
+          pinId === intrinsic.distributeFourBitsIntrinsicComponentInputPin.id
+        ) {
+          return { isMultiplexable: false, multiplicity: nodePins.length - 1 };
+        }
+        throw new Error("unreachable");
+      }
       if (!givenPinMultiplexability.isMultiplexable) {
         return givenPinMultiplexability;
       }
@@ -172,6 +184,9 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
           this.#store.componentPins.getComponentPinMultiplexability(
             nodePin.componentPinId
           );
+        if (pinMultiplexability === "undecidable") {
+          throw new Error("unreachable");
+        }
         if (pinMultiplexability.isMultiplexable) {
           const connections =
             this.#store.connections.getConnectionsByNodePinId(nodePinId)!;
