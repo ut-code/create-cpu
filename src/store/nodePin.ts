@@ -237,4 +237,22 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
   toArray(): CCNodePin[] {
     return [...this.#nodePins.values()];
   }
+
+  incrementVariablePin(nodeId: CCNodeId, componentPinId: CCComponentPinId) {
+    const node = this.#store.nodes.get(nodeId)!;
+    invariant(node.variablePins);
+    const nodePin = CCNodePinStore.create({
+      nodeId,
+      componentPinId,
+    });
+    this.register(nodePin);
+    this.#store.nodes.incrementVariablePin(nodeId, nodePin.id);
+  }
+
+  decrementVariablePin(nodeId: CCNodeId) {
+    const node = this.#store.nodes.get(nodeId)!;
+    invariant(node.variablePins);
+    const deletedPinId = this.#store.nodes.decrementVariablePin(nodeId);
+    this.unregister(deletedPinId);
+  }
 }

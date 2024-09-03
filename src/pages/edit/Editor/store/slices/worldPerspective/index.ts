@@ -1,23 +1,11 @@
 import * as PIXI from "pixi.js";
-import type { Perspective } from "../../../../common/perspective";
+import type { ComponentEditorSliceCreator } from "../../types";
+import type { WorldPerspectiveStoreSlice } from "./types";
 
-export type WorldPerspectiveStoreMixin = {
-  canvasSize: PIXI.Point;
-  worldPerspective: Perspective;
-  setCanvasSize(size: PIXI.Point): void;
-  setWorldPerspective(perspective: Perspective): void;
-  toWorldPosition(canvasPosition: PIXI.Point): PIXI.Point;
-  toCanvasPosition(worldPosition: PIXI.Point): PIXI.Point;
-  zoom(zoomCenter: PIXI.Point, factor: number): void;
-};
-
-export function worldPerspectiveStoreMixin(
-  set: (
-    reducer: (state: WorldPerspectiveStoreMixin) => WorldPerspectiveStoreMixin
-  ) => void,
-  get: () => WorldPerspectiveStoreMixin
-): WorldPerspectiveStoreMixin {
-  return {
+const createComponentEditorStoreWorldPerspectiveSlice: ComponentEditorSliceCreator<
+  WorldPerspectiveStoreSlice
+> = () => ({
+  define: (set, get) => ({
     canvasSize: new PIXI.Point(0, 0),
     worldPerspective: {
       center: new PIXI.Point(0, 0),
@@ -53,5 +41,7 @@ export function worldPerspectiveStoreMixin(
         },
       }));
     },
-  };
-}
+  }),
+});
+
+export default createComponentEditorStoreWorldPerspectiveSlice;

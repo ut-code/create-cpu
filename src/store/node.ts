@@ -14,8 +14,6 @@ export type CCNode = {
   readonly parentComponentId: CCComponentId;
   readonly componentId: CCComponentId;
   position: PIXI.Point;
-  /** The dynamic pin count exclusive to certain intrinsic components */
-  intrinsicVariablePinCount: number | null;
   variablePins: CCNodePinId[] | null;
 };
 
@@ -120,7 +118,7 @@ export class CCNodeStore extends EventEmitter<CCNodeStoreEvents> {
    * @param id id of node
    * @param value new position
    */
-  update(id: CCNodeId, value: Pick<CCNode, "position">): void {
+  update(id: CCNodeId, value: Pick<CCNode, "position" | "variablePins">): void {
     const node = this.#nodes.get(id);
     invariant(node);
     this.#nodes.set(id, { ...node, ...value });
@@ -150,5 +148,16 @@ export class CCNodeStore extends EventEmitter<CCNodeStoreEvents> {
    */
   toArray(): CCNode[] {
     return [...this.#nodes.values()];
+  }
+
+  incrementVariablePin(nodeId: CCNodeId, nodePinId: CCNodePinId) {
+    const node = this.#nodes.get(nodeId)!;
+    node.variablePins!.push(nodePinId);
+  }
+
+  decrementVariablePin(nodeId: CCNodeId): CCNodePinId {
+    const node = this.#nodes.get(nodeId)!;
+    invariant(node.variablePins!.length > 0);
+    return node.variablePins!.pop()!;
   }
 }
