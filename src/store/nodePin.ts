@@ -234,7 +234,7 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
    * Get array of pins
    * @returns array of pins
    */
-  toArray(): CCNodePin[] {
+  getMany(): CCNodePin[] {
     return [...this.#nodePins.values()];
   }
 

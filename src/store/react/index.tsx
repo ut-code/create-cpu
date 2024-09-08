@@ -7,10 +7,35 @@ import {
   useState,
 } from "react";
 import invariant from "tiny-invariant";
+import { Point } from "pixi.js";
 import CCStore, { type CCStorePropsFromJson } from "..";
+import { CCComponentStore } from "../component";
+import { CCNodeStore } from "../node";
+import { andIntrinsicComponent, notIntrinsicComponent } from "../intrinsics";
 
 function useContextValue() {
-  const [store, setStore] = useState(() => new CCStore());
+  const [store, setStore] = useState(() => {
+    const rootComponent = CCComponentStore.create({
+      name: "Root",
+    });
+    const tempStore = new CCStore();
+    tempStore.components.register(rootComponent);
+    const sampleNode1 = CCNodeStore.create({
+      parentComponentId: rootComponent.id,
+      componentId: andIntrinsicComponent.id,
+      position: new Point(-200, 0),
+      variablePins: null,
+    });
+    const sampleNode2 = CCNodeStore.create({
+      parentComponentId: rootComponent.id,
+      componentId: notIntrinsicComponent.id,
+      position: new Point(200, 0),
+      variablePins: null,
+    });
+    tempStore.nodes.register(sampleNode1);
+    tempStore.nodes.register(sampleNode2);
+    return tempStore;
+  });
 
   // For debugging
   useEffect(() => {

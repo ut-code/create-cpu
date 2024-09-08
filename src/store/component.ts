@@ -81,14 +81,6 @@ export class CCComponentStore extends EventEmitter<CCComponentStoreEvents> {
   }
 
   /**
-   * Get all of components
-   * @returns map of id and component (read only)
-   */
-  getAll(): ReadonlyMap<CCComponentId, CCComponent> {
-    return this.#components;
-  }
-
-  /**
    * Update the name of component
    * @param id id of component
    * @param value new name
@@ -119,7 +111,7 @@ export class CCComponentStore extends EventEmitter<CCComponentStoreEvents> {
    * Get array of components
    * @returns array of components
    */
-  toArray(): CCComponent[] {
+  getMany(): CCComponent[] {
     return [...this.#components.values()];
   }
 }
@@ -219,7 +211,7 @@ function validateComponent(store: CCStore, componentId: CCComponentId) {
 }
 
 export function validateAllComponents(store: CCStore) {
-  for (const component of store.components.toArray()) {
+  for (const component of store.components.getMany()) {
     validateComponent(store, component.id);
   }
 }

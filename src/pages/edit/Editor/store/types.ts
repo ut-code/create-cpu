@@ -3,11 +3,13 @@ import type CCStore from "../../../../store";
 import type { CCComponentId } from "../../../../store/component";
 import type { EditorStoreCoreSlice } from "./slices/core/types";
 import type { WorldPerspectiveStoreSlice } from "./slices/worldPerspective/types";
+import type { PerspectiveStoreSlice } from "./slices/perspective/types";
 
 export type ComponentEditorStoreValue = {
   readonly componentId: CCComponentId;
 } & EditorStoreCoreSlice &
-  WorldPerspectiveStoreSlice;
+  WorldPerspectiveStoreSlice &
+  PerspectiveStoreSlice;
 
 export type ComponentEditorSliceCreator<T> = (props: {
   store: CCStore;

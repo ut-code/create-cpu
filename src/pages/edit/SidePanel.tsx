@@ -4,7 +4,7 @@ import nullthrows from "nullthrows";
 import { Color } from "pixi.js";
 import { useState } from "react";
 import { Search } from "@mui/icons-material";
-import useAllComponents from "../../store/react/selectors";
+import { useComponents } from "../../store/react/selectors";
 import { useStore } from "../../store/react";
 import { isIncluding, type CCComponentId } from "../../store/component";
 import { ccPinTypes } from "../../store/componentPin";
@@ -93,7 +93,7 @@ function ComponentRenderer({ componentId }: { componentId: CCComponentId }) {
 export default function SidePanel(sidePanelProps: SidePanelProps) {
   const { editedComponentId } = sidePanelProps;
   const { store } = useStore();
-  const components = useAllComponents();
+  const components = useComponents();
   const [searchText, setSearchText] = useState("");
 
   return (

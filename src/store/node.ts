@@ -146,7 +146,7 @@ export class CCNodeStore extends EventEmitter<CCNodeStoreEvents> {
    * Get array of nodes
    * @returns array of nodes
    */
-  toArray(): CCNode[] {
+  getMany(): CCNode[] {
     return [...this.#nodes.values()];
   }
 

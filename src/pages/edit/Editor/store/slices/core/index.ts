@@ -133,11 +133,11 @@ export const createComponentEditorStoreCoreSlice: ComponentEditorSliceCreator<
 
         const newSimulationCacheKey =
           store.nodes
-            .toArray()
+            .getMany()
             .map((node) => node.id)
             .join() +
           store.connections
-            .toArray()
+            .getMany()
             .map((connection) => connection.id)
             .join() +
           [...editorStore.getState().inputValues.entries()]

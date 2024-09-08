@@ -1,6 +1,7 @@
 import * as PIXI from "pixi.js";
 import type { Perspective } from "../../../../../../common/perspective";
 
+/** @deprecated */
 export type WorldPerspectiveStoreSlice = {
   canvasSize: PIXI.Point;
   worldPerspective: Perspective;

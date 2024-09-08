@@ -282,7 +282,7 @@ export class CCComponentPinStore extends EventEmitter<CCComponentPinStoreEvents>
    * Get array of pins
    * @returns array of pins
    */
-  toArray(): CCComponentPin[] {
+  getMany(): CCComponentPin[] {
     return [...this.#pins.values()];
   }
 

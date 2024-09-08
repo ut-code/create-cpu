@@ -2,6 +2,7 @@ import * as PIXI from "pixi.js";
 import type { ComponentEditorSliceCreator } from "../../types";
 import type { WorldPerspectiveStoreSlice } from "./types";
 
+/** @deprecated */
 const createComponentEditorStoreWorldPerspectiveSlice: ComponentEditorSliceCreator<
   WorldPerspectiveStoreSlice
 > = () => ({
