@@ -1,12 +1,22 @@
-import { useNodeIds } from "../../../../store/react/selectors";
+import * as matrix from "transformation-matrix";
+import { parseDataTransferAsComponent } from "../../../../common/serialization";
+import {
+  useConnectionIds,
+  useNodeIds,
+} from "../../../../store/react/selectors";
 import { useComponentEditorStore } from "../store";
 import CCComponentEditorRendererBackground from "./Background";
+import CCComponentEditorRendererConnection from "./Connection";
 import CCComponentEditorRendererNode from "./Node";
+import { useStore } from "../../../../store/react";
+import { CCNodeStore } from "../../../../store/node";
 
 export default function CCComponentEditorRenderer() {
   const componentEditorState = useComponentEditorStore()();
+  const { store } = useStore();
   const viewBox = componentEditorState.getViewBox();
-  const nodesIds = useNodeIds(componentEditorState.componentId);
+  const nodeIds = useNodeIds(componentEditorState.componentId);
+  const connectionIds = useConnectionIds(componentEditorState.componentId);
 
   return (
     <svg
@@ -19,10 +29,37 @@ export default function CCComponentEditorRenderer() {
         height: "100%",
       }}
       viewBox={[viewBox.x, viewBox.y, viewBox.width, viewBox.height].join(" ")}
+      onDragOver={(e) => {
+        e.preventDefault();
+      }}
+      onDrop={(e) => {
+        const droppedComponentId = parseDataTransferAsComponent(e.dataTransfer);
+        if (!droppedComponentId || componentEditorState.editorMode === "play")
+          return;
+        store.nodes.register(
+          CCNodeStore.create({
+            componentId: droppedComponentId,
+            parentComponentId: componentEditorState.componentId,
+            position: matrix.applyToPoint(
+              componentEditorState.getInverseViewTransformation(), {
+                x: e.nativeEvent.offsetX,
+                y: e.nativeEvent.offsetY,
+              }
+            ),
+            variablePins: [], // todo
+          })
+        )
+      }}
     >
       <CCComponentEditorRendererBackground />
-      {nodesIds.map((nodeId) => (
+      {nodeIds.map((nodeId) => (
         <CCComponentEditorRendererNode key={nodeId} nodeId={nodeId} />
+      ))}
+      {connectionIds.map((connectionId) => (
+        <CCComponentEditorRendererConnection
+          key={connectionId}
+          connectionId={connectionId}
+        />
       ))}
     </svg>
   );

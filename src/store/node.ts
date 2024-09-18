@@ -1,11 +1,11 @@
 import type { Opaque } from "type-fest";
 import EventEmitter from "eventemitter3";
 import invariant from "tiny-invariant";
-import * as PIXI from "pixi.js";
 import nullthrows from "nullthrows";
 import type CCStore from ".";
 import type { CCComponentId } from "./component";
 import type { CCNodePinId } from "./nodePin";
+import type { Point } from "../common/types";
 
 export type CCNodeId = Opaque<string, "CCNodeId">;
 
@@ -13,7 +13,7 @@ export type CCNode = {
   readonly id: CCNodeId;
   readonly parentComponentId: CCComponentId;
   readonly componentId: CCComponentId;
-  position: PIXI.Point;
+  position: Point;
   variablePins: CCNodePinId[] | null;
 };
 
@@ -44,7 +44,7 @@ export class CCNodeStore extends EventEmitter<CCNodeStoreEvents> {
 
   import(nodes: CCNode[]): void {
     for (const node of nodes) {
-      node.position = new PIXI.Point(node.position.x, node.position.y);
+      node.position = { x: node.position.x, y: node.position.y };
       this.register(node);
     }
   }

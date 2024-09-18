@@ -36,6 +36,7 @@ export const createComponentEditorStoreCoreSlice: ComponentEditorSliceCreator<
         selectedNodeIds: new Set(),
         rangeSelect: null,
         selectedConnectionIds: new Set(),
+        isCreatingConnectionFrom: null,
         /** @private */
         inputValues: new Map(),
         getInputValue(componentPinId: CCComponentPinId) {
@@ -72,6 +73,9 @@ export const createComponentEditorStoreCoreSlice: ComponentEditorSliceCreator<
         },
         setRangeSelect(rangeSelect) {
           set((state) => ({ ...state, rangeSelect }));
+        },
+        setIsCreatingConnectionFrom(nodePinId) {
+          set((state) => ({ ...state, isCreatingConnectionFrom: nodePinId }));
         },
         setEditorMode(mode) {
           set((state) => ({ ...state, editorMode: mode }));

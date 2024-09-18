@@ -1,5 +1,10 @@
 import * as PIXI from "pixi.js";
-import type { Perspective } from "../../../../../../common/perspective";
+
+/** @deprecated */
+type Perspective = Readonly<{
+  scale: number;
+  center: PIXI.Point;
+}>;
 
 /** @deprecated */
 export type WorldPerspectiveStoreSlice = {

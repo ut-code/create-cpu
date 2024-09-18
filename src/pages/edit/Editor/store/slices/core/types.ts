@@ -1,15 +1,15 @@
-import * as PIXI from "pixi.js";
 import type { CCComponentPinId } from "../../../../../../store/componentPin";
 import type { CCNodeId } from "../../../../../../store/node";
 import type { CCConnectionId } from "../../../../../../store/connection";
 import type { SimulationValue } from ".";
 import type { CCNodePinId } from "../../../../../../store/nodePin";
+import type { Point } from "../../../../../../common/types";
 
 export type EditorMode = EditorModeEdit | EditorModePlay;
 export type EditorModeEdit = "edit";
 export type EditorModePlay = "play";
 
-export type RangeSelect = { start: PIXI.Point; end: PIXI.Point } | null;
+export type RangeSelect = { start: Point; end: Point } | null;
 
 export type InputValueKey = CCComponentPinId;
 
@@ -20,6 +20,8 @@ export type EditorStoreCoreSlice = {
   rangeSelect: RangeSelect;
   setRangeSelect(rangeSelect: RangeSelect): void;
   selectedConnectionIds: Set<CCConnectionId>;
+  isCreatingConnectionFrom: CCNodePinId | null;
+  setIsCreatingConnectionFrom(nodePinId: CCNodePinId | null): void;
   inputValues: Map<InputValueKey, SimulationValue>;
   getInputValue(componentPinId: CCComponentPinId): SimulationValue;
   setInputValue(componentPinId: CCComponentPinId, value: SimulationValue): void;

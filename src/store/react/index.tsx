@@ -8,32 +8,67 @@ import {
 } from "react";
 import invariant from "tiny-invariant";
 import { Point } from "pixi.js";
+import nullthrows from "nullthrows";
 import CCStore, { type CCStorePropsFromJson } from "..";
 import { CCComponentStore } from "../component";
 import { CCNodeStore } from "../node";
-import { andIntrinsicComponent, notIntrinsicComponent } from "../intrinsics";
+import {
+  andIntrinsicComponent,
+  andIntrinsicComponentOutputPin,
+  notIntrinsicComponent,
+  notIntrinsicComponentInputPin,
+} from "../intrinsics";
+import { CCConnectionStore } from "../connection";
 
 function useContextValue() {
   const [store, setStore] = useState(() => {
+    const tempStore = new CCStore();
+
     const rootComponent = CCComponentStore.create({
       name: "Root",
     });
-    const tempStore = new CCStore();
     tempStore.components.register(rootComponent);
+
     const sampleNode1 = CCNodeStore.create({
       parentComponentId: rootComponent.id,
       componentId: andIntrinsicComponent.id,
-      position: new Point(-200, 0),
-      variablePins: null,
-    });
-    const sampleNode2 = CCNodeStore.create({
-      parentComponentId: rootComponent.id,
-      componentId: notIntrinsicComponent.id,
-      position: new Point(200, 0),
+      position: new Point(-100, 0),
       variablePins: null,
     });
     tempStore.nodes.register(sampleNode1);
+
+    const sampleNode2 = CCNodeStore.create({
+      parentComponentId: rootComponent.id,
+      componentId: notIntrinsicComponent.id,
+      position: new Point(100, 0),
+      variablePins: null,
+    });
     tempStore.nodes.register(sampleNode2);
+
+    const fromNodePin = nullthrows(
+      tempStore.nodePins
+        .getManyByNodeId(sampleNode1.id)
+        .find(
+          (nodePin) =>
+            nodePin.componentPinId === andIntrinsicComponentOutputPin.id
+        )
+    );
+    const toNodePin = nullthrows(
+      tempStore.nodePins
+        .getManyByNodeId(sampleNode2.id)
+        .find(
+          (nodePin) =>
+            nodePin.componentPinId === notIntrinsicComponentInputPin.id
+        )
+    );
+    const sampleConnection = CCConnectionStore.create({
+      parentComponentId: rootComponent.id,
+      from: fromNodePin.id,
+      to: toNodePin.id,
+      bentPortion: 0.5,
+    });
+    tempStore.connections.register(sampleConnection);
+
     return tempStore;
   });
 

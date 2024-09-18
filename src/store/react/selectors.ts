@@ -1,17 +1,19 @@
 import { useCallback, useMemo, useSyncExternalStore } from "react";
 import nullthrows from "nullthrows";
+import memoizeOne from "memoize-one";
 import { useStore } from ".";
-import type { CCComponent, CCComponentId } from "../component";
+import type { CCComponentId } from "../component";
 import type { CCNode, CCNodeId } from "../node";
+import type { CCComponentPin } from "../componentPin";
+import type { CCNodePin } from "../nodePin";
 
 export function useComponents() {
   const { store } = useStore();
-  const { subscribe, getSnapshot } = useMemo(() => {
-    let cachedSnapshot: CCComponent[] | null = null;
-    return {
-      subscribe: (onStoreChange: () => void) => {
+  const { subscribe, getSnapshot } = useMemo(
+    () => ({
+      subscribe(onStoreChange: () => void) {
         const handler = () => {
-          cachedSnapshot = null;
+          this.getSnapshot.clear();
           onStoreChange();
         };
         store.components.on("didRegister", handler);
@@ -23,23 +25,20 @@ export function useComponents() {
           store.components.off("didUnregister", handler);
         };
       },
-      getSnapshot: () => {
-        cachedSnapshot ??= store.components.getMany();
-        return cachedSnapshot;
-      },
-    };
-  }, [store]);
+      getSnapshot: memoizeOne(() => store.components.getMany()),
+    }),
+    [store]
+  );
   return useSyncExternalStore(subscribe, getSnapshot);
 }
 
 export function useNodeIds(parentComponentId: CCComponentId) {
   const { store } = useStore();
-  const { subscribe, getSnapshot } = useMemo(() => {
-    let cachedSnapshot: CCNodeId[] | null = null;
-    return {
-      subscribe: (onStoreChange: () => void) => {
+  const { subscribe, getSnapshot } = useMemo(
+    () => ({
+      subscribe(onStoreChange: () => void) {
         const handler = () => {
-          cachedSnapshot = null;
+          this.getSnapshot.clear();
           onStoreChange();
         };
         store.nodes.on("didRegister", handler);
@@ -49,15 +48,45 @@ export function useNodeIds(parentComponentId: CCComponentId) {
           store.nodes.off("didUnregister", handler);
         };
       },
-      getSnapshot: () => {
-        cachedSnapshot ??= store.nodes
+      getSnapshot: memoizeOne(() =>
+        store.nodes
           .getMany()
           .filter((node) => node.parentComponentId === parentComponentId)
-          .map((node) => node.id);
-        return cachedSnapshot;
+          .map((node) => node.id)
+      ),
+    }),
+    [store, parentComponentId]
+  );
+  return useSyncExternalStore(subscribe, getSnapshot);
+}
+
+export function useConnectionIds(parentComponentId: CCComponentId) {
+  const { store } = useStore();
+  const { subscribe, getSnapshot } = useMemo(
+    () => ({
+      subscribe(onStoreChange: () => void) {
+        const handler = () => {
+          this.getSnapshot.clear();
+          onStoreChange();
+        };
+        store.connections.on("didRegister", handler);
+        store.connections.on("didUnregister", handler);
+        return () => {
+          store.connections.off("didRegister", handler);
+          store.connections.off("didUnregister", handler);
+        };
       },
-    };
-  }, [store, parentComponentId]);
+      getSnapshot: memoizeOne(() =>
+        store.connections
+          .getMany()
+          .filter(
+            (connection) => connection.parentComponentId === parentComponentId
+          )
+          .map((connection) => connection.id)
+      ),
+    }),
+    [store, parentComponentId]
+  );
   return useSyncExternalStore(subscribe, getSnapshot);
 }
 
@@ -77,6 +106,54 @@ export function useNode(nodeId: CCNodeId) {
         store.nodes.off("didUpdate", handler);
       };
     },
+    [store, nodeId]
+  );
+  return useSyncExternalStore(subscribe, getSnapshot);
+}
+
+export function useComponentPins(componentId: CCComponentId) {
+  const { store } = useStore();
+  const { subscribe, getSnapshot } = useMemo(
+    () => ({
+      subscribe(onStoreChange: () => void) {
+        const handler = (componentPin: CCComponentPin) => {
+          if (componentPin.componentId === componentId) onStoreChange();
+        };
+        store.componentPins.on("didRegister", handler);
+        store.componentPins.on("didUpdate", handler);
+        store.componentPins.on("didUnregister", handler);
+        return () => {
+          store.componentPins.off("didRegister", handler);
+          store.componentPins.off("didUpdate", handler);
+          store.componentPins.off("didUnregister", handler);
+        };
+      },
+      getSnapshot: memoizeOne(() =>
+        store.componentPins.getManyByComponentId(componentId)
+      ),
+    }),
+    [store, componentId]
+  );
+  return useSyncExternalStore(subscribe, getSnapshot);
+}
+
+export function useNodePins(nodeId: CCNodeId) {
+  const { store } = useStore();
+  const { subscribe, getSnapshot } = useMemo(
+    () => ({
+      subscribe(onStoreChange: () => void) {
+        const handler = (nodePin: CCNodePin) => {
+          if (nodePin.nodeId === nodeId) onStoreChange();
+        };
+        store.nodePins.on("didRegister", handler);
+        store.nodePins.on("didUnregister", handler);
+        return () => {
+          store.nodePins.off("didRegister", handler);
+          store.nodePins.off("didUnregister", handler);
+        };
+      },
+      getSnapshot: memoizeOne(() => store.nodePins.getManyByNodeId(nodeId)),
+    }),
     [store, nodeId]
   );
   return useSyncExternalStore(subscribe, getSnapshot);

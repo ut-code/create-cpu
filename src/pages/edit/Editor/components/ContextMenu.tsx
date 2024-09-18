@@ -7,7 +7,6 @@ import {
 } from "@mui/material";
 import nullthrows from "nullthrows";
 import invariant from "tiny-invariant";
-import * as PIXI from "pixi.js";
 import {
   CCComponentStore,
   type CCComponentId,
@@ -23,9 +22,10 @@ import {
 } from "../../../../store/node";
 import { useComponentEditorStore } from "../store";
 import { useStore } from "../../../../store/react";
+import type { Point } from "../../../../common/types";
 
 export type CCComponentEditorContextMenuProps = {
-  contextMenuPosition: PIXI.Point;
+  contextMenuPosition: Point;
   onClose: () => void;
   onEditComponent: (componentId: CCComponentId) => void;
 };
