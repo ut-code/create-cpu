@@ -20,8 +20,6 @@ export type EditorStoreCoreSlice = {
   rangeSelect: RangeSelect;
   setRangeSelect(rangeSelect: RangeSelect): void;
   selectedConnectionIds: Set<CCConnectionId>;
-  isCreatingConnectionFrom: CCNodePinId | null;
-  setIsCreatingConnectionFrom(nodePinId: CCNodePinId | null): void;
   inputValues: Map<InputValueKey, SimulationValue>;
   getInputValue(componentPinId: CCComponentPinId): SimulationValue;
   setInputValue(componentPinId: CCComponentPinId, value: SimulationValue): void;

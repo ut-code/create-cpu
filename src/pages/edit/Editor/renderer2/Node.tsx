@@ -1,5 +1,6 @@
 import nullthrows from "nullthrows";
 import { useState } from "react";
+import * as matrix from "transformation-matrix";
 import type CCStore from "../../../../store";
 import type { CCNodeId } from "../../../../store/node";
 import { useNode } from "../../../../store/react/selectors";
@@ -66,11 +67,6 @@ export function getCCComponentEditorRendererNodeGeometry(
   };
 }
 
-// type Point = {
-//   x: number;
-//   y: number;
-// };
-
 export type CCComponentEditorRendererNodeProps = {
   nodeId: CCNodeId;
 };
@@ -78,9 +74,7 @@ export default function CCComponentEditorRendererNode({
   nodeId,
 }: CCComponentEditorRendererNodeProps) {
   const { store } = useStore();
-  const setIsCreatingConnectionFrom = useComponentEditorStore()(
-    (s) => s.setIsCreatingConnectionFrom
-  );
+  const componentEditorStore = useComponentEditorStore()();
   const node = useNode(nodeId);
   const component = nullthrows(store.components.get(node.componentId));
   const geometry = getCCComponentEditorRendererNodeGeometry(store, nodeId);
@@ -91,44 +85,42 @@ export default function CCComponentEditorRendererNode({
     y: 0,
   });
 
-  // const handleClick = (e: React.MouseEvent) => {
-  //   setDragStartPosition({
-  //     x: e.clientX,
-  //     y: e.clientY,
-  //   });
-  //   setPreviousNodePosition({
-  //     x: node.position.x,
-  //     y: node.position.y,
-  //   });
-  //   setSelected(true);
-  // };
-
-  const handleDragStart = (e: React.MouseEvent) => {
+  const handleDragStart = (e: React.PointerEvent) => {
     setDragStartPosition({
-      x: e.clientX,
-      y: e.clientY,
+      x: e.nativeEvent.offsetX,
+      y: e.nativeEvent.offsetY,
     });
     setPreviousNodePosition({
       x: node.position.x,
       y: node.position.y,
     });
     setDragging(true);
+    e.currentTarget.setPointerCapture(e.pointerId);
   };
 
-  const handleDragging = (e: React.MouseEvent) => {
+  const handleDragging = (e: React.PointerEvent) => {
     if (dragging) {
+      const { sx, sy } = matrix.decomposeTSR(
+        componentEditorStore.getInverseViewTransformation()
+      ).scale;
+      const transformation = matrix.scale(sx, sy);
+      const diff = matrix.applyToPoint(transformation, {
+        x: e.nativeEvent.offsetX - dragStartPosition.x,
+        y: e.nativeEvent.offsetY - dragStartPosition.y,
+      });
       store.nodes.update(nodeId, {
         position: {
-          x: previousNodePosition.x + e.clientX - dragStartPosition.x,
-          y: previousNodePosition.y + e.clientY - dragStartPosition.y,
+          x: previousNodePosition.x + diff.x,
+          y: previousNodePosition.y + diff.y,
         },
         variablePins: node.variablePins,
       });
     }
   };
 
-  const handleDragEnd = () => {
+  const handleDragEnd = (e: React.PointerEvent) => {
     setDragging(false);
+    e.currentTarget.releasePointerCapture(e.pointerId);
   };
 
   return (
@@ -144,10 +136,9 @@ export default function CCComponentEditorRendererNode({
         fill="white"
         stroke="black"
         strokeWidth={2}
-        onDragStart={handleDragStart}
-        // onClick={handleClick}
-        onDrag={handleDragging}
-        onDragEnd={handleDragEnd}
+        onPointerDown={handleDragStart}
+        onPointerMove={handleDragging}
+        onPointerUp={handleDragEnd}
       />
       {store.nodePins.getManyByNodeId(nodeId).map((nodePin) => {
         const position = nullthrows(
