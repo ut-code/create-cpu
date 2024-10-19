@@ -12,10 +12,6 @@ export type CCComponentPin = {
   readonly componentId: CCComponentId;
   readonly type: CCPinType;
   readonly implementation: CCPinImplementation;
-  /** @deprecated should only be defined for intrinsic components  */
-  multiplexable: boolean;
-  /** @deprecated should only be defined for intrinsic components  */
-  bits: number;
   name: string;
 };
 
@@ -41,6 +37,10 @@ export type CCPinImplementation = CCNodePinId | null;
 export type CCPinMultiplexability =
   | { isMultiplexable: true }
   | { isMultiplexable: false; multiplicity: number };
+
+export type CCComponentPinMultiplexability =
+  | CCPinMultiplexability
+  | "undecidable";
 
 export type CCComponentPinStoreEvents = {
   didRegister(pin: CCComponentPin): void;
@@ -132,8 +132,6 @@ export class CCComponentPinStore extends EventEmitter<CCComponentPinStoreEvents>
       componentId: targetNode.parentComponentId,
       name: targetComponentPin.name,
       implementation: targetNodePin.id,
-      multiplexable: false, // dummy
-      bits: 1, // dummy
     });
   }
 
@@ -222,7 +220,7 @@ export class CCComponentPinStore extends EventEmitter<CCComponentPinStoreEvents>
    */
   getComponentPinMultiplexability(
     pinId: CCComponentPinId
-  ): CCPinMultiplexability {
+  ): CCComponentPinMultiplexability {
     const pin = this.#pins.get(pinId);
     invariant(pin);
     switch (pin.id) {
@@ -243,22 +241,18 @@ export class CCComponentPinStore extends EventEmitter<CCComponentPinStoreEvents>
       case intrinsic.flipFlopIntrinsicComponentOutputPin.id: {
         return { isMultiplexable: true };
       }
-      case intrinsic.fourBitsIntrinsicComponentInputPin0.id:
-      case intrinsic.fourBitsIntrinsicComponentInputPin1.id:
-      case intrinsic.fourBitsIntrinsicComponentInputPin2.id:
-      case intrinsic.fourBitsIntrinsicComponentInputPin3.id: {
+      case intrinsic.fourBitsIntrinsicComponentInputPin.id: {
         return { isMultiplexable: false, multiplicity: 1 };
       }
       case intrinsic.fourBitsIntrinsicComponentOutputPin.id: {
-        return { isMultiplexable: false, multiplicity: 4 };
+        return "undecidable";
+        // return { isMultiplexable: false, multiplicity: 4 };
       }
       case intrinsic.distributeFourBitsIntrinsicComponentInputPin.id: {
-        return { isMultiplexable: false, multiplicity: 4 };
+        return "undecidable";
+        // return { isMultiplexable: false, multiplicity: 4 };
       }
-      case intrinsic.distributeFourBitsIntrinsicComponentOutputPin0.id:
-      case intrinsic.distributeFourBitsIntrinsicComponentOutputPin1.id:
-      case intrinsic.distributeFourBitsIntrinsicComponentOutputPin2.id:
-      case intrinsic.distributeFourBitsIntrinsicComponentOutputPin3.id: {
+      case intrinsic.distributeFourBitsIntrinsicComponentOutputPin.id: {
         return { isMultiplexable: false, multiplicity: 1 };
       }
       default: {
@@ -288,7 +282,7 @@ export class CCComponentPinStore extends EventEmitter<CCComponentPinStoreEvents>
    * Get array of pins
    * @returns array of pins
    */
-  toArray(): CCComponentPin[] {
+  getMany(): CCComponentPin[] {
     return [...this.#pins.values()];
   }
 
