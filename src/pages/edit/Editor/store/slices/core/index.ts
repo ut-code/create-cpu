@@ -39,12 +39,15 @@ export const createComponentEditorStoreCoreSlice: ComponentEditorSliceCreator<
         /** @private */
         inputValues: new Map(),
         getInputValue(componentPinId: CCComponentPinId) {
-          const value = this.inputValues.get(componentPinId);
+          const value = get().inputValues.get(componentPinId);
           if (!value) {
             const multiplexability =
               store.componentPins.getComponentPinMultiplexability(
                 componentPinId
               );
+            if (multiplexability === "undecidable") {
+              throw new Error("Cannot determine multiplexability");
+            }
             if (multiplexability.isMultiplexable) {
               const newValue = [false];
               return newValue;
@@ -156,10 +159,12 @@ export const createComponentEditorStoreCoreSlice: ComponentEditorSliceCreator<
           timeStep += 1
         ) {
           const previousFrame = simulationCachedFrames[timeStep - 1] ?? null;
-          const inputValues = new Map();
+          const inputValues = new Map<CCComponentPinId, SimulationValue>();
           const pins = store.componentPins.getManyByComponentId(componentId);
           for (const pin of pins) {
-            inputValues.set(pin.id, editorState.getInputValue(pin.id));
+            if (pin.type === "input") {
+              inputValues.set(pin.id, editorState.getInputValue(pin.id));
+            }
           }
           simulationCachedFrames.push(
             simulateComponent(store, componentId, inputValues, previousFrame)!

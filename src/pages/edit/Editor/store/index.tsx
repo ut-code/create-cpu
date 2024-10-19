@@ -8,22 +8,26 @@ import { createComponentEditorStoreCoreSlice } from "./slices/core";
 import type { ComponentEditorStoreValue } from "./types";
 import createComponentEditorStoreWorldPerspectiveSlice from "./slices/worldPerspective";
 import createComponentEditorStorePerspectiveSlice from "./slices/perspective";
+import createComponentEditorStoreContextMenuSlice from "./slices/contextMenu";
 
 function createEditorStore(componentId: CCComponentId, store: CCStore) {
   const props = { store, componentId };
   const coreSlice = createComponentEditorStoreCoreSlice(props);
+  const perspectiveSlice = createComponentEditorStorePerspectiveSlice(props);
+  const contextMenuSlice = createComponentEditorStoreContextMenuSlice(props);
   const worldPerspectiveSlice =
     createComponentEditorStoreWorldPerspectiveSlice(props);
-  const perspectiveSlice = createComponentEditorStorePerspectiveSlice(props);
   const editorStore = create<ComponentEditorStoreValue>((set, get) => ({
     componentId,
     ...coreSlice.define(set, get),
-    ...worldPerspectiveSlice.define(set, get),
     ...perspectiveSlice.define(set, get),
+    ...contextMenuSlice.define(set, get),
+    ...worldPerspectiveSlice.define(set, get),
   }));
   coreSlice.postCreate?.(editorStore);
-  worldPerspectiveSlice.postCreate?.(editorStore);
   perspectiveSlice.postCreate?.(editorStore);
+  contextMenuSlice.postCreate?.(editorStore);
+  worldPerspectiveSlice.postCreate?.(editorStore);
   return editorStore;
 }
 

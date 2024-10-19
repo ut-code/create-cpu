@@ -1,4 +1,4 @@
-import { useState, type PointerEvent, JSX, type ReactNode } from "react";
+import { useState, type PointerEvent, type ReactNode } from "react";
 import * as matrix from "transformation-matrix";
 import { KDTree } from "mnemonist";
 import nullthrows from "nullthrows";
@@ -8,6 +8,8 @@ import { CCComponentEditorRendererConnectionCore } from "./Connection";
 import { useComponentEditorStore } from "../store";
 import { useStore } from "../../../../store/react";
 import { getCCComponentEditorRendererNodeGeometry as getNodeGeometry } from "./Node";
+import { CCConnectionStore } from "../../../../store/connection";
+import type { SimulationValue } from "../store/slices/core";
 
 const NODE_PIN_POSITION_SENSITIVITY = 10;
 
@@ -20,6 +22,12 @@ export default function CCComponentEditorRendererNodePin({
   position,
 }: CCComponentEditorRendererNodeProps) {
   const { store } = useStore();
+  const nodePin = nullthrows(store.nodePins.get(nodePinId));
+  const node = nullthrows(store.nodes.get(nodePin.nodeId));
+  const componentPin = nullthrows(
+    store.componentPins.get(nodePin.componentPinId)
+  );
+
   const inverseViewTransformation = useComponentEditorStore()((s) =>
     s.getInverseViewTransformation()
   );
@@ -30,19 +38,25 @@ export default function CCComponentEditorRendererNodePin({
   const onDrag = (e: PointerEvent) => {
     let nodePinPositionKDTree = draggingState?.nodePinPositionKDTree;
     if (!nodePinPositionKDTree) {
-      const nodePin = nullthrows(store.nodePins.get(nodePinId));
-      const node = nullthrows(store.nodes.get(nodePin.nodeId));
       const nodes = store.nodes.getManyByParentComponentId(
         node.parentComponentId
       );
       nodePinPositionKDTree = KDTree.from(
         nodes
-          .filter((n) => n.id !== node.id)
-          .flatMap((n) =>
-            [...getNodeGeometry(store, n.id).nodePinPositionById].map(
-              ([id, { x, y }]): [CCNodePinId, number[]] => [id, [x, y]]
-            )
-          ),
+          .filter((yourNode) => yourNode.id !== node.id)
+          .flatMap((yourNode) => [
+            ...getNodeGeometry(store, yourNode.id).nodePinPositionById,
+          ])
+          .flatMap(([yourNodePinId, yourNodePinPosition]) => {
+            const yourNodePin = nullthrows(store.nodePins.get(yourNodePinId));
+            const yourComponentPin = nullthrows(
+              store.componentPins.get(yourNodePin.componentPinId)
+            );
+            if (yourComponentPin.type === componentPin.type) return [];
+            return [
+              [yourNodePinId, [yourNodePinPosition.x, yourNodePinPosition.y]],
+            ] as const;
+          }),
         2
       );
     }
@@ -56,6 +70,7 @@ export default function CCComponentEditorRendererNodePin({
   };
 
   let draggingView: ReactNode = null;
+  let nodePinIdToConnect: CCNodePinId | null = null;
   if (draggingState) {
     const nearestNodePinId =
       draggingState.nodePinPositionKDTree.nearestNeighbor([
@@ -69,23 +84,71 @@ export default function CCComponentEditorRendererNodePin({
       )
     );
     const distance = Math.hypot(
-      nearestNodePinPosition.x - position.x,
-      nearestNodePinPosition.y - position.y
+      nearestNodePinPosition.x - draggingState.cursorPosition.x,
+      nearestNodePinPosition.y - draggingState.cursorPosition.y
     );
+    if (distance < NODE_PIN_POSITION_SENSITIVITY) {
+      nodePinIdToConnect = nearestNodePinId;
+    }
     draggingView = (
       <CCComponentEditorRendererConnectionCore
         from={position}
         to={
-          distance < NODE_PIN_POSITION_SENSITIVITY
+          nodePinIdToConnect
             ? nearestNodePinPosition
-            : position
+            : draggingState.cursorPosition
         }
       />
     );
   }
 
+  const isSimulationMode = useComponentEditorStore()(
+    (s) => s.editorMode === "play"
+  );
+  const hasNoConnection =
+    store.connections.getConnectionsByNodePinId(nodePinId).length === 0;
+
+  const componentEditorStore = useComponentEditorStore()();
+  const pinType = componentPin.type;
+  const simulationValueToString = (simulationValue: SimulationValue) => {
+    return simulationValue.reduce(
+      (acm, currentValue) => acm + (currentValue === true ? "1" : "0"),
+      ""
+    );
+  };
+  const implementedComponentPin =
+    store.componentPins.getByImplementation(nodePinId);
+  let nodePinValueInit = null;
+  if (isSimulationMode && hasNoConnection) {
+    if (pinType === "input") {
+      nodePinValueInit = componentEditorStore.getInputValue(
+        implementedComponentPin!.id
+      )!;
+    } else {
+      nodePinValueInit = componentEditorStore.getNodePinValue(nodePinId)!;
+    }
+  }
+  const nodePinValue = nodePinValueInit;
+  const updateInputValue = () => {
+    const updatedPinValue = [...nodePinValue!];
+    updatedPinValue[0] = !updatedPinValue[0];
+    componentEditorStore.setInputValue(
+      implementedComponentPin!.id,
+      updatedPinValue
+    );
+  };
+
   return (
     <>
+      {isSimulationMode && hasNoConnection && (
+        <text
+          x={position.x - (pinType === "input" ? 15 : -8)}
+          y={position.y}
+          onClick={pinType === "input" ? updateInputValue : undefined}
+        >
+          {simulationValueToString(nodePinValue!)}
+        </text>
+      )}
       <circle
         cx={position.x}
         cy={position.y}
@@ -98,6 +161,20 @@ export default function CCComponentEditorRendererNodePin({
           onDrag(e);
         }}
         onPointerMove={draggingState ? onDrag : undefined}
+        onPointerUp={() => {
+          if (!nodePinIdToConnect) return;
+          const route = {
+            input: { from: nodePinIdToConnect, to: nodePin.id },
+            output: { from: nodePin.id, to: nodePinIdToConnect },
+          }[componentPin.type];
+          store.connections.register(
+            CCConnectionStore.create({
+              parentComponentId: node.parentComponentId,
+              ...route,
+              bentPortion: 0.5,
+            })
+          );
+        }}
         onLostPointerCapture={() => {
           setDraggingState(null);
         }}

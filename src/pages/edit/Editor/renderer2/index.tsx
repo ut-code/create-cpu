@@ -41,14 +41,15 @@ export default function CCComponentEditorRenderer() {
             componentId: droppedComponentId,
             parentComponentId: componentEditorState.componentId,
             position: matrix.applyToPoint(
-              componentEditorState.getInverseViewTransformation(), {
+              componentEditorState.getInverseViewTransformation(),
+              {
                 x: e.nativeEvent.offsetX,
                 y: e.nativeEvent.offsetY,
               }
             ),
             variablePins: [], // todo
           })
-        )
+        );
       }}
     >
       <CCComponentEditorRendererBackground />

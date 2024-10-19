@@ -9,7 +9,6 @@ import CCComponentEditorViewModeSwitcher from "./components/ViewModeSwitcher";
 import CCComponentEditorContextMenu from "./components/ContextMenu";
 import type { CCComponentId } from "../../../store/component";
 import CCComponentEditorRenderer from "./renderer2";
-import type { Point } from "../../../common/types";
 
 export type CCComponentEditorProps = {
   componentId: CCComponentId;
@@ -24,10 +23,6 @@ function CCComponentEditorContent({
 }: CCComponentEditorProps) {
   const { store } = useStore();
   const component = nullthrows(store.components.get(componentId));
-
-  const [contextMenuPosition, setContextMenuPosition] = useState<Point | null>(
-    null
-  );
   const [isComponentPropertyDialogOpen, setIsComponentPropertyDialogOpen] =
     useState(false);
 
@@ -41,13 +36,7 @@ function CCComponentEditorContent({
         onEditorClose={onClose}
       />
       <CCComponentEditorViewModeSwitcher />
-      {contextMenuPosition && (
-        <CCComponentEditorContextMenu
-          contextMenuPosition={contextMenuPosition}
-          onClose={() => setContextMenuPosition(null)}
-          onEditComponent={onEditComponent}
-        />
-      )}
+      <CCComponentEditorContextMenu onEditComponent={onEditComponent} />
       {isComponentPropertyDialogOpen && (
         <ComponentPropertyDialog
           defaultName={component.name}

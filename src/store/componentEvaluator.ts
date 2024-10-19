@@ -8,7 +8,7 @@ import type { CCComponentPinId } from "./componentPin";
 import type {
   SimulationFrame,
   SimulationValue,
-} from "../pages/edit/Editor/store";
+} from "../pages/edit/Editor/store/slices/core";
 
 function simulateIntrinsic(
   store: CCStore,
@@ -425,6 +425,7 @@ export default function simulateComponent(
   inputValues: Map<CCComponentPinId, SimulationValue>,
   previousFrame: SimulationFrame | null
 ): SimulationFrame | null {
+  console.log(inputValues);
   const component = store.components.get(componentId);
   if (!component) throw new Error(`Component ${component} is not defined.`);
   const childMap = new Map<
@@ -492,10 +493,17 @@ export default function simulateComponent(
         }
         return previousFrame.nodes.get(currentNodeId)!.child;
       })();
+      const currentNodePinInputValues = new Map<CCNodePinId, SimulationValue>();
+      for (const nodePin of store.nodePins.getManyByNodeId(currentNodeId)) {
+        currentNodePinInputValues.set(
+          nodePin.id,
+          nodePinInputValues.get(nodePin.id)!
+        );
+      }
       const result = simulateNode(
         store,
         currentNodeId,
-        nodePinInputValues,
+        currentNodePinInputValues,
         frame
       );
       if (!result) {
@@ -534,5 +542,6 @@ export default function simulateComponent(
       unevaluatedNodes.add(currentNodeId);
     }
   }
+  console.log(childMap);
   return { componentId, nodes: childMap };
 }

@@ -22,35 +22,34 @@ import {
 } from "../../../../store/node";
 import { useComponentEditorStore } from "../store";
 import { useStore } from "../../../../store/react";
-import type { Point } from "../../../../common/types";
 
 export type CCComponentEditorContextMenuProps = {
-  contextMenuPosition: Point;
-  onClose: () => void;
   onEditComponent: (componentId: CCComponentId) => void;
 };
 
 export default function CCComponentEditorContextMenu({
-  contextMenuPosition,
-  onClose,
   onEditComponent,
 }: CCComponentEditorContextMenuProps) {
   const { store } = useStore();
   const componentEditorState = useComponentEditorStore()();
 
+  if (!componentEditorState.contextMenuState) return null;
+
   return (
-    <ClickAwayListener onClickAway={onClose}>
+    <ClickAwayListener onClickAway={componentEditorState.closeContextMenu}>
       <MenuList
         component={Paper}
         dense
         sx={{
           position: "absolute",
-          top: `${contextMenuPosition.y}px`,
-          left: `${contextMenuPosition.x}px`,
+          top: `${componentEditorState.contextMenuState.position.y}px`,
+          left: `${componentEditorState.contextMenuState.position.x}px`,
           width: "200px",
         }}
       >
-        <MenuItem onClick={onClose}>Create a node</MenuItem>
+        <MenuItem onClick={componentEditorState.closeContextMenu}>
+          Create a node
+        </MenuItem>
         {componentEditorState.selectedNodeIds.size > 0 && (
           <MenuItem
             onClick={() => {
@@ -78,7 +77,6 @@ export default function CCComponentEditorContextMenu({
                   parentComponentId: newComponent.id,
                   position: oldNode.position,
                   componentId: oldNode.componentId,
-                  intrinsicVariablePinCount: oldNode.intrinsicVariablePinCount,
                   variablePins: [],
                 });
                 oldToNewNodeIdMap.set(oldNode.id, newNode.id);
@@ -119,7 +117,7 @@ export default function CCComponentEditorContextMenu({
                 ...componentEditorState.selectedConnectionIds,
               ]);
               store.nodes.unregister([...componentEditorState.selectedNodeIds]);
-              onClose();
+              componentEditorState.closeContextMenu();
               onEditComponent(newComponent.id);
             }}
           >
@@ -140,7 +138,7 @@ export default function CCComponentEditorContextMenu({
                 ]);
               componentEditorState.selectNode([], true);
               componentEditorState.selectConnection([], false);
-              onClose();
+              componentEditorState.closeContextMenu();
             }}
           >
             Delete
@@ -163,7 +161,7 @@ export default function CCComponentEditorContextMenu({
               <MenuItem
                 onClick={() => {
                   invariant(targetNode);
-                  onClose();
+                  componentEditorState.closeContextMenu();
                   onEditComponent(targetNode.componentId);
                 }}
               >

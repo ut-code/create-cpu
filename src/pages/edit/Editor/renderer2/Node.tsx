@@ -8,6 +8,7 @@ import type { CCNodePinId } from "../../../../store/nodePin";
 import { useStore } from "../../../../store/react";
 import { useComponentEditorStore } from "../store";
 import CCComponentEditorRendererNodePin from "./NodePin";
+import { primaryColor } from "../../../../common/theme";
 
 export function getCCComponentEditorRendererNodeGeometry(
   store: CCStore,
@@ -139,6 +140,7 @@ export default function CCComponentEditorRendererNode({
         onPointerDown={handleDragStart}
         onPointerMove={handleDragging}
         onPointerUp={handleDragEnd}
+        // filter={`drop-shadow(0 0 2px #00d372`}
       />
       {store.nodePins.getManyByNodeId(nodeId).map((nodePin) => {
         const position = nullthrows(

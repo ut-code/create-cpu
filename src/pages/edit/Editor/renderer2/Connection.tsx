@@ -16,7 +16,7 @@ export function CCComponentEditorRendererConnectionCore({
     <path
       d={`M ${from.x} ${from.y} L ${to.x} ${to.y}`}
       stroke="black"
-      strokeWidth="1"
+      strokeWidth="2"
       fill="none"
     />
   );
