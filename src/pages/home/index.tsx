@@ -6,7 +6,7 @@ import {
   Add as AddIcon,
 } from "@mui/icons-material";
 import { CCComponentStore, type CCComponentId } from "../../store/component";
-import useAllComponents from "../../store/react/selectors";
+import { useComponents } from "../../store/react/selectors";
 import { useStore } from "../../store/react";
 import { type CCStorePropsFromJson } from "../../store";
 import { ComponentPropertyDialog } from "../../components/ComponentPropertyDialog";
@@ -17,7 +17,7 @@ export type HomePageProps = {
 
 export default function HomePage({ onComponentSelected }: HomePageProps) {
   const { store, resetStore } = useStore();
-  const components = useAllComponents().filter(
+  const components = useComponents().filter(
     (component) => !component.isIntrinsic
   );
   const downloadStore = () => {

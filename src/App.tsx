@@ -1,6 +1,5 @@
 import { Box } from "@mui/material";
 import { useState } from "react";
-import "@pixi/math-extras";
 import GlobalHeader from "./components/GlobalHeader";
 import type { CCComponentId } from "./store/component";
 import EditPage from "./pages/edit";

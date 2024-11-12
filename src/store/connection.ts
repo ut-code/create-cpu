@@ -163,7 +163,7 @@ export class CCConnectionStore extends EventEmitter<CCConnectionStoreEvents> {
    * Get array of connections
    * @returns array of connections
    */
-  toArray(): CCConnection[] {
+  getMany(): CCConnection[] {
     return [...this.#connections.values()];
   }
 }
