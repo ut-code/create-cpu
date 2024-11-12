@@ -1,10 +1,11 @@
 import type { Opaque } from "type-fest";
 import EventEmitter from "eventemitter3";
 import invariant from "tiny-invariant";
-import * as PIXI from "pixi.js";
 import nullthrows from "nullthrows";
 import type CCStore from ".";
 import type { CCComponentId } from "./component";
+import type { CCNodePinId } from "./nodePin";
+import type { Point } from "../common/types";
 
 export type CCNodeId = Opaque<string, "CCNodeId">;
 
@@ -12,9 +13,8 @@ export type CCNode = {
   readonly id: CCNodeId;
   readonly parentComponentId: CCComponentId;
   readonly componentId: CCComponentId;
-  position: PIXI.Point;
-  /** The dynamic pin count exclusive to certain intrinsic components */
-  intrinsicVariablePinCount: number | null;
+  position: Point;
+  variablePins: CCNodePinId[] | null;
 };
 
 export type CCNodeStoreEvents = {
@@ -44,7 +44,7 @@ export class CCNodeStore extends EventEmitter<CCNodeStoreEvents> {
 
   import(nodes: CCNode[]): void {
     for (const node of nodes) {
-      node.position = new PIXI.Point(node.position.x, node.position.y);
+      node.position = { x: node.position.x, y: node.position.y };
       this.register(node);
     }
   }
@@ -118,7 +118,7 @@ export class CCNodeStore extends EventEmitter<CCNodeStoreEvents> {
    * @param id id of node
    * @param value new position
    */
-  update(id: CCNodeId, value: Pick<CCNode, "position">): void {
+  update(id: CCNodeId, value: Pick<CCNode, "position" | "variablePins">): void {
     const node = this.#nodes.get(id);
     invariant(node);
     this.#nodes.set(id, { ...node, ...value });
@@ -146,7 +146,18 @@ export class CCNodeStore extends EventEmitter<CCNodeStoreEvents> {
    * Get array of nodes
    * @returns array of nodes
    */
-  toArray(): CCNode[] {
+  getMany(): CCNode[] {
     return [...this.#nodes.values()];
+  }
+
+  incrementVariablePin(nodeId: CCNodeId, nodePinId: CCNodePinId) {
+    const node = this.#nodes.get(nodeId)!;
+    node.variablePins!.push(nodePinId);
+  }
+
+  decrementVariablePin(nodeId: CCNodeId): CCNodePinId {
+    const node = this.#nodes.get(nodeId)!;
+    invariant(node.variablePins!.length > 0);
+    return node.variablePins!.pop()!;
   }
 }

@@ -68,11 +68,11 @@ export default class CCStore {
    */
   toJSON() {
     return JSON.stringify({
-      components: this.components.toArray(),
-      nodes: this.nodes.toArray(),
-      componentPins: this.componentPins.toArray(),
-      nodePins: this.nodePins.toArray(),
-      connections: this.connections.toArray(),
+      components: this.components.getMany(),
+      nodes: this.nodes.getMany(),
+      componentPins: this.componentPins.getMany(),
+      nodePins: this.nodePins.getMany(),
+      connections: this.connections.getMany(),
     });
   }
 }

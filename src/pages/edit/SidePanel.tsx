@@ -1,10 +1,9 @@
 import { Box, InputAdornment, TextField } from "@mui/material";
 import invariant from "tiny-invariant";
 import nullthrows from "nullthrows";
-import { Color } from "pixi.js";
 import { useState } from "react";
 import { Search } from "@mui/icons-material";
-import useAllComponents from "../../store/react/selectors";
+import { useComponents } from "../../store/react/selectors";
 import { useStore } from "../../store/react";
 import { isIncluding, type CCComponentId } from "../../store/component";
 import { ccPinTypes } from "../../store/componentPin";
@@ -33,8 +32,8 @@ function ComponentRenderer({ componentId }: { componentId: CCComponentId }) {
           gridTemplateColumns: "1fr 1fr",
           alignItems: "center",
           marginTop: "4px",
-          border: `2px solid ${new Color(blackColor).toHex()}`,
-          background: new Color(whiteColor).toHex(),
+          border: `2px solid ${blackColor}`,
+          background: whiteColor,
         }}
       >
         {ccPinTypes.map((type) => (
@@ -75,9 +74,9 @@ function ComponentRenderer({ componentId }: { componentId: CCComponentId }) {
                     style={{
                       width: "10px",
                       height: "10px",
-                      border: `2px solid ${new Color(blackColor).toHex()}`,
+                      border: `2px solid ${blackColor}`,
                       borderRadius: "4px",
-                      background: new Color(whiteColor).toHex(),
+                      background: whiteColor,
                     }}
                   />
                   <div aria-label="Pin name">{pin.name}</div>
@@ -93,7 +92,7 @@ function ComponentRenderer({ componentId }: { componentId: CCComponentId }) {
 export default function SidePanel(sidePanelProps: SidePanelProps) {
   const { editedComponentId } = sidePanelProps;
   const { store } = useStore();
-  const components = useAllComponents();
+  const components = useComponents();
   const [searchText, setSearchText] = useState("");
 
   return (
