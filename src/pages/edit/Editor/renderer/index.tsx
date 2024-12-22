@@ -47,7 +47,6 @@ export default function CCComponentEditorRenderer() {
                 y: e.nativeEvent.offsetY,
               }
             ),
-            variablePins: [], // todo
           })
         );
       }}

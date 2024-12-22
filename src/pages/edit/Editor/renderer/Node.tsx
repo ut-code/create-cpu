@@ -56,7 +56,6 @@ const CCComponentEditorRendererNode = ensureStoreItem(
             x: previousNodePosition.x + diff.x,
             y: previousNodePosition.y + diff.y,
           },
-          variablePins: node.variablePins,
         });
       }
     };

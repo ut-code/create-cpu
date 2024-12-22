@@ -77,7 +77,6 @@ export default function CCComponentEditorContextMenu({
                   parentComponentId: newComponent.id,
                   position: oldNode.position,
                   componentId: oldNode.componentId,
-                  variablePins: [],
                 });
                 oldToNewNodeIdMap.set(oldNode.id, newNode.id);
                 return newNode;
@@ -154,7 +153,7 @@ export default function CCComponentEditorContextMenu({
           invariant(targetNode);
           const targetComponent = store.components.get(targetNode.componentId);
           invariant(targetComponent);
-          if (targetComponent.isIntrinsic) return undefined;
+          if (targetComponent.intrinsicType) return undefined;
           return (
             <>
               <Divider />

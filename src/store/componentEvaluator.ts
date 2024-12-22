@@ -29,17 +29,18 @@ function simulateIntrinsic(
     return componentPin.type === "output";
   });
   switch (componentId) {
-    case intrinsics.notIntrinsicComponent.id: {
+    case intrinsics.notIntrinsicComponentDefinition.component.id: {
       invariant(pinIds.length === 2);
       const inputPinId = inputNodePins.find(
         (nodePin: CCNodePin) =>
-          nodePin.componentPinId === intrinsics.notIntrinsicComponentInputPin.id
+          nodePin.componentPinId ===
+          intrinsics.notIntrinsicComponentDefinition.inputPins[0]!.id
       )!.id;
       const inputValue = inputValues.get(inputPinId);
       const outputPinId = outputNodePins.find(
         (nodePin: CCNodePin) =>
           nodePin.componentPinId ===
-          intrinsics.notIntrinsicComponentOutputPin.id
+          intrinsics.notIntrinsicComponentDefinition.outputPins[0]!.id
       )!.id;
       const outputValue = [];
       for (const value of inputValue!) {
@@ -49,24 +50,24 @@ function simulateIntrinsic(
       outputValues.set(outputPinId, outputValue);
       return outputValues;
     }
-    case intrinsics.andIntrinsicComponent.id: {
+    case intrinsics.andIntrinsicComponentDefinition.component.id: {
       invariant(pinIds.length === 3);
       const inputPinId0 = inputNodePins.find(
         (nodePin: CCNodePin) =>
           nodePin.componentPinId ===
-          intrinsics.andIntrinsicComponentInputPinA.id
+          intrinsics.andIntrinsicComponentDefinition.inputPins[0]!.id
       )!.id;
       const inputPinId1 = inputNodePins.find(
         (nodePin: CCNodePin) =>
           nodePin.componentPinId ===
-          intrinsics.andIntrinsicComponentInputPinB.id
+          intrinsics.andIntrinsicComponentDefinition.inputPins[1]!.id
       )!.id;
       const inputValue0 = inputValues.get(inputPinId0);
       const inputValue1 = inputValues.get(inputPinId1);
       const outputPinId = outputNodePins.find(
         (nodePin: CCNodePin) =>
           nodePin.componentPinId ===
-          intrinsics.andIntrinsicComponentOutputPin.id
+          intrinsics.andIntrinsicComponentDefinition.outputPins[0]!.id
       )!.id;
       const outputValue = [];
       if (inputValue0!.length !== inputValue1!.length) {
@@ -79,21 +80,24 @@ function simulateIntrinsic(
       outputValues.set(outputPinId, outputValue);
       return outputValues;
     }
-    case intrinsics.orIntrinsicComponent.id: {
+    case intrinsics.orIntrinsicComponentDefinition.component.id: {
       invariant(pinIds.length === 3);
       const inputPinId0 = inputNodePins.find(
         (nodePin: CCNodePin) =>
-          nodePin.componentPinId === intrinsics.orIntrinsicComponentInputPinA.id
+          nodePin.componentPinId ===
+          intrinsics.orIntrinsicComponentDefinition.inputPins[0]!.id
       )!.id;
       const inputPinId1 = inputNodePins.find(
         (nodePin: CCNodePin) =>
-          nodePin.componentPinId === intrinsics.orIntrinsicComponentInputPinB.id
+          nodePin.componentPinId ===
+          intrinsics.orIntrinsicComponentDefinition.inputPins[1]!.id
       )!.id;
       const inputValue0 = inputValues.get(inputPinId0);
       const inputValue1 = inputValues.get(inputPinId1);
       const outputPinId = outputNodePins.find(
         (nodePin: CCNodePin) =>
-          nodePin.componentPinId === intrinsics.orIntrinsicComponentOutputPin.id
+          nodePin.componentPinId ===
+          intrinsics.orIntrinsicComponentDefinition.outputPins[0]!.id
       )!.id;
       const outputValue = [];
       if (inputValue0!.length !== inputValue1!.length) {
@@ -106,24 +110,24 @@ function simulateIntrinsic(
       outputValues.set(outputPinId, outputValue);
       return outputValues;
     }
-    case intrinsics.xorIntrinsicComponent.id: {
+    case intrinsics.xorIntrinsicComponentDefinition.component.id: {
       invariant(pinIds.length === 3);
       const inputPinId0 = inputNodePins.find(
         (nodePin: CCNodePin) =>
           nodePin.componentPinId ===
-          intrinsics.xorIntrinsicComponentInputPinA.id
+          intrinsics.xorIntrinsicComponentDefinition.inputPins[0]!.id
       )!.id;
       const inputPinId1 = inputNodePins.find(
         (nodePin: CCNodePin) =>
           nodePin.componentPinId ===
-          intrinsics.xorIntrinsicComponentInputPinB.id
+          intrinsics.xorIntrinsicComponentDefinition.inputPins[1]!.id
       )!.id;
       const inputValue0 = inputValues.get(inputPinId0);
       const inputValue1 = inputValues.get(inputPinId1);
       const outputPinId = outputNodePins.find(
         (nodePin: CCNodePin) =>
           nodePin.componentPinId ===
-          intrinsics.xorIntrinsicComponentOutputPin.id
+          intrinsics.xorIntrinsicComponentDefinition.outputPins[0]!.id
       )!.id;
       const outputValue = [];
       if (inputValue0!.length !== inputValue1!.length) {
@@ -136,18 +140,18 @@ function simulateIntrinsic(
       outputValues.set(outputPinId, outputValue);
       return outputValues;
     }
-    case intrinsics.inputIntrinsicComponent.id: {
+    case intrinsics.inputIntrinsicComponentDefinition.component.id: {
       invariant(pinIds.length === 2);
       const inputPinId = inputNodePins.find(
         (nodePin: CCNodePin) =>
           nodePin.componentPinId ===
-          intrinsics.inputIntrinsicComponentInputPin.id
+          intrinsics.inputIntrinsicComponentDefinition.inputPins[0]!.id
       )!.id;
       const inputValue = inputValues.get(inputPinId);
       const outputPinId = outputNodePins.find(
         (nodePin: CCNodePin) =>
           nodePin.componentPinId ===
-          intrinsics.inputIntrinsicComponentOutputPin.id
+          intrinsics.inputIntrinsicComponentDefinition.outputPins[0]!.id
       )!.id;
       const outputValue = [];
       for (const value of inputValue!) {
@@ -157,46 +161,46 @@ function simulateIntrinsic(
       outputValues.set(outputPinId, outputValue);
       return outputValues;
     }
-    case intrinsics.fourBitsIntrinsicComponent.id: {
-      invariant(node.variablePins);
-      const outputValue = node.variablePins.flatMap(
-        (variablePin) => inputValues.get(variablePin)!
-      );
-      const outputMap = new Map<CCNodePinId, SimulationValue>();
-      const outputPinId = outputNodePins.find(
+    case intrinsics.aggregateIntrinsicComponentDefinition.component.id: {
+      const outputPin = outputNodePins.find(
         (nodePin: CCNodePin) =>
           nodePin.componentPinId ===
-          intrinsics.fourBitsIntrinsicComponentOutputPin.id
-      )!.id;
-      outputMap.set(outputPinId, outputValue);
+          intrinsics.aggregateIntrinsicComponentDefinition.outputPins[0]!.id
+      )!;
+      const outputValue = new Array<boolean>(
+        outputPin.userSpecifiedBitWidth!
+      ).fill(false);
+      for (const pin of inputNodePins) {
+        outputValue[pin.order] = inputValues.get(pin.id)![pin.order]!;
+      }
+      const outputMap = new Map<CCNodePinId, SimulationValue>();
+      outputMap.set(outputPin.id, outputValue);
       return outputMap;
     }
-    case intrinsics.distributeFourBitsIntrinsicComponent.id: {
+    case intrinsics.decomposeIntrinsicComponentDefinition.component.id: {
       const inputPinId = inputNodePins.find(
         (nodePin: CCNodePin) =>
           nodePin.componentPinId ===
-          intrinsics.distributeFourBitsIntrinsicComponentInputPin.id
+          intrinsics.decomposeIntrinsicComponentDefinition.inputPins[0]!.id
       )!.id;
       const inputs = inputValues.get(inputPinId)!;
       const outputMap = new Map<CCNodePinId, SimulationValue>();
-      invariant(node.variablePins);
-      invariant(node.variablePins.length === inputs.length);
-      for (let i = 0; i < node.variablePins.length; i += 1) {
-        outputMap.set(node.variablePins[i]!, [inputs[i]!]);
+      for (const pin of outputNodePins) {
+        outputMap.set(pin.id, [inputs[pin.order]!]);
       }
       return outputMap;
     }
-    case intrinsics.flipFlopIntrinsicComponent.id: {
+    case intrinsics.flipFlopIntrinsicComponentDefinition.component.id: {
       invariant(pinIds.length === 2);
       const inputPinId = inputNodePins.find(
         (nodePin: CCNodePin) =>
           nodePin.componentPinId ===
-          intrinsics.flipFlopIntrinsicComponentInputPin.id
+          intrinsics.flipFlopIntrinsicComponentDefinition.inputPins[0]!.id
       )!.id;
       const outputPinId = outputNodePins.find(
         (nodePin: CCNodePin) =>
           nodePin.componentPinId ===
-          intrinsics.flipFlopIntrinsicComponentOutputPin.id
+          intrinsics.flipFlopIntrinsicComponentDefinition.outputPins[0]!.id
       )!.id;
       const outputValues = new Map<CCNodePinId, SimulationValue>();
 
@@ -238,7 +242,7 @@ function simulateNode(
   const node = store.nodes.get(nodeId)!;
   const component = store.components.get(node.componentId);
   if (!component) throw new Error(`Component ${component} is not defined.`);
-  if (component.isIntrinsic) {
+  if (component.intrinsicType) {
     const outputValues = simulateIntrinsic(
       store,
       nodeId,
@@ -349,13 +353,17 @@ function simulateNode(
             })!;
             outputValues.set(parentNodePin.id, outputValue);
           }
-          if (currentComponentId === intrinsics.flipFlopIntrinsicComponent.id) {
+          if (
+            currentComponentId ===
+            intrinsics.flipFlopIntrinsicComponentDefinition.component.id
+          ) {
             visitedFlipFlops.add(currentNodeId);
           }
         }
       }
     } else if (
-      currentComponentId === intrinsics.flipFlopIntrinsicComponent.id &&
+      currentComponentId ===
+        intrinsics.flipFlopIntrinsicComponentDefinition.component.id &&
       !visitedFlipFlops.has(currentNodeId)
     ) {
       const frame = previousFrame
@@ -396,7 +404,10 @@ function simulateNode(
             })!;
             outputValues.set(parentNodePin.id, outputValue);
           }
-          if (currentComponentId === intrinsics.flipFlopIntrinsicComponent.id) {
+          if (
+            currentComponentId ===
+            intrinsics.flipFlopIntrinsicComponentDefinition.component.id
+          ) {
             visitedFlipFlops.add(currentNodeId);
           }
         }
@@ -487,7 +498,7 @@ export default function simulateComponent(
     ) {
       const frame = (() => {
         if (!previousFrame) return null;
-        if (currentComponent.isIntrinsic) {
+        if (currentComponent.intrinsicType) {
           return previousFrame;
         }
         return previousFrame.nodes.get(currentNodeId)!.child;
@@ -532,7 +543,10 @@ export default function simulateComponent(
             })!;
             outputValues.set(parentComponentPin.id, outputValue);
           }
-          if (currentComponentId === intrinsics.flipFlopIntrinsicComponent.id) {
+          if (
+            currentComponentId ===
+            intrinsics.flipFlopIntrinsicComponentDefinition.component.id
+          ) {
             visitedFlipFlops.add(currentNodeId);
           }
         }

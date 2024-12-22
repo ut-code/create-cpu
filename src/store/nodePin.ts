@@ -3,7 +3,11 @@ import EventEmitter from "eventemitter3";
 import nullthrows from "nullthrows";
 import invariant from "tiny-invariant";
 import type { CCNodeId } from "./node";
-import type { CCComponentPinId, CCPinMultiplexability } from "./componentPin";
+import type {
+  CCComponentPin,
+  CCComponentPinId,
+  CCPinMultiplexability,
+} from "./componentPin";
 import type CCStore from ".";
 import * as intrinsic from "./intrinsics";
 
@@ -13,6 +17,8 @@ export type CCNodePin = {
   id: CCNodePinId;
   nodeId: CCNodeId;
   componentPinId: CCComponentPinId;
+  order: number;
+  userSpecifiedBitWidth: number | null;
 };
 
 export type CCNodePinStoreEvents = {
@@ -45,6 +51,15 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
   }
 
   mount() {
+    const getDefaultUserSpecifiedBitWidth = (componentPin: CCComponentPin) => {
+      const component = this.#store.components.get(componentPin.componentId)!;
+      if (!component.intrinsicType) return null;
+      const definition =
+        intrinsic.ccIntrinsicComponentDefinitions[component.intrinsicType];
+      return definition.componentPinHasUserSpecifiedBitWidth?.(componentPin)
+        ? 1
+        : null;
+    };
     this.#store.nodes.on("didRegister", (node) => {
       const componentPins = this.#store.componentPins.getManyByComponentId(
         node.componentId
@@ -54,6 +69,9 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
           CCNodePinStore.create({
             nodeId: node.id,
             componentPinId: componentPin.id,
+            order: 0,
+            userSpecifiedBitWidth:
+              getDefaultUserSpecifiedBitWidth(componentPin),
           })
         );
       }
@@ -73,6 +91,9 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
           CCNodePinStore.create({
             nodeId: node.id,
             componentPinId: componentPin.id,
+            order: 0,
+            userSpecifiedBitWidth:
+              getDefaultUserSpecifiedBitWidth(componentPin),
           })
         );
       }
@@ -165,11 +186,15 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
       const givenPinMultiplexability =
         this.#store.componentPins.getComponentPinMultiplexability(pinId);
       if (givenPinMultiplexability === "undecidable") {
-        if (pinId === intrinsic.fourBitsIntrinsicComponentOutputPin.id) {
+        if (
+          pinId ===
+          intrinsic.aggregateIntrinsicComponentDefinition.outputPins[0]!.id
+        ) {
           return { isMultiplexable: false, multiplicity: nodePins.length - 1 };
         }
         if (
-          pinId === intrinsic.distributeFourBitsIntrinsicComponentInputPin.id
+          pinId ===
+          intrinsic.decomposeIntrinsicComponentDefinition.inputPins[0]!.id
         ) {
           return { isMultiplexable: false, multiplicity: nodePins.length - 1 };
         }
@@ -236,23 +261,5 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
    */
   getMany(): CCNodePin[] {
     return [...this.#nodePins.values()];
-  }
-
-  incrementVariablePin(nodeId: CCNodeId, componentPinId: CCComponentPinId) {
-    const node = this.#store.nodes.get(nodeId)!;
-    invariant(node.variablePins);
-    const nodePin = CCNodePinStore.create({
-      nodeId,
-      componentPinId,
-    });
-    this.register(nodePin);
-    this.#store.nodes.incrementVariablePin(nodeId, nodePin.id);
-  }
-
-  decrementVariablePin(nodeId: CCNodeId) {
-    const node = this.#store.nodes.get(nodeId)!;
-    invariant(node.variablePins);
-    const deletedPinId = this.#store.nodes.decrementVariablePin(nodeId);
-    this.unregister(deletedPinId);
   }
 }

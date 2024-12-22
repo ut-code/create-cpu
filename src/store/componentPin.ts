@@ -12,6 +12,7 @@ export type CCComponentPin = {
   readonly componentId: CCComponentId;
   readonly type: CCPinType;
   readonly implementation: CCPinImplementation;
+  order: number;
   name: string;
 };
 
@@ -127,11 +128,19 @@ export class CCComponentPinStore extends EventEmitter<CCComponentPinStoreEvents>
       targetNodePin.componentPinId
     )!;
     const targetNode = this.#store.nodes.get(targetNodePin.nodeId)!;
+    const existingComponentPins = this.getManyByComponentId(
+      targetNode.parentComponentId
+    );
+    const maxOrder = Math.max(
+      ...existingComponentPins.map((pin) => pin.order),
+      -1
+    );
     return CCComponentPinStore.create({
       type: targetComponentPin.type,
       componentId: targetNode.parentComponentId,
       name: targetComponentPin.name,
       implementation: targetNodePin.id,
+      order: maxOrder + 1,
     });
   }
 
@@ -224,35 +233,35 @@ export class CCComponentPinStore extends EventEmitter<CCComponentPinStoreEvents>
     const pin = this.#pins.get(pinId);
     invariant(pin);
     switch (pin.id) {
-      case intrinsic.andIntrinsicComponentInputPinA.id:
-      case intrinsic.andIntrinsicComponentInputPinB.id:
-      case intrinsic.andIntrinsicComponentOutputPin.id:
-      case intrinsic.orIntrinsicComponentInputPinA.id:
-      case intrinsic.orIntrinsicComponentInputPinB.id:
-      case intrinsic.orIntrinsicComponentOutputPin.id:
-      case intrinsic.notIntrinsicComponentInputPin.id:
-      case intrinsic.notIntrinsicComponentOutputPin.id:
-      case intrinsic.xorIntrinsicComponentInputPinA.id:
-      case intrinsic.xorIntrinsicComponentInputPinB.id:
-      case intrinsic.xorIntrinsicComponentOutputPin.id:
-      case intrinsic.inputIntrinsicComponentInputPin.id:
-      case intrinsic.inputIntrinsicComponentOutputPin.id:
-      case intrinsic.flipFlopIntrinsicComponentInputPin.id:
-      case intrinsic.flipFlopIntrinsicComponentOutputPin.id: {
+      case intrinsic.andIntrinsicComponentDefinition.inputPins[0]!.id:
+      case intrinsic.andIntrinsicComponentDefinition.inputPins[1]!.id:
+      case intrinsic.andIntrinsicComponentDefinition.outputPins[0]!.id:
+      case intrinsic.orIntrinsicComponentDefinition.inputPins[0]!.id:
+      case intrinsic.orIntrinsicComponentDefinition.inputPins[1]!.id:
+      case intrinsic.orIntrinsicComponentDefinition.outputPins[0]!.id:
+      case intrinsic.notIntrinsicComponentDefinition.inputPins[0]!.id:
+      case intrinsic.notIntrinsicComponentDefinition.outputPins[0]!.id:
+      case intrinsic.xorIntrinsicComponentDefinition.inputPins[0]!.id:
+      case intrinsic.xorIntrinsicComponentDefinition.inputPins[1]!.id:
+      case intrinsic.xorIntrinsicComponentDefinition.outputPins[0]!.id:
+      case intrinsic.inputIntrinsicComponentDefinition.inputPins[0]!.id:
+      case intrinsic.inputIntrinsicComponentDefinition.outputPins[0]!.id:
+      case intrinsic.flipFlopIntrinsicComponentDefinition.inputPins[0]!.id:
+      case intrinsic.flipFlopIntrinsicComponentDefinition.outputPins[0]!.id: {
         return { isMultiplexable: true };
       }
-      case intrinsic.fourBitsIntrinsicComponentInputPin.id: {
+      case intrinsic.aggregateIntrinsicComponentDefinition.inputPins[0]!.id: {
         return { isMultiplexable: false, multiplicity: 1 };
       }
-      case intrinsic.fourBitsIntrinsicComponentOutputPin.id: {
+      case intrinsic.aggregateIntrinsicComponentDefinition.outputPins[0]!.id: {
         return "undecidable";
         // return { isMultiplexable: false, multiplicity: 4 };
       }
-      case intrinsic.distributeFourBitsIntrinsicComponentInputPin.id: {
+      case intrinsic.decomposeIntrinsicComponentDefinition.outputPins[0]!.id: {
         return "undecidable";
         // return { isMultiplexable: false, multiplicity: 4 };
       }
-      case intrinsic.distributeFourBitsIntrinsicComponentOutputPin.id: {
+      case intrinsic.decomposeIntrinsicComponentDefinition.inputPins[0]!.id: {
         return { isMultiplexable: false, multiplicity: 1 };
       }
       default: {

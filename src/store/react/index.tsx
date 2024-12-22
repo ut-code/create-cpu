@@ -12,10 +12,8 @@ import CCStore, { type CCStorePropsFromJson } from "..";
 import { CCComponentStore } from "../component";
 import { CCNodeStore } from "../node";
 import {
-  andIntrinsicComponent,
-  andIntrinsicComponentOutputPin,
-  notIntrinsicComponent,
-  notIntrinsicComponentInputPin,
+  andIntrinsicComponentDefinition,
+  notIntrinsicComponentDefinition,
 } from "../intrinsics";
 import { CCConnectionStore } from "../connection";
 
@@ -30,17 +28,15 @@ function useContextValue() {
 
     const sampleNode1 = CCNodeStore.create({
       parentComponentId: rootComponent.id,
-      componentId: andIntrinsicComponent.id,
+      componentId: andIntrinsicComponentDefinition.component.id,
       position: { x: -100, y: 0 },
-      variablePins: null,
     });
     tempStore.nodes.register(sampleNode1);
 
     const sampleNode2 = CCNodeStore.create({
       parentComponentId: rootComponent.id,
-      componentId: notIntrinsicComponent.id,
+      componentId: notIntrinsicComponentDefinition.component.id,
       position: { x: 100, y: 0 },
-      variablePins: null,
     });
     tempStore.nodes.register(sampleNode2);
 
@@ -49,7 +45,8 @@ function useContextValue() {
         .getManyByNodeId(sampleNode1.id)
         .find(
           (nodePin) =>
-            nodePin.componentPinId === andIntrinsicComponentOutputPin.id
+            nodePin.componentPinId ===
+            andIntrinsicComponentDefinition.outputPins[0]!.id
         )
     );
     const toNodePin = nullthrows(
@@ -57,7 +54,8 @@ function useContextValue() {
         .getManyByNodeId(sampleNode2.id)
         .find(
           (nodePin) =>
-            nodePin.componentPinId === notIntrinsicComponentInputPin.id
+            nodePin.componentPinId ===
+            notIntrinsicComponentDefinition.inputPins[0]!.id
         )
     );
     const sampleConnection = CCConnectionStore.create({

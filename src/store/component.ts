@@ -2,12 +2,14 @@ import type { Opaque } from "type-fest";
 import EventEmitter from "eventemitter3";
 import invariant from "tiny-invariant";
 import type CCStore from ".";
+import type { CCIntrinsicComponentType } from "./intrinsics";
 
 export type CCComponentId = Opaque<string, "CCComponentId">;
 
 export type CCComponent = {
   readonly id: CCComponentId;
-  readonly isIntrinsic: boolean;
+  /** null for user-defined components */
+  readonly intrinsicType: CCIntrinsicComponentType | null;
   name: string;
 };
 
@@ -98,11 +100,11 @@ export class CCComponentStore extends EventEmitter<CCComponentStoreEvents> {
    * @returns a new component
    */
   static create(
-    partialComponent: Omit<CCComponent, "id" | "isIntrinsic">
+    partialComponent: Omit<CCComponent, "id" | "intrinsicType">
   ): CCComponent {
     return {
       id: crypto.randomUUID() as CCComponentId,
-      isIntrinsic: false,
+      intrinsicType: null,
       ...partialComponent,
     };
   }
@@ -129,7 +131,7 @@ export function isIncluding(
   targetComponentId: CCComponentId
 ) {
   const component = store.components.get(componentId)!;
-  if (component.isIntrinsic) return false;
+  if (component.intrinsicType) return false;
 
   const checkedComponentIds = new Set<CCComponentId>();
   const dfs = (_componentId: CCComponentId): boolean => {
@@ -149,7 +151,7 @@ export function isIncluding(
 
 function validateComponent(store: CCStore, componentId: CCComponentId) {
   const component = store.components.get(componentId)!;
-  if (component.isIntrinsic) return;
+  if (component.intrinsicType) return;
 
   const nodes = store.nodes.getManyByParentComponentId(componentId);
   const connections = store.connections.getManyByParentComponentId(componentId);

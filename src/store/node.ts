@@ -4,7 +4,6 @@ import invariant from "tiny-invariant";
 import nullthrows from "nullthrows";
 import type CCStore from ".";
 import type { CCComponentId } from "./component";
-import type { CCNodePinId } from "./nodePin";
 import type { Point } from "../common/types";
 
 export type CCNodeId = Opaque<string, "CCNodeId">;
@@ -14,7 +13,6 @@ export type CCNode = {
   readonly parentComponentId: CCComponentId;
   readonly componentId: CCComponentId;
   position: Point;
-  variablePins: CCNodePinId[] | null;
 };
 
 export type CCNodeStoreEvents = {
@@ -118,7 +116,7 @@ export class CCNodeStore extends EventEmitter<CCNodeStoreEvents> {
    * @param id id of node
    * @param value new position
    */
-  update(id: CCNodeId, value: Pick<CCNode, "position" | "variablePins">): void {
+  update(id: CCNodeId, value: Pick<CCNode, "position">): void {
     const node = this.#nodes.get(id);
     invariant(node);
     this.#nodes.set(id, { ...node, ...value });
@@ -148,16 +146,5 @@ export class CCNodeStore extends EventEmitter<CCNodeStoreEvents> {
    */
   getMany(): CCNode[] {
     return [...this.#nodes.values()];
-  }
-
-  incrementVariablePin(nodeId: CCNodeId, nodePinId: CCNodePinId) {
-    const node = this.#nodes.get(nodeId)!;
-    node.variablePins!.push(nodePinId);
-  }
-
-  decrementVariablePin(nodeId: CCNodeId): CCNodePinId {
-    const node = this.#nodes.get(nodeId)!;
-    invariant(node.variablePins!.length > 0);
-    return node.variablePins!.pop()!;
   }
 }

@@ -18,7 +18,7 @@ export type HomePageProps = {
 export default function HomePage({ onComponentSelected }: HomePageProps) {
   const { store, resetStore } = useStore();
   const components = useComponents().filter(
-    (component) => !component.isIntrinsic
+    (component) => !component.intrinsicType
   );
   const downloadStore = () => {
     const storeJSON = store.toJSON();
