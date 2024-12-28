@@ -3,13 +3,13 @@ import type { CCNodeId } from "../../../../../../store/node";
 import type { CCConnectionId } from "../../../../../../store/connection";
 import type { SimulationValue } from ".";
 import type { CCNodePinId } from "../../../../../../store/nodePin";
-import type { Point } from "../../../../../../common/types";
+import type { Vector2 } from "../../../../../../common/vector2";
 
 export type EditorMode = EditorModeEdit | EditorModePlay;
 export type EditorModeEdit = "edit";
 export type EditorModePlay = "play";
 
-export type RangeSelect = { start: Point; end: Point } | null;
+export type RangeSelect = { start: Vector2; end: Vector2 } | null;
 
 export type InputValueKey = CCComponentPinId;
 

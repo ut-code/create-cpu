@@ -1,8 +1,6 @@
 import { useState, type PointerEvent, type ReactNode } from "react";
-import * as matrix from "transformation-matrix";
 import { KDTree } from "mnemonist";
 import nullthrows from "nullthrows";
-import type { Point } from "../../../../common/types";
 import type { CCNodePinId } from "../../../../store/nodePin";
 import { CCComponentEditorRendererConnectionCore } from "./Connection";
 import { useComponentEditorStore } from "../store";
@@ -10,29 +8,28 @@ import { useStore } from "../../../../store/react";
 import getCCComponentEditorRendererNodeGeometry from "./Node.geometry";
 import { CCConnectionStore } from "../../../../store/connection";
 import type { SimulationValue } from "../store/slices/core";
+import { vector2, type Vector2 } from "../../../../common/vector2";
 
 const NODE_PIN_POSITION_SENSITIVITY = 10;
 
 export type CCComponentEditorRendererNodeProps = {
   nodePinId: CCNodePinId;
-  position: Point;
+  position: Vector2;
 };
 export default function CCComponentEditorRendererNodePin({
   nodePinId,
   position,
 }: CCComponentEditorRendererNodeProps) {
   const { store } = useStore();
+  const componentEditorState = useComponentEditorStore()();
   const nodePin = nullthrows(store.nodePins.get(nodePinId));
   const node = nullthrows(store.nodes.get(nodePin.nodeId));
   const componentPin = nullthrows(
     store.componentPins.get(nodePin.componentPinId)
   );
 
-  const inverseViewTransformation = useComponentEditorStore()((s) =>
-    s.getInverseViewTransformation()
-  );
   const [draggingState, setDraggingState] = useState<{
-    cursorPosition: Point;
+    cursorPosition: Vector2;
     nodePinPositionKDTree: KDTree<CCNodePinId>;
   } | null>(null);
   const onDrag = (e: PointerEvent) => {
@@ -62,10 +59,9 @@ export default function CCComponentEditorRendererNodePin({
       );
     }
     setDraggingState({
-      cursorPosition: matrix.applyToPoint(inverseViewTransformation, {
-        x: e.nativeEvent.offsetX,
-        y: e.nativeEvent.offsetY,
-      }),
+      cursorPosition: componentEditorState.fromCanvasToStage(
+        vector2.fromDomEvent(e.nativeEvent)
+      ),
       nodePinPositionKDTree,
     });
   };
@@ -110,7 +106,6 @@ export default function CCComponentEditorRendererNodePin({
   const hasNoConnection =
     store.connections.getConnectionsByNodePinId(nodePinId).length === 0;
 
-  const componentEditorStore = useComponentEditorStore()();
   const pinType = componentPin.type;
   const simulationValueToString = (simulationValue: SimulationValue) => {
     return simulationValue.reduce(
@@ -123,18 +118,18 @@ export default function CCComponentEditorRendererNodePin({
   let nodePinValueInit = null;
   if (isSimulationMode && hasNoConnection) {
     if (pinType === "input") {
-      nodePinValueInit = componentEditorStore.getInputValue(
+      nodePinValueInit = componentEditorState.getInputValue(
         implementedComponentPin!.id
       )!;
     } else {
-      nodePinValueInit = componentEditorStore.getNodePinValue(nodePinId)!;
+      nodePinValueInit = componentEditorState.getNodePinValue(nodePinId)!;
     }
   }
   const nodePinValue = nodePinValueInit;
   const updateInputValue = () => {
     const updatedPinValue = [...nodePinValue!];
     updatedPinValue[0] = !updatedPinValue[0];
-    componentEditorStore.setInputValue(
+    componentEditorState.setInputValue(
       implementedComponentPin!.id,
       updatedPinValue
     );

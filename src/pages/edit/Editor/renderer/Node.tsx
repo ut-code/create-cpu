@@ -1,6 +1,5 @@
 import nullthrows from "nullthrows";
 import { useState } from "react";
-import * as matrix from "transformation-matrix";
 import type { CCNodeId } from "../../../../store/node";
 import { useNode } from "../../../../store/react/selectors";
 import { useStore } from "../../../../store/react";
@@ -9,6 +8,7 @@ import CCComponentEditorRendererNodePin from "./NodePin";
 import getCCComponentEditorRendererNodeGeometry from "./Node.geometry";
 import ensureStoreItem from "../../../../store/react/error";
 import { blackColor, primaryColor, whiteColor } from "../../../../common/theme";
+import { vector2 } from "../../../../common/vector2";
 
 export type CCComponentEditorRendererNodeProps = {
   nodeId: CCNodeId;
@@ -22,40 +22,31 @@ const CCComponentEditorRendererNode = ensureStoreItem(
     const geometry = getCCComponentEditorRendererNodeGeometry(store, nodeId);
     const componentEditorState = useComponentEditorStore()();
     const [dragging, setDragging] = useState(false);
-    const [dragStartPosition, setDragStartPosition] = useState({ x: 0, y: 0 });
-    const [previousNodePosition, setPreviousNodePosition] = useState({
-      x: 0,
-      y: 0,
-    });
+    const [dragStartPosition, setDragStartPosition] = useState(vector2.zero);
+    const [previousNodePosition, setPreviousNodePosition] = useState(
+      vector2.zero
+    );
 
     const handleDragStart = (e: React.PointerEvent) => {
-      setDragStartPosition({
-        x: e.nativeEvent.offsetX,
-        y: e.nativeEvent.offsetY,
-      });
-      setPreviousNodePosition({
-        x: node.position.x,
-        y: node.position.y,
-      });
+      setDragStartPosition(vector2.fromDomEvent(e.nativeEvent));
+      setPreviousNodePosition(node.position);
       setDragging(true);
       e.currentTarget.setPointerCapture(e.pointerId);
     };
 
     const handleDragging = (e: React.PointerEvent) => {
       if (dragging) {
-        const { sx, sy } = matrix.decomposeTSR(
-          componentEditorState.getInverseViewTransformation()
-        ).scale;
-        const transformation = matrix.scale(sx, sy);
-        const diff = matrix.applyToPoint(transformation, {
-          x: e.nativeEvent.offsetX - dragStartPosition.x,
-          y: e.nativeEvent.offsetY - dragStartPosition.y,
-        });
         store.nodes.update(nodeId, {
-          position: {
-            x: previousNodePosition.x + diff.x,
-            y: previousNodePosition.y + diff.y,
-          },
+          position: vector2.add(
+            previousNodePosition,
+            vector2.mul(
+              vector2.sub(
+                vector2.fromDomEvent(e.nativeEvent),
+                dragStartPosition
+              ),
+              componentEditorState.perspective.scale
+            )
+          ),
         });
       }
     };

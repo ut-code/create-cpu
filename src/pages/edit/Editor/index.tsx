@@ -9,6 +9,8 @@ import CCComponentEditorViewModeSwitcher from "./components/ViewModeSwitcher";
 import CCComponentEditorContextMenu from "./components/ContextMenu";
 import type { CCComponentId } from "../../../store/component";
 import CCComponentEditorRenderer from "./renderer";
+import CCComponentEditorGrid from "./components/Grid";
+import { editorBackgroundColor } from "../../../common/theme";
 
 export type CCComponentEditorProps = {
   componentId: CCComponentId;
@@ -27,7 +29,14 @@ function CCComponentEditorContent({
     useState(false);
 
   return (
-    <Box sx={{ position: "relative", overflow: "hidden" }}>
+    <Box
+      sx={{
+        position: "relative",
+        overflow: "hidden",
+        backgroundColor: editorBackgroundColor,
+      }}
+    >
+      <CCComponentEditorGrid />
       <CCComponentEditorRenderer />
       <CCComponentEditorTitleBar
         onComponentPropertyDialogOpen={() =>

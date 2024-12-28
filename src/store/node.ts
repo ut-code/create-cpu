@@ -4,7 +4,7 @@ import invariant from "tiny-invariant";
 import nullthrows from "nullthrows";
 import type CCStore from ".";
 import type { CCComponentId } from "./component";
-import type { Point } from "../common/types";
+import type { Vector2 } from "../common/vector2";
 
 export type CCNodeId = Opaque<string, "CCNodeId">;
 
@@ -12,7 +12,7 @@ export type CCNode = {
   readonly id: CCNodeId;
   readonly parentComponentId: CCComponentId;
   readonly componentId: CCComponentId;
-  position: Point;
+  position: Vector2;
 };
 
 export type CCNodeStoreEvents = {
