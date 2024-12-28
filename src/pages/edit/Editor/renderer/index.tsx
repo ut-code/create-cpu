@@ -1,4 +1,3 @@
-import * as matrix from "transformation-matrix";
 import { parseDataTransferAsComponent } from "../../../../common/serialization";
 import {
   useConnectionIds,
@@ -10,6 +9,7 @@ import CCComponentEditorRendererConnection from "./Connection";
 import CCComponentEditorRendererNode from "./Node";
 import { useStore } from "../../../../store/react";
 import { CCNodeStore } from "../../../../store/node";
+import { vector2 } from "../../../../common/vector2";
 
 export default function CCComponentEditorRenderer() {
   const componentEditorState = useComponentEditorStore()();
@@ -40,12 +40,8 @@ export default function CCComponentEditorRenderer() {
           CCNodeStore.create({
             componentId: droppedComponentId,
             parentComponentId: componentEditorState.componentId,
-            position: matrix.applyToPoint(
-              componentEditorState.getInverseViewTransformation(),
-              {
-                x: e.nativeEvent.offsetX,
-                y: e.nativeEvent.offsetY,
-              }
+            position: componentEditorState.fromCanvasToStage(
+              vector2.fromDomEvent(e.nativeEvent)
             ),
           })
         );

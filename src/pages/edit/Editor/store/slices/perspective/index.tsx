@@ -1,6 +1,7 @@
 import * as matrix from "transformation-matrix";
 import { type ComponentEditorSliceCreator } from "../../types";
 import type { PerspectiveStoreSlice } from "./types";
+import { vector2 } from "../../../../../../common/vector2";
 
 const createComponentEditorStorePerspectiveSlice: ComponentEditorSliceCreator<
   PerspectiveStoreSlice
@@ -16,39 +17,30 @@ const createComponentEditorStorePerspectiveSlice: ComponentEditorSliceCreator<
   };
   return {
     define: (set, get) => ({
-      rendererSize: { width: 0, height: 0 },
+      perspective: { center: vector2.zero, scale: 1 },
+      rendererSize: vector2.zero,
       userPerspectiveTransformation: matrix.identity(),
+      setPerspective: (perspective) => set((s) => ({ ...s, perspective })),
       registerRendererElement,
-      setUserPerspectiveTransformation: (transformation) => {
-        set((state) => ({
-          ...state,
-          userPerspectiveTransformation: transformation,
-        }));
-      },
-      getViewTransformation: () => {
-        return matrix.compose(
-          matrix.translate(
-            get().rendererSize.width / 2,
-            get().rendererSize.height / 2
+      fromCanvasToStage: (point) =>
+        vector2.add(
+          vector2.mul(
+            vector2.sub(point, vector2.div(get().rendererSize, 2)),
+            get().perspective.scale
           ),
-          get().userPerspectiveTransformation
-        );
-      },
-      getInverseViewTransformation: () =>
-        matrix.inverse(get().getViewTransformation()),
+          get().perspective.center
+        ),
+      fromStageToCanvas: (point) =>
+        vector2.add(
+          vector2.div(
+            vector2.sub(point, get().perspective.center),
+            get().perspective.scale
+          ),
+          vector2.div(get().rendererSize, 2)
+        ),
       getViewBox: () => {
-        const inverseViewTransformation = get().getInverseViewTransformation();
-        const viewBoxTopLeft = matrix.applyToPoint(inverseViewTransformation, {
-          x: 0,
-          y: 0,
-        });
-        const viewBoxBottomRight = matrix.applyToPoint(
-          inverseViewTransformation,
-          {
-            x: get().rendererSize.width,
-            y: get().rendererSize.height,
-          }
-        );
+        const viewBoxTopLeft = get().fromCanvasToStage(vector2.zero);
+        const viewBoxBottomRight = get().fromCanvasToStage(get().rendererSize);
         return {
           x: viewBoxTopLeft.x,
           y: viewBoxTopLeft.y,
@@ -60,7 +52,12 @@ const createComponentEditorStorePerspectiveSlice: ComponentEditorSliceCreator<
     postCreate(editorStore) {
       resizeObserver = new ResizeObserver((entries) => {
         if (!entries[0]) return;
-        editorStore.setState({ rendererSize: entries[0].contentRect });
+        editorStore.setState({
+          rendererSize: {
+            x: entries[0].contentRect.width,
+            y: entries[0].contentRect.height,
+          },
+        });
       });
     },
   };

@@ -1,6 +1,5 @@
-import * as matrix from "transformation-matrix";
 import { useComponentEditorStore } from "../store";
-import { whiteColor } from "../../../../common/theme";
+import { vector2 } from "../../../../common/vector2";
 
 export default function CCComponentEditorRendererBackground() {
   const componentEditorState = useComponentEditorStore()();
@@ -14,28 +13,20 @@ export default function CCComponentEditorRendererBackground() {
       }}
       onPointerDown={(pointerDownEvent) => {
         const { currentTarget } = pointerDownEvent;
-        const startUserTransformation =
-          componentEditorState.userPerspectiveTransformation;
-        const startInverseViewTransformation =
-          componentEditorState.getInverseViewTransformation();
-        const startPoint = matrix.applyToPoint(startInverseViewTransformation, {
-          x: pointerDownEvent.nativeEvent.offsetX,
-          y: pointerDownEvent.nativeEvent.offsetY,
-        });
+        const startPerspective = componentEditorState.perspective;
+        const startPoint = vector2.fromDomEvent(pointerDownEvent.nativeEvent);
         const onPointerMove = (pointerMoveEvent: PointerEvent) => {
-          const endPoint = matrix.applyToPoint(startInverseViewTransformation, {
-            x: pointerMoveEvent.offsetX,
-            y: pointerMoveEvent.offsetY,
-          });
-          componentEditorState.setUserPerspectiveTransformation(
-            matrix.compose(
-              startUserTransformation,
-              matrix.translate(
-                endPoint.x - startPoint.x,
-                endPoint.y - startPoint.y
+          const endPoint = vector2.fromDomEvent(pointerMoveEvent);
+          componentEditorState.setPerspective({
+            ...startPerspective,
+            center: vector2.sub(
+              startPerspective.center,
+              vector2.mul(
+                vector2.sub(endPoint, startPoint),
+                startPerspective.scale
               )
-            )
-          );
+            ),
+          });
         };
         currentTarget.addEventListener("pointermove", onPointerMove);
         const onPointerUp = () => {
@@ -45,22 +36,22 @@ export default function CCComponentEditorRendererBackground() {
         currentTarget.addEventListener("pointerup", onPointerUp);
       }}
       onWheel={(wheelEvent) => {
-        const scale = Math.exp(-wheelEvent.deltaY / 256);
-        const center = matrix.applyToPoint(
-          componentEditorState.getInverseViewTransformation(),
-          {
-            x: wheelEvent.nativeEvent.offsetX,
-            y: wheelEvent.nativeEvent.offsetY,
-          }
+        const scaleDelta = Math.exp(wheelEvent.deltaY / 256);
+        const scaleCenter = componentEditorState.fromCanvasToStage(
+          vector2.fromDomEvent(wheelEvent.nativeEvent)
         );
-        componentEditorState.setUserPerspectiveTransformation(
-          matrix.compose(
-            componentEditorState.userPerspectiveTransformation,
-            matrix.scale(scale, scale, center.x, center.y)
-          )
-        );
+        componentEditorState.setPerspective({
+          scale: componentEditorState.perspective.scale * scaleDelta,
+          center: vector2.add(
+            scaleCenter,
+            vector2.mul(
+              vector2.sub(componentEditorState.perspective.center, scaleCenter),
+              scaleDelta
+            )
+          ),
+        });
       }}
-      fill={whiteColor}
+      fill="transparent"
     />
   );
 }

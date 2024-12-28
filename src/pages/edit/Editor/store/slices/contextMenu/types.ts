@@ -1,8 +1,8 @@
 import type { MouseEvent } from "react";
-import type { Point } from "../../../../../../common/types";
+import type { Vector2 } from "../../../../../../common/vector2";
 
 export type ContextMenuState = {
-  position: Point;
+  position: Vector2;
 };
 
 export type ContextMenuStoreSlice = {

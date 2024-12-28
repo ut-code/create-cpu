@@ -1,11 +1,12 @@
-import type * as matrix from "transformation-matrix";
+import type { Perspective } from "../../../../../../common/types";
+import type { Vector2 } from "../../../../../../common/vector2";
 
 export type PerspectiveStoreSlice = {
-  rendererSize: { width: number; height: number };
-  userPerspectiveTransformation: matrix.Matrix;
+  perspective: Perspective;
+  rendererSize: Vector2;
+  setPerspective: (perspective: Perspective) => void;
   registerRendererElement: (element: SVGSVGElement | null) => void;
-  setUserPerspectiveTransformation: (transformation: matrix.Matrix) => void;
-  getViewTransformation(): matrix.Matrix;
-  getInverseViewTransformation(): matrix.Matrix;
-  getViewBox(): { x: number; y: number; width: number; height: number };
+  fromCanvasToStage: (point: Vector2) => Vector2;
+  fromStageToCanvas: (point: Vector2) => Vector2;
+  getViewBox: () => { x: number; y: number; width: number; height: number };
 };
