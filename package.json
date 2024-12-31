@@ -1,44 +1,41 @@
 {
-  "name": "create-cpu",
-  "private": true,
-  "version": "0.0.0",
-  "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
-    "preview": "vite preview",
-    "type-check": "tsc",
-    "type-check:watch": "tsc --watch",
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix"
-  },
-  "dependencies": {
-    "@emotion/react": "^11.13.3",
-    "@emotion/styled": "^11.13.0",
-    "@mui/icons-material": "^5.11.16",
-    "@mui/material": "^5.13.5",
-    "eventemitter3": "^5.0.1",
-    "memoize-one": "^6.0.0",
-    "mnemonist": "^0.39.8",
-    "nullthrows": "^1.1.1",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "react-use": "^17.5.1",
-    "tiny-invariant": "^1.3.3",
-    "transformation-matrix": "^2.16.1",
-    "zustand": "^4.3.9"
-  },
-  "devDependencies": {
-    "@tsconfig/esm": "^1.0.5",
-    "@tsconfig/strictest": "^2.0.5",
-    "@types/react": "^18.3.12",
-    "@types/react-dom": "^18.3.1",
-    "@vitejs/plugin-react": "^4.3.3",
-    "eslint": "^8.43.0",
-    "eslint-config-airbnb-typescript-prettier": "^5.0.0",
-    "prettier": "^2.8.8",
-    "type-fest": "^3.12.0",
-    "typescript": "^5.6.3",
-    "vite": "^4.3.9"
-  }
+	"name": "create-cpu",
+	"private": true,
+	"version": "0.0.0",
+	"type": "module",
+	"scripts": {
+		"dev": "vite",
+		"build": "vite build",
+		"preview": "vite preview",
+		"type-check": "tsc",
+		"type-check:watch": "tsc --watch",
+		"check": "biome check",
+		"check:fix": "biome check --fix"
+	},
+	"dependencies": {
+		"@emotion/react": "^11.14.0",
+		"@emotion/styled": "^11.14.0",
+		"@mui/icons-material": "^6.3.0",
+		"@mui/material": "^6.3.0",
+		"eventemitter3": "^5.0.1",
+		"memoize-one": "^6.0.0",
+		"mnemonist": "^0.39.8",
+		"nullthrows": "^1.1.1",
+		"react": "^19.0.0",
+		"react-dom": "^19.0.0",
+		"react-use": "^17.6.0",
+		"tiny-invariant": "^1.3.3",
+		"transformation-matrix": "^2.16.1",
+		"zustand": "^5.0.2"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^1.9.4",
+		"@tsconfig/strictest": "^2.0.5",
+		"@types/react": "^19.0.2",
+		"@types/react-dom": "^19.0.2",
+		"@vitejs/plugin-react": "^4.3.4",
+		"type-fest": "^4.31.0",
+		"typescript": "^5.7.2",
+		"vite": "^6.0.6"
+	}
 }
