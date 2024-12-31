@@ -1,12 +1,14 @@
 :root {
-  font-family: sans-serif;
+	font-family: sans-serif;
 }
 
-:root, body, #root {
-  height: 100%;
+:root,
+body,
+#root {
+	height: 100%;
 }
 
 body {
-  margin: 0;
-  overflow: hidden;
+	margin: 0;
+	overflow: hidden;
 }

@@ -5,5 +5,4 @@ charset = utf-8
 end_of_line = lf
 
 [*.{json,js,jsx,ts,tsx}]
-indent_style = space
-indent_size = 2
+indent_style = tab
