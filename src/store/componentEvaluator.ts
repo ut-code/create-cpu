@@ -6,10 +6,77 @@ import type {
 	SimulationValue,
 } from "../pages/edit/Editor/store/slices/core";
 import type { CCComponentId } from "./component";
-import type { CCComponentPinId } from "./componentPin";
+import type { CCComponentPinId, CCComponentPin } from "./componentPin";
 import * as intrinsics from "./intrinsics";
 import type { CCNodeId } from "./node";
 import type { CCNodePin, CCNodePinId } from "./nodePin";
+import {
+	aggregate,
+	and,
+	decompose,
+	flipflop,
+	input,
+	not,
+	or,
+	xor,
+	definitionByComponentId,
+} from "./intrinsics/definitions";
+
+function getNodePinIdByComponentPinId(
+	nodePins: CCNodePin[],
+	componentPinId: CCComponentPinId,
+): CCNodePin {
+	const nodePin = nullthrows(
+		nodePins.find(
+			(nodePin: CCNodePin) => nodePin.componentPinId === componentPinId,
+		),
+	);
+	return nodePin;
+}
+
+function createInput(
+	nodePins: CCNodePin[],
+	inputPin: Record<string, CCComponentPin>,
+	inputValues: Map<CCNodePinId, SimulationValue>,
+): Record<string, SimulationValue[]> {
+	const input: Partial<Record<string, SimulationValue[]>> = {};
+	for (const key in inputPin) {
+		const componentPin = nullthrows(inputPin[key]);
+		const targetNodePins = nodePins.filter((nodePin: CCNodePin) =>
+			componentPin.id === nodePin.componentPinId
+		);
+		targetNodePins.sort((a, b) => a.order - b.order);
+		const values = targetNodePins.map((nodePin: CCNodePin) =>
+			nullthrows(inputValues.get(nodePin.id))
+		);
+		input[key] = values;
+	}
+	return input as Record<string, SimulationValue[]>;
+}
+
+function createOutputShape(
+	store: CCStore,
+	nodePins: CCNodePin[],
+	outputPin: Record<string, CCComponentPin>
+): Record<string, { multiplicity: number }[]> {
+	const outputShape: Record<string, { multiplicity: number }[]> = {};
+	for (const key in outputPin) {
+		const componentPin = nullthrows(outputPin[key]);
+		const targetNodePins = nodePins.filter((nodePin: CCNodePin) =>
+			componentPin.id === nodePin.componentPinId
+		);
+		targetNodePins.sort((a, b) => a.order - b.order);
+		const multiplicity = targetNodePins.map((nodePin: CCNodePin) => {
+			const multiplexability = store.nodePins.getNodePinMultiplexability(nodePin.id);
+			if (multiplexability.isMultiplexable) {
+				return 1;
+			}
+			return multiplexability.multiplicity;
+		});
+		outputShape[key] = multiplicity.map((multiplicity) => ({ multiplicity }));
+	}
+	return outputShape;
+}
 
 function simulateIntrinsic(
 	store: CCStore,
@@ -19,280 +86,39 @@ function simulateIntrinsic(
 ): Map<CCNodePinId, SimulationValue> | null {
 	const node = nullthrows(store.nodes.get(nodeId));
 	const { componentId } = node;
-	const pinIds = store.componentPins.getPinIdsByComponentId(componentId);
 	const nodePins = store.nodePins.getManyByNodeId(nodeId);
-	const inputNodePins = nodePins.filter((nodePin: CCNodePin) => {
-		const componentPin = nullthrows(
-			store.componentPins.get(nodePin.componentPinId),
-		);
-		return componentPin.type === "input";
-	});
-	const outputNodePins = nodePins.filter((nodePin: CCNodePin) => {
-		const componentPin = nullthrows(
-			store.componentPins.get(nodePin.componentPinId),
-		);
-		return componentPin.type === "output";
-	});
-	switch (componentId) {
-		case intrinsics.notIntrinsicComponentDefinition.component.id: {
-			invariant(pinIds.length === 2);
-			const inputPinId = nullthrows(
-				inputNodePins.find(
-					(nodePin: CCNodePin) =>
-						nodePin.componentPinId ===
-						nullthrows(intrinsics.notIntrinsicComponentDefinition.inputPins[0])
-							.id,
-				),
-			).id;
-			const inputValue = nullthrows(inputValues.get(inputPinId));
-			const outputPinId = nullthrows(
-				outputNodePins.find(
-					(nodePin: CCNodePin) =>
-						nodePin.componentPinId ===
-						nullthrows(intrinsics.notIntrinsicComponentDefinition.outputPins[0])
-							.id,
-				),
-			).id;
-			const outputValue = [];
-			for (const value of inputValue) {
-				outputValue.push(!value);
-			}
-			const outputValues = new Map<CCNodePinId, SimulationValue>();
-			outputValues.set(outputPinId, outputValue);
-			return outputValues;
+	const componentDefinition = definitionByComponentId.get(componentId);
+	invariant(componentDefinition);
+	const inputPin = componentDefinition.inputPin;
+	const outputPin = componentDefinition.outputPin;
+	const _input = createInput(nodePins, inputPin, inputValues);
+	const outputShape = createOutputShape(store, nodePins, outputPin);
+	const previousInputValues = new Map<CCNodePinId, SimulationValue>();
+	for (const nodePin of nodePins) {
+		const previousValue = parentPreviousFrame?.nodes.get(nodeId)?.pins.get(nodePin.id);
+		if (previousValue) {
+			previousInputValues.set(nodePin.id, previousValue);
 		}
-		case intrinsics.andIntrinsicComponentDefinition.component.id: {
-			invariant(pinIds.length === 3);
-			const inputPinId0 = nullthrows(
-				inputNodePins.find(
-					(nodePin: CCNodePin) =>
-						nodePin.componentPinId ===
-						nullthrows(intrinsics.andIntrinsicComponentDefinition.inputPins[0])
-							.id,
-				),
-			).id;
-			const inputPinId1 = nullthrows(
-				inputNodePins.find(
-					(nodePin: CCNodePin) =>
-						nodePin.componentPinId ===
-						nullthrows(intrinsics.andIntrinsicComponentDefinition.inputPins[1])
-							.id,
-				),
-			).id;
-			const inputValue0 = nullthrows(inputValues.get(inputPinId0));
-			const inputValue1 = nullthrows(inputValues.get(inputPinId1));
-			const outputPinId = nullthrows(
-				outputNodePins.find(
-					(nodePin: CCNodePin) =>
-						nodePin.componentPinId ===
-						nullthrows(intrinsics.andIntrinsicComponentDefinition.outputPins[0])
-							.id,
-				),
-			).id;
-			const outputValue: SimulationValue = [];
-			if (inputValue0.length !== inputValue1.length) {
-				return null;
-			}
-			for (let i = 0; i < inputValue0.length; i += 1) {
-				outputValue.push(nullthrows(inputValue0[i] && inputValue1[i]));
-			}
-			const outputValues = new Map<CCNodePinId, SimulationValue>();
-			outputValues.set(outputPinId, outputValue);
-			return outputValues;
-		}
-		case intrinsics.orIntrinsicComponentDefinition.component.id: {
-			invariant(pinIds.length === 3);
-			const inputPinId0 = nullthrows(
-				inputNodePins.find(
-					(nodePin: CCNodePin) =>
-						nodePin.componentPinId ===
-						nullthrows(intrinsics.orIntrinsicComponentDefinition.inputPins[0])
-							.id,
-				),
-			).id;
-			const inputPinId1 = nullthrows(
-				inputNodePins.find(
-					(nodePin: CCNodePin) =>
-						nodePin.componentPinId ===
-						nullthrows(intrinsics.orIntrinsicComponentDefinition.inputPins[1])
-							.id,
-				),
-			).id;
-			const inputValue0 = nullthrows(inputValues.get(inputPinId0));
-			const inputValue1 = nullthrows(inputValues.get(inputPinId1));
-			const outputPinId = nullthrows(
-				outputNodePins.find(
-					(nodePin: CCNodePin) =>
-						nodePin.componentPinId ===
-						nullthrows(intrinsics.orIntrinsicComponentDefinition.outputPins[0])
-							.id,
-				),
-			).id;
-			const outputValue: SimulationValue = [];
-			if (inputValue0.length !== inputValue1.length) {
-				return null;
-			}
-			for (let i = 0; i < inputValue0.length; i += 1) {
-				outputValue.push(nullthrows(inputValue0[i] || inputValue1[i]));
-			}
-			const outputValues = new Map<CCNodePinId, SimulationValue>();
-			outputValues.set(outputPinId, outputValue);
-			return outputValues;
-		}
-		case intrinsics.xorIntrinsicComponentDefinition.component.id: {
-			invariant(pinIds.length === 3);
-			const inputPinId0 = nullthrows(
-				inputNodePins.find(
-					(nodePin: CCNodePin) =>
-						nodePin.componentPinId ===
-						nullthrows(intrinsics.xorIntrinsicComponentDefinition.inputPins[0])
-							.id,
-				),
-			).id;
-			const inputPinId1 = nullthrows(
-				inputNodePins.find(
-					(nodePin: CCNodePin) =>
-						nodePin.componentPinId ===
-						nullthrows(intrinsics.xorIntrinsicComponentDefinition.inputPins[1])
-							.id,
-				),
-			).id;
-			const inputValue0 = nullthrows(inputValues.get(inputPinId0));
-			const inputValue1 = nullthrows(inputValues.get(inputPinId1));
-			const outputPinId = nullthrows(
-				outputNodePins.find(
-					(nodePin: CCNodePin) =>
-						nodePin.componentPinId ===
-						nullthrows(intrinsics.xorIntrinsicComponentDefinition.outputPins[0])
-							.id,
-				),
-			).id;
-			const outputValue: SimulationValue = [];
-			if (inputValue0.length !== inputValue1.length) {
-				return null;
-			}
-			for (let i = 0; i < inputValue0.length; i += 1) {
-				outputValue.push(nullthrows(inputValue0[i] !== inputValue1[i]));
-			}
-			const outputValues = new Map<CCNodePinId, SimulationValue>();
-			outputValues.set(outputPinId, outputValue);
-			return outputValues;
-		}
-		case intrinsics.inputIntrinsicComponentDefinition.component.id: {
-			invariant(pinIds.length === 2);
-			const inputPinId = nullthrows(
-				inputNodePins.find(
-					(nodePin: CCNodePin) =>
-						nodePin.componentPinId ===
-						nullthrows(
-							intrinsics.inputIntrinsicComponentDefinition.inputPins[0],
-						).id,
-				),
-			).id;
-			const inputValue = nullthrows(inputValues.get(inputPinId));
-			const outputPinId = nullthrows(
-				outputNodePins.find(
-					(nodePin: CCNodePin) =>
-						nodePin.componentPinId ===
-						nullthrows(
-							intrinsics.inputIntrinsicComponentDefinition.outputPins[0],
-						).id,
-				),
-			).id;
-			const outputValue = [];
-			for (const value of inputValue) {
-				outputValue.push(value);
-			}
-			const outputValues = new Map<CCNodePinId, SimulationValue>();
-			outputValues.set(outputPinId, outputValue);
-			return outputValues;
-		}
-		case intrinsics.aggregateIntrinsicComponentDefinition.component.id: {
-			const outputPin = nullthrows(
-				outputNodePins.find(
-					(nodePin: CCNodePin) =>
-						nodePin.componentPinId ===
-						nullthrows(
-							intrinsics.aggregateIntrinsicComponentDefinition.outputPins[0],
-						).id,
-				),
-			);
-			const outputValue = new Array<boolean>(
-				nullthrows(outputPin.userSpecifiedBitWidth),
-			).fill(false);
-			for (const pin of inputNodePins) {
-				outputValue[pin.order] = nullthrows(
-					nullthrows(inputValues.get(pin.id))[pin.order],
-				);
-			}
-			const outputMap = new Map<CCNodePinId, SimulationValue>();
-			outputMap.set(outputPin.id, outputValue);
-			return outputMap;
-		}
-		case intrinsics.decomposeIntrinsicComponentDefinition.component.id: {
-			const inputPinId = nullthrows(
-				inputNodePins.find(
-					(nodePin: CCNodePin) =>
-						nodePin.componentPinId ===
-						nullthrows(
-							intrinsics.decomposeIntrinsicComponentDefinition.inputPins[0],
-						).id,
-				),
-			).id;
-			const inputs = nullthrows(inputValues.get(inputPinId));
-			const outputMap = new Map<CCNodePinId, SimulationValue>();
-			for (const pin of outputNodePins) {
-				outputMap.set(pin.id, [nullthrows(inputs[pin.order])]);
-			}
-			return outputMap;
-		}
-		case intrinsics.flipFlopIntrinsicComponentDefinition.component.id: {
-			invariant(pinIds.length === 2);
-			const inputPinId = nullthrows(
-				inputNodePins.find(
-					(nodePin: CCNodePin) =>
-						nodePin.componentPinId ===
-						nullthrows(
-							intrinsics.flipFlopIntrinsicComponentDefinition.inputPins[0],
-						).id,
-				),
-			).id;
-			const outputPinId = nullthrows(
-				outputNodePins.find(
-					(nodePin: CCNodePin) =>
-						nodePin.componentPinId ===
-						nullthrows(
-							intrinsics.flipFlopIntrinsicComponentDefinition.outputPins[0],
-						).id,
-				),
-			).id;
-			const outputValues = new Map<CCNodePinId, SimulationValue>();
-
-			if (!parentPreviousFrame) {
-				const multiplicity =
-					store.nodePins.getNodePinMultiplexability(inputPinId);
-				if (multiplicity.isMultiplexable) {
-					outputValues.set(outputPinId, [false]);
-				} else {
-					outputValues.set(
-						outputPinId,
-						Array.from({ length: multiplicity.multiplicity }, () => false),
-					);
-				}
-			} else {
-				const previousValue = nullthrows(
-					parentPreviousFrame.nodes.get(nodeId),
-				).pins;
-				const previousInputValue = nullthrows(previousValue.get(inputPinId));
-				outputValues.set(outputPinId, previousInputValue);
-			}
-			return outputValues;
-		}
-		// case "Sample":
-		//   return true;
-		default:
-			throw new Error(`invalid component (${componentId})`);
 	}
+	const previousInput = createInput(nodePins, inputPin, previousInputValues);
+	const output = componentDefinition.evaluate(
+		_input,
+		outputShape,
+		previousInput,
+	);
+	const outputValues = new Map<CCNodePinId, SimulationValue>();
+	const componentPin = nullthrows(outputPin['Out' as any]);
+	const targetNodePins = nodePins.filter((nodePin: CCNodePin) =>
+		componentPin.id === nodePin.componentPinId
+	);
+	targetNodePins.sort((a, b) => a.order - b.order);
+	for (let i = 0; i < output.length; i++) {
+		const nodePin = targetNodePins[i];
+		const value = output[i];
+		invariant(nodePin && value);
+		outputValues.set(nodePin.id, value);
+	}
+	return outputValues;
 }
 
 function simulateNode(

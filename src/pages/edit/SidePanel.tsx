@@ -4,7 +4,7 @@ import nullthrows from "nullthrows";
 import { useState } from "react";
 import invariant from "tiny-invariant";
 import { setDataTransferAsComponent } from "../../common/serialization";
-import { blackColor, whiteColor } from "../../common/theme";
+import { theme } from "../../common/theme";
 import { type CCComponentId, isIncluding } from "../../store/component";
 import { ccPinTypes } from "../../store/componentPin";
 import { useStore } from "../../store/react";
@@ -32,8 +32,8 @@ function ComponentRenderer({ componentId }: { componentId: CCComponentId }) {
 					gridTemplateColumns: "1fr 1fr",
 					alignItems: "center",
 					marginTop: "4px",
-					border: `2px solid ${blackColor}`,
-					background: whiteColor,
+					border: `2px solid ${theme.palette.black}`,
+					background: theme.palette.white,
 				}}
 			>
 				{ccPinTypes.map((type) => (
@@ -74,9 +74,9 @@ function ComponentRenderer({ componentId }: { componentId: CCComponentId }) {
 										style={{
 											width: "10px",
 											height: "10px",
-											border: `2px solid ${blackColor}`,
+											border: `2px solid ${theme.palette.black}`,
 											borderRadius: "4px",
-											background: whiteColor,
+											background: theme.palette.white,
 										}}
 									/>
 									<div aria-label="Pin name">{pin.name}</div>

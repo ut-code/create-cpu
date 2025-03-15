@@ -49,14 +49,14 @@ export default function CCComponentEditorRenderer() {
 		>
 			<title>Component editor</title>
 			<CCComponentEditorRendererBackground />
-			{nodeIds.map((nodeId) => (
-				<CCComponentEditorRendererNode key={nodeId} nodeId={nodeId} />
-			))}
 			{connectionIds.map((connectionId) => (
 				<CCComponentEditorRendererConnection
 					key={connectionId}
 					connectionId={connectionId}
 				/>
+			))}
+			{nodeIds.map((nodeId) => (
+				<CCComponentEditorRendererNode key={nodeId} nodeId={nodeId} />
 			))}
 		</svg>
 	);

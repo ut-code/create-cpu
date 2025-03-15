@@ -2,7 +2,7 @@ import invariant from "tiny-invariant";
 import { type CCComponent, CCComponentStore } from "./component";
 import { type CCComponentPin, CCComponentPinStore } from "./componentPin";
 import { type CCConnection, CCConnectionStore } from "./connection";
-import { registerIntrinsics } from "./intrinsics";
+import * as intrinsics from "./intrinsics/definitions";
 import { type CCNode, CCNodeStore } from "./node";
 import { type CCNodePin, CCNodePinStore } from "./nodePin";
 import TransactionManager from "./transaction";
@@ -46,7 +46,6 @@ export default class CCStore {
 		this.nodePins = new CCNodePinStore(this);
 		this.connections = new CCConnectionStore(this);
 		if (props) {
-			invariant(props);
 			const { components, nodes, componentPins, nodePins, connections } = props;
 			this.components.import(components);
 			this.nodes.import(nodes);
@@ -54,7 +53,14 @@ export default class CCStore {
 			this.nodePins.import(nodePins);
 			this.connections.import(connections);
 		}
-		registerIntrinsics(this);
+
+		for (const definition of Object.values(intrinsics.definitions)) {
+			this.components.register(definition.component);
+			for (const pin of definition.allPins) {
+				this.componentPins.register(pin);
+			}
+		}
+
 		this.components.mount();
 		this.nodes.mount();
 		this.componentPins.mount();

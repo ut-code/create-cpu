@@ -9,7 +9,7 @@ export default function getCCComponentEditorRendererNodeGeometry(
 ) {
 	const width = 100;
 	const gapY = 20;
-	const paddingY = 20;
+	const paddingY = 15;
 
 	const node = nullthrows(store.nodes.get(nodeId));
 	const nodePins = store.nodePins.getManyByNodeId(nodeId);

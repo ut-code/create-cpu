@@ -1,6 +1,7 @@
 import { KDTree } from "mnemonist";
 import nullthrows from "nullthrows";
 import { type PointerEvent, type ReactNode, useState } from "react";
+import { theme } from "../../../../common/theme";
 import { type Vector2, vector2 } from "../../../../common/vector2";
 import { CCConnectionStore } from "../../../../store/connection";
 import type { CCNodePinId } from "../../../../store/nodePin";
@@ -25,7 +26,7 @@ export default function CCComponentEditorRendererNodePin({
 	const nodePin = nullthrows(store.nodePins.get(nodePinId));
 	const node = nullthrows(store.nodes.get(nodePin.nodeId));
 	const componentPin = nullthrows(
-		store.componentPins.get(nodePin.componentPinId),
+		store.componentPins.get(nodePin.componentPinId)
 	);
 
 	const [draggingState, setDraggingState] = useState<{
@@ -36,7 +37,7 @@ export default function CCComponentEditorRendererNodePin({
 		let nodePinPositionKDTree = draggingState?.nodePinPositionKDTree;
 		if (!nodePinPositionKDTree) {
 			const nodes = store.nodes.getManyByParentComponentId(
-				node.parentComponentId,
+				node.parentComponentId
 			);
 			nodePinPositionKDTree = KDTree.from(
 				nodes
@@ -48,19 +49,19 @@ export default function CCComponentEditorRendererNodePin({
 					.flatMap(([yourNodePinId, yourNodePinPosition]) => {
 						const yourNodePin = nullthrows(store.nodePins.get(yourNodePinId));
 						const yourComponentPin = nullthrows(
-							store.componentPins.get(yourNodePin.componentPinId),
+							store.componentPins.get(yourNodePin.componentPinId)
 						);
 						if (yourComponentPin.type === componentPin.type) return [];
 						return [
 							[yourNodePinId, [yourNodePinPosition.x, yourNodePinPosition.y]],
 						] as const;
 					}),
-				2,
+				2
 			);
 		}
 		setDraggingState({
 			cursorPosition: componentEditorState.fromCanvasToStage(
-				vector2.fromDomEvent(e.nativeEvent),
+				vector2.fromDomEvent(e.nativeEvent)
 			),
 			nodePinPositionKDTree,
 		});
@@ -78,12 +79,12 @@ export default function CCComponentEditorRendererNodePin({
 		const nearestNodePinPosition = nullthrows(
 			getCCComponentEditorRendererNodeGeometry(
 				store,
-				nearestNodePin.nodeId,
-			).nodePinPositionById.get(nearestNodePinId),
+				nearestNodePin.nodeId
+			).nodePinPositionById.get(nearestNodePinId)
 		);
 		const distance = Math.hypot(
 			nearestNodePinPosition.x - draggingState.cursorPosition.x,
-			nearestNodePinPosition.y - draggingState.cursorPosition.y,
+			nearestNodePinPosition.y - draggingState.cursorPosition.y
 		);
 		if (distance < NODE_PIN_POSITION_SENSITIVITY) {
 			nodePinIdToConnect = nearestNodePinId;
@@ -101,7 +102,7 @@ export default function CCComponentEditorRendererNodePin({
 	}
 
 	const isSimulationMode = useComponentEditorStore()(
-		(s) => s.editorMode === "play",
+		(s) => s.editorMode === "play"
 	);
 	const hasNoConnection =
 		store.connections.getConnectionsByNodePinId(nodePinId).length === 0;
@@ -110,7 +111,7 @@ export default function CCComponentEditorRendererNodePin({
 	const simulationValueToString = (simulationValue: SimulationValue) => {
 		return simulationValue.reduce(
 			(acm, currentValue) => acm + (currentValue === true ? "1" : "0"),
-			"",
+			""
 		);
 	};
 	const implementationComponentPin =
@@ -120,11 +121,11 @@ export default function CCComponentEditorRendererNodePin({
 	if (isSimulationMode && hasNoConnection) {
 		if (implementationComponentPin) {
 			nodePinValue = nullthrows(
-				componentEditorState.getInputValue(implementationComponentPin.id),
+				componentEditorState.getInputValue(implementationComponentPin.id)
 			);
 		} else {
 			nodePinValue = nullthrows(
-				componentEditorState.getNodePinValue(nodePinId),
+				componentEditorState.getNodePinValue(nodePinId)
 			);
 		}
 		nodePinValueAsString = simulationValueToString(nodePinValue);
@@ -135,7 +136,7 @@ export default function CCComponentEditorRendererNodePin({
 		updatedPinValue[0] = !updatedPinValue[0];
 		componentEditorState.setInputValue(
 			implementationComponentPin.id,
-			updatedPinValue,
+			updatedPinValue
 		);
 	};
 
@@ -146,17 +147,12 @@ export default function CCComponentEditorRendererNodePin({
 					x={position.x - (pinType === "input" ? 15 : -8)}
 					y={position.y}
 					onPointerDown={updateInputValue}
+					fill={theme.palette.textPrimary}
 				>
 					{nodePinValueAsString}
 				</text>
 			)}
-			<circle
-				cx={position.x}
-				cy={position.y}
-				r={5}
-				fill="white"
-				stroke="black"
-				strokeWidth={2}
+			<g
 				onPointerDown={(e) => {
 					e.currentTarget.setPointerCapture(e.pointerId);
 					onDrag(e);
@@ -173,13 +169,44 @@ export default function CCComponentEditorRendererNodePin({
 							parentComponentId: node.parentComponentId,
 							...route,
 							bentPortion: 0.5,
-						}),
+						})
 					);
 				}}
 				onLostPointerCapture={() => {
 					setDraggingState(null);
 				}}
-			/>
+			>
+				<rect
+					x={position.x - 5}
+					y={position.y - 5}
+					width={10}
+					height={10}
+					rx={3}
+					fill={theme.palette.white}
+					stroke={theme.palette.textPrimary}
+					strokeWidth={2}
+				/>
+				<text
+					x={position.x}
+					y={position.y}
+					textAnchor="middle"
+					dominantBaseline="central"
+					fontSize={7}
+					fill={theme.palette.textPrimary}
+				>
+					3
+				</text>
+			</g>
+			<text
+				x={position.x + { input: 10, output: -10 }[pinType]}
+				y={position.y}
+				textAnchor={{ input: "start", output: "end" }[pinType]}
+				dominantBaseline="central"
+				fontSize={12}
+				fill={theme.palette.textPrimary}
+			>
+				{componentPin.name}
+			</text>
 			{draggingView}
 		</>
 	);

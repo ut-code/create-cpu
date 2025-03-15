@@ -10,15 +10,15 @@ import type { CCNodePinId } from "./nodePin";
 export type CCComponentPin = {
 	readonly id: CCComponentPinId;
 	readonly componentId: CCComponentId;
-	readonly type: CCPinType;
+	readonly type: CCComponentPinType;
 	readonly implementation: CCPinImplementation;
 	order: number;
 	name: string;
 };
 
 export type CCComponentPinId = Opaque<string, "CCPinId">;
-export type CCPinType = "input" | "output";
-export const ccPinTypes: CCPinType[] = ["input", "output"];
+export type CCComponentPinType = "input" | "output";
+export const ccPinTypes: CCComponentPinType[] = ["input", "output"];
 
 /** null for intrinsic components */
 export type CCPinImplementation = CCNodePinId | null;
@@ -268,24 +268,32 @@ export class CCComponentPinStore extends EventEmitter<CCComponentPinStoreEvents>
 			case nullthrows(
 				intrinsic.aggregateIntrinsicComponentDefinition.inputPins[0],
 			).id: {
-				return { isMultiplexable: false, multiplicity: 1 };
+				return "undecidable";
 			}
 			case nullthrows(
 				intrinsic.aggregateIntrinsicComponentDefinition.outputPins[0],
 			).id: {
 				return "undecidable";
-				// return { isMultiplexable: false, multiplicity: 4 };
 			}
 			case nullthrows(
 				intrinsic.decomposeIntrinsicComponentDefinition.outputPins[0],
 			).id: {
 				return "undecidable";
-				// return { isMultiplexable: false, multiplicity: 4 };
 			}
 			case nullthrows(
 				intrinsic.decomposeIntrinsicComponentDefinition.inputPins[0],
 			).id: {
-				return { isMultiplexable: false, multiplicity: 1 };
+				return "undecidable";
+			}
+			case nullthrows(
+				intrinsic.broadcastIntrinsicComponentDefinition.inputPins[0],
+			).id: {
+				return {isMultiplexable: false, multiplicity: 1}
+			}
+			case nullthrows(
+				intrinsic.broadcastIntrinsicComponentDefinition.outputPins[0],
+			).id: {
+				return "undecidable";
 			}
 			default: {
 				if (pin.implementation === null) {

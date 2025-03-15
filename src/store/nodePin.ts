@@ -8,7 +8,7 @@ import type {
 	CCComponentPinId,
 	CCPinMultiplexability,
 } from "./componentPin";
-import * as intrinsic from "./intrinsics";
+import * as intrinsics from "./intrinsics/definitions";
 import type { CCNodeId } from "./node";
 
 export type CCNodePinId = Opaque<string, "CCNodePinId">;
@@ -56,8 +56,7 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 				this.#store.components.get(componentPin.componentId),
 			);
 			if (!component.intrinsicType) return null;
-			const definition =
-				intrinsic.ccIntrinsicComponentDefinitions[component.intrinsicType];
+			const definition = intrinsics.definitions[component.intrinsicType];
 			return definition.componentPinHasUserSpecifiedBitWidth?.(componentPin)
 				? 1
 				: null;
@@ -181,32 +180,22 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 			nodePinId_: CCNodePinId,
 			seen: Set<CCNodeId>,
 		): CCPinMultiplexability => {
-			const { nodeId, componentPinId: pinId } = nullthrows(
-				this.get(nodePinId_),
-			);
+			const {
+				nodeId,
+				componentPinId: pinId,
+				userSpecifiedBitWidth,
+			} = nullthrows(this.get(nodePinId_));
 			seen.add(nodeId);
 			const node = nullthrows(this.#store.nodes.get(nodeId));
 			const nodePins = this.getManyByNodeId(node.id);
 			const givenPinMultiplexability =
 				this.#store.componentPins.getComponentPinMultiplexability(pinId);
 			if (givenPinMultiplexability === "undecidable") {
-				if (
-					pinId ===
-					nullthrows(
-						intrinsic.aggregateIntrinsicComponentDefinition.outputPins[0],
-					).id
-				) {
-					return { isMultiplexable: false, multiplicity: nodePins.length - 1 };
-				}
-				if (
-					pinId ===
-					nullthrows(
-						intrinsic.decomposeIntrinsicComponentDefinition.inputPins[0],
-					).id
-				) {
-					return { isMultiplexable: false, multiplicity: nodePins.length - 1 };
-				}
-				throw new Error("unreachable");
+				invariant(
+					userSpecifiedBitWidth,
+					"Multiplexability of undecidable pin must be contained in multiplexabilityEnv",
+				);
+				return { isMultiplexable: false, multiplicity: userSpecifiedBitWidth };
 			}
 			if (!givenPinMultiplexability.isMultiplexable) {
 				return givenPinMultiplexability;
@@ -255,9 +244,15 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 	 * @param partialPin pin without `id`
 	 * @returns a new pin
 	 */
-	static create(partialPin: Omit<CCNodePin, "id">): CCNodePin {
+	static create(
+		partialPin: Omit<CCNodePin, "id" | "userSpecifiedBitWidth">,
+	): CCNodePin {
+		const intrinsicComponentDefinition = intrinsics.definitionByComponentPinId.get(
+			partialPin.componentPinId,
+		);
 		return {
 			id: crypto.randomUUID() as CCNodePinId,
+			userSpecifiedBitWidth: null,
 			...partialPin,
 		};
 	}

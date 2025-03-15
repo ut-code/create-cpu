@@ -15,6 +15,10 @@ export default function CCComponentEditorRendererBackground() {
 				const { currentTarget } = pointerDownEvent;
 				const startPerspective = componentEditorState.perspective;
 				const startPoint = vector2.fromDomEvent(pointerDownEvent.nativeEvent);
+
+				pointerDownEvent.currentTarget.setPointerCapture(
+					pointerDownEvent.pointerId
+				);
 				const onPointerMove = (pointerMoveEvent: PointerEvent) => {
 					const endPoint = vector2.fromDomEvent(pointerMoveEvent);
 					componentEditorState.setPerspective({
@@ -23,22 +27,23 @@ export default function CCComponentEditorRendererBackground() {
 							startPerspective.center,
 							vector2.mul(
 								vector2.sub(endPoint, startPoint),
-								startPerspective.scale,
-							),
+								startPerspective.scale
+							)
 						),
 					});
 				};
-				currentTarget.addEventListener("pointermove", onPointerMove);
 				const onPointerUp = () => {
 					currentTarget.removeEventListener("pointermove", onPointerMove);
 					currentTarget.removeEventListener("pointerup", onPointerUp);
+					pointerDownEvent.currentTarget.releasePointerCapture(pointerDownEvent.pointerId);
 				};
+				currentTarget.addEventListener("pointermove", onPointerMove);
 				currentTarget.addEventListener("pointerup", onPointerUp);
 			}}
 			onWheel={(wheelEvent) => {
 				const scaleDelta = Math.exp(wheelEvent.deltaY / 256);
 				const scaleCenter = componentEditorState.fromCanvasToStage(
-					vector2.fromDomEvent(wheelEvent.nativeEvent),
+					vector2.fromDomEvent(wheelEvent.nativeEvent)
 				);
 				componentEditorState.setPerspective({
 					scale: componentEditorState.perspective.scale * scaleDelta,
@@ -46,8 +51,8 @@ export default function CCComponentEditorRendererBackground() {
 						scaleCenter,
 						vector2.mul(
 							vector2.sub(componentEditorState.perspective.center, scaleCenter),
-							scaleDelta,
-						),
+							scaleDelta
+						)
 					),
 				});
 			}}
