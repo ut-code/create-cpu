@@ -1,4 +1,4 @@
-import { useRef, type PointerEvent } from "react";
+import { type PointerEvent, useRef } from "react";
 import type { Vector2 } from "../../../../common/vector2";
 import { useComponentEditorStore } from "../store";
 
@@ -24,12 +24,12 @@ export function useDraggable(props: UseDraggableProps) {
 				pointerId: e.pointerId,
 				initialPosition: { x: e.nativeEvent.clientX, y: e.nativeEvent.clientY },
 			};
-      onDragStart(e);
+			onDragStart(e);
 			e.currentTarget.setPointerCapture(e.pointerId);
 		},
-    onPointerMove: (e: PointerEvent) => {
-      if (!dragStateRef.current) return;
-    },
+		onPointerMove: (e: PointerEvent) => {
+			if (!dragStateRef.current) return;
+		},
 		onPointerUp: (e: PointerEvent) => {
 			e.currentTarget.releasePointerCapture(e.pointerId);
 		},

@@ -24,7 +24,7 @@ const CCComponentEditorRendererNode = ensureStoreItem(
 		const [dragging, setDragging] = useState(false);
 		const [dragStartPosition, setDragStartPosition] = useState(vector2.zero);
 		const [previousNodePosition, setPreviousNodePosition] = useState(
-			vector2.zero
+			vector2.zero,
 		);
 
 		const handlePointerDown = (e: React.PointerEvent) => {
@@ -43,10 +43,10 @@ const CCComponentEditorRendererNode = ensureStoreItem(
 						vector2.mul(
 							vector2.sub(
 								vector2.fromDomEvent(e.nativeEvent),
-								dragStartPosition
+								dragStartPosition,
 							),
-							componentEditorState.perspective.scale
-						)
+							componentEditorState.perspective.scale,
+						),
 					),
 				});
 			}
@@ -94,7 +94,7 @@ const CCComponentEditorRendererNode = ensureStoreItem(
 				</g>
 				{store.nodePins.getManyByNodeId(nodeId).map((nodePin) => {
 					const position = nullthrows(
-						geometry.nodePinPositionById.get(nodePin.id)
+						geometry.nodePinPositionById.get(nodePin.id),
 					);
 					return (
 						<CCComponentEditorRendererNodePin
@@ -106,6 +106,6 @@ const CCComponentEditorRendererNode = ensureStoreItem(
 				})}
 			</>
 		);
-	}
+	},
 );
 export default CCComponentEditorRendererNode;

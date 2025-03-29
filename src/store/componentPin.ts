@@ -288,7 +288,7 @@ export class CCComponentPinStore extends EventEmitter<CCComponentPinStoreEvents>
 			case nullthrows(
 				intrinsic.broadcastIntrinsicComponentDefinition.inputPins[0],
 			).id: {
-				return {isMultiplexable: false, multiplicity: 1}
+				return { isMultiplexable: false, multiplicity: 1 };
 			}
 			case nullthrows(
 				intrinsic.broadcastIntrinsicComponentDefinition.outputPins[0],

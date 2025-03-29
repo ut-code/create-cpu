@@ -1,12 +1,12 @@
-import invariant from "tiny-invariant";
-import { IntrinsicComponentDefinition } from "./base";
-import {
-	ccIntrinsicComponentTypes,
-	type CCIntrinsicComponentType,
-} from "./types";
 import nullthrows from "nullthrows";
+import invariant from "tiny-invariant";
 import type { CCComponentId } from "../component";
 import type { CCComponentPin, CCComponentPinId } from "../componentPin";
+import { IntrinsicComponentDefinition } from "./base";
+import {
+	type CCIntrinsicComponentType,
+	ccIntrinsicComponentTypes,
+} from "./types";
 
 function createUnaryOperator(
 	type: CCIntrinsicComponentType,

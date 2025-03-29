@@ -247,9 +247,8 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 	static create(
 		partialPin: Omit<CCNodePin, "id" | "userSpecifiedBitWidth">,
 	): CCNodePin {
-		const intrinsicComponentDefinition = intrinsics.definitionByComponentPinId.get(
-			partialPin.componentPinId,
-		);
+		const intrinsicComponentDefinition =
+			intrinsics.definitionByComponentPinId.get(partialPin.componentPinId);
 		return {
 			id: crypto.randomUUID() as CCNodePinId,
 			userSpecifiedBitWidth: null,

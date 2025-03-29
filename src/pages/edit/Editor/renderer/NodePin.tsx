@@ -26,7 +26,7 @@ export default function CCComponentEditorRendererNodePin({
 	const nodePin = nullthrows(store.nodePins.get(nodePinId));
 	const node = nullthrows(store.nodes.get(nodePin.nodeId));
 	const componentPin = nullthrows(
-		store.componentPins.get(nodePin.componentPinId)
+		store.componentPins.get(nodePin.componentPinId),
 	);
 
 	const [draggingState, setDraggingState] = useState<{
@@ -37,7 +37,7 @@ export default function CCComponentEditorRendererNodePin({
 		let nodePinPositionKDTree = draggingState?.nodePinPositionKDTree;
 		if (!nodePinPositionKDTree) {
 			const nodes = store.nodes.getManyByParentComponentId(
-				node.parentComponentId
+				node.parentComponentId,
 			);
 			nodePinPositionKDTree = KDTree.from(
 				nodes
@@ -49,19 +49,19 @@ export default function CCComponentEditorRendererNodePin({
 					.flatMap(([yourNodePinId, yourNodePinPosition]) => {
 						const yourNodePin = nullthrows(store.nodePins.get(yourNodePinId));
 						const yourComponentPin = nullthrows(
-							store.componentPins.get(yourNodePin.componentPinId)
+							store.componentPins.get(yourNodePin.componentPinId),
 						);
 						if (yourComponentPin.type === componentPin.type) return [];
 						return [
 							[yourNodePinId, [yourNodePinPosition.x, yourNodePinPosition.y]],
 						] as const;
 					}),
-				2
+				2,
 			);
 		}
 		setDraggingState({
 			cursorPosition: componentEditorState.fromCanvasToStage(
-				vector2.fromDomEvent(e.nativeEvent)
+				vector2.fromDomEvent(e.nativeEvent),
 			),
 			nodePinPositionKDTree,
 		});
@@ -79,12 +79,12 @@ export default function CCComponentEditorRendererNodePin({
 		const nearestNodePinPosition = nullthrows(
 			getCCComponentEditorRendererNodeGeometry(
 				store,
-				nearestNodePin.nodeId
-			).nodePinPositionById.get(nearestNodePinId)
+				nearestNodePin.nodeId,
+			).nodePinPositionById.get(nearestNodePinId),
 		);
 		const distance = Math.hypot(
 			nearestNodePinPosition.x - draggingState.cursorPosition.x,
-			nearestNodePinPosition.y - draggingState.cursorPosition.y
+			nearestNodePinPosition.y - draggingState.cursorPosition.y,
 		);
 		if (distance < NODE_PIN_POSITION_SENSITIVITY) {
 			nodePinIdToConnect = nearestNodePinId;
@@ -102,7 +102,7 @@ export default function CCComponentEditorRendererNodePin({
 	}
 
 	const isSimulationMode = useComponentEditorStore()(
-		(s) => s.editorMode === "play"
+		(s) => s.editorMode === "play",
 	);
 	const hasNoConnection =
 		store.connections.getConnectionsByNodePinId(nodePinId).length === 0;
@@ -111,7 +111,7 @@ export default function CCComponentEditorRendererNodePin({
 	const simulationValueToString = (simulationValue: SimulationValue) => {
 		return simulationValue.reduce(
 			(acm, currentValue) => acm + (currentValue === true ? "1" : "0"),
-			""
+			"",
 		);
 	};
 	const implementationComponentPin =
@@ -121,11 +121,11 @@ export default function CCComponentEditorRendererNodePin({
 	if (isSimulationMode && hasNoConnection) {
 		if (implementationComponentPin) {
 			nodePinValue = nullthrows(
-				componentEditorState.getInputValue(implementationComponentPin.id)
+				componentEditorState.getInputValue(implementationComponentPin.id),
 			);
 		} else {
 			nodePinValue = nullthrows(
-				componentEditorState.getNodePinValue(nodePinId)
+				componentEditorState.getNodePinValue(nodePinId),
 			);
 		}
 		nodePinValueAsString = simulationValueToString(nodePinValue);
@@ -136,7 +136,7 @@ export default function CCComponentEditorRendererNodePin({
 		updatedPinValue[0] = !updatedPinValue[0];
 		componentEditorState.setInputValue(
 			implementationComponentPin.id,
-			updatedPinValue
+			updatedPinValue,
 		);
 	};
 
@@ -169,7 +169,7 @@ export default function CCComponentEditorRendererNodePin({
 							parentComponentId: node.parentComponentId,
 							...route,
 							bentPortion: 0.5,
-						})
+						}),
 					);
 				}}
 				onLostPointerCapture={() => {

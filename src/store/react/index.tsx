@@ -11,8 +11,8 @@ import invariant from "tiny-invariant";
 import CCStore, { type CCStorePropsFromJson } from "..";
 import { CCComponentStore } from "../component";
 import { CCConnectionStore } from "../connection";
-import { CCNodeStore } from "../node";
 import { and, not } from "../intrinsics/definitions";
+import { CCNodeStore } from "../node";
 
 function useContextValue() {
 	const [store, setStore] = useState(() => {

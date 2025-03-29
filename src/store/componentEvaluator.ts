@@ -6,21 +6,21 @@ import type {
 	SimulationValue,
 } from "../pages/edit/Editor/store/slices/core";
 import type { CCComponentId } from "./component";
-import type { CCComponentPinId, CCComponentPin } from "./componentPin";
+import type { CCComponentPin, CCComponentPinId } from "./componentPin";
 import * as intrinsics from "./intrinsics";
-import type { CCNodeId } from "./node";
-import type { CCNodePin, CCNodePinId } from "./nodePin";
 import {
 	aggregate,
 	and,
 	decompose,
+	definitionByComponentId,
 	flipflop,
 	input,
 	not,
 	or,
 	xor,
-	definitionByComponentId,
 } from "./intrinsics/definitions";
+import type { CCNodeId } from "./node";
+import type { CCNodePin, CCNodePinId } from "./nodePin";
 
 function getNodePinIdByComponentPinId(
 	nodePins: CCNodePin[],
@@ -42,12 +42,12 @@ function createInput(
 	const input: Partial<Record<string, SimulationValue[]>> = {};
 	for (const key in inputPin) {
 		const componentPin = nullthrows(inputPin[key]);
-		const targetNodePins = nodePins.filter((nodePin: CCNodePin) =>
-			componentPin.id === nodePin.componentPinId
+		const targetNodePins = nodePins.filter(
+			(nodePin: CCNodePin) => componentPin.id === nodePin.componentPinId,
 		);
 		targetNodePins.sort((a, b) => a.order - b.order);
 		const values = targetNodePins.map((nodePin: CCNodePin) =>
-			nullthrows(inputValues.get(nodePin.id))
+			nullthrows(inputValues.get(nodePin.id)),
 		);
 		input[key] = values;
 	}
@@ -57,17 +57,19 @@ function createInput(
 function createOutputShape(
 	store: CCStore,
 	nodePins: CCNodePin[],
-	outputPin: Record<string, CCComponentPin>
+	outputPin: Record<string, CCComponentPin>,
 ): Record<string, { multiplicity: number }[]> {
 	const outputShape: Record<string, { multiplicity: number }[]> = {};
 	for (const key in outputPin) {
 		const componentPin = nullthrows(outputPin[key]);
-		const targetNodePins = nodePins.filter((nodePin: CCNodePin) =>
-			componentPin.id === nodePin.componentPinId
+		const targetNodePins = nodePins.filter(
+			(nodePin: CCNodePin) => componentPin.id === nodePin.componentPinId,
 		);
 		targetNodePins.sort((a, b) => a.order - b.order);
 		const multiplicity = targetNodePins.map((nodePin: CCNodePin) => {
-			const multiplexability = store.nodePins.getNodePinMultiplexability(nodePin.id);
+			const multiplexability = store.nodePins.getNodePinMultiplexability(
+				nodePin.id,
+			);
 			if (multiplexability.isMultiplexable) {
 				return 1;
 			}
@@ -95,7 +97,9 @@ function simulateIntrinsic(
 	const outputShape = createOutputShape(store, nodePins, outputPin);
 	const previousInputValues = new Map<CCNodePinId, SimulationValue>();
 	for (const nodePin of nodePins) {
-		const previousValue = parentPreviousFrame?.nodes.get(nodeId)?.pins.get(nodePin.id);
+		const previousValue = parentPreviousFrame?.nodes
+			.get(nodeId)
+			?.pins.get(nodePin.id);
 		if (previousValue) {
 			previousInputValues.set(nodePin.id, previousValue);
 		}
@@ -107,9 +111,9 @@ function simulateIntrinsic(
 		previousInput,
 	);
 	const outputValues = new Map<CCNodePinId, SimulationValue>();
-	const componentPin = nullthrows(outputPin['Out' as any]);
-	const targetNodePins = nodePins.filter((nodePin: CCNodePin) =>
-		componentPin.id === nodePin.componentPinId
+	const componentPin = nullthrows(outputPin["Out" as any]);
+	const targetNodePins = nodePins.filter(
+		(nodePin: CCNodePin) => componentPin.id === nodePin.componentPinId,
 	);
 	targetNodePins.sort((a, b) => a.order - b.order);
 	for (let i = 0; i < output.length; i++) {
