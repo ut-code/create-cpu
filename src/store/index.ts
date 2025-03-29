@@ -1,4 +1,3 @@
-import invariant from "tiny-invariant";
 import { type CCComponent, CCComponentStore } from "./component";
 import { type CCComponentPin, CCComponentPinStore } from "./componentPin";
 import { type CCConnection, CCConnectionStore } from "./connection";
