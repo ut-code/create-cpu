@@ -15,7 +15,7 @@ type Props<In extends string, Out extends string> = {
 	out: Record<Out, PropsPin>;
 	evaluate: (
 		input: Record<In, SimulationValue[]>,
-		outputShape: Record<Out, { multiplicity: number }[]>,
+		outputShape: { multiplicity: number }[],
 		previousInput: Record<In, SimulationValue[]>,
 	) => SimulationValue[];
 };
@@ -41,10 +41,10 @@ export class IntrinsicComponentDefinition<
 	readonly component: CCComponent;
 	readonly allPins: CCComponentPin[] = [];
 	readonly inputPin: Record<In, CCComponentPin>;
-	readonly outputPin: Record<Out, CCComponentPin>;
+	readonly outputPin: CCComponentPin;
 	readonly evaluate: (
 		input: Record<In, SimulationValue[]>,
-		outputShape: Record<Out, { multiplicity: number }[]>,
+		outputShape: { multiplicity: number }[],
 		previousInput: Record<In, SimulationValue[]>,
 	) => SimulationValue[];
 
@@ -70,17 +70,20 @@ export class IntrinsicComponentDefinition<
 			this.allPins.push(pin);
 			return pin;
 		});
-		this.outputPin = mapValues(props.out, (p) => {
-			const pin: CCComponentPin = {
-				id: this._generateId() as CCComponentPinId,
-				componentId: this.id,
-				type: "output",
-				implementation: null,
-				order: this._lastLocalIndex++,
-				name: p.name,
-			};
-			this.allPins.push(pin);
-			return pin;
-		});
+		// this.outputPin = mapValues(props.out, (p) => {
+		// 	const pin: CCComponentPin = {
+		// 		id: this._generateId() as CCComponentPinId,
+		// 		componentId: this.id,
+		// 		type: "output",
+		// 		implementation: null,
+		// 		order: this._lastLocalIndex++,
+		// 		name: p.name,
+		// 	};
+		// 	this.allPins.push(pin);
+		// 	return pin;
+		// });
+		this.outputPin = this.allPins.find(
+			(pin) => pin.type === "output",
+		) as CCComponentPin;
 	}
 }

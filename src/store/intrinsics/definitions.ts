@@ -1,7 +1,7 @@
 import nullthrows from "nullthrows";
 import invariant from "tiny-invariant";
 import type { CCComponentId } from "../component";
-import type { CCComponentPin, CCComponentPinId } from "../componentPin";
+import type { CCComponentPinId } from "../componentPin";
 import { IntrinsicComponentDefinition } from "./base";
 import {
 	type CCIntrinsicComponentType,
@@ -112,7 +112,7 @@ export const decompose = new IntrinsicComponentDefinition({
 		const inputValue = input.In[0];
 		const outputValue = new Array();
 		let currentIndex = 0;
-		for (const shape of outputShape.Out) {
+		for (const shape of outputShape) {
 			outputValue.push([
 				...inputValue.slice(currentIndex, currentIndex + shape.multiplicity),
 			]);
@@ -134,8 +134,8 @@ export const broadcast = new IntrinsicComponentDefinition({
 	evaluate: (input, outputShape) => {
 		invariant(input.In[0] && !input.In[1]);
 		const inputValue = input.In[0];
-		invariant(outputShape.Out[0] && !outputShape.Out[1]);
-		const outputMultiplicity = outputShape.Out[0].multiplicity;
+		invariant(outputShape[0] && !outputShape[1]);
+		const outputMultiplicity = outputShape[0].multiplicity;
 		return Array.from({ length: outputMultiplicity }, () => inputValue);
 	},
 });

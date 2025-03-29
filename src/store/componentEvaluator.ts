@@ -7,32 +7,9 @@ import type {
 } from "../pages/edit/Editor/store/slices/core";
 import type { CCComponentId } from "./component";
 import type { CCComponentPin, CCComponentPinId } from "./componentPin";
-import * as intrinsics from "./intrinsics";
-import {
-	aggregate,
-	and,
-	decompose,
-	definitionByComponentId,
-	flipflop,
-	input,
-	not,
-	or,
-	xor,
-} from "./intrinsics/definitions";
+import { definitionByComponentId, flipflop } from "./intrinsics/definitions";
 import type { CCNodeId } from "./node";
 import type { CCNodePin, CCNodePinId } from "./nodePin";
-
-function getNodePinIdByComponentPinId(
-	nodePins: CCNodePin[],
-	componentPinId: CCComponentPinId,
-): CCNodePin {
-	const nodePin = nullthrows(
-		nodePins.find(
-			(nodePin: CCNodePin) => nodePin.componentPinId === componentPinId,
-		),
-	);
-	return nodePin;
-}
 
 function createInput(
 	nodePins: CCNodePin[],
@@ -57,26 +34,22 @@ function createInput(
 function createOutputShape(
 	store: CCStore,
 	nodePins: CCNodePin[],
-	outputPin: Record<string, CCComponentPin>,
-): Record<string, { multiplicity: number }[]> {
-	const outputShape: Record<string, { multiplicity: number }[]> = {};
-	for (const key in outputPin) {
-		const componentPin = nullthrows(outputPin[key]);
-		const targetNodePins = nodePins.filter(
-			(nodePin: CCNodePin) => componentPin.id === nodePin.componentPinId,
+	outputPin: CCComponentPin,
+): { multiplicity: number }[] {
+	const targetNodePins = nodePins.filter(
+		(nodePin: CCNodePin) => outputPin.id === nodePin.componentPinId,
+	);
+	targetNodePins.sort((a, b) => a.order - b.order);
+	const multiplicity = targetNodePins.map((nodePin: CCNodePin) => {
+		const multiplexability = store.nodePins.getNodePinMultiplexability(
+			nodePin.id,
 		);
-		targetNodePins.sort((a, b) => a.order - b.order);
-		const multiplicity = targetNodePins.map((nodePin: CCNodePin) => {
-			const multiplexability = store.nodePins.getNodePinMultiplexability(
-				nodePin.id,
-			);
-			if (multiplexability.isMultiplexable) {
-				return 1;
-			}
-			return multiplexability.multiplicity;
-		});
-		outputShape[key] = multiplicity.map((multiplicity) => ({ multiplicity }));
-	}
+		if (multiplexability.isMultiplexable) {
+			return 1;
+		}
+		return multiplexability.multiplicity;
+	});
+	const outputShape = multiplicity.map((multiplicity) => ({ multiplicity }));
 	return outputShape;
 }
 
@@ -111,9 +84,8 @@ function simulateIntrinsic(
 		previousInput,
 	);
 	const outputValues = new Map<CCNodePinId, SimulationValue>();
-	const componentPin = nullthrows(outputPin["Out" as any]);
 	const targetNodePins = nodePins.filter(
-		(nodePin: CCNodePin) => componentPin.id === nodePin.componentPinId,
+		(nodePin: CCNodePin) => outputPin.id === nodePin.componentPinId,
 	);
 	targetNodePins.sort((a, b) => a.order - b.order);
 	for (let i = 0; i < output.length; i++) {
@@ -263,17 +235,13 @@ function simulateNode(
 						);
 						outputValues.set(parentNodePin.id, outputValue);
 					}
-					if (
-						currentComponentId ===
-						intrinsics.flipFlopIntrinsicComponentDefinition.component.id
-					) {
+					if (currentComponentId === flipflop.id) {
 						visitedFlipFlops.add(currentNodeId);
 					}
 				}
 			}
 		} else if (
-			currentComponentId ===
-				intrinsics.flipFlopIntrinsicComponentDefinition.component.id &&
+			currentComponentId === flipflop.id &&
 			!visitedFlipFlops.has(currentNodeId)
 		) {
 			const frame = previousFrame
@@ -319,10 +287,7 @@ function simulateNode(
 						);
 						outputValues.set(parentNodePin.id, outputValue);
 					}
-					if (
-						currentComponentId ===
-						intrinsics.flipFlopIntrinsicComponentDefinition.component.id
-					) {
+					if (currentComponentId === flipflop.outputPin.componentId) {
 						visitedFlipFlops.add(currentNodeId);
 					}
 				}
@@ -466,10 +431,7 @@ export default function simulateComponent(
 						);
 						outputValues.set(parentComponentPin.id, outputValue);
 					}
-					if (
-						currentComponentId ===
-						intrinsics.flipFlopIntrinsicComponentDefinition.component.id
-					) {
+					if (currentComponentId === flipflop.outputPin.componentId) {
 						visitedFlipFlops.add(currentNodeId);
 					}
 				}

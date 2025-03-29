@@ -40,7 +40,7 @@ function useContextValue() {
 		const fromNodePin = nullthrows(
 			tempStore.nodePins
 				.getManyByNodeId(sampleNode1.id)
-				.find((nodePin) => nodePin.componentPinId === and.outputPin.Out.id),
+				.find((nodePin) => nodePin.componentPinId === and.outputPin.id),
 		);
 		const toNodePin = nullthrows(
 			tempStore.nodePins
