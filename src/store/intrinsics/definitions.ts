@@ -19,9 +19,7 @@ function createUnaryOperator(
 		in: {
 			A: { name: "In" },
 		},
-		out: {
-			Out: { name: "Out" },
-		},
+		out: { name: "Out" },
 		evaluate: (input) => {
 			invariant(input.A[0] && !input.A[1]);
 			const A = input.A[0];
@@ -42,9 +40,7 @@ function createBinaryOperator(
 			A: { name: "A" },
 			B: { name: "B" },
 		},
-		out: {
-			Out: { name: "Out" },
-		},
+		out: { name: "Out" },
 		evaluate: (input) => {
 			invariant(input.A[0] && !input.A[1]);
 			invariant(input.B[0] && !input.B[1]);
@@ -88,11 +84,9 @@ export const aggregate = new IntrinsicComponentDefinition({
 	type: ccIntrinsicComponentTypes.AGGREGATE,
 	name: "Aggregate",
 	in: {
-		In: { name: "In" },
+		In: { name: "In", isBitWidthConfigurable: true, isSplittable: true },
 	},
-	out: {
-		Out: { name: "Out" },
-	},
+	out: { name: "Out" },
 	evaluate: (input) => {
 		return [input.In.flat()];
 	},
@@ -104,9 +98,7 @@ export const decompose = new IntrinsicComponentDefinition({
 	in: {
 		In: { name: "In" },
 	},
-	out: {
-		Out: { name: "Out" },
-	},
+	out: { name: "Out", isBitWidthConfigurable: true, isSplittable: true },
 	evaluate: (input, outputShape) => {
 		invariant(input.In[0] && !input.In[1]);
 		const inputValue = input.In[0];
@@ -128,9 +120,7 @@ export const broadcast = new IntrinsicComponentDefinition({
 	in: {
 		In: { name: "In" },
 	},
-	out: {
-		Out: { name: "Out" },
-	},
+	out: { name: "Out", isBitWidthConfigurable: true },
 	evaluate: (input, outputShape) => {
 		invariant(input.In[0] && !input.In[1]);
 		const inputValue = input.In[0];
@@ -146,9 +136,7 @@ export const flipflop = new IntrinsicComponentDefinition({
 	in: {
 		In: { name: "In" },
 	},
-	out: {
-		Out: { name: "Out" },
-	},
+	out: { name: "Out" },
 	evaluate: (_0, _1, previousInput) => previousInput.In,
 });
 

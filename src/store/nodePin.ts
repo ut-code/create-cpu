@@ -3,12 +3,8 @@ import nullthrows from "nullthrows";
 import invariant from "tiny-invariant";
 import type { Opaque } from "type-fest";
 import type CCStore from ".";
-import type {
-	CCComponentPin,
-	CCComponentPinId,
-	CCPinMultiplexability,
-} from "./componentPin";
-import * as intrinsics from "./intrinsics/definitions";
+import type { CCComponentPinId, CCPinMultiplexability } from "./componentPin";
+import { IntrinsicComponentDefinition } from "./intrinsics/base";
 import type { CCNodeId } from "./node";
 
 export type CCNodePinId = Opaque<string, "CCNodePinId">;
@@ -51,16 +47,6 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 	}
 
 	mount() {
-		const getDefaultUserSpecifiedBitWidth = (componentPin: CCComponentPin) => {
-			const component = nullthrows(
-				this.#store.components.get(componentPin.componentId),
-			);
-			if (!component.intrinsicType) return null;
-			const definition = intrinsics.definitions[component.intrinsicType];
-			return definition.componentPinHasUserSpecifiedBitWidth?.(componentPin)
-				? 1
-				: null;
-		};
 		this.#store.nodes.on("didRegister", (node) => {
 			const componentPins = this.#store.componentPins.getManyByComponentId(
 				node.componentId,
@@ -71,8 +57,6 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 						nodeId: node.id,
 						componentPinId: componentPin.id,
 						order: 0,
-						userSpecifiedBitWidth:
-							getDefaultUserSpecifiedBitWidth(componentPin),
 					}),
 				);
 			}
@@ -93,8 +77,6 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 						nodeId: node.id,
 						componentPinId: componentPin.id,
 						order: 0,
-						userSpecifiedBitWidth:
-							getDefaultUserSpecifiedBitWidth(componentPin),
 					}),
 				);
 			}
@@ -247,11 +229,13 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 	static create(
 		partialPin: Omit<CCNodePin, "id" | "userSpecifiedBitWidth">,
 	): CCNodePin {
-		const intrinsicComponentDefinition =
-			intrinsics.definitionByComponentPinId.get(partialPin.componentPinId);
+		const attributes =
+			IntrinsicComponentDefinition.intrinsicComponentPinAttributesByComponentPinId.get(
+				partialPin.componentPinId,
+			);
 		return {
 			id: crypto.randomUUID() as CCNodePinId,
-			userSpecifiedBitWidth: null,
+			userSpecifiedBitWidth: attributes?.isBitWidthConfigurable ? 1 : null,
 			...partialPin,
 		};
 	}

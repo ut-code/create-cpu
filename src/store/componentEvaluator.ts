@@ -12,9 +12,10 @@ import type { CCNodeId } from "./node";
 import type { CCNodePin, CCNodePinId } from "./nodePin";
 
 function createInput(
+	store: CCStore,
 	nodePins: CCNodePin[],
 	inputPin: Record<string, CCComponentPin>,
-	inputValues: Map<CCNodePinId, SimulationValue>,
+	inputValues: Map<CCNodePinId, SimulationValue> | null,
 ): Record<string, SimulationValue[]> {
 	const input: Partial<Record<string, SimulationValue[]>> = {};
 	for (const key in inputPin) {
@@ -23,9 +24,19 @@ function createInput(
 			(nodePin: CCNodePin) => componentPin.id === nodePin.componentPinId,
 		);
 		targetNodePins.sort((a, b) => a.order - b.order);
-		const values = targetNodePins.map((nodePin: CCNodePin) =>
-			nullthrows(inputValues.get(nodePin.id)),
-		);
+		const values = inputValues
+			? targetNodePins.map((nodePin: CCNodePin) =>
+					nullthrows(inputValues.get(nodePin.id)),
+				)
+			: targetNodePins.map((nodePin: CCNodePin) => {
+					const multiplexability = store.nodePins.getNodePinMultiplexability(
+						nodePin.id,
+					);
+					const bitWidth = multiplexability.isMultiplexable
+						? 1
+						: multiplexability.multiplicity;
+					return Array<boolean>(bitWidth).fill(false);
+				});
 		input[key] = values;
 	}
 	return input as Record<string, SimulationValue[]>;
@@ -66,18 +77,27 @@ function simulateIntrinsic(
 	invariant(componentDefinition);
 	const inputPin = componentDefinition.inputPin;
 	const outputPin = componentDefinition.outputPin;
-	const _input = createInput(nodePins, inputPin, inputValues);
+	const _input = createInput(store, nodePins, inputPin, inputValues);
 	const outputShape = createOutputShape(store, nodePins, outputPin);
-	const previousInputValues = new Map<CCNodePinId, SimulationValue>();
-	for (const nodePin of nodePins) {
-		const previousValue = parentPreviousFrame?.nodes
-			.get(nodeId)
-			?.pins.get(nodePin.id);
-		if (previousValue) {
-			previousInputValues.set(nodePin.id, previousValue);
+	const previousInputValues = parentPreviousFrame
+		? new Map<CCNodePinId, SimulationValue>()
+		: null;
+	if (previousInputValues) {
+		for (const nodePin of nodePins) {
+			const previousValue = parentPreviousFrame?.nodes
+				.get(nodeId)
+				?.pins.get(nodePin.id);
+			if (previousValue) {
+				previousInputValues.set(nodePin.id, previousValue);
+			}
 		}
 	}
-	const previousInput = createInput(nodePins, inputPin, previousInputValues);
+	const previousInput = createInput(
+		store,
+		nodePins,
+		inputPin,
+		previousInputValues,
+	);
 	const output = componentDefinition.evaluate(
 		_input,
 		outputShape,

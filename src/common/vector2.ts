@@ -18,6 +18,8 @@ export const vector2 = {
 		x: a.x / b,
 		y: a.y / b,
 	}),
+	size: (a: Vector2): number => Math.hypot(a.x, a.y),
+	distance: (a: Vector2, b: Vector2): number => vector2.size(vector2.sub(a, b)),
 	fromDomEvent: (e: { offsetX: number; offsetY: number }): Vector2 => ({
 		x: e.offsetX,
 		y: e.offsetY,

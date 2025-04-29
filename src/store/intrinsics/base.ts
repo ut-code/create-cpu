@@ -5,35 +5,27 @@ import type { CCIntrinsicComponentType } from "./types";
 
 type SimulationValue = boolean[];
 
-type PropsPin = {
+type IntrinsicComponentPinAttributes = {
 	name: string;
+	isBitWidthConfigurable?: boolean;
+	isSplittable?: boolean;
 };
-type Props<In extends string, Out extends string> = {
+type Props<In extends string> = {
 	type: CCIntrinsicComponentType;
 	name: string;
-	in: Record<In, PropsPin>;
-	out: Record<Out, PropsPin>;
+	in: Record<In, IntrinsicComponentPinAttributes>;
+	out: IntrinsicComponentPinAttributes;
 	evaluate: (
 		input: Record<In, SimulationValue[]>,
 		outputShape: { multiplicity: number }[],
 		previousInput: Record<In, SimulationValue[]>,
 	) => SimulationValue[];
 };
-export class IntrinsicComponentDefinition<
-	In extends string = string,
-	Out extends string = string,
-> {
-	private static _lastIndex = 0;
-
-	private _index: number = IntrinsicComponentDefinition._lastIndex++;
-	private _lastLocalIndex = 0;
-	private _generateId() {
-		return `ffffffff-${this._index
-			.toString()
-			.padStart(4, "0")}-4000-8000-${(this._lastLocalIndex++)
-			.toString()
-			.padStart(12, "0")}`;
-	}
+export class IntrinsicComponentDefinition<In extends string = string> {
+	static intrinsicComponentPinAttributesByComponentPinId: Map<
+		CCComponentPinId,
+		IntrinsicComponentPinAttributes
+	> = new Map();
 
 	readonly id: CCComponentId;
 	readonly type: CCIntrinsicComponentType;
@@ -48,7 +40,19 @@ export class IntrinsicComponentDefinition<
 		previousInput: Record<In, SimulationValue[]>,
 	) => SimulationValue[];
 
-	constructor(props: Props<In, Out>) {
+	private static _lastIndex = 0;
+
+	private _index: number = IntrinsicComponentDefinition._lastIndex++;
+	private _lastLocalIndex = 0;
+	private _generateId() {
+		return `ffffffff-${this._index
+			.toString()
+			.padStart(4, "0")}-4000-8000-${(this._lastLocalIndex++)
+			.toString()
+			.padStart(12, "0")}`;
+	}
+
+	constructor(props: Props<In>) {
 		this.id = this._generateId() as CCComponentId;
 		this.type = props.type;
 		this.name = props.name;
@@ -58,15 +62,19 @@ export class IntrinsicComponentDefinition<
 			name: this.name,
 		};
 		this.evaluate = props.evaluate;
-		this.inputPin = mapValues(props.in, (p) => {
+		this.inputPin = mapValues(props.in, (attributes) => {
 			const pin: CCComponentPin = {
 				id: this._generateId() as CCComponentPinId,
 				componentId: this.id,
 				type: "input",
 				implementation: null,
 				order: this._lastLocalIndex++,
-				name: p.name,
+				name: attributes.name,
 			};
+			IntrinsicComponentDefinition.intrinsicComponentPinAttributesByComponentPinId.set(
+				pin.id,
+				attributes,
+			);
 			this.allPins.push(pin);
 			return pin;
 		});
@@ -82,8 +90,18 @@ export class IntrinsicComponentDefinition<
 		// 	this.allPins.push(pin);
 		// 	return pin;
 		// });
-		this.outputPin = this.allPins.find(
-			(pin) => pin.type === "output",
-		) as CCComponentPin;
+		this.outputPin = {
+			id: this._generateId() as CCComponentPinId,
+			componentId: this.id,
+			type: "output",
+			implementation: null,
+			order: this._lastLocalIndex++,
+			name: props.out.name,
+		};
+		IntrinsicComponentDefinition.intrinsicComponentPinAttributesByComponentPinId.set(
+			this.outputPin.id,
+			props.out,
+		);
+		this.allPins.push(this.outputPin);
 	}
 }
