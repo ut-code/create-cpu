@@ -1,6 +1,6 @@
 import { AppBar } from "@mui/material";
 import type { CSSProperties } from "react";
-import { whiteColor } from "../common/theme";
+import { theme } from "../common/theme";
 
 export type GlobalHeaderProps = {
 	style: CSSProperties;
@@ -15,7 +15,7 @@ export default function GlobalHeader({ style }: GlobalHeaderProps) {
 			style={style}
 			sx={{
 				p: 2,
-				background: whiteColor,
+				background: theme.palette.white,
 				borderBottom: "1px solid",
 				borderColor: "divider",
 			}}

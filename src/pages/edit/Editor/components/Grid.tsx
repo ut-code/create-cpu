@@ -1,4 +1,5 @@
 import type { ReactElement } from "react";
+import { theme } from "../../../../common/theme";
 import { vector2 } from "../../../../common/vector2";
 import { useComponentEditorStore } from "../store";
 
@@ -8,7 +9,7 @@ export default function CCComponentEditorGrid() {
 	const canvasOriginPosition = componentEditorState.fromStageToCanvas(
 		vector2.zero,
 	);
-	const canvasGridSize = 100 * 2 ** (Math.ceil(logScale) - logScale);
+	const canvasGridSize = 80 * 2 ** (Math.ceil(logScale) - logScale);
 
 	const elements: ReactElement[] = [];
 	let i = 0;
@@ -26,7 +27,7 @@ export default function CCComponentEditorGrid() {
 					left: 0,
 					width: "1px",
 					height: "100%",
-					backgroundColor: "rgba(0, 0, 0, 0.1)",
+					backgroundColor: theme.palette.editorGrid,
 					transform: `translateX(${x}px)`,
 				}}
 			/>,
@@ -47,7 +48,7 @@ export default function CCComponentEditorGrid() {
 					left: 0,
 					width: "100%",
 					height: "1px",
-					backgroundColor: "rgba(0, 0, 0, 0.1)",
+					backgroundColor: theme.palette.editorGrid,
 					transform: `translateY(${y}px)`,
 				}}
 			/>,

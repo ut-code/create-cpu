@@ -1,4 +1,5 @@
 import nullthrows from "nullthrows";
+import { theme } from "../../../../common/theme";
 import type { CCConnectionId } from "../../../../store/connection";
 import { useStore } from "../../../../store/react";
 import ensureStoreItem from "../../../../store/react/error";
@@ -31,7 +32,7 @@ export function CCComponentEditorRendererConnectionCore({
 				].join(" ")}`,
 				`h ${straightGap * direction}`,
 			].join(" ")}
-			stroke="black"
+			stroke={theme.palette.textPrimary}
 			strokeWidth="2"
 			fill="none"
 		/>

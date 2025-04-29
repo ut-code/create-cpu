@@ -1,15 +1,20 @@
 import { createTheme } from "@mui/material";
 
 // See https://www.figma.com/file/M3dC0Gk98IGSGlxY901rBh/
-export const blackColor = "#000000";
-export const whiteColor = "#ffffff";
-export const primaryColor = "#009966";
-export const errorColor = "#ff0000";
-export const editorBackgroundColor = "#fafafa";
-export const editorGridColor = "#dddddd";
-
-export const theme = createTheme({
+export const theme = {
 	palette: {
-		primary: { main: primaryColor },
+		black: "#000000",
+		white: "#ffffff",
+		textPrimary: "#444444",
+		primary: "#009966",
+		error: "#ff0000",
+		editorBackground: "#fafafa",
+		editorGrid: "#dddddd",
+	},
+};
+
+export const muiTheme = createTheme({
+	palette: {
+		primary: { main: theme.palette.primary },
 	},
 });

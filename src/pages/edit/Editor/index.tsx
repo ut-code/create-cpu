@@ -1,7 +1,7 @@
 import { Box } from "@mui/material";
 import nullthrows from "nullthrows";
 import { useState } from "react";
-import { editorBackgroundColor } from "../../../common/theme";
+import { theme } from "../../../common/theme";
 import { ComponentPropertyDialog } from "../../../components/ComponentPropertyDialog";
 import type { CCComponentId } from "../../../store/component";
 import { useStore } from "../../../store/react";
@@ -33,7 +33,7 @@ function CCComponentEditorContent({
 			sx={{
 				position: "relative",
 				overflow: "hidden",
-				backgroundColor: editorBackgroundColor,
+				backgroundColor: theme.palette.editorBackground,
 			}}
 		>
 			<CCComponentEditorGrid />

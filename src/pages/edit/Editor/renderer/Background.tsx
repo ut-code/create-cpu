@@ -15,6 +15,10 @@ export default function CCComponentEditorRendererBackground() {
 				const { currentTarget } = pointerDownEvent;
 				const startPerspective = componentEditorState.perspective;
 				const startPoint = vector2.fromDomEvent(pointerDownEvent.nativeEvent);
+
+				pointerDownEvent.currentTarget.setPointerCapture(
+					pointerDownEvent.pointerId,
+				);
 				const onPointerMove = (pointerMoveEvent: PointerEvent) => {
 					const endPoint = vector2.fromDomEvent(pointerMoveEvent);
 					componentEditorState.setPerspective({
@@ -28,11 +32,14 @@ export default function CCComponentEditorRendererBackground() {
 						),
 					});
 				};
-				currentTarget.addEventListener("pointermove", onPointerMove);
 				const onPointerUp = () => {
 					currentTarget.removeEventListener("pointermove", onPointerMove);
 					currentTarget.removeEventListener("pointerup", onPointerUp);
+					pointerDownEvent.currentTarget.releasePointerCapture(
+						pointerDownEvent.pointerId,
+					);
 				};
+				currentTarget.addEventListener("pointermove", onPointerMove);
 				currentTarget.addEventListener("pointerup", onPointerUp);
 			}}
 			onWheel={(wheelEvent) => {

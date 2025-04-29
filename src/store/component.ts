@@ -3,7 +3,7 @@ import nullthrows from "nullthrows";
 import invariant from "tiny-invariant";
 import type { Opaque } from "type-fest";
 import type CCStore from ".";
-import type { CCIntrinsicComponentType } from "./intrinsics";
+import type { CCIntrinsicComponentType } from "./intrinsics/types";
 
 export type CCComponentId = Opaque<string, "CCComponentId">;
 

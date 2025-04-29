@@ -3,12 +3,8 @@ import nullthrows from "nullthrows";
 import invariant from "tiny-invariant";
 import type { Opaque } from "type-fest";
 import type CCStore from ".";
-import type {
-	CCComponentPin,
-	CCComponentPinId,
-	CCPinMultiplexability,
-} from "./componentPin";
-import * as intrinsic from "./intrinsics";
+import type { CCComponentPinId, CCPinMultiplexability } from "./componentPin";
+import { IntrinsicComponentDefinition } from "./intrinsics/base";
 import type { CCNodeId } from "./node";
 
 export type CCNodePinId = Opaque<string, "CCNodePinId">;
@@ -51,17 +47,6 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 	}
 
 	mount() {
-		const getDefaultUserSpecifiedBitWidth = (componentPin: CCComponentPin) => {
-			const component = nullthrows(
-				this.#store.components.get(componentPin.componentId),
-			);
-			if (!component.intrinsicType) return null;
-			const definition =
-				intrinsic.ccIntrinsicComponentDefinitions[component.intrinsicType];
-			return definition.componentPinHasUserSpecifiedBitWidth?.(componentPin)
-				? 1
-				: null;
-		};
 		this.#store.nodes.on("didRegister", (node) => {
 			const componentPins = this.#store.componentPins.getManyByComponentId(
 				node.componentId,
@@ -72,8 +57,6 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 						nodeId: node.id,
 						componentPinId: componentPin.id,
 						order: 0,
-						userSpecifiedBitWidth:
-							getDefaultUserSpecifiedBitWidth(componentPin),
 					}),
 				);
 			}
@@ -94,8 +77,6 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 						nodeId: node.id,
 						componentPinId: componentPin.id,
 						order: 0,
-						userSpecifiedBitWidth:
-							getDefaultUserSpecifiedBitWidth(componentPin),
 					}),
 				);
 			}
@@ -181,32 +162,22 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 			nodePinId_: CCNodePinId,
 			seen: Set<CCNodeId>,
 		): CCPinMultiplexability => {
-			const { nodeId, componentPinId: pinId } = nullthrows(
-				this.get(nodePinId_),
-			);
+			const {
+				nodeId,
+				componentPinId: pinId,
+				userSpecifiedBitWidth,
+			} = nullthrows(this.get(nodePinId_));
 			seen.add(nodeId);
 			const node = nullthrows(this.#store.nodes.get(nodeId));
 			const nodePins = this.getManyByNodeId(node.id);
 			const givenPinMultiplexability =
 				this.#store.componentPins.getComponentPinMultiplexability(pinId);
 			if (givenPinMultiplexability === "undecidable") {
-				if (
-					pinId ===
-					nullthrows(
-						intrinsic.aggregateIntrinsicComponentDefinition.outputPins[0],
-					).id
-				) {
-					return { isMultiplexable: false, multiplicity: nodePins.length - 1 };
-				}
-				if (
-					pinId ===
-					nullthrows(
-						intrinsic.decomposeIntrinsicComponentDefinition.inputPins[0],
-					).id
-				) {
-					return { isMultiplexable: false, multiplicity: nodePins.length - 1 };
-				}
-				throw new Error("unreachable");
+				invariant(
+					userSpecifiedBitWidth,
+					"Multiplexability of undecidable pin must be contained in multiplexabilityEnv",
+				);
+				return { isMultiplexable: false, multiplicity: userSpecifiedBitWidth };
 			}
 			if (!givenPinMultiplexability.isMultiplexable) {
 				return givenPinMultiplexability;
@@ -255,9 +226,16 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 	 * @param partialPin pin without `id`
 	 * @returns a new pin
 	 */
-	static create(partialPin: Omit<CCNodePin, "id">): CCNodePin {
+	static create(
+		partialPin: Omit<CCNodePin, "id" | "userSpecifiedBitWidth">,
+	): CCNodePin {
+		const attributes =
+			IntrinsicComponentDefinition.intrinsicComponentPinAttributesByComponentPinId.get(
+				partialPin.componentPinId,
+			);
 		return {
 			id: crypto.randomUUID() as CCNodePinId,
+			userSpecifiedBitWidth: attributes?.isBitWidthConfigurable ? 1 : null,
 			...partialPin,
 		};
 	}

@@ -4,21 +4,31 @@ import invariant from "tiny-invariant";
 import type { Opaque } from "type-fest";
 import type CCStore from ".";
 import type { CCComponentId } from "./component";
-import * as intrinsic from "./intrinsics";
+import {
+	aggregate,
+	and,
+	broadcast,
+	decompose,
+	flipflop,
+	input,
+	not,
+	or,
+	xor,
+} from "./intrinsics/definitions";
 import type { CCNodePinId } from "./nodePin";
 
 export type CCComponentPin = {
 	readonly id: CCComponentPinId;
 	readonly componentId: CCComponentId;
-	readonly type: CCPinType;
+	readonly type: CCComponentPinType;
 	readonly implementation: CCPinImplementation;
 	order: number;
 	name: string;
 };
 
 export type CCComponentPinId = Opaque<string, "CCPinId">;
-export type CCPinType = "input" | "output";
-export const ccPinTypes: CCPinType[] = ["input", "output"];
+export type CCComponentPinType = "input" | "output";
+export const ccPinTypes: CCComponentPinType[] = ["input", "output"];
 
 /** null for intrinsic components */
 export type CCPinImplementation = CCNodePinId | null;
@@ -233,59 +243,40 @@ export class CCComponentPinStore extends EventEmitter<CCComponentPinStoreEvents>
 		const pin = this.#pins.get(pinId);
 		invariant(pin);
 		switch (pin.id) {
-			case nullthrows(intrinsic.andIntrinsicComponentDefinition.inputPins[0])
-				.id:
-			case nullthrows(intrinsic.andIntrinsicComponentDefinition.inputPins[1])
-				.id:
-			case nullthrows(intrinsic.andIntrinsicComponentDefinition.outputPins[0])
-				.id:
-			case nullthrows(intrinsic.orIntrinsicComponentDefinition.inputPins[0]).id:
-			case nullthrows(intrinsic.orIntrinsicComponentDefinition.inputPins[1]).id:
-			case nullthrows(intrinsic.orIntrinsicComponentDefinition.outputPins[0])
-				.id:
-			case nullthrows(intrinsic.notIntrinsicComponentDefinition.inputPins[0])
-				.id:
-			case nullthrows(intrinsic.notIntrinsicComponentDefinition.outputPins[0])
-				.id:
-			case nullthrows(intrinsic.xorIntrinsicComponentDefinition.inputPins[0])
-				.id:
-			case nullthrows(intrinsic.xorIntrinsicComponentDefinition.inputPins[1])
-				.id:
-			case nullthrows(intrinsic.xorIntrinsicComponentDefinition.outputPins[0])
-				.id:
-			case nullthrows(intrinsic.inputIntrinsicComponentDefinition.inputPins[0])
-				.id:
-			case nullthrows(intrinsic.inputIntrinsicComponentDefinition.outputPins[0])
-				.id:
-			case nullthrows(
-				intrinsic.flipFlopIntrinsicComponentDefinition.inputPins[0],
-			).id:
-			case nullthrows(
-				intrinsic.flipFlopIntrinsicComponentDefinition.outputPins[0],
-			).id: {
+			case nullthrows(and.inputPin.A.id):
+			case nullthrows(and.inputPin.B.id):
+			case nullthrows(and.outputPin.id):
+			case nullthrows(or.inputPin.A.id):
+			case nullthrows(or.inputPin.B.id):
+			case nullthrows(or.outputPin.id):
+			case nullthrows(not.inputPin.A.id):
+			case nullthrows(not.outputPin.id):
+			case nullthrows(xor.inputPin.A.id):
+			case nullthrows(xor.inputPin.B.id):
+			case nullthrows(xor.outputPin.id):
+			case nullthrows(input.inputPin.A.id):
+			case nullthrows(input.outputPin.id):
+			case nullthrows(flipflop.inputPin.In.id):
+			case nullthrows(flipflop.outputPin.id): {
 				return { isMultiplexable: true };
 			}
-			case nullthrows(
-				intrinsic.aggregateIntrinsicComponentDefinition.inputPins[0],
-			).id: {
+			case nullthrows(aggregate.inputPin.In.id): {
+				return "undecidable";
+			}
+			case nullthrows(aggregate.outputPin.id): {
+				return "undecidable";
+			}
+			case nullthrows(decompose.outputPin.id): {
+				return "undecidable";
+			}
+			case nullthrows(decompose.inputPin.In.id): {
+				return "undecidable";
+			}
+			case nullthrows(broadcast.inputPin.In.id): {
 				return { isMultiplexable: false, multiplicity: 1 };
 			}
-			case nullthrows(
-				intrinsic.aggregateIntrinsicComponentDefinition.outputPins[0],
-			).id: {
+			case nullthrows(broadcast.outputPin.id): {
 				return "undecidable";
-				// return { isMultiplexable: false, multiplicity: 4 };
-			}
-			case nullthrows(
-				intrinsic.decomposeIntrinsicComponentDefinition.outputPins[0],
-			).id: {
-				return "undecidable";
-				// return { isMultiplexable: false, multiplicity: 4 };
-			}
-			case nullthrows(
-				intrinsic.decomposeIntrinsicComponentDefinition.inputPins[0],
-			).id: {
-				return { isMultiplexable: false, multiplicity: 1 };
 			}
 			default: {
 				if (pin.implementation === null) {
