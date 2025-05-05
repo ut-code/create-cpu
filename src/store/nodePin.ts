@@ -21,6 +21,7 @@ export type CCNodePinStoreEvents = {
 	didRegister(pin: CCNodePin): void;
 	willUnregister(pin: CCNodePin): void;
 	didUnregister(pin: CCNodePin): void;
+	didUpdate(pin: CCNodePin): void;
 };
 
 export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
@@ -116,6 +117,13 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 		this.#markedAsDeleted.delete(id);
 	}
 
+	update(id: CCNodePinId, value: Pick<CCNodePin, "userSpecifiedBitWidth">) {
+		const existingNodePin = nullthrows(this.#nodePins.get(id));
+		const newNodePin = { ...existingNodePin, ...value };
+		this.#nodePins.set(id, newNodePin);
+		this.emit("didUpdate", newNodePin);
+	}
+
 	/**
 	 * Get a pin by id
 	 * @param id id of pin
@@ -149,6 +157,15 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 	 */
 	getManyByNodeId(nodeId: CCNodeId): CCNodePin[] {
 		return [...this.#nodePins.values()].filter((pin) => pin.nodeId === nodeId);
+	}
+
+	getManyByNodeIdAndComponentPinId(
+		nodeId: CCNodeId,
+		componentPinId: CCComponentPinId,
+	): CCNodePin[] {
+		return [...this.#nodePins.values()].filter(
+			(pin) => pin.nodeId === nodeId && pin.componentPinId === componentPinId,
+		);
 	}
 
 	/**
@@ -227,16 +244,19 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 	 * @returns a new pin
 	 */
 	static create(
-		partialPin: Omit<CCNodePin, "id" | "userSpecifiedBitWidth">,
+		partialPin: Omit<CCNodePin, "id" | "userSpecifiedBitWidth"> &
+			Partial<Pick<CCNodePin, "userSpecifiedBitWidth">>,
 	): CCNodePin {
 		const attributes =
 			IntrinsicComponentDefinition.intrinsicComponentPinAttributesByComponentPinId.get(
 				partialPin.componentPinId,
 			);
 		return {
-			id: crypto.randomUUID() as CCNodePinId,
-			userSpecifiedBitWidth: attributes?.isBitWidthConfigurable ? 1 : null,
 			...partialPin,
+			id: crypto.randomUUID() as CCNodePinId,
+			userSpecifiedBitWidth:
+				partialPin.userSpecifiedBitWidth ??
+				(attributes?.isBitWidthConfigurable ? 1 : null),
 		};
 	}
 

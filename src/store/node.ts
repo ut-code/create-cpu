@@ -116,10 +116,10 @@ export class CCNodeStore extends EventEmitter<CCNodeStoreEvents> {
 	 * @param value new position
 	 */
 	update(id: CCNodeId, value: Pick<CCNode, "position">): void {
-		const node = this.#nodes.get(id);
-		invariant(node);
-		this.#nodes.set(id, { ...node, ...value });
-		this.emit("didUpdate", node);
+		const existingNode = nullthrows(this.#nodes.get(id));
+		const newNode = { ...existingNode, ...value };
+		this.#nodes.set(id, newNode);
+		this.emit("didUpdate", newNode);
 	}
 
 	/**

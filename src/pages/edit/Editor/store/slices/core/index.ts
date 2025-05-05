@@ -37,6 +37,13 @@ export const createComponentEditorStoreCoreSlice: ComponentEditorSliceCreator<
 				selectedNodeIds: new Set(),
 				rangeSelect: null,
 				selectedConnectionIds: new Set(),
+				nodePinPropertyEditorTarget: null,
+				setNodePinPropertyEditorTarget(target) {
+					set((state) => ({
+						...state,
+						nodePinPropertyEditorTarget: target,
+					}));
+				},
 				/** @private */
 				inputValues: new Map(),
 				getInputValue(componentPinId: CCComponentPinId) {

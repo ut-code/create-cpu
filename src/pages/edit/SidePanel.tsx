@@ -33,6 +33,7 @@ function ComponentRenderer({ componentId }: { componentId: CCComponentId }) {
 					alignItems: "center",
 					marginTop: "4px",
 					border: `2px solid ${theme.palette.black}`,
+					borderRadius: "2px",
 					background: theme.palette.white,
 				}}
 			>
@@ -100,12 +101,14 @@ export default function SidePanel(sidePanelProps: SidePanelProps) {
 			<TextField
 				size="small"
 				sx={{ m: 1 }}
-				InputProps={{
-					startAdornment: (
-						<InputAdornment position="start">
-							<Search />
-						</InputAdornment>
-					),
+				slotProps={{
+					input: {
+						startAdornment: (
+							<InputAdornment position="start">
+								<Search />
+							</InputAdornment>
+						),
+					},
 				}}
 				value={searchText}
 				onChange={(e) => {

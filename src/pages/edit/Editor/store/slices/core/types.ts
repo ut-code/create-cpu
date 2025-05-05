@@ -13,6 +13,11 @@ export type RangeSelect = { start: Vector2; end: Vector2 } | null;
 
 export type InputValueKey = CCComponentPinId;
 
+export type NodePinPropertyEditorTarget = {
+	nodeId: CCNodeId;
+	componentPinId: CCComponentPinId;
+};
+
 export type EditorStoreCoreSlice = {
 	editorMode: EditorMode;
 	timeStep: number;
@@ -20,6 +25,10 @@ export type EditorStoreCoreSlice = {
 	rangeSelect: RangeSelect;
 	setRangeSelect(rangeSelect: RangeSelect): void;
 	selectedConnectionIds: Set<CCConnectionId>;
+	nodePinPropertyEditorTarget: NodePinPropertyEditorTarget | null;
+	setNodePinPropertyEditorTarget(
+		target: NodePinPropertyEditorTarget | null,
+	): void;
 	inputValues: Map<InputValueKey, SimulationValue>;
 	getInputValue(componentPinId: CCComponentPinId): SimulationValue;
 	setInputValue(componentPinId: CCComponentPinId, value: SimulationValue): void;

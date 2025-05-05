@@ -90,6 +90,7 @@ const CCComponentEditorRendererNode = ensureStoreItem(
 								: theme.palette.textPrimary
 						}
 						strokeWidth={2}
+						rx={2}
 					/>
 				</g>
 				{store.nodePins.getManyByNodeId(nodeId).map((nodePin) => {

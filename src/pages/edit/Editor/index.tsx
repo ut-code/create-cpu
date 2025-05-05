@@ -7,6 +7,7 @@ import type { CCComponentId } from "../../../store/component";
 import { useStore } from "../../../store/react";
 import CCComponentEditorContextMenu from "./components/ContextMenu";
 import CCComponentEditorGrid from "./components/Grid";
+import { CCComponentEditorNodePinPropertyEditor } from "./components/NodePinPropertyEditor";
 import CCComponentEditorTitleBar from "./components/TitleBar";
 import CCComponentEditorViewModeSwitcher from "./components/ViewModeSwitcher";
 import CCComponentEditorRenderer from "./renderer";
@@ -46,6 +47,7 @@ function CCComponentEditorContent({
 			/>
 			<CCComponentEditorViewModeSwitcher />
 			<CCComponentEditorContextMenu onEditComponent={onEditComponent} />
+			<CCComponentEditorNodePinPropertyEditor />
 			{isComponentPropertyDialogOpen && (
 				<ComponentPropertyDialog
 					defaultName={component.name}
