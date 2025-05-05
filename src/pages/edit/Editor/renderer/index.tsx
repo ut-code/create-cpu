@@ -19,6 +19,7 @@ export default function CCComponentEditorRenderer() {
 	const connectionIds = useConnectionIds(componentEditorState.componentId);
 
 	return (
+		// biome-ignore lint/a11y/noSvgWithoutTitle: This svg is not a graphic
 		<svg
 			ref={componentEditorState.registerRendererElement}
 			style={{
@@ -27,6 +28,7 @@ export default function CCComponentEditorRenderer() {
 				left: 0,
 				width: "100%",
 				height: "100%",
+				userSelect: "none",
 			}}
 			viewBox={[viewBox.x, viewBox.y, viewBox.width, viewBox.height].join(" ")}
 			onDragOver={(e) => {
@@ -47,7 +49,6 @@ export default function CCComponentEditorRenderer() {
 				);
 			}}
 		>
-			<title>Component editor</title>
 			<CCComponentEditorRendererBackground />
 			{connectionIds.map((connectionId) => (
 				<CCComponentEditorRendererConnection

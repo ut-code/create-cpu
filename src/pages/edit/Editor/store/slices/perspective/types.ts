@@ -4,6 +4,7 @@ import type { Vector2 } from "../../../../../../common/vector2";
 export type PerspectiveStoreSlice = {
 	perspective: Perspective;
 	rendererSize: Vector2;
+	getRendererPosition: () => Vector2;
 	setPerspective: (perspective: Perspective) => void;
 	registerRendererElement: (element: SVGSVGElement | null) => void;
 	fromCanvasToStage: (point: Vector2) => Vector2;

@@ -14,14 +14,17 @@ import getCCComponentEditorRendererNodeGeometry from "./Node.geometry";
 
 const NODE_PIN_POSITION_SENSITIVITY = 10;
 
-export type CCComponentEditorRendererNodeProps = {
+export type CCComponentEditorRendererNodePinProps = {
 	nodePinId: CCNodePinId;
 	position: Vector2;
+};
+export const CCComponentEditorRendererNodePinConstants = {
+	SIZE: 10,
 };
 export default function CCComponentEditorRendererNodePin({
 	nodePinId,
 	position,
-}: CCComponentEditorRendererNodeProps) {
+}: CCComponentEditorRendererNodePinProps) {
 	const { store } = useStore();
 	const componentEditorState = useComponentEditorStore()();
 	const nodePin = nullthrows(store.nodePins.get(nodePinId));
@@ -117,6 +120,13 @@ export default function CCComponentEditorRendererNodePin({
 			}
 			setDraggingState(null);
 		},
+		onClick: () => {
+			if (nodePin.userSpecifiedBitWidth === null) return;
+			componentEditorState.setNodePinPropertyEditorTarget({
+				componentPinId: nodePin.componentPinId,
+				nodeId: nodePin.nodeId,
+			});
+		},
 	});
 
 	const isSimulationMode = useComponentEditorStore()(
@@ -179,28 +189,44 @@ export default function CCComponentEditorRendererNodePin({
 			)}
 			<g {...draggableProps} style={{ cursor: "pointer" }}>
 				<rect
-					x={position.x - 5}
-					y={position.y - 5}
-					width={10}
-					height={10}
+					x={position.x - CCComponentEditorRendererNodePinConstants.SIZE / 2}
+					y={position.y - CCComponentEditorRendererNodePinConstants.SIZE / 2}
+					width={CCComponentEditorRendererNodePinConstants.SIZE}
+					height={CCComponentEditorRendererNodePinConstants.SIZE}
 					rx={3}
 					fill={theme.palette.white}
 					stroke={theme.palette.textPrimary}
 					strokeWidth={2}
 				/>
-				<text
-					x={position.x}
-					y={position.y}
-					textAnchor="middle"
-					dominantBaseline="central"
-					fontSize={7}
-					fill={theme.palette.textPrimary}
-				>
-					3
-				</text>
+				{nodePin.userSpecifiedBitWidth !== null && (
+					<text
+						x={position.x}
+						y={position.y}
+						textAnchor="middle"
+						dominantBaseline="central"
+						fontSize={
+							nodePin.userSpecifiedBitWidth >= 100
+								? 4
+								: nodePin.userSpecifiedBitWidth >= 10
+									? 6
+									: 8
+						}
+						fill={theme.palette.textPrimary}
+					>
+						{nodePin.userSpecifiedBitWidth >= 100
+							? "99+"
+							: nodePin.userSpecifiedBitWidth}
+					</text>
+				)}
 			</g>
 			<text
-				x={position.x + { input: 10, output: -10 }[pinType]}
+				x={
+					position.x +
+					{
+						input: CCComponentEditorRendererNodePinConstants.SIZE,
+						output: -CCComponentEditorRendererNodePinConstants.SIZE,
+					}[pinType]
+				}
 				y={position.y}
 				textAnchor={{ input: "start", output: "end" }[pinType]}
 				dominantBaseline="central"

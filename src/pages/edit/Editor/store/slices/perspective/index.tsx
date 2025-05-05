@@ -1,4 +1,3 @@
-import * as matrix from "transformation-matrix";
 import { vector2 } from "../../../../../../common/vector2";
 import type { ComponentEditorSliceCreator } from "../../types";
 import type { PerspectiveStoreSlice } from "./types";
@@ -7,19 +6,21 @@ const createComponentEditorStorePerspectiveSlice: ComponentEditorSliceCreator<
 	PerspectiveStoreSlice
 > = () => {
 	let resizeObserver: ResizeObserver | null;
-	let resizeObserverObservedElement: SVGSVGElement | null;
+	let rendererElement: SVGSVGElement | null;
 	const registerRendererElement = (element: SVGSVGElement | null) => {
 		if (!resizeObserver) return;
-		if (resizeObserverObservedElement)
-			resizeObserver.unobserve(resizeObserverObservedElement);
+		if (rendererElement) resizeObserver.unobserve(rendererElement);
 		if (element) resizeObserver.observe(element);
-		resizeObserverObservedElement = element;
+		rendererElement = element;
 	};
 	return {
 		define: (set, get) => ({
 			perspective: { center: vector2.zero, scale: 1 },
 			rendererSize: vector2.zero,
-			userPerspectiveTransformation: matrix.identity(),
+			getRendererPosition: () => {
+				const rect = rendererElement?.getBoundingClientRect();
+				return rect ? { x: rect.left, y: rect.top } : vector2.zero;
+			},
 			setPerspective: (perspective) => set((s) => ({ ...s, perspective })),
 			registerRendererElement,
 			fromCanvasToStage: (point) =>
