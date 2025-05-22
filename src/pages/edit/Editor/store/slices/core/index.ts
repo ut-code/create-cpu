@@ -5,7 +5,7 @@ import simulateComponent from "../../../../../../store/componentEvaluator";
 import type { CCComponentPinId } from "../../../../../../store/componentPin";
 import type { CCConnectionId } from "../../../../../../store/connection";
 import type { CCNodeId } from "../../../../../../store/node";
-import type { CCNodePinId } from "../../../../../../store/nodePin";
+import type { CCNodePin, CCNodePinId } from "../../../../../../store/nodePin";
 import type { ComponentEditorSliceCreator } from "../../types";
 import type { EditorStoreCoreSlice } from "./types";
 
@@ -46,12 +46,13 @@ export const createComponentEditorStoreCoreSlice: ComponentEditorSliceCreator<
 				},
 				/** @private */
 				inputValues: new Map(),
-				getInputValue(componentPinId: CCComponentPinId) {
+				getInputValue(componentPinId: CCComponentPinId, nodePins: CCNodePin[]) {
 					const value = get().inputValues.get(componentPinId);
 					if (!value) {
 						const multiplexability =
 							store.componentPins.getComponentPinMultiplexability(
 								componentPinId,
+								nodePins,
 							);
 						if (multiplexability === "undecidable") {
 							throw new Error("Cannot determine multiplexability");
@@ -174,8 +175,17 @@ export const createComponentEditorStoreCoreSlice: ComponentEditorSliceCreator<
 					const inputValues = new Map<CCComponentPinId, SimulationValue>();
 					const pins = store.componentPins.getManyByComponentId(componentId);
 					for (const pin of pins) {
+						invariant(pin.implementation);
 						if (pin.type === "input") {
-							inputValues.set(pin.id, editorState.getInputValue(pin.id));
+							const nodePin = store.nodePins.get(pin.implementation);
+							invariant(nodePin);
+							const node = store.nodes.get(nodePin.nodeId);
+							invariant(node);
+							const nodePins = store.nodePins.getManyByNodeId(node.id);
+							inputValues.set(
+								pin.id,
+								editorState.getInputValue(pin.id, nodePins),
+							);
 						}
 					}
 					simulationCachedFrames.push(

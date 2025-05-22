@@ -29,6 +29,7 @@ export default function CCComponentEditorRendererNodePin({
 	const componentEditorState = useComponentEditorStore()();
 	const nodePin = nullthrows(store.nodePins.get(nodePinId));
 	const node = nullthrows(store.nodes.get(nodePin.nodeId));
+	const nodePins = store.nodePins.getManyByNodeId(node.id);
 	const componentPin = nullthrows(
 		store.componentPins.get(nodePin.componentPinId),
 	);
@@ -152,7 +153,10 @@ export default function CCComponentEditorRendererNodePin({
 			implementationComponentPin.type === "input"
 		) {
 			nodePinValue = nullthrows(
-				componentEditorState.getInputValue(implementationComponentPin.id),
+				componentEditorState.getInputValue(
+					implementationComponentPin.id,
+					nodePins,
+				),
 			);
 		} else {
 			nodePinValue = nullthrows(
