@@ -34,7 +34,7 @@ function createInput(
 					);
 					const bitWidth = multiplexability.isMultiplexable
 						? 1
-						: multiplexability.getMultiplicity(nodePins);
+						: multiplexability.multiplicity;
 					return Array<boolean>(bitWidth).fill(false);
 				});
 		input[key] = values;
@@ -58,7 +58,7 @@ function createOutputShape(
 		if (multiplexability.isMultiplexable) {
 			return 1;
 		}
-		return multiplexability.getMultiplicity(nodePins);
+		return multiplexability.multiplicity;
 	});
 	const outputShape = multiplicity.map((multiplicity) => ({ multiplicity }));
 	return outputShape;

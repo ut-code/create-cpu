@@ -188,7 +188,10 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 			const node = nullthrows(this.#store.nodes.get(nodeId));
 			const nodePins = this.getManyByNodeId(node.id);
 			const givenPinMultiplexability =
-				this.#store.componentPins.getComponentPinMultiplexability(pinId);
+				this.#store.componentPins.getComponentPinMultiplexability(
+					pinId,
+					nodePins,
+				);
 			if (givenPinMultiplexability === "undecidable") {
 				invariant(
 					userSpecifiedBitWidth,
@@ -196,7 +199,7 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 				);
 				return {
 					isMultiplexable: false,
-					getMultiplicity: () => userSpecifiedBitWidth,
+					multiplicity: userSpecifiedBitWidth,
 				};
 			}
 			if (!givenPinMultiplexability.isMultiplexable) {
@@ -206,6 +209,7 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 				const pinMultiplexability =
 					this.#store.componentPins.getComponentPinMultiplexability(
 						nodePin.componentPinId,
+						nodePins,
 					);
 				if (pinMultiplexability === "undecidable") {
 					throw new Error("unreachable");
