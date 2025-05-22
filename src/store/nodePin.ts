@@ -194,7 +194,10 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 					userSpecifiedBitWidth,
 					"Multiplexability of undecidable pin must be contained in multiplexabilityEnv",
 				);
-				return { isMultiplexable: false, multiplicity: userSpecifiedBitWidth };
+				return {
+					isMultiplexable: false,
+					getMultiplicity: () => userSpecifiedBitWidth,
+				};
 			}
 			if (!givenPinMultiplexability.isMultiplexable) {
 				return givenPinMultiplexability;
