@@ -23,7 +23,7 @@ function createUnaryOperator(
 		evaluate: (input) => {
 			invariant(input.A[0] && !input.A[1]);
 			const A = input.A[0];
-			return A.map((a) => [evaluate(nullthrows(a))]);
+			return [A.map((a) => evaluate(nullthrows(a)))];
 		},
 	});
 }
@@ -47,9 +47,11 @@ function createBinaryOperator(
 			const A = input.A[0];
 			const B = input.B[0];
 			invariant(A.length === B.length);
-			return Array.from({ length: input.A.length }, (_, i) => [
-				evaluate(nullthrows(A[i]), nullthrows(B[i])),
-			]);
+			return [
+				Array.from({ length: A.length }, (_, i) =>
+					evaluate(nullthrows(A[i]), nullthrows(B[i])),
+				),
+			];
 		},
 	});
 }
@@ -123,10 +125,11 @@ export const broadcast = new IntrinsicComponentDefinition({
 	out: { name: "Out", isBitWidthConfigurable: true },
 	evaluate: (input, outputShape) => {
 		invariant(input.In[0] && !input.In[1]);
-		const inputValue = input.In[0];
+		invariant(input.In[0][0] !== undefined && !input.In[0][1]);
+		const inputValue = input.In[0][0];
 		invariant(outputShape[0] && !outputShape[1]);
 		const outputMultiplicity = outputShape[0].multiplicity;
-		return Array.from({ length: outputMultiplicity }, () => inputValue);
+		return [Array.from({ length: outputMultiplicity }, () => inputValue)];
 	},
 });
 
