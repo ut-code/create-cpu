@@ -8,30 +8,34 @@ import { CCConnectionStore } from "../../../../store/connection";
 import type { CCNodePinId } from "../../../../store/nodePin";
 import { useStore } from "../../../../store/react";
 import { useComponentEditorStore } from "../store";
-import type { SimulationValue } from "../store/slices/core";
 import { CCComponentEditorRendererConnectionCore } from "./Connection";
+import CCComponentEditorRendererInputValue from "./InputValue";
 import getCCComponentEditorRendererNodeGeometry from "./Node.geometry";
 
 const NODE_PIN_POSITION_SENSITIVITY = 10;
 
 export type CCComponentEditorRendererNodePinProps = {
 	nodePinId: CCNodePinId;
-	position: Vector2;
 };
 export const CCComponentEditorRendererNodePinConstants = {
 	SIZE: 10,
 };
 export default function CCComponentEditorRendererNodePin({
 	nodePinId,
-	position,
 }: CCComponentEditorRendererNodePinProps) {
 	const { store } = useStore();
 	const componentEditorState = useComponentEditorStore()();
 	const nodePin = nullthrows(store.nodePins.get(nodePinId));
 	const node = nullthrows(store.nodes.get(nodePin.nodeId));
-	const nodePins = store.nodePins.getManyByNodeId(node.id);
 	const componentPin = nullthrows(
 		store.componentPins.get(nodePin.componentPinId),
+	);
+
+	const position = nullthrows(
+		getCCComponentEditorRendererNodeGeometry(
+			store,
+			nodePin.nodeId,
+		).nodePinPositionById.get(nodePinId),
 	);
 
 	const [draggingState, setDraggingState] = useState<{
@@ -133,63 +137,13 @@ export default function CCComponentEditorRendererNodePin({
 	const isSimulationMode = useComponentEditorStore()(
 		(s) => s.editorMode === "play",
 	);
-	const hasNoConnection =
-		store.connections.getConnectionsByNodePinId(nodePinId).length === 0;
-
-	const pinType = componentPin.type;
-	const simulationValueToString = (simulationValue: SimulationValue) => {
-		return simulationValue.reduce(
-			(acm, currentValue) => acm + (currentValue === true ? "1" : "0"),
-			"",
-		);
-	};
-	const implementationComponentPin =
+	const interfaceComponentPin =
 		store.componentPins.getByImplementation(nodePinId);
-	let nodePinValue: SimulationValue;
-	let nodePinValueAsString: string | null = null;
-	if (isSimulationMode && hasNoConnection) {
-		if (
-			implementationComponentPin &&
-			implementationComponentPin.type === "input"
-		) {
-			nodePinValue = nullthrows(
-				componentEditorState.getInputValue(
-					implementationComponentPin.id,
-					nodePins,
-				),
-			);
-		} else {
-			nodePinValue = nullthrows(
-				componentEditorState.getNodePinValue(nodePinId),
-			);
-		}
-		nodePinValueAsString = simulationValueToString(nodePinValue);
-	}
-	const updateInputValue = () => {
-		if (
-			!implementationComponentPin ||
-			implementationComponentPin.type !== "input"
-		)
-			return;
-		const updatedPinValue = [...nodePinValue];
-		updatedPinValue[0] = !updatedPinValue[0];
-		componentEditorState.setInputValue(
-			implementationComponentPin?.id,
-			updatedPinValue,
-		);
-	};
 
 	return (
 		<>
-			{nodePinValueAsString && (
-				<text
-					x={position.x - (pinType === "input" ? 15 : -8)}
-					y={position.y}
-					onPointerDown={updateInputValue}
-					fill={theme.palette.textPrimary}
-				>
-					{nodePinValueAsString}
-				</text>
+			{isSimulationMode && interfaceComponentPin && (
+				<CCComponentEditorRendererInputValue nodePinId={nodePinId} />
 			)}
 			<g {...draggableProps} style={{ cursor: "pointer" }}>
 				<rect
@@ -229,10 +183,10 @@ export default function CCComponentEditorRendererNodePin({
 					{
 						input: CCComponentEditorRendererNodePinConstants.SIZE,
 						output: -CCComponentEditorRendererNodePinConstants.SIZE,
-					}[pinType]
+					}[componentPin.type]
 				}
 				y={position.y}
-				textAnchor={{ input: "start", output: "end" }[pinType]}
+				textAnchor={{ input: "start", output: "end" }[componentPin.type]}
 				dominantBaseline="central"
 				fontSize={12}
 				fill={theme.palette.textPrimary}

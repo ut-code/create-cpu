@@ -8,6 +8,7 @@ export const theme = {
 		textPrimary: "#444444",
 		primary: "#009966",
 		error: "#ff0000",
+		border: "#bbbbbb",
 		editorBackground: "#fafafa",
 		editorGrid: "#dddddd",
 	},

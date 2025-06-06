@@ -15,7 +15,7 @@ import {
 	or,
 	xor,
 } from "./intrinsics/definitions";
-import type { CCNodePin, CCNodePinId } from "./nodePin";
+import type { CCNodePinId } from "./nodePin";
 
 export type CCComponentPin = {
 	readonly id: CCComponentPinId;
@@ -243,7 +243,6 @@ export class CCComponentPinStore extends EventEmitter<CCComponentPinStoreEvents>
 	 */
 	getComponentPinMultiplexability(
 		pinId: CCComponentPinId,
-		nodePins: CCNodePin[],
 	): CCComponentPinMultiplexability {
 		const pin = this.#pins.get(pinId);
 		invariant(pin);
@@ -269,43 +268,45 @@ export class CCComponentPinStore extends EventEmitter<CCComponentPinStoreEvents>
 				return "undecidable";
 			}
 			case nullthrows(aggregate.outputPin.id): {
-				const multiplicity = nodePins
-					.filter((pin) => {
-						const componentPin = this.#store.componentPins.get(
-							pin.componentPinId,
-						);
-						invariant(componentPin);
-						return componentPin.type === "input";
-					})
-					.reduce((acc, pin) => {
-						invariant(pin.userSpecifiedBitWidth);
-						return acc + pin.userSpecifiedBitWidth;
-					}, 0);
-				return {
-					isMultiplexable: false,
-					multiplicity,
-				};
+				// const multiplicity = nodePins
+				// 	.filter((pin) => {
+				// 		const componentPin = this.#store.componentPins.get(
+				// 			pin.componentPinId,
+				// 		);
+				// 		invariant(componentPin);
+				// 		return componentPin.type === "input";
+				// 	})
+				// 	.reduce((acc, pin) => {
+				// 		invariant(pin.userSpecifiedBitWidth);
+				// 		return acc + pin.userSpecifiedBitWidth;
+				// 	}, 0);
+				// return {
+				// 	isMultiplexable: false,
+				// 	multiplicity,
+				// };
+				return "undecidable";
 			}
 			case nullthrows(decompose.outputPin.id): {
 				return "undecidable";
 			}
 			case nullthrows(decompose.inputPin.In.id): {
-				const multiplicity = nodePins
-					.filter((pin) => {
-						const componentPin = this.#store.componentPins.get(
-							pin.componentPinId,
-						);
-						invariant(componentPin);
-						return componentPin.type === "output";
-					})
-					.reduce((acc, pin) => {
-						invariant(pin.userSpecifiedBitWidth);
-						return acc + pin.userSpecifiedBitWidth;
-					}, 0);
-				return {
-					isMultiplexable: false,
-					multiplicity,
-				};
+				// const multiplicity = nodePins
+				// 	.filter((pin) => {
+				// 		const componentPin = this.#store.componentPins.get(
+				// 			pin.componentPinId,
+				// 		);
+				// 		invariant(componentPin);
+				// 		return componentPin.type === "output";
+				// 	})
+				// 	.reduce((acc, pin) => {
+				// 		invariant(pin.userSpecifiedBitWidth);
+				// 		return acc + pin.userSpecifiedBitWidth;
+				// 	}, 0);
+				// return {
+				// 	isMultiplexable: false,
+				// 	multiplicity,
+				// };
+				return "undecidable";
 			}
 			case nullthrows(broadcast.inputPin.In.id): {
 				return { isMultiplexable: false, multiplicity: 1 };

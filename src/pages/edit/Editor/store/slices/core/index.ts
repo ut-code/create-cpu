@@ -5,11 +5,30 @@ import simulateComponent from "../../../../../../store/componentEvaluator";
 import type { CCComponentPinId } from "../../../../../../store/componentPin";
 import type { CCConnectionId } from "../../../../../../store/connection";
 import type { CCNodeId } from "../../../../../../store/node";
-import type { CCNodePin, CCNodePinId } from "../../../../../../store/nodePin";
+import type { CCNodePinId } from "../../../../../../store/nodePin";
 import type { ComponentEditorSliceCreator } from "../../types";
 import type { EditorStoreCoreSlice } from "./types";
 
 export type SimulationValue = boolean[];
+export function stringifySimulationValue(value: SimulationValue): string {
+	const binary = value.map((v) => (v ? "1" : "0")).join("");
+	if (value.length <= 4) return binary;
+	return `0x${Number.parseInt(binary, 2).toString(16)}`;
+}
+export function wrappingIncrementSimulationValue(
+	value: SimulationValue,
+): SimulationValue {
+	const result = value.slice();
+	for (let i = result.length - 1; i >= 0; i--) {
+		if (!result[i]) {
+			result[i] = true;
+			break;
+		}
+		result[i] = false; // carry the increment
+	}
+	return result;
+}
+
 export type SimulationFrame = {
 	componentId: CCComponentId;
 	nodes: Map<
@@ -46,13 +65,12 @@ export const createComponentEditorStoreCoreSlice: ComponentEditorSliceCreator<
 				},
 				/** @private */
 				inputValues: new Map(),
-				getInputValue(componentPinId: CCComponentPinId, nodePins: CCNodePin[]) {
+				getInputValue(componentPinId: CCComponentPinId) {
 					const value = get().inputValues.get(componentPinId);
 					if (!value) {
 						const multiplexability =
 							store.componentPins.getComponentPinMultiplexability(
 								componentPinId,
-								nodePins,
 							);
 						if (multiplexability === "undecidable") {
 							throw new Error("Cannot determine multiplexability");
@@ -88,11 +106,8 @@ export const createComponentEditorStoreCoreSlice: ComponentEditorSliceCreator<
 				setEditorMode(mode) {
 					set((state) => ({ ...state, editorMode: mode }));
 				},
-				resetTimeStep() {
-					set((state) => ({ ...state, timeStep: 0 }));
-				},
-				incrementTimeStep() {
-					set((state) => ({ ...state, timeStep: state.timeStep + 1 }));
+				setTimeStep(timeStep: number) {
+					set((state) => ({ ...state, timeStep }));
 				},
 				selectNode(ids: CCNodeId[], exclusive: boolean) {
 					set((state) => ({
@@ -152,6 +167,10 @@ export const createComponentEditorStoreCoreSlice: ComponentEditorSliceCreator<
 						.getMany()
 						.map((node) => node.id)
 						.join() +
+					store.nodePins
+						.getMany()
+						.map((nodePin) => nodePin.userSpecifiedBitWidth || 0)
+						.join(",") +
 					store.connections
 						.getMany()
 						.map((connection) => connection.id)
@@ -177,15 +196,7 @@ export const createComponentEditorStoreCoreSlice: ComponentEditorSliceCreator<
 					for (const pin of pins) {
 						invariant(pin.implementation);
 						if (pin.type === "input") {
-							const nodePin = store.nodePins.get(pin.implementation);
-							invariant(nodePin);
-							const node = store.nodes.get(nodePin.nodeId);
-							invariant(node);
-							const nodePins = store.nodePins.getManyByNodeId(node.id);
-							inputValues.set(
-								pin.id,
-								editorState.getInputValue(pin.id, nodePins),
-							);
+							inputValues.set(pin.id, editorState.getInputValue(pin.id));
 						}
 					}
 					simulationCachedFrames.push(

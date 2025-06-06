@@ -93,18 +93,12 @@ const CCComponentEditorRendererNode = ensureStoreItem(
 						rx={2}
 					/>
 				</g>
-				{store.nodePins.getManyByNodeId(nodeId).map((nodePin) => {
-					const position = nullthrows(
-						geometry.nodePinPositionById.get(nodePin.id),
-					);
-					return (
-						<CCComponentEditorRendererNodePin
-							key={nodePin.id}
-							nodePinId={nodePin.id}
-							position={position}
-						/>
-					);
-				})}
+				{store.nodePins.getManyByNodeId(nodeId).map((nodePin) => (
+					<CCComponentEditorRendererNodePin
+						key={nodePin.id}
+						nodePinId={nodePin.id}
+					/>
+				))}
 			</>
 		);
 	},

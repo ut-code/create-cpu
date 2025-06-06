@@ -3,7 +3,7 @@ import type { Vector2 } from "../../../../../../common/vector2";
 import type { CCComponentPinId } from "../../../../../../store/componentPin";
 import type { CCConnectionId } from "../../../../../../store/connection";
 import type { CCNodeId } from "../../../../../../store/node";
-import type { CCNodePin, CCNodePinId } from "../../../../../../store/nodePin";
+import type { CCNodePinId } from "../../../../../../store/nodePin";
 
 export type EditorMode = EditorModeEdit | EditorModePlay;
 export type EditorModeEdit = "edit";
@@ -30,14 +30,10 @@ export type EditorStoreCoreSlice = {
 		target: NodePinPropertyEditorTarget | null,
 	): void;
 	inputValues: Map<InputValueKey, SimulationValue>;
-	getInputValue(
-		componentPinId: CCComponentPinId,
-		nodePins: CCNodePin[],
-	): SimulationValue;
+	getInputValue(componentPinId: CCComponentPinId): SimulationValue;
 	setInputValue(componentPinId: CCComponentPinId, value: SimulationValue): void;
 	setEditorMode(mode: EditorMode): void;
-	resetTimeStep(): void;
-	incrementTimeStep(): void;
+	setTimeStep(timeStep: number): void;
 	selectNode(ids: CCNodeId[], exclusive: boolean): void;
 	unselectNode(ids: CCNodeId[]): void;
 	selectConnection(ids: CCConnectionId[], exclusive: boolean): void;

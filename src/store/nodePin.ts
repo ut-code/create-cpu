@@ -5,6 +5,7 @@ import type { Opaque } from "type-fest";
 import type CCStore from ".";
 import type { CCComponentPinId, CCPinMultiplexability } from "./componentPin";
 import { IntrinsicComponentDefinition } from "./intrinsics/base";
+import { aggregate, broadcast, decompose } from "./intrinsics/definitions";
 import type { CCNodeId } from "./node";
 
 export type CCNodePinId = Opaque<string, "CCNodePinId">;
@@ -176,51 +177,98 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 	 */
 	getNodePinMultiplexability(nodePinId: CCNodePinId): CCPinMultiplexability {
 		const traverseNodePinMultiplexability = (
-			nodePinId_: CCNodePinId,
+			targetNodePinId: CCNodePinId,
 			seen: Set<CCNodeId>,
 		): CCPinMultiplexability => {
 			const {
-				nodeId,
-				componentPinId: pinId,
+				nodeId: targetNodeId,
+				componentPinId: targetComponentPinId,
 				userSpecifiedBitWidth,
-			} = nullthrows(this.get(nodePinId_));
-			seen.add(nodeId);
-			const node = nullthrows(this.#store.nodes.get(nodeId));
-			const nodePins = this.getManyByNodeId(node.id);
+			} = nullthrows(this.get(targetNodePinId));
+
+			seen.add(targetNodeId);
+			const targetNode = nullthrows(this.#store.nodes.get(targetNodeId));
+			const targetNodePins = this.getManyByNodeId(targetNode.id);
 			const givenPinMultiplexability =
 				this.#store.componentPins.getComponentPinMultiplexability(
-					pinId,
-					nodePins,
+					targetComponentPinId,
 				);
 			if (givenPinMultiplexability === "undecidable") {
-				invariant(
-					userSpecifiedBitWidth,
-					"Multiplexability of undecidable pin must be contained in multiplexabilityEnv",
-				);
-				return {
-					isMultiplexable: false,
-					multiplicity: userSpecifiedBitWidth,
-				};
+				const componentPin =
+					this.#store.componentPins.get(targetComponentPinId);
+				invariant(componentPin);
+				switch (componentPin.id) {
+					case nullthrows(aggregate.inputPin.In.id):
+					case nullthrows(broadcast.outputPin.id):
+					case nullthrows(decompose.outputPin.id):
+						invariant(
+							userSpecifiedBitWidth,
+							"aggregate inputPin, broadcast outputPin, or decompose outputPin must have a userSpecifiedBitWidth",
+						);
+						return {
+							isMultiplexable: false,
+							multiplicity: userSpecifiedBitWidth,
+						};
+					case nullthrows(aggregate.outputPin.id): {
+						const multiplicity = targetNodePins
+							.filter((pin) => {
+								const componentPin = this.#store.componentPins.get(
+									pin.componentPinId,
+								);
+								invariant(componentPin);
+								return componentPin.type === "input";
+							})
+							.reduce((acc, pin) => {
+								invariant(pin.userSpecifiedBitWidth);
+								return acc + pin.userSpecifiedBitWidth;
+							}, 0);
+						return {
+							isMultiplexable: false,
+							multiplicity,
+						};
+					}
+					case nullthrows(decompose.inputPin.In.id): {
+						const multiplicity = targetNodePins
+							.filter((pin) => {
+								const componentPin = this.#store.componentPins.get(
+									pin.componentPinId,
+								);
+								invariant(componentPin);
+								return componentPin.type === "output";
+							})
+							.reduce((acc, pin) => {
+								invariant(pin.userSpecifiedBitWidth);
+								return acc + pin.userSpecifiedBitWidth;
+							}, 0);
+						return {
+							isMultiplexable: false,
+							multiplicity,
+						};
+					}
+					default:
+						throw new Error(
+							`Multiplexability of ${componentPin.id} is undecidable`,
+						);
+				}
 			}
 			if (!givenPinMultiplexability.isMultiplexable) {
 				return givenPinMultiplexability;
 			}
-			for (const nodePin of nodePins) {
+			for (const targetNodePin of targetNodePins) {
 				const pinMultiplexability =
 					this.#store.componentPins.getComponentPinMultiplexability(
-						nodePin.componentPinId,
-						nodePins,
+						targetNodePin.componentPinId,
 					);
 				if (pinMultiplexability === "undecidable") {
 					throw new Error("unreachable");
 				}
 				if (pinMultiplexability.isMultiplexable) {
 					const connections = nullthrows(
-						this.#store.connections.getConnectionsByNodePinId(nodePinId),
+						this.#store.connections.getConnectionsByNodePinId(targetNodePin.id),
 					);
 					for (const connection of connections) {
 						const componentPin = nullthrows(
-							this.#store.componentPins.get(nodePin.componentPinId),
+							this.#store.componentPins.get(targetNodePin.componentPinId),
 						);
 						const connectedNodePinId =
 							componentPin.type === "input" ? connection.from : connection.to;
