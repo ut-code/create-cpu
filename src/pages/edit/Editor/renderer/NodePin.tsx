@@ -126,7 +126,7 @@ export default function CCComponentEditorRendererNodePin({
 			setDraggingState(null);
 		},
 		onClick: () => {
-			if (nodePin.userSpecifiedBitWidth === null) return;
+			if (nodePin.manualBitWidth === null) return;
 			componentEditorState.setNodePinPropertyEditorTarget({
 				componentPinId: nodePin.componentPinId,
 				nodeId: nodePin.nodeId,
@@ -156,24 +156,24 @@ export default function CCComponentEditorRendererNodePin({
 					stroke={theme.palette.textPrimary}
 					strokeWidth={2}
 				/>
-				{nodePin.userSpecifiedBitWidth !== null && (
+				{nodePin.manualBitWidth !== null && (
 					<text
 						x={position.x}
 						y={position.y}
 						textAnchor="middle"
 						dominantBaseline="central"
 						fontSize={
-							nodePin.userSpecifiedBitWidth >= 100
+							nodePin.manualBitWidth >= 100
 								? 4
-								: nodePin.userSpecifiedBitWidth >= 10
+								: nodePin.manualBitWidth >= 10
 									? 6
 									: 8
 						}
 						fill={theme.palette.textPrimary}
 					>
-						{nodePin.userSpecifiedBitWidth >= 100
+						{nodePin.manualBitWidth >= 100
 							? "99+"
-							: nodePin.userSpecifiedBitWidth}
+							: nodePin.manualBitWidth}
 					</text>
 				)}
 			</g>

@@ -32,30 +32,16 @@ export const ccPinTypes: CCComponentPinType[] = ["input", "output"];
 
 /** null for intrinsic components */
 export type CCPinImplementation = CCNodePinId | null;
-// | CCPinUserImplementation
-// | CCPinIntrinsicImplementation;
 
-// export type CCPinUserImplementation = {
-//   readonly type: "user";
-//   readonly nodeId: CCNodeId;
-//   readonly pinId: CCComponentPinId;
-// };
+export type CCNodePinBitWidthStatus =
+	| { isFixed: false }
+	| { isFixed: true; bitWidth: number };
 
-// export type CCPinIntrinsicImplementation = {
-//   readonly type: "intrinsic";
-// };
+export type CCComponentPinBitWidthStatus =
+	| { isFixed: false; fixMode: "automatic" | "manual" }
+	| { isFixed: true; bitWidth: number };
 
-export type CCPinMultiplexability =
-	| { isMultiplexable: true }
-	| {
-			isMultiplexable: false;
-			multiplicity: number;
-	  };
-// | { isMultiplexable: false; multiplicity: number };
-
-export type CCComponentPinMultiplexability =
-	| CCPinMultiplexability
-	| "undecidable";
+export type CCNodePinFixedBitWidth = number;
 
 export type CCComponentPinStoreEvents = {
 	didRegister(pin: CCComponentPin): void;
@@ -237,13 +223,13 @@ export class CCComponentPinStore extends EventEmitter<CCComponentPinStoreEvents>
 	}
 
 	/**
-	 * Get the multiplexability of a component pin
+	 * Get the bit width status of a component pin
 	 * @param pinId id of pin
-	 * @returns multiplexability of the pin
+	 * @returns bit width status of the pin
 	 */
-	getComponentPinMultiplexability(
+	getComponentPinBitWidthStatus(
 		pinId: CCComponentPinId,
-	): CCComponentPinMultiplexability {
+	): CCComponentPinBitWidthStatus {
 		const pin = this.#pins.get(pinId);
 		invariant(pin);
 		switch (pin.id) {
@@ -262,65 +248,38 @@ export class CCComponentPinStore extends EventEmitter<CCComponentPinStoreEvents>
 			case nullthrows(input.outputPin.id):
 			case nullthrows(flipflop.inputPin.In.id):
 			case nullthrows(flipflop.outputPin.id): {
-				return { isMultiplexable: true };
+				return { isFixed: false, fixMode: "automatic" };
 			}
 			case nullthrows(aggregate.inputPin.In.id): {
-				return "undecidable";
+				return { isFixed: false, fixMode: "manual" };
 			}
 			case nullthrows(aggregate.outputPin.id): {
-				// const multiplicity = nodePins
-				// 	.filter((pin) => {
-				// 		const componentPin = this.#store.componentPins.get(
-				// 			pin.componentPinId,
-				// 		);
-				// 		invariant(componentPin);
-				// 		return componentPin.type === "input";
-				// 	})
-				// 	.reduce((acc, pin) => {
-				// 		invariant(pin.userSpecifiedBitWidth);
-				// 		return acc + pin.userSpecifiedBitWidth;
-				// 	}, 0);
-				// return {
-				// 	isMultiplexable: false,
-				// 	multiplicity,
-				// };
-				return "undecidable";
+				return { isFixed: false, fixMode: "manual" };
 			}
 			case nullthrows(decompose.outputPin.id): {
-				return "undecidable";
+				return { isFixed: false, fixMode: "manual" };
 			}
 			case nullthrows(decompose.inputPin.In.id): {
-				// const multiplicity = nodePins
-				// 	.filter((pin) => {
-				// 		const componentPin = this.#store.componentPins.get(
-				// 			pin.componentPinId,
-				// 		);
-				// 		invariant(componentPin);
-				// 		return componentPin.type === "output";
-				// 	})
-				// 	.reduce((acc, pin) => {
-				// 		invariant(pin.userSpecifiedBitWidth);
-				// 		return acc + pin.userSpecifiedBitWidth;
-				// 	}, 0);
-				// return {
-				// 	isMultiplexable: false,
-				// 	multiplicity,
-				// };
-				return "undecidable";
+				return { isFixed: false, fixMode: "manual" };
 			}
 			case nullthrows(broadcast.inputPin.In.id): {
-				return { isMultiplexable: false, multiplicity: 1 };
+				return { isFixed: true, bitWidth: 1 };
 			}
 			case nullthrows(broadcast.outputPin.id): {
-				return "undecidable";
+				return { isFixed: false, fixMode: "manual" };
 			}
 			default: {
 				if (pin.implementation === null) {
 					throw new Error("unreachable");
 				}
-				return this.#store.nodePins.getNodePinMultiplexability(
+				const bitWidthStatus = this.#store.nodePins.getNodePinBitWidthStatus(
 					pin.implementation,
 				);
+				if (bitWidthStatus.isFixed) {
+					return bitWidthStatus;
+				} else {
+					return { isFixed: false, fixMode: "automatic" };
+				}
 			}
 		}
 	}

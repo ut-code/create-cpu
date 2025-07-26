@@ -5,17 +5,33 @@ import { useStore } from "../../../../store/react";
 import ensureStoreItem from "../../../../store/react/error";
 import { useNode } from "../../../../store/react/selectors";
 import getCCComponentEditorRendererNodeGeometry from "./Node.geometry";
+import { useComponentEditorStore } from "../store";
 
 export type CCComponentEditorRendererConnectionCoreProps = {
 	from: { x: number; y: number };
 	to: { x: number; y: number };
+	connectionId?: CCConnectionId;
 };
 export function CCComponentEditorRendererConnectionCore({
 	from,
 	to,
+	connectionId,
 }: CCComponentEditorRendererConnectionCoreProps) {
 	const straightGap = 10;
 	const direction = from.x < to.x ? 1 : -1;
+
+	const componentEditorState = useComponentEditorStore()();
+
+
+	const handleClick = (e: React.MouseEvent) => {
+		if (!connectionId) {
+			return;
+		}
+		componentEditorState.selectConnection(
+			[connectionId],
+			!e.shiftKey
+		)
+	}
 
 	return (
 		<path
@@ -32,9 +48,22 @@ export function CCComponentEditorRendererConnectionCore({
 				].join(" ")}`,
 				`h ${straightGap * direction}`,
 			].join(" ")}
-			stroke={theme.palette.textPrimary}
+			stroke={connectionId && componentEditorState.selectedConnectionIds.has(connectionId) ? theme.palette.primary: theme.palette.textPrimary}
 			strokeWidth="2"
 			fill="none"
+			onClick={handleClick}
+			onContextMenu={(e) => {
+				if (!connectionId) {
+					return;
+				}
+				e.preventDefault();
+				e.stopPropagation();
+				componentEditorState.selectConnection(
+					[connectionId],
+					true
+				);
+				componentEditorState.openContextMenu(e);
+			}}
 		/>
 	);
 }
@@ -70,6 +99,7 @@ const CCComponentEditorRendererConnection = ensureStoreItem(
 			<CCComponentEditorRendererConnectionCore
 				from={fromNodePinPosition}
 				to={toNodePinPosition}
+				connectionId={connectionId}
 			/>
 		);
 	},

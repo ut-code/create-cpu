@@ -68,20 +68,20 @@ export const createComponentEditorStoreCoreSlice: ComponentEditorSliceCreator<
 				getInputValue(componentPinId: CCComponentPinId) {
 					const value = get().inputValues.get(componentPinId);
 					if (!value) {
-						const multiplexability =
-							store.componentPins.getComponentPinMultiplexability(
+						const bitWidthStatus =
+							store.componentPins.getComponentPinBitWidthStatus(
 								componentPinId,
 							);
-						if (multiplexability === "undecidable") {
-							throw new Error("Cannot determine multiplexability");
-						}
-						if (multiplexability.isMultiplexable) {
-							const newValue = [false];
+						if (bitWidthStatus.isFixed) {
+							const newValue = new Array(bitWidthStatus.bitWidth).fill(
+								false,
+							);
 							return newValue;
 						}
-						const newValue = new Array(multiplexability.multiplicity).fill(
-							false,
-						);
+						if (bitWidthStatus.fixMode === "manual") {
+							throw new Error("Cannot determine bit width");
+						}
+						const newValue = [false];
 						return newValue;
 					}
 					return value;
@@ -169,7 +169,7 @@ export const createComponentEditorStoreCoreSlice: ComponentEditorSliceCreator<
 						.join() +
 					store.nodePins
 						.getMany()
-						.map((nodePin) => nodePin.userSpecifiedBitWidth || 0)
+						.map((nodePin) => nodePin.id + "_" + (nodePin.manualBitWidth || 0))
 						.join(",") +
 					store.connections
 						.getMany()

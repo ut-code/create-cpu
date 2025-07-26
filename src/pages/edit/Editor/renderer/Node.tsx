@@ -28,7 +28,9 @@ const CCComponentEditorRendererNode = ensureStoreItem(
 		);
 
 		const handlePointerDown = (e: React.PointerEvent) => {
-			componentEditorState.selectNode([nodeId], true);
+			if (e.button === 0) {
+				componentEditorState.selectNode([nodeId], !e.shiftKey);
+			}
 			setDragStartPosition(vector2.fromDomEvent(e.nativeEvent));
 			setPreviousNodePosition(node.position);
 			setDragging(true);
@@ -65,7 +67,10 @@ const CCComponentEditorRendererNode = ensureStoreItem(
 					onPointerUp={handlePointerUp}
 					onContextMenu={(e) => {
 						e.preventDefault();
-						componentEditorState.selectNode([nodeId], true);
+						const selectedNodeIds = componentEditorState.selectedNodeIds;
+						if (!selectedNodeIds.has(nodeId)) {
+							componentEditorState.selectNode([nodeId], true);
+						}
 						componentEditorState.openContextMenu(e);
 					}}
 				>

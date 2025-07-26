@@ -1,6 +1,5 @@
 import EventEmitter from "eventemitter3";
 import nullthrows from "nullthrows";
-import invariant from "tiny-invariant";
 import type { Opaque } from "type-fest";
 import type CCStore from ".";
 import type { CCComponentId } from "./component";
@@ -67,14 +66,15 @@ export class CCConnectionStore extends EventEmitter<CCConnectionStoreEvents> {
 	 * @param connection connection to be registered
 	 */
 	register(connection: CCConnection): void {
-		const fromNodeId = nullthrows(
-			this.#store.nodePins.get(connection.from),
-		).nodeId;
-		const toNodeId = nullthrows(this.#store.nodePins.get(connection.to)).nodeId;
-		const fromNode = this.#store.nodes.get(fromNodeId);
-		const toNode = this.#store.nodes.get(toNodeId);
-		invariant(fromNode && toNode);
-		invariant(fromNode.parentComponentId === toNode.parentComponentId);
+		const fromNodePinId = connection.from;
+		const toNodePinId = connection.to;
+		if (!this.#store.nodePins.isConnectable(fromNodePinId, toNodePinId)) {
+			window.alert(
+				`Cannot connect pins: ${fromNodePinId} and ${toNodePinId
+				}`
+			);
+			return;
+		}
 		this.#connections.set(connection.id, connection);
 		this.emit("didRegister", connection);
 	}
@@ -110,18 +110,18 @@ export class CCConnectionStore extends EventEmitter<CCConnectionStoreEvents> {
 	 * @returns map of id and connection (read only)
 	 */
 	getConnectionIdsByParentComponentId(
-		parentComponentId: CCComponentId,
+		parentComponentId: CCComponentId
 	): CCConnectionId[] {
 		return [...this.#connections.values()]
 			.filter(
-				(connection) => connection.parentComponentId === parentComponentId,
+				(connection) => connection.parentComponentId === parentComponentId
 			)
 			.map((connection) => connection.id);
 	}
 
 	getManyByParentComponentId(parentComponentId: CCComponentId): CCConnection[] {
 		return [...this.#connections.values()].filter(
-			(connection) => connection.parentComponentId === parentComponentId,
+			(connection) => connection.parentComponentId === parentComponentId
 		);
 	}
 
@@ -134,7 +134,7 @@ export class CCConnectionStore extends EventEmitter<CCConnectionStoreEvents> {
 	getConnectionsByNodePinId(nodePinId: CCNodePinId): CCConnection[] {
 		return [...this.#connections.values()].filter(
 			(connection) =>
-				connection.from === nodePinId || connection.to === nodePinId,
+				connection.from === nodePinId || connection.to === nodePinId
 		);
 	}
 

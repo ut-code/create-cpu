@@ -1,9 +1,20 @@
 import {
 	Add as AddIcon,
-	FileOpen as FileOpenIcon,
-	Save as SaveIcon,
+	Upload as UploadIcon,
+	Download as DownloadIcon,
+	MoreVert,
 } from "@mui/icons-material";
-import { Box, Button, Container, Typography } from "@mui/material";
+import {
+	Box,
+	Button,
+	Card,
+	CardActionArea,
+	Container,
+	IconButton,
+	Menu,
+	MenuItem,
+	Typography,
+} from "@mui/material";
 import { useRef, useState } from "react";
 import { ComponentPropertyDialog } from "../../components/ComponentPropertyDialog";
 import type { CCStorePropsFromJson } from "../../store";
@@ -18,7 +29,7 @@ export type HomePageProps = {
 export default function HomePage({ onComponentSelected }: HomePageProps) {
 	const { store, resetStore } = useStore();
 	const components = useComponents().filter(
-		(component) => !component.intrinsicType,
+		(component) => !component.intrinsicType
 	);
 	const downloadStore = () => {
 		const storeJSON = store.toJSON();
@@ -50,9 +61,14 @@ export default function HomePage({ onComponentSelected }: HomePageProps) {
 	const [isComponentPropertyDialogOpen, setIsComponentPropertyDialogOpen] =
 		useState(false);
 
+	const [componentMenuState, setComponentMenuState] = useState<{
+		componentId: CCComponentId;
+		anchorEl: HTMLElement | null;
+	} | null>(null);
+
 	return (
 		<div style={{ overflowY: "auto" }}>
-			<Container sx={{ px: 2, py: 6 }} maxWidth="sm">
+			<Container sx={{ px: 2, py: 6 }} maxWidth="md">
 				<Typography variant="h2" typography="h4" gutterBottom>
 					File
 				</Typography>
@@ -61,9 +77,9 @@ export default function HomePage({ onComponentSelected }: HomePageProps) {
 						variant="outlined"
 						color="inherit"
 						onClick={downloadStore}
-						startIcon={<SaveIcon />}
+						startIcon={<DownloadIcon />}
 					>
-						Save
+						Export
 					</Button>
 					<input
 						ref={inputRef}
@@ -75,9 +91,9 @@ export default function HomePage({ onComponentSelected }: HomePageProps) {
 						variant="outlined"
 						color="inherit"
 						onClick={() => inputRef.current?.click()}
-						startIcon={<FileOpenIcon />}
+						startIcon={<UploadIcon />}
 					>
-						Load
+						Import
 					</Button>
 				</Box>
 				<Box sx={{ display: "flex", alignItems: "center", mt: 4 }}>
@@ -92,7 +108,6 @@ export default function HomePage({ onComponentSelected }: HomePageProps) {
 					<div>
 						<Button
 							variant="outlined"
-							color="inherit"
 							onClick={() => setIsComponentPropertyDialogOpen(true)}
 							startIcon={<AddIcon />}
 						>
@@ -103,30 +118,80 @@ export default function HomePage({ onComponentSelected }: HomePageProps) {
 				<Box
 					sx={{
 						display: "grid",
-						gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))",
-						gridAutoRows: "60px",
+						gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))",
 						mt: 2,
 						gap: 2,
 					}}
 				>
 					{components.map((component) => (
-						<Button
+						<Card
 							key={component.id}
 							variant="outlined"
-							sx={{
-								display: "block",
-								typography: "h6",
-								alignItems: "center",
-								textTransform: "none",
-								textAlign: "start",
-							}}
-							color="inherit"
-							onClick={() => onComponentSelected(component.id)}
+							sx={{ position: "relative" }}
 						>
-							{component.name}
-						</Button>
+							<CardActionArea
+								sx={{
+									display: "flex",
+									flexDirection: "column",
+									alignItems: "flex-start",
+									justifyContent: "flex-start",
+									height: "100%",
+									p: 2,
+								}}
+								onClick={() => onComponentSelected(component.id)}
+							>
+								<Typography variant="h6">{component.name}</Typography>
+								<Typography variant="body2" color="text.secondary">
+									{store.nodes.getManyByParentComponentId(component.id).length}{" "}
+									nodes
+								</Typography>
+							</CardActionArea>
+							<IconButton
+								sx={{
+									position: "absolute",
+									top: (theme) => theme.spacing(1),
+									right: (theme) => theme.spacing(1),
+								}}
+								onClick={(e) => {
+									setComponentMenuState({
+										componentId: component.id,
+										anchorEl: e.currentTarget,
+									});
+								}}
+							>
+								<MoreVert />
+							</IconButton>
+						</Card>
 					))}
 				</Box>
+				{componentMenuState && (
+					<Menu
+						anchorEl={componentMenuState.anchorEl}
+						open
+						onClose={() => setComponentMenuState(null)}
+						anchorOrigin={{
+							vertical: "bottom",
+							horizontal: "left",
+						}}
+					>
+						<MenuItem
+							onClick={() => {
+								setIsComponentPropertyDialogOpen(true);
+								setComponentMenuState(null);
+							}}
+						>
+							Rename
+						</MenuItem>
+						<MenuItem
+							onClick={() => {
+								store.components.unregister(componentMenuState.componentId);
+								setComponentMenuState(null);
+							}}
+						>
+							Delete
+						</MenuItem>
+					</Menu>
+				)}
 				{isComponentPropertyDialogOpen && (
 					<ComponentPropertyDialog
 						defaultName=""

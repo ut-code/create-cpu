@@ -108,9 +108,9 @@ export const decompose = new IntrinsicComponentDefinition({
 		let currentIndex = 0;
 		for (const shape of outputShape) {
 			outputValue.push([
-				...inputValue.slice(currentIndex, currentIndex + shape.multiplicity),
+				...inputValue.slice(currentIndex, currentIndex + shape.bitWidth),
 			]);
-			currentIndex += shape.multiplicity;
+			currentIndex += shape.bitWidth;
 		}
 		return outputValue;
 	},
@@ -128,8 +128,8 @@ export const broadcast = new IntrinsicComponentDefinition({
 		invariant(input.In[0][0] !== undefined && !input.In[0][1]);
 		const inputValue = input.In[0][0];
 		invariant(outputShape[0] && !outputShape[1]);
-		const outputMultiplicity = outputShape[0].multiplicity;
-		return [Array.from({ length: outputMultiplicity }, () => inputValue)];
+		const outputBitWidth = outputShape[0].bitWidth;
+		return [Array.from({ length: outputBitWidth }, () => inputValue)];
 	},
 });
 

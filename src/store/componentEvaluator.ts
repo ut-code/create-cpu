@@ -29,12 +29,12 @@ function createInput(
 					nullthrows(inputValues.get(nodePin.id)),
 				)
 			: targetNodePins.map((nodePin: CCNodePin) => {
-					const multiplexability = store.nodePins.getNodePinMultiplexability(
+					const bitWidthStatus = store.nodePins.getNodePinBitWidthStatus(
 						nodePin.id,
 					);
-					const bitWidth = multiplexability.isMultiplexable
+					const bitWidth = !bitWidthStatus.isFixed
 						? 1
-						: multiplexability.multiplicity;
+						: bitWidthStatus.bitWidth;
 					return Array<boolean>(bitWidth).fill(false);
 				});
 		input[key] = values;
@@ -46,21 +46,21 @@ function createOutputShape(
 	store: CCStore,
 	nodePins: CCNodePin[],
 	outputPin: CCComponentPin,
-): { multiplicity: number }[] {
+): { bitWidth: number }[] {
 	const targetNodePins = nodePins.filter(
 		(nodePin: CCNodePin) => outputPin.id === nodePin.componentPinId,
 	);
 	targetNodePins.sort((a, b) => a.order - b.order);
-	const multiplicity = targetNodePins.map((nodePin: CCNodePin) => {
-		const multiplexability = store.nodePins.getNodePinMultiplexability(
+	const bitWidth = targetNodePins.map((nodePin: CCNodePin) => {
+		const bitWidthStatus = store.nodePins.getNodePinBitWidthStatus(
 			nodePin.id,
 		);
-		if (multiplexability.isMultiplexable) {
+		if (!bitWidthStatus.isFixed) {
 			return 1;
 		}
-		return multiplexability.multiplicity;
+		return bitWidthStatus.bitWidth;
 	});
-	const outputShape = multiplicity.map((multiplicity) => ({ multiplicity }));
+	const outputShape = bitWidth.map((bitWidth) => ({ bitWidth }));
 	return outputShape;
 }
 
