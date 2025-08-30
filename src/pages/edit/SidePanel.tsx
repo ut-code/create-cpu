@@ -71,7 +71,6 @@ function ComponentRenderer({ componentId }: { componentId: CCComponentId }) {
 									}}
 								>
 									<div
-										aria-label="Pin"
 										style={{
 											width: "10px",
 											height: "10px",
@@ -80,7 +79,7 @@ function ComponentRenderer({ componentId }: { componentId: CCComponentId }) {
 											background: theme.palette.white,
 										}}
 									/>
-									<div aria-label="Pin name">{pin.name}</div>
+									<div>{pin.name}</div>
 								</div>
 							))}
 					</div>

@@ -69,13 +69,9 @@ export const createComponentEditorStoreCoreSlice: ComponentEditorSliceCreator<
 					const value = get().inputValues.get(componentPinId);
 					if (!value) {
 						const bitWidthStatus =
-							store.componentPins.getComponentPinBitWidthStatus(
-								componentPinId,
-							);
+							store.componentPins.getComponentPinBitWidthStatus(componentPinId);
 						if (bitWidthStatus.isFixed) {
-							const newValue = new Array(bitWidthStatus.bitWidth).fill(
-								false,
-							);
+							const newValue = new Array(bitWidthStatus.bitWidth).fill(false);
 							return newValue;
 						}
 						if (bitWidthStatus.fixMode === "manual") {
@@ -169,7 +165,7 @@ export const createComponentEditorStoreCoreSlice: ComponentEditorSliceCreator<
 						.join() +
 					store.nodePins
 						.getMany()
-						.map((nodePin) => nodePin.id + "_" + (nodePin.manualBitWidth || 0))
+						.map((nodePin) => `${nodePin.id}_${nodePin.manualBitWidth || 0}`)
 						.join(",") +
 					store.connections
 						.getMany()

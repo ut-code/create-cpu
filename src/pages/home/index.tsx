@@ -1,8 +1,8 @@
 import {
 	Add as AddIcon,
-	Upload as UploadIcon,
 	Download as DownloadIcon,
 	MoreVert,
+	Upload as UploadIcon,
 } from "@mui/icons-material";
 import {
 	Box,
@@ -29,7 +29,7 @@ export type HomePageProps = {
 export default function HomePage({ onComponentSelected }: HomePageProps) {
 	const { store, resetStore } = useStore();
 	const components = useComponents().filter(
-		(component) => !component.intrinsicType
+		(component) => !component.intrinsicType,
 	);
 	const downloadStore = () => {
 		const storeJSON = store.toJSON();

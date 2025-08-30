@@ -69,10 +69,7 @@ export class CCConnectionStore extends EventEmitter<CCConnectionStoreEvents> {
 		const fromNodePinId = connection.from;
 		const toNodePinId = connection.to;
 		if (!this.#store.nodePins.isConnectable(fromNodePinId, toNodePinId)) {
-			window.alert(
-				`Cannot connect pins: ${fromNodePinId} and ${toNodePinId
-				}`
-			);
+			window.alert(`Cannot connect pins: ${fromNodePinId} and ${toNodePinId}`);
 			return;
 		}
 		this.#connections.set(connection.id, connection);
@@ -110,18 +107,18 @@ export class CCConnectionStore extends EventEmitter<CCConnectionStoreEvents> {
 	 * @returns map of id and connection (read only)
 	 */
 	getConnectionIdsByParentComponentId(
-		parentComponentId: CCComponentId
+		parentComponentId: CCComponentId,
 	): CCConnectionId[] {
 		return [...this.#connections.values()]
 			.filter(
-				(connection) => connection.parentComponentId === parentComponentId
+				(connection) => connection.parentComponentId === parentComponentId,
 			)
 			.map((connection) => connection.id);
 	}
 
 	getManyByParentComponentId(parentComponentId: CCComponentId): CCConnection[] {
 		return [...this.#connections.values()].filter(
-			(connection) => connection.parentComponentId === parentComponentId
+			(connection) => connection.parentComponentId === parentComponentId,
 		);
 	}
 
@@ -134,7 +131,7 @@ export class CCConnectionStore extends EventEmitter<CCConnectionStoreEvents> {
 	getConnectionsByNodePinId(nodePinId: CCNodePinId): CCConnection[] {
 		return [...this.#connections.values()].filter(
 			(connection) =>
-				connection.from === nodePinId || connection.to === nodePinId
+				connection.from === nodePinId || connection.to === nodePinId,
 		);
 	}
 

@@ -171,9 +171,7 @@ export default function CCComponentEditorRendererNodePin({
 						}
 						fill={theme.palette.textPrimary}
 					>
-						{nodePin.manualBitWidth >= 100
-							? "99+"
-							: nodePin.manualBitWidth}
+						{nodePin.manualBitWidth >= 100 ? "99+" : nodePin.manualBitWidth}
 					</text>
 				)}
 			</g>
@@ -186,7 +184,9 @@ export default function CCComponentEditorRendererNodePin({
 					}[componentPin.type]
 				}
 				y={position.y}
-				textAnchor={{ input: "start", output: "end" }[componentPin.type]}
+				textAnchor={
+					{ input: "start" as const, output: "end" as const }[componentPin.type]
+				}
 				dominantBaseline="central"
 				fontSize={12}
 				fill={theme.palette.textPrimary}

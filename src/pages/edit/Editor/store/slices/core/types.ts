@@ -1,9 +1,9 @@
-import type { SimulationValue } from ".";
 import type { Vector2 } from "../../../../../../common/vector2";
 import type { CCComponentPinId } from "../../../../../../store/componentPin";
 import type { CCConnectionId } from "../../../../../../store/connection";
 import type { CCNodeId } from "../../../../../../store/node";
 import type { CCNodePinId } from "../../../../../../store/nodePin";
+import type { SimulationValue } from ".";
 
 export type EditorMode = EditorModeEdit | EditorModePlay;
 export type EditorModeEdit = "edit";

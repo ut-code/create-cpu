@@ -6,6 +6,7 @@ export default function CCComponentEditorRendererBackground() {
 	const viewBox = componentEditorState.getViewBox();
 
 	return (
+		// biome-ignore lint/a11y/noStaticElementInteractions: SVG
 		<rect
 			{...viewBox}
 			onClick={() => {

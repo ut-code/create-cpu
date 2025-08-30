@@ -1,10 +1,10 @@
 import nullthrows from "nullthrows";
 import invariant from "tiny-invariant";
-import type CCStore from ".";
 import type {
 	SimulationFrame,
 	SimulationValue,
 } from "../pages/edit/Editor/store/slices/core";
+import type CCStore from ".";
 import type { CCComponentId } from "./component";
 import type { CCComponentPin, CCComponentPinId } from "./componentPin";
 import { definitionByComponentId, flipflop } from "./intrinsics/definitions";
@@ -52,9 +52,7 @@ function createOutputShape(
 	);
 	targetNodePins.sort((a, b) => a.order - b.order);
 	const bitWidth = targetNodePins.map((nodePin: CCNodePin) => {
-		const bitWidthStatus = store.nodePins.getNodePinBitWidthStatus(
-			nodePin.id,
-		);
+		const bitWidthStatus = store.nodePins.getNodePinBitWidthStatus(nodePin.id);
 		if (!bitWidthStatus.isFixed) {
 			return 1;
 		}
@@ -64,12 +62,13 @@ function createOutputShape(
 	return outputShape;
 }
 
+// return: Map<CCNodePinId, SimulationValue> (output pins only)
 function simulateIntrinsic(
 	store: CCStore,
 	nodeId: CCNodeId,
 	inputValues: Map<CCNodePinId, SimulationValue>,
 	parentPreviousFrame: SimulationFrame | null,
-): Map<CCNodePinId, SimulationValue> | null {
+): Map<CCNodePinId, SimulationValue> {
 	const node = nullthrows(store.nodes.get(nodeId));
 	const { componentId } = node;
 	const nodePins = store.nodePins.getManyByNodeId(nodeId);
@@ -161,7 +160,10 @@ function simulateNode(
 	const children = store.nodes.getManyByParentComponentId(component.id);
 	const foundInputNumber = new Map<CCNodeId, number>();
 	const nodePinInputNumber = new Map<CCNodeId, number>();
-	const nodePinInputValues = new Map<CCNodePinId, SimulationValue>();
+	const nodePinInputValues = new Map<
+		CCNodeId,
+		Map<CCNodePinId, SimulationValue>
+	>();
 	for (const child of children) {
 		foundInputNumber.set(child.id, 0);
 		const innerPins = store.nodePins.getManyByNodeId(child.id);
@@ -175,6 +177,7 @@ function simulateNode(
 			}
 		}
 		nodePinInputNumber.set(child.id, inputPinNumber);
+		nodePinInputValues.set(child.id, new Map());
 	}
 	for (const nodePin of nodePins) {
 		const componentPin = nullthrows(
@@ -185,8 +188,11 @@ function simulateNode(
 				store.nodePins.get(componentPin.implementation),
 			);
 			nodePinInputValues.set(
-				connectedNodePin.id,
-				nullthrows(inputValues.get(nodePin.id)),
+				connectedNodePin.nodeId,
+				nullthrows(nodePinInputValues.get(connectedNodePin.nodeId)).set(
+					connectedNodePin.id,
+					nullthrows(inputValues.get(nodePin.id)),
+				),
 			);
 			foundInputNumber.set(
 				connectedNodePin.nodeId,
@@ -218,7 +224,7 @@ function simulateNode(
 			const result = simulateNode(
 				store,
 				currentNodeId,
-				nodePinInputValues,
+				nodePinInputValues.get(currentNodeId) || new Map(),
 				frame,
 			);
 			if (!result) {
@@ -235,7 +241,13 @@ function simulateNode(
 							const connectedNodePin = nullthrows(
 								store.nodePins.get(connection.to),
 							);
-							nodePinInputValues.set(connectedNodePin.id, outputValue);
+							nodePinInputValues.set(
+								connectedNodePin.nodeId,
+								nullthrows(nodePinInputValues.get(connectedNodePin.nodeId)).set(
+									connectedNodePin.id,
+									outputValue,
+								),
+							);
 							foundInputNumber.set(
 								connectedNodePin.nodeId,
 								nullthrows(foundInputNumber.get(connectedNodePin.nodeId)) + 1,
@@ -270,7 +282,7 @@ function simulateNode(
 			const result = simulateNode(
 				store,
 				currentNodeId,
-				nodePinInputValues,
+				nodePinInputValues.get(currentNodeId) || new Map(),
 				frame,
 			);
 			if (!result) {
@@ -287,7 +299,13 @@ function simulateNode(
 							const connectedNodePin = nullthrows(
 								store.nodePins.get(connection.to),
 							);
-							nodePinInputValues.set(connectedNodePin.id, outputValue);
+							nodePinInputValues.set(
+								connectedNodePin.nodeId,
+								nullthrows(nodePinInputValues.get(connectedNodePin.nodeId)).set(
+									connectedNodePin.id,
+									outputValue,
+								),
+							);
 							foundInputNumber.set(
 								connectedNodePin.nodeId,
 								nullthrows(foundInputNumber.get(connectedNodePin.nodeId)) + 1,
@@ -351,6 +369,8 @@ export default function simulateComponent(
 	const foundInputNumber = new Map<CCNodeId, number>();
 	const nodePinInputNumber = new Map<CCNodeId, number>();
 	const nodePinInputValues = new Map<CCNodePinId, SimulationValue>();
+
+	// Initialize maps
 	for (const child of children) {
 		foundInputNumber.set(child.id, 0);
 		const innerPins = store.nodePins.getManyByNodeId(child.id);
@@ -365,6 +385,8 @@ export default function simulateComponent(
 		}
 		nodePinInputNumber.set(child.id, inputPinNumber);
 	}
+
+	// Set input values for component from parent
 	for (const componentPin of componentPins) {
 		if (componentPin.type === "input" && componentPin.implementation) {
 			const connectedNodePin = nullthrows(
@@ -380,6 +402,7 @@ export default function simulateComponent(
 			);
 		}
 	}
+
 	const unevaluatedNodes = new Set<CCNodeId>();
 	for (const child of children) {
 		unevaluatedNodes.add(child.id);
@@ -387,7 +410,50 @@ export default function simulateComponent(
 
 	const outputValues = new Map<CCComponentPinId, SimulationValue>();
 	const outputNodePinValues = new Map<CCNodePinId, SimulationValue>();
-	const visitedFlipFlops = new Set<CCNodeId>();
+
+	// Evaluate flipflops first
+	for (const child of children) {
+		if (child.componentId === flipflop.id) {
+			const dummyInputValues = new Map<CCNodePinId, SimulationValue>();
+			const flipFlopNodePins = store.nodePins.getManyByNodeId(child.id);
+			for (const nodePin of flipFlopNodePins) {
+				dummyInputValues.set(nodePin.id, [false]);
+			}
+			const flipFlopOutputValues = simulateIntrinsic(
+				store,
+				child.id,
+				dummyInputValues,
+				previousFrame,
+			);
+			for (const [outputPinId, outputValue] of flipFlopOutputValues) {
+				outputNodePinValues.set(outputPinId, outputValue);
+				const connections =
+					store.connections.getConnectionsByNodePinId(outputPinId);
+				if (connections.length !== 0) {
+					for (const connection of connections) {
+						const connectedNodePin = nullthrows(
+							store.nodePins.get(connection.to),
+						);
+						nodePinInputValues.set(connectedNodePin.id, outputValue);
+						foundInputNumber.set(
+							connectedNodePin.nodeId,
+							nullthrows(foundInputNumber.get(connectedNodePin.nodeId)) + 1,
+						);
+					}
+				} else {
+					const parentComponentPin = nullthrows(
+						componentPins.find((componentPin) => {
+							return (
+								componentPin.type === "output" &&
+								componentPin.implementation === outputPinId
+							);
+						}),
+					);
+					outputValues.set(parentComponentPin.id, outputValue);
+				}
+			}
+		}
+	}
 
 	while (unevaluatedNodes.size > 0) {
 		const currentNodeId = nullthrows([...unevaluatedNodes][0]);
@@ -424,36 +490,35 @@ export default function simulateComponent(
 				return null;
 			}
 			childMap.set(currentNodeId, result);
+			if (currentComponent.intrinsicType === "FLIPFLOP") {
+				// Do not re-propagate flipflop output in the same frame
+				continue;
+			}
 			for (const [outputPinId, outputValue] of result.outputValues) {
 				outputNodePinValues.set(outputPinId, outputValue);
-				if (!visitedFlipFlops.has(currentNodeId)) {
-					const connections =
-						store.connections.getConnectionsByNodePinId(outputPinId);
-					if (connections.length !== 0) {
-						for (const connection of connections) {
-							const connectedNodePin = nullthrows(
-								store.nodePins.get(connection.to),
-							);
-							nodePinInputValues.set(connectedNodePin.id, outputValue);
-							foundInputNumber.set(
-								connectedNodePin.nodeId,
-								nullthrows(foundInputNumber.get(connectedNodePin.nodeId)) + 1,
-							);
-						}
-					} else {
-						const parentComponentPin = nullthrows(
-							componentPins.find((componentPin) => {
-								return (
-									componentPin.type === "output" &&
-									componentPin.implementation === outputPinId
-								);
-							}),
+				const connections =
+					store.connections.getConnectionsByNodePinId(outputPinId);
+				if (connections.length !== 0) {
+					for (const connection of connections) {
+						const connectedNodePin = nullthrows(
+							store.nodePins.get(connection.to),
 						);
-						outputValues.set(parentComponentPin.id, outputValue);
+						nodePinInputValues.set(connectedNodePin.id, outputValue);
+						foundInputNumber.set(
+							connectedNodePin.nodeId,
+							nullthrows(foundInputNumber.get(connectedNodePin.nodeId)) + 1,
+						);
 					}
-					if (currentComponentId === flipflop.outputPin.componentId) {
-						visitedFlipFlops.add(currentNodeId);
-					}
+				} else {
+					const parentComponentPin = nullthrows(
+						componentPins.find((componentPin) => {
+							return (
+								componentPin.type === "output" &&
+								componentPin.implementation === outputPinId
+							);
+						}),
+					);
+					outputValues.set(parentComponentPin.id, outputValue);
 				}
 			}
 		} else {

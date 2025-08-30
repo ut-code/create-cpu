@@ -278,8 +278,10 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 					if (seen.has(connectedNodePin.nodeId)) {
 						continue;
 					}
-					const connectedPinBitWidthStatus =
-						traverseNodePinBitWidthStatus(connectedNodePinId, seen);
+					const connectedPinBitWidthStatus = traverseNodePinBitWidthStatus(
+						connectedNodePinId,
+						seen,
+					);
 					if (connectedPinBitWidthStatus.isFixed) {
 						return connectedPinBitWidthStatus;
 					}
@@ -298,9 +300,7 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 		const aNodePin = this.get(a);
 		const bNodePin = this.get(b);
 		if (!aNodePin || !bNodePin) {
-			throw new Error(
-				`Node pin ${a} or ${b} does not exist in the store`,
-			);
+			throw new Error(`Node pin ${a} or ${b} does not exist in the store`);
 		}
 		const aNode = this.#store.nodes.get(aNodePin.nodeId);
 		const bNode = this.#store.nodes.get(bNodePin.nodeId);
@@ -313,7 +313,7 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 			console.warn(
 				`Cannot connect pins of the same node: ${aNodePin.id} and ${bNodePin.id}`,
 			);
-			return false;	
+			return false;
 		}
 		if (aNode.parentComponentId !== bNode.parentComponentId) {
 			console.warn(

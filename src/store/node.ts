@@ -2,8 +2,8 @@ import EventEmitter from "eventemitter3";
 import nullthrows from "nullthrows";
 import invariant from "tiny-invariant";
 import type { Opaque } from "type-fest";
-import type CCStore from ".";
 import type { Vector2 } from "../common/vector2";
+import type CCStore from ".";
 import type { CCComponentId } from "./component";
 
 export type CCNodeId = Opaque<string, "CCNodeId">;

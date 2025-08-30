@@ -1,4 +1,4 @@
-import { mapValues } from "lodash-es";
+import { mapValues } from "es-toolkit";
 import type { CCComponent, CCComponentId } from "../component";
 import type { CCComponentPin, CCComponentPinId } from "../componentPin";
 import type { CCIntrinsicComponentType } from "./types";

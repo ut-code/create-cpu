@@ -8,6 +8,23 @@ import {
 	ccIntrinsicComponentTypes,
 } from "./types";
 
+// function createNullaryOperator(
+// 	type: CCIntrinsicComponentType,
+// 	name: string,
+// 	evaluate: () => boolean
+// ) {
+// 	return new IntrinsicComponentDefinition({
+// 		type,
+// 		name,
+// 		in: {},
+// 		out: { name: "Out" },
+// 		evaluate: (_, output) => {
+// 			invariant(output[0]);
+// 			return [new Array(output[0].bitWidth).fill(evaluate())];
+// 		},
+// 	});
+// }
+
 function createUnaryOperator(
 	type: CCIntrinsicComponentType,
 	name: string,
@@ -104,7 +121,7 @@ export const decompose = new IntrinsicComponentDefinition({
 	evaluate: (input, outputShape) => {
 		invariant(input.In[0] && !input.In[1]);
 		const inputValue = input.In[0];
-		const outputValue = new Array();
+		const outputValue = [];
 		let currentIndex = 0;
 		for (const shape of outputShape) {
 			outputValue.push([

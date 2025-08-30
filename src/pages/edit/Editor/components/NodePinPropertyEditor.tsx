@@ -1,5 +1,5 @@
 import { Button, Popover, Stack, TextField, Typography } from "@mui/material";
-import { zip } from "lodash-es";
+import { zip } from "es-toolkit";
 import nullthrows from "nullthrows";
 import { useState } from "react";
 import invariant from "tiny-invariant";
@@ -124,12 +124,13 @@ export function CCComponentEditorNodePinPropertyEditor() {
 									nodePin.id,
 								);
 								for (const connection of connections) {
-									const anotherNodePinId = connection.from === nodePin.id
-										? connection.to
-										: connection.from;
-									if (!store.nodePins.isConnectable(
-										nodePin.id, anotherNodePinId
-									)) {
+									const anotherNodePinId =
+										connection.from === nodePin.id
+											? connection.to
+											: connection.from;
+									if (
+										!store.nodePins.isConnectable(nodePin.id, anotherNodePinId)
+									) {
 										store.connections.unregister([connection.id]);
 									}
 								}

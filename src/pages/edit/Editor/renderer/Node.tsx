@@ -61,6 +61,7 @@ const CCComponentEditorRendererNode = ensureStoreItem(
 
 		return (
 			<>
+				{/** biome-ignore lint/a11y/noStaticElementInteractions: SVG */}
 				<g
 					onPointerDown={handlePointerDown}
 					onPointerMove={handlePointerMove}
@@ -78,7 +79,7 @@ const CCComponentEditorRendererNode = ensureStoreItem(
 						fill={theme.palette.textPrimary}
 						x={geometry.x}
 						y={geometry.y - 5}
-						textAnchor="bottom"
+						textAnchor="end"
 						fontSize={12}
 					>
 						{component.name}
