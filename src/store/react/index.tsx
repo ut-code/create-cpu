@@ -8,7 +8,7 @@ import {
 	useState,
 } from "react";
 import invariant from "tiny-invariant";
-import CCStore, { type CCStorePropsFromJson } from "..";
+import CCStore from "..";
 import { CCComponentStore } from "../component";
 import { CCConnectionStore } from "../connection";
 import { and, not } from "../intrinsics/definitions";
@@ -17,44 +17,47 @@ import { CCNodeStore } from "../node";
 function useContextValue() {
 	const [store, setStore] = useState(() => {
 		const tempStore = new CCStore();
+		const isRestored = tempStore.autoSaver.tryRestore();
+		tempStore.mount();
+		if (!isRestored) {
+			const rootComponent = CCComponentStore.create({
+				name: "Root",
+			});
+			tempStore.components.register(rootComponent);
 
-		const rootComponent = CCComponentStore.create({
-			name: "Root",
-		});
-		tempStore.components.register(rootComponent);
+			const sampleNode1 = CCNodeStore.create({
+				parentComponentId: rootComponent.id,
+				componentId: and.component.id,
+				position: { x: -100, y: 0 },
+			});
+			tempStore.nodes.register(sampleNode1);
 
-		const sampleNode1 = CCNodeStore.create({
-			parentComponentId: rootComponent.id,
-			componentId: and.component.id,
-			position: { x: -100, y: 0 },
-		});
-		tempStore.nodes.register(sampleNode1);
+			const sampleNode2 = CCNodeStore.create({
+				parentComponentId: rootComponent.id,
+				componentId: not.component.id,
+				position: { x: 100, y: 0 },
+			});
+			tempStore.nodes.register(sampleNode2);
 
-		const sampleNode2 = CCNodeStore.create({
-			parentComponentId: rootComponent.id,
-			componentId: not.component.id,
-			position: { x: 100, y: 0 },
-		});
-		tempStore.nodes.register(sampleNode2);
-
-		const fromNodePin = nullthrows(
-			tempStore.nodePins
-				.getManyByNodeId(sampleNode1.id)
-				.find((nodePin) => nodePin.componentPinId === and.outputPin.id),
-		);
-		const toNodePin = nullthrows(
-			tempStore.nodePins
-				.getManyByNodeId(sampleNode2.id)
-				.find((nodePin) => nodePin.componentPinId === not.inputPin.A.id),
-		);
-		const sampleConnection = CCConnectionStore.create({
-			parentComponentId: rootComponent.id,
-			from: fromNodePin.id,
-			to: toNodePin.id,
-			bentPortion: 0.5,
-		});
-		tempStore.connections.register(sampleConnection);
-
+			const fromNodePin = nullthrows(
+				tempStore.nodePins
+					.getManyByNodeId(sampleNode1.id)
+					.find((nodePin) => nodePin.componentPinId === and.outputPin.id),
+			);
+			const toNodePin = nullthrows(
+				tempStore.nodePins
+					.getManyByNodeId(sampleNode2.id)
+					.find((nodePin) => nodePin.componentPinId === not.inputPin.A.id),
+			);
+			const sampleConnection = CCConnectionStore.create({
+				parentComponentId: rootComponent.id,
+				from: fromNodePin.id,
+				to: toNodePin.id,
+				bentPortion: 0.5,
+			});
+			tempStore.connections.register(sampleConnection);
+		}
+		tempStore.autoSaver.watch();
 		return tempStore;
 	});
 
@@ -66,8 +69,12 @@ function useContextValue() {
 		});
 	}, [store]);
 
-	const resetStore = useCallback((props: CCStorePropsFromJson) => {
-		setStore(new CCStore(props));
+	const resetStore = useCallback((json: string) => {
+		const store = new CCStore();
+		store.importJson(json);
+		store.mount();
+		store.autoSaver.watch();
+		setStore(store);
 	}, []);
 	return useMemo(() => ({ store, resetStore }), [store, resetStore]);
 }

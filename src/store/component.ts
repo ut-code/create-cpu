@@ -20,6 +20,8 @@ export type CCComponentStoreEvents = {
 	didUnregister(component: CCComponent): void;
 	didUpdate(component: CCComponent): void;
 };
+export const ccComponentStoreChangeEventTypes: (keyof CCComponentStoreEvents)[] =
+	["didRegister", "didUnregister", "didUpdate"];
 
 /**
  * Store of components

@@ -49,6 +49,8 @@ export type CCComponentPinStoreEvents = {
 	didUnregister(pin: CCComponentPin): void;
 	didUpdate(pin: CCComponentPin): void;
 };
+export const ccComponentPinStoreChangeEventTypes: (keyof CCComponentPinStoreEvents)[] =
+	["didRegister", "didUnregister", "didUpdate"];
 
 /**
  * Store of pins

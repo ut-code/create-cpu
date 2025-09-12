@@ -17,7 +17,6 @@ import {
 } from "@mui/material";
 import { useRef, useState } from "react";
 import { ComponentPropertyDialog } from "../../components/ComponentPropertyDialog";
-import type { CCStorePropsFromJson } from "../../store";
 import { type CCComponentId, CCComponentStore } from "../../store/component";
 import { useStore } from "../../store/react";
 import { useComponents } from "../../store/react/selectors";
@@ -49,9 +48,7 @@ export default function HomePage({ onComponentSelected }: HomePageProps) {
 		if (!file) return;
 		const reader = new FileReader();
 		reader.onload = () => {
-			const storeJSON = reader.result as string;
-			const storeData = JSON.parse(storeJSON);
-			resetStore(storeData as CCStorePropsFromJson);
+			resetStore(reader.result as string);
 		};
 		reader.readAsText(file);
 	};

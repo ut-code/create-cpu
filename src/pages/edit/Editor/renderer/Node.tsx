@@ -79,7 +79,7 @@ const CCComponentEditorRendererNode = ensureStoreItem(
 						fill={theme.palette.textPrimary}
 						x={geometry.x}
 						y={geometry.y - 5}
-						textAnchor="end"
+						textAnchor="start"
 						fontSize={12}
 					>
 						{component.name}

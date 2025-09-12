@@ -6,6 +6,7 @@ import { useStore } from "../../../../store/react";
 import ensureStoreItem from "../../../../store/react/error";
 import { useNode } from "../../../../store/react/selectors";
 import { useComponentEditorStore } from "../store";
+import { stringifySimulationValue } from "../store/slices/core/index";
 import getCCComponentEditorRendererNodeGeometry from "./Node.geometry";
 
 export type CCComponentEditorRendererConnectionCoreProps = {
@@ -106,8 +107,6 @@ const CCComponentEditorRendererConnection = ensureStoreItem(
 
 		const [isHovered, setIsHovered] = useState(false);
 
-		// const fromNodePinValue = componentEditorState.getNodePinValue(fromNodePin.id);
-
 		return (
 			<>
 				<CCComponentEditorRendererConnectionCore
@@ -128,7 +127,9 @@ const CCComponentEditorRendererConnection = ensureStoreItem(
 							startOffset="50%"
 							textAnchor="middle"
 						>
-							hoge
+							{stringifySimulationValue(
+								nullthrows(componentEditorState.getNodePinValue(toNodePin.id)),
+							)}
 						</textPath>
 					</text>
 				)}

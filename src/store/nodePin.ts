@@ -24,6 +24,11 @@ export type CCNodePinStoreEvents = {
 	didUnregister(pin: CCNodePin): void;
 	didUpdate(pin: CCNodePin): void;
 };
+export const ccNodePinStoreChangeEventTypes: (keyof CCNodePinStoreEvents)[] = [
+	"didRegister",
+	"didUnregister",
+	"didUpdate",
+];
 
 export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 	#store: CCStore;
@@ -301,6 +306,17 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 		const bNodePin = this.get(b);
 		if (!aNodePin || !bNodePin) {
 			throw new Error(`Node pin ${a} or ${b} does not exist in the store`);
+		}
+		const aComponentPin = this.#store.componentPins.get(
+			aNodePin?.componentPinId ?? null,
+		);
+		const bComponentPin = this.#store.componentPins.get(
+			bNodePin?.componentPinId ?? null,
+		);
+		if (!aComponentPin || !bComponentPin) {
+			throw new Error(
+				`Component pin ${aNodePin?.componentPinId} or ${bNodePin?.componentPinId} does not exist in the store`,
+			);
 		}
 		const aNode = this.#store.nodes.get(aNodePin.nodeId);
 		const bNode = this.#store.nodes.get(bNodePin.nodeId);

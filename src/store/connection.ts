@@ -27,6 +27,8 @@ export type CCConnectionStoreEvents = {
 	willUnregister(Connection: CCConnection): void;
 	didUnregister(Connection: CCConnection): void;
 };
+export const ccConnectionStoreChangeEventTypes: (keyof CCConnectionStoreEvents)[] =
+	["didRegister", "didUnregister"];
 
 /**
  * Store of connections

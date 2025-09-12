@@ -21,6 +21,11 @@ export type CCNodeStoreEvents = {
 	didUnregister(node: CCNode): void;
 	didUpdate(node: CCNode): void;
 };
+export const ccNodeStoreChangeEventTypes: (keyof CCNodeStoreEvents)[] = [
+	"didRegister",
+	"didUnregister",
+	"didUpdate",
+];
 
 /**
  * Store of nodes

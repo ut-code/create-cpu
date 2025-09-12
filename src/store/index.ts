@@ -1,21 +1,11 @@
-import { type CCComponent, CCComponentStore } from "./component";
-import { type CCComponentPin, CCComponentPinStore } from "./componentPin";
-import { type CCConnection, CCConnectionStore } from "./connection";
+import { CCStoreAutoSaver } from "./autoSaver";
+import { CCComponentStore } from "./component";
+import { CCComponentPinStore } from "./componentPin";
+import { CCConnectionStore } from "./connection";
 import * as intrinsics from "./intrinsics/definitions";
-import { type CCNode, CCNodeStore } from "./node";
-import { type CCNodePin, CCNodePinStore } from "./nodePin";
+import { CCNodeStore } from "./node";
+import { CCNodePinStore } from "./nodePin";
 import TransactionManager from "./transaction";
-
-/**
- * Properties of CCStore from JSON used when restoring store from JSON
- */
-export type CCStorePropsFromJson = {
-	components: CCComponent[];
-	nodes: CCNode[];
-	componentPins: CCComponentPin[];
-	nodePins: CCNodePin[];
-	connections: CCConnection[];
-};
 
 /**
  * Store of components, nodes, pins, and connections
@@ -31,27 +21,23 @@ export default class CCStore {
 
 	connections: CCConnectionStore;
 
-	transactionManager = new TransactionManager();
+	transactionManager: TransactionManager;
+
+	autoSaver: CCStoreAutoSaver;
 
 	/**
 	 * Constructor of CCStore
 	 * @param rootComponent root component
 	 * @param props properties of store from JSON used when restoring store from JSON
 	 */
-	constructor(props?: CCStorePropsFromJson) {
+	constructor() {
 		this.components = new CCComponentStore(this);
 		this.nodes = new CCNodeStore(this);
 		this.componentPins = new CCComponentPinStore(this);
 		this.nodePins = new CCNodePinStore(this);
 		this.connections = new CCConnectionStore(this);
-		if (props) {
-			const { components, nodes, componentPins, nodePins, connections } = props;
-			this.components.import(components);
-			this.nodes.import(nodes);
-			this.componentPins.import(componentPins);
-			this.nodePins.import(nodePins);
-			this.connections.import(connections);
-		}
+		this.transactionManager = new TransactionManager();
+		this.autoSaver = new CCStoreAutoSaver(this);
 
 		for (const definition of Object.values(intrinsics.definitions)) {
 			this.components.register(definition.component);
@@ -59,7 +45,9 @@ export default class CCStore {
 				this.componentPins.register(pin);
 			}
 		}
+	}
 
+	mount() {
 		this.components.mount();
 		this.nodes.mount();
 		this.componentPins.mount();
@@ -73,11 +61,22 @@ export default class CCStore {
 	 */
 	toJSON() {
 		return JSON.stringify({
-			components: this.components.getMany(),
+			// Only export non-intrinsic components
+			components: this.components.getMany().filter((c) => !c.intrinsicType),
 			nodes: this.nodes.getMany(),
 			componentPins: this.componentPins.getMany(),
 			nodePins: this.nodePins.getMany(),
 			connections: this.connections.getMany(),
 		});
+	}
+
+	importJson(json: string) {
+		const { components, nodes, componentPins, nodePins, connections } =
+			JSON.parse(json);
+		this.components.import(components);
+		this.nodes.import(nodes);
+		this.componentPins.import(componentPins);
+		this.nodePins.import(nodePins);
+		this.connections.import(connections);
 	}
 }
