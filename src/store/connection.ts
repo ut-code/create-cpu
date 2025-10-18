@@ -1,6 +1,5 @@
 import EventEmitter from "eventemitter3";
 import nullthrows from "nullthrows";
-import invariant from "tiny-invariant";
 import type { Opaque } from "type-fest";
 import type CCStore from ".";
 import type { CCComponentId } from "./component";
@@ -28,6 +27,8 @@ export type CCConnectionStoreEvents = {
 	willUnregister(Connection: CCConnection): void;
 	didUnregister(Connection: CCConnection): void;
 };
+export const ccConnectionStoreChangeEventTypes: (keyof CCConnectionStoreEvents)[] =
+	["didRegister", "didUnregister"];
 
 /**
  * Store of connections
@@ -67,14 +68,11 @@ export class CCConnectionStore extends EventEmitter<CCConnectionStoreEvents> {
 	 * @param connection connection to be registered
 	 */
 	register(connection: CCConnection): void {
-		const fromNodeId = nullthrows(
-			this.#store.nodePins.get(connection.from),
-		).nodeId;
-		const toNodeId = nullthrows(this.#store.nodePins.get(connection.to)).nodeId;
-		const fromNode = this.#store.nodes.get(fromNodeId);
-		const toNode = this.#store.nodes.get(toNodeId);
-		invariant(fromNode && toNode);
-		invariant(fromNode.parentComponentId === toNode.parentComponentId);
+		const fromNodePinId = connection.from;
+		const toNodePinId = connection.to;
+		if (!this.#store.nodePins.isConnectable(fromNodePinId, toNodePinId)) {
+			return;
+		}
 		this.#connections.set(connection.id, connection);
 		this.emit("didRegister", connection);
 	}

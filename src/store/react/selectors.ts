@@ -1,11 +1,11 @@
 import memoizeOne from "memoize-one";
 import nullthrows from "nullthrows";
 import { useCallback, useMemo, useSyncExternalStore } from "react";
-import { useStore } from ".";
 import type { CCComponentId } from "../component";
 import type { CCComponentPin } from "../componentPin";
 import type { CCNode, CCNodeId } from "../node";
 import type { CCNodePin } from "../nodePin";
+import { useStore } from ".";
 
 export function useComponents() {
 	const { store } = useStore();

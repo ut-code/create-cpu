@@ -1,6 +1,6 @@
 import { type ComponentType, createElement } from "react";
-import { useStore } from ".";
 import type CCStore from "..";
+import { useStore } from ".";
 
 export default function ensureStoreItem<P extends Record<string, unknown>>(
 	check: (props: P, store: CCStore) => unknown,

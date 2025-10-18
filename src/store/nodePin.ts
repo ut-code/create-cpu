@@ -3,9 +3,15 @@ import nullthrows from "nullthrows";
 import invariant from "tiny-invariant";
 import type { Opaque } from "type-fest";
 import type CCStore from ".";
-import type { CCComponentPinId, CCPinMultiplexability } from "./componentPin";
+import type { CCComponentPinId, CCNodePinBitWidthStatus } from "./componentPin";
 import { IntrinsicComponentDefinition } from "./intrinsics/base";
-import { aggregate, broadcast, decompose } from "./intrinsics/definitions";
+import {
+	aggregate,
+	broadcast,
+	decompose,
+	input,
+	output,
+} from "./intrinsics/definitions";
 import type { CCNodeId } from "./node";
 
 export type CCNodePinId = Opaque<string, "CCNodePinId">;
@@ -15,7 +21,7 @@ export type CCNodePin = {
 	nodeId: CCNodeId;
 	componentPinId: CCComponentPinId;
 	order: number;
-	userSpecifiedBitWidth: number | null;
+	manualBitWidth: number | null;
 };
 
 export type CCNodePinStoreEvents = {
@@ -24,6 +30,11 @@ export type CCNodePinStoreEvents = {
 	didUnregister(pin: CCNodePin): void;
 	didUpdate(pin: CCNodePin): void;
 };
+export const ccNodePinStoreChangeEventTypes: (keyof CCNodePinStoreEvents)[] = [
+	"didRegister",
+	"didUnregister",
+	"didUpdate",
+];
 
 export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 	#store: CCStore;
@@ -118,7 +129,7 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 		this.#markedAsDeleted.delete(id);
 	}
 
-	update(id: CCNodePinId, value: Pick<CCNodePin, "userSpecifiedBitWidth">) {
+	update(id: CCNodePinId, value: Pick<CCNodePin, "manualBitWidth">) {
 		const existingNodePin = nullthrows(this.#nodePins.get(id));
 		const newNodePin = { ...existingNodePin, ...value };
 		this.#nodePins.set(id, newNodePin);
@@ -170,30 +181,33 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 	}
 
 	/**
-	 * Get the multiplexability of a node pin
+	 * Get the bit width status of a node pin
 	 * @param pinId id of pin
 	 * @param nodeId id of node
-	 * @returns multiplexability of the pin
+	 * @returns bit width status of the pin
 	 */
-	getNodePinMultiplexability(nodePinId: CCNodePinId): CCPinMultiplexability {
-		const traverseNodePinMultiplexability = (
+	getNodePinBitWidthStatus(nodePinId: CCNodePinId): CCNodePinBitWidthStatus {
+		const traverseNodePinBitWidthStatus = (
 			targetNodePinId: CCNodePinId,
 			seen: Set<CCNodeId>,
-		): CCPinMultiplexability => {
+		): CCNodePinBitWidthStatus => {
 			const {
 				nodeId: targetNodeId,
 				componentPinId: targetComponentPinId,
-				userSpecifiedBitWidth,
+				manualBitWidth,
 			} = nullthrows(this.get(targetNodePinId));
 
 			seen.add(targetNodeId);
 			const targetNode = nullthrows(this.#store.nodes.get(targetNodeId));
 			const targetNodePins = this.getManyByNodeId(targetNode.id);
-			const givenPinMultiplexability =
-				this.#store.componentPins.getComponentPinMultiplexability(
+			const givenComponentPinBitWidthStatus =
+				this.#store.componentPins.getComponentPinBitWidthStatus(
 					targetComponentPinId,
 				);
-			if (givenPinMultiplexability === "undecidable") {
+			if (givenComponentPinBitWidthStatus.isFixed) {
+				return givenComponentPinBitWidthStatus;
+			}
+			if (givenComponentPinBitWidthStatus.fixMode === "manual") {
 				const componentPin =
 					this.#store.componentPins.get(targetComponentPinId);
 				invariant(componentPin);
@@ -202,15 +216,15 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 					case nullthrows(broadcast.outputPin.id):
 					case nullthrows(decompose.outputPin.id):
 						invariant(
-							userSpecifiedBitWidth,
-							"aggregate inputPin, broadcast outputPin, or decompose outputPin must have a userSpecifiedBitWidth",
+							manualBitWidth,
+							"aggregate inputPin, broadcast outputPin, or decompose outputPin must have a manual bit width",
 						);
 						return {
-							isMultiplexable: false,
-							multiplicity: userSpecifiedBitWidth,
+							isFixed: true,
+							bitWidth: manualBitWidth,
 						};
 					case nullthrows(aggregate.outputPin.id): {
-						const multiplicity = targetNodePins
+						const bitWidth = targetNodePins
 							.filter((pin) => {
 								const componentPin = this.#store.componentPins.get(
 									pin.componentPinId,
@@ -219,16 +233,16 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 								return componentPin.type === "input";
 							})
 							.reduce((acc, pin) => {
-								invariant(pin.userSpecifiedBitWidth);
-								return acc + pin.userSpecifiedBitWidth;
+								invariant(pin.manualBitWidth);
+								return acc + pin.manualBitWidth;
 							}, 0);
 						return {
-							isMultiplexable: false,
-							multiplicity,
+							isFixed: true,
+							bitWidth,
 						};
 					}
 					case nullthrows(decompose.inputPin.In.id): {
-						const multiplicity = targetNodePins
+						const bitWidth = targetNodePins
 							.filter((pin) => {
 								const componentPin = this.#store.componentPins.get(
 									pin.componentPinId,
@@ -237,60 +251,138 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 								return componentPin.type === "output";
 							})
 							.reduce((acc, pin) => {
-								invariant(pin.userSpecifiedBitWidth);
-								return acc + pin.userSpecifiedBitWidth;
+								invariant(pin.manualBitWidth);
+								return acc + pin.manualBitWidth;
 							}, 0);
 						return {
-							isMultiplexable: false,
-							multiplicity,
+							isFixed: true,
+							bitWidth,
 						};
 					}
 					default:
 						throw new Error(
-							`Multiplexability of ${componentPin.id} is undecidable`,
+							`Bit width status of ${componentPin.id} is undecidable`,
 						);
 				}
-			}
-			if (!givenPinMultiplexability.isMultiplexable) {
-				return givenPinMultiplexability;
 			}
 			for (const targetNodePin of targetNodePins) {
-				const pinMultiplexability =
-					this.#store.componentPins.getComponentPinMultiplexability(
+				const targetComponentPinBitWidthStatus =
+					this.#store.componentPins.getComponentPinBitWidthStatus(
 						targetNodePin.componentPinId,
 					);
-				if (pinMultiplexability === "undecidable") {
+				if (targetComponentPinBitWidthStatus.isFixed) {
+					continue;
+				}
+				if (targetComponentPinBitWidthStatus.fixMode === "manual") {
 					throw new Error("unreachable");
 				}
-				if (pinMultiplexability.isMultiplexable) {
-					const connections = nullthrows(
-						this.#store.connections.getConnectionsByNodePinId(targetNodePin.id),
+				const connections = nullthrows(
+					this.#store.connections.getConnectionsByNodePinId(targetNodePin.id),
+				);
+				for (const connection of connections) {
+					const componentPin = nullthrows(
+						this.#store.componentPins.get(targetNodePin.componentPinId),
 					);
-					for (const connection of connections) {
-						const componentPin = nullthrows(
-							this.#store.componentPins.get(targetNodePin.componentPinId),
-						);
-						const connectedNodePinId =
-							componentPin.type === "input" ? connection.from : connection.to;
-						const connectedNodePin = nullthrows(this.get(connectedNodePinId));
-						if (seen.has(connectedNodePin.nodeId)) {
-							continue;
-						}
-						const connectedPinMultiplexability =
-							traverseNodePinMultiplexability(connectedNodePinId, seen);
-						if (!connectedPinMultiplexability.isMultiplexable) {
-							return connectedPinMultiplexability;
-						}
+					const connectedNodePinId =
+						componentPin.type === "input" ? connection.from : connection.to;
+					const connectedNodePin = nullthrows(this.get(connectedNodePinId));
+					if (seen.has(connectedNodePin.nodeId)) {
+						continue;
+					}
+					const connectedPinBitWidthStatus = traverseNodePinBitWidthStatus(
+						connectedNodePinId,
+						seen,
+					);
+					if (connectedPinBitWidthStatus.isFixed) {
+						return connectedPinBitWidthStatus;
 					}
 				}
 			}
-			return givenPinMultiplexability;
+			return givenComponentPinBitWidthStatus;
 		};
-		return traverseNodePinMultiplexability(nodePinId, new Set());
+		return traverseNodePinBitWidthStatus(nodePinId, new Set());
 	}
 
 	isMarkedAsDeleted(id: CCNodePinId) {
 		return this.#markedAsDeleted.has(id);
+	}
+
+	isConnectable(a: CCNodePinId, b: CCNodePinId) {
+		const aNodePin = this.get(a);
+		const bNodePin = this.get(b);
+		if (!aNodePin || !bNodePin) {
+			throw new Error(`Node pin ${a} or ${b} does not exist in the store`);
+		}
+		if (
+			aNodePin.componentPinId === input.inputPin.A.id ||
+			bNodePin.componentPinId === input.inputPin.A.id ||
+			aNodePin.componentPinId === output.outputPin.id ||
+			bNodePin.componentPinId === output.outputPin.id
+		) {
+			console.warn(
+				`Cannot connect to input pin A or output pin: ${aNodePin.id} and ${bNodePin.id}`,
+			);
+			return false;
+		}
+		const aComponentPin = this.#store.componentPins.get(
+			aNodePin?.componentPinId ?? null,
+		);
+		const bComponentPin = this.#store.componentPins.get(
+			bNodePin?.componentPinId ?? null,
+		);
+		if (!aComponentPin || !bComponentPin) {
+			throw new Error(
+				`Component pin ${aNodePin?.componentPinId} or ${bNodePin?.componentPinId} does not exist in the store`,
+			);
+		}
+		if (aComponentPin.type === bComponentPin.type) {
+			console.warn(
+				`Cannot connect pins of the same type: ${aNodePin.id} and ${bNodePin.id}`,
+			);
+			return false;
+		}
+		const aNode = this.#store.nodes.get(aNodePin.nodeId);
+		const bNode = this.#store.nodes.get(bNodePin.nodeId);
+		if (!aNode || !bNode) {
+			throw new Error(
+				`Node ${aNodePin.nodeId} or ${bNodePin.nodeId} does not exist in the store`,
+			);
+		}
+		if (aNode.id === bNode.id) {
+			console.warn(
+				`Cannot connect pins of the same node: ${aNodePin.id} and ${bNodePin.id}`,
+			);
+			return false;
+		}
+		if (aNode.parentComponentId !== bNode.parentComponentId) {
+			console.warn(
+				`Cannot connect pins of different components: ${aNodePin.id} and ${bNodePin.id}`,
+			);
+			return false;
+		}
+		const aConnections = this.#store.connections.getConnectionsByNodePinId(
+			aNodePin.id,
+		);
+		const bConnections = this.#store.connections.getConnectionsByNodePinId(
+			bNodePin.id,
+		);
+		if (aComponentPin.type === "input" && aConnections.length > 0) {
+			console.warn(`Input pin already has a connection: ${aNodePin.id}`);
+			return false;
+		}
+		if (bComponentPin.type === "input" && bConnections.length > 0) {
+			console.warn(`Input pin already has a connection: ${bNodePin.id}`);
+			return false;
+		}
+		const aBitWidthStatus = this.getNodePinBitWidthStatus(a);
+		const bBitWidthStatus = this.getNodePinBitWidthStatus(b);
+		if (aBitWidthStatus.isFixed && bBitWidthStatus.isFixed) {
+			console.warn(
+				`Cannot connect pins with fixed bit width: ${aNodePin.id} and ${bNodePin.id}`,
+			);
+			return aBitWidthStatus.bitWidth === bBitWidthStatus.bitWidth;
+		}
+		return true;
 	}
 
 	/**
@@ -299,8 +391,8 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 	 * @returns a new pin
 	 */
 	static create(
-		partialPin: Omit<CCNodePin, "id" | "userSpecifiedBitWidth"> &
-			Partial<Pick<CCNodePin, "userSpecifiedBitWidth">>,
+		partialPin: Omit<CCNodePin, "id" | "manualBitWidth"> &
+			Partial<Pick<CCNodePin, "manualBitWidth">>,
 	): CCNodePin {
 		const attributes =
 			IntrinsicComponentDefinition.intrinsicComponentPinAttributesByComponentPinId.get(
@@ -309,8 +401,8 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 		return {
 			...partialPin,
 			id: crypto.randomUUID() as CCNodePinId,
-			userSpecifiedBitWidth:
-				partialPin.userSpecifiedBitWidth ??
+			manualBitWidth:
+				partialPin.manualBitWidth ??
 				(attributes?.isBitWidthConfigurable ? 1 : null),
 		};
 	}

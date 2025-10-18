@@ -1,5 +1,5 @@
 import { Button, Popover, Stack, TextField, Typography } from "@mui/material";
-import { zip } from "lodash-es";
+import { zip } from "es-toolkit";
 import nullthrows from "nullthrows";
 import { useState } from "react";
 import invariant from "tiny-invariant";
@@ -28,7 +28,7 @@ export function CCComponentEditorNodePinPropertyEditor() {
 		.getManyByNodeIdAndComponentPinId(target.nodeId, target.componentPinId)
 		.toSorted((a, b) => a.order - b.order);
 	invariant(
-		nodePins.every((p) => p.userSpecifiedBitWidth !== null),
+		nodePins.every((p) => p.manualBitWidth !== null),
 		"NodePinPropertyEditor can only be used for node pins with user specified bit width",
 	);
 	const componentPinAttributes = nullthrows(
@@ -64,7 +64,7 @@ export function CCComponentEditorNodePinPropertyEditor() {
 
 	const bitWidthList =
 		newBitWidthList ??
-		nodePins.map((nodePin) => nullthrows(nodePin.userSpecifiedBitWidth));
+		nodePins.map((nodePin) => nullthrows(nodePin.manualBitWidth));
 
 	const isTouched = Boolean(newBitWidthList);
 	const isValid = bitWidthList.every((bitWidth) => bitWidth > 0);
@@ -103,7 +103,7 @@ export function CCComponentEditorNodePinPropertyEditor() {
 									componentPinId: target.componentPinId,
 									nodeId: target.nodeId,
 									order: ++maxOrder,
-									userSpecifiedBitWidth: bitWidth,
+									manualBitWidth: bitWidth,
 								}),
 							);
 							continue;
@@ -116,10 +116,25 @@ export function CCComponentEditorNodePinPropertyEditor() {
 						// Update NodePin
 						if (nodePin && bitWidth) {
 							maxOrder = nodePin.order; // nodePins are sorted by order
-							if (nodePin.userSpecifiedBitWidth !== bitWidth)
+							if (nodePin.manualBitWidth !== bitWidth) {
 								store.nodePins.update(nodePin.id, {
-									userSpecifiedBitWidth: bitWidth,
+									manualBitWidth: bitWidth,
 								});
+								const connections = store.connections.getConnectionsByNodePinId(
+									nodePin.id,
+								);
+								for (const connection of connections) {
+									const anotherNodePinId =
+										connection.from === nodePin.id
+											? connection.to
+											: connection.from;
+									if (
+										!store.nodePins.isConnectable(nodePin.id, anotherNodePinId)
+									) {
+										store.connections.unregister([connection.id]);
+									}
+								}
+							}
 							continue;
 						}
 						throw new Error("Unreachable");

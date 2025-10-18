@@ -1,4 +1,4 @@
-import { mapValues } from "lodash-es";
+import { mapValues } from "es-toolkit";
 import type { CCComponent, CCComponentId } from "../component";
 import type { CCComponentPin, CCComponentPinId } from "../componentPin";
 import type { CCIntrinsicComponentType } from "./types";
@@ -17,7 +17,7 @@ type Props<In extends string> = {
 	out: IntrinsicComponentPinAttributes;
 	evaluate: (
 		input: Record<In, SimulationValue[]>,
-		outputShape: { multiplicity: number }[],
+		outputShape: { bitWidth: number }[],
 		previousInput: Record<In, SimulationValue[]>,
 	) => SimulationValue[];
 };
@@ -36,7 +36,7 @@ export class IntrinsicComponentDefinition<In extends string = string> {
 	readonly outputPin: CCComponentPin;
 	readonly evaluate: (
 		input: Record<In, SimulationValue[]>,
-		outputShape: { multiplicity: number }[],
+		outputShape: { bitWidth: number }[],
 		previousInput: Record<In, SimulationValue[]>,
 	) => SimulationValue[];
 

@@ -8,6 +8,23 @@ import {
 	ccIntrinsicComponentTypes,
 } from "./types";
 
+// function createNullaryOperator(
+// 	type: CCIntrinsicComponentType,
+// 	name: string,
+// 	evaluate: () => boolean
+// ) {
+// 	return new IntrinsicComponentDefinition({
+// 		type,
+// 		name,
+// 		in: {},
+// 		out: { name: "Out" },
+// 		evaluate: (_, output) => {
+// 			invariant(output[0]);
+// 			return [new Array(output[0].bitWidth).fill(evaluate())];
+// 		},
+// 	});
+// }
+
 function createUnaryOperator(
 	type: CCIntrinsicComponentType,
 	name: string,
@@ -81,6 +98,11 @@ export const input = createUnaryOperator(
 	"Input",
 	(a) => a,
 );
+export const output = createUnaryOperator(
+	ccIntrinsicComponentTypes.OUTPUT,
+	"Output",
+	(a) => a,
+);
 
 export const aggregate = new IntrinsicComponentDefinition({
 	type: ccIntrinsicComponentTypes.AGGREGATE,
@@ -104,13 +126,13 @@ export const decompose = new IntrinsicComponentDefinition({
 	evaluate: (input, outputShape) => {
 		invariant(input.In[0] && !input.In[1]);
 		const inputValue = input.In[0];
-		const outputValue = new Array();
+		const outputValue = [];
 		let currentIndex = 0;
 		for (const shape of outputShape) {
 			outputValue.push([
-				...inputValue.slice(currentIndex, currentIndex + shape.multiplicity),
+				...inputValue.slice(currentIndex, currentIndex + shape.bitWidth),
 			]);
-			currentIndex += shape.multiplicity;
+			currentIndex += shape.bitWidth;
 		}
 		return outputValue;
 	},
@@ -128,8 +150,8 @@ export const broadcast = new IntrinsicComponentDefinition({
 		invariant(input.In[0][0] !== undefined && !input.In[0][1]);
 		const inputValue = input.In[0][0];
 		invariant(outputShape[0] && !outputShape[1]);
-		const outputMultiplicity = outputShape[0].multiplicity;
-		return [Array.from({ length: outputMultiplicity }, () => inputValue)];
+		const outputBitWidth = outputShape[0].bitWidth;
+		return [Array.from({ length: outputBitWidth }, () => inputValue)];
 	},
 });
 
@@ -149,6 +171,7 @@ export const definitions = {
 	[ccIntrinsicComponentTypes.NOT]: not,
 	[ccIntrinsicComponentTypes.XOR]: xor,
 	[ccIntrinsicComponentTypes.INPUT]: input,
+	[ccIntrinsicComponentTypes.OUTPUT]: output,
 	[ccIntrinsicComponentTypes.AGGREGATE]: aggregate,
 	[ccIntrinsicComponentTypes.DECOMPOSE]: decompose,
 	[ccIntrinsicComponentTypes.BROADCAST]: broadcast,

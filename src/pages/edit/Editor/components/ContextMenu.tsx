@@ -47,9 +47,9 @@ export default function CCComponentEditorContextMenu({
 					width: "200px",
 				}}
 			>
-				<MenuItem onClick={componentEditorState.closeContextMenu}>
+				{/* <MenuItem onClick={componentEditorState.closeContextMenu}>
 					Create a node
-				</MenuItem>
+				</MenuItem> */}
 				{componentEditorState.selectedNodeIds.size > 0 && (
 					<MenuItem
 						onClick={() => {
@@ -135,7 +135,7 @@ export default function CCComponentEditorContextMenu({
 								store.connections.unregister([
 									...componentEditorState.selectedConnectionIds,
 								]);
-							componentEditorState.selectNode([], true);
+							// componentEditorState.selectNode([], true);
 							componentEditorState.selectConnection([], false);
 							componentEditorState.closeContextMenu();
 						}}

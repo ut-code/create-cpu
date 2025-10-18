@@ -4,6 +4,7 @@ export const ccIntrinsicComponentTypes = {
 	NOT: "NOT",
 	XOR: "XOR",
 	INPUT: "INPUT",
+	OUTPUT: "OUTPUT",
 	AGGREGATE: "AGGREGATE",
 	BROADCAST: "BROADCAST",
 	DECOMPOSE: "DECOMPOSE",
