@@ -303,58 +303,6 @@ function simulateNode(
 		} else {
 			unevaluatedNodes.add(currentNodeId);
 		}
-		// else if (
-		// 	currentComponentId === flipflop.id &&
-		// 	!visitedFlipFlops.has(currentNodeId)
-		// ) {
-		// 	const frame = previousFrame
-		// 		? nullthrows(previousFrame?.nodes.get(currentNodeId)).child
-		// 		: null;
-		// 	const result = simulateNode(
-		// 		store,
-		// 		currentNodeId,
-		// 		nodePinInputValues.get(currentNodeId) || new Map(),
-		// 		frame,
-		// 	);
-		// 	if (!result) {
-		// 		return null;
-		// 	}
-		// 	childMap.set(currentNodeId, result);
-		// 	for (const [outputPinId, outputValue] of result.outputValues) {
-		// 		if (!visitedFlipFlops.has(currentNodeId)) {
-		// 			const connections = nullthrows(
-		// 				store.connections.getConnectionsByNodePinId(outputPinId),
-		// 			);
-		// 			if (connections.length !== 0) {
-		// 				for (const connection of connections) {
-		// 					updateNodePinInputValues(
-		// 						store,
-		// 						nodePinInputValues,
-		// 						connection.to,
-		// 						outputValue,
-		// 					);
-		// 				}
-		// 			} else {
-		// 				const parentNodePin = nullthrows(
-		// 					nodePins.find((nodePin) => {
-		// 						const componentPin = nullthrows(
-		// 							store.componentPins.get(nodePin.componentPinId),
-		// 						);
-		// 						return (
-		// 							componentPin.type === "output" &&
-		// 							componentPin.implementation === outputPinId
-		// 						);
-		// 					}),
-		// 				);
-		// 				outputValues.set(parentNodePin.id, outputValue);
-		// 			}
-		// 			if (currentComponentId === flipflop.outputPin.componentId) {
-		// 				visitedFlipFlops.add(currentNodeId);
-		// 			}
-		// 		}
-		// 	}
-		// 	visitedFlipFlops.add(currentNodeId);
-		// }
 	}
 
 	const pins = new Map<CCNodePinId, SimulationValue>();
@@ -448,6 +396,35 @@ export default function simulateComponent(
 				connectedNodePin.id,
 				nullthrows(inputValues.get(componentPin.id)),
 			);
+		}
+	}
+
+	// Set 0s for unconnected inputs
+	for (const child of children) {
+		const innerPins = store.nodePins.getManyByNodeId(child.id);
+		for (const innerPin of innerPins) {
+			const connections = store.connections.getConnectionsByNodePinId(
+				innerPin.id,
+			);
+			if (connections.length > 0) {
+				continue;
+			}
+			const componentPin = nullthrows(
+				store.componentPins.get(innerPin.componentPinId),
+			);
+			if (componentPin.type === "input") {
+				const inputValuesMap = nullthrows(nodePinInputValues.get(child.id));
+				if (!inputValuesMap.has(innerPin.id)) {
+					const bitWidthStatus = store.nodePins.getNodePinBitWidthStatus(
+						innerPin.id,
+					);
+					const bitWidth = !bitWidthStatus.isFixed
+						? 1
+						: bitWidthStatus.bitWidth;
+					const zeroValue = Array<boolean>(bitWidth).fill(false);
+					inputValuesMap.set(innerPin.id, zeroValue);
+				}
+			}
 		}
 	}
 

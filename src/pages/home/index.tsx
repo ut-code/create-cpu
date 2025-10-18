@@ -1,7 +1,8 @@
 import {
 	Add as AddIcon,
 	Download as DownloadIcon,
-	MoreVert,
+	MoreVert as MoreVertIcon,
+	NoteAdd as NoteAddIcon,
 	Upload as UploadIcon,
 } from "@mui/icons-material";
 import {
@@ -16,7 +17,6 @@ import {
 	Typography,
 } from "@mui/material";
 import { useRef, useState } from "react";
-import { ComponentPropertyDialog } from "../../components/ComponentPropertyDialog";
 import { type CCComponentId, CCComponentStore } from "../../store/component";
 import { useStore } from "../../store/react";
 import { useComponents } from "../../store/react/selectors";
@@ -55,8 +55,13 @@ export default function HomePage({ onComponentSelected }: HomePageProps) {
 
 	const inputRef = useRef<HTMLInputElement>(null);
 
-	const [isComponentPropertyDialogOpen, setIsComponentPropertyDialogOpen] =
-		useState(false);
+	const onCreateComponent = () => {
+		const component = CCComponentStore.create({
+			name: "New Component",
+		});
+		store.components.register(component);
+		onComponentSelected(component.id);
+	};
 
 	const [componentMenuState, setComponentMenuState] = useState<{
 		componentId: CCComponentId;
@@ -70,6 +75,9 @@ export default function HomePage({ onComponentSelected }: HomePageProps) {
 					File
 				</Typography>
 				<Box sx={{ display: "flex", gap: 1 }}>
+					<Button variant="outlined" startIcon={<NoteAddIcon />} disabled>
+						New File
+					</Button>
 					<Button
 						variant="outlined"
 						color="inherit"
@@ -104,11 +112,11 @@ export default function HomePage({ onComponentSelected }: HomePageProps) {
 					</div>
 					<div>
 						<Button
-							variant="outlined"
-							onClick={() => setIsComponentPropertyDialogOpen(true)}
+							onClick={onCreateComponent}
+							variant="contained"
 							startIcon={<AddIcon />}
 						>
-							Create new...
+							Create
 						</Button>
 					</div>
 				</Box>
@@ -156,7 +164,7 @@ export default function HomePage({ onComponentSelected }: HomePageProps) {
 									});
 								}}
 							>
-								<MoreVert />
+								<MoreVertIcon />
 							</IconButton>
 						</Card>
 					))}
@@ -173,14 +181,6 @@ export default function HomePage({ onComponentSelected }: HomePageProps) {
 					>
 						<MenuItem
 							onClick={() => {
-								setIsComponentPropertyDialogOpen(true);
-								setComponentMenuState(null);
-							}}
-						>
-							Rename
-						</MenuItem>
-						<MenuItem
-							onClick={() => {
 								store.components.unregister(componentMenuState.componentId);
 								setComponentMenuState(null);
 							}}
@@ -188,21 +188,6 @@ export default function HomePage({ onComponentSelected }: HomePageProps) {
 							Delete
 						</MenuItem>
 					</Menu>
-				)}
-				{isComponentPropertyDialogOpen && (
-					<ComponentPropertyDialog
-						defaultName=""
-						onAccept={(newName) => {
-							const newComponent = CCComponentStore.create({
-								name: newName,
-							});
-							store.components.register(newComponent);
-							onComponentSelected(newComponent.id);
-						}}
-						onCancel={() => {
-							setIsComponentPropertyDialogOpen(false);
-						}}
-					/>
 				)}
 			</Container>
 		</div>

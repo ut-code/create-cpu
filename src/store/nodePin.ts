@@ -5,7 +5,13 @@ import type { Opaque } from "type-fest";
 import type CCStore from ".";
 import type { CCComponentPinId, CCNodePinBitWidthStatus } from "./componentPin";
 import { IntrinsicComponentDefinition } from "./intrinsics/base";
-import { aggregate, broadcast, decompose } from "./intrinsics/definitions";
+import {
+	aggregate,
+	broadcast,
+	decompose,
+	input,
+	output,
+} from "./intrinsics/definitions";
 import type { CCNodeId } from "./node";
 
 export type CCNodePinId = Opaque<string, "CCNodePinId">;
@@ -307,6 +313,17 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 		if (!aNodePin || !bNodePin) {
 			throw new Error(`Node pin ${a} or ${b} does not exist in the store`);
 		}
+		if (
+			aNodePin.componentPinId === input.inputPin.A.id ||
+			bNodePin.componentPinId === input.inputPin.A.id ||
+			aNodePin.componentPinId === output.outputPin.id ||
+			bNodePin.componentPinId === output.outputPin.id
+		) {
+			console.warn(
+				`Cannot connect to input pin A or output pin: ${aNodePin.id} and ${bNodePin.id}`,
+			);
+			return false;
+		}
 		const aComponentPin = this.#store.componentPins.get(
 			aNodePin?.componentPinId ?? null,
 		);
@@ -317,6 +334,12 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 			throw new Error(
 				`Component pin ${aNodePin?.componentPinId} or ${bNodePin?.componentPinId} does not exist in the store`,
 			);
+		}
+		if (aComponentPin.type === bComponentPin.type) {
+			console.warn(
+				`Cannot connect pins of the same type: ${aNodePin.id} and ${bNodePin.id}`,
+			);
+			return false;
 		}
 		const aNode = this.#store.nodes.get(aNodePin.nodeId);
 		const bNode = this.#store.nodes.get(bNodePin.nodeId);
@@ -335,6 +358,20 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 			console.warn(
 				`Cannot connect pins of different components: ${aNodePin.id} and ${bNodePin.id}`,
 			);
+			return false;
+		}
+		const aConnections = this.#store.connections.getConnectionsByNodePinId(
+			aNodePin.id,
+		);
+		const bConnections = this.#store.connections.getConnectionsByNodePinId(
+			bNodePin.id,
+		);
+		if (aComponentPin.type === "input" && aConnections.length > 0) {
+			console.warn(`Input pin already has a connection: ${aNodePin.id}`);
+			return false;
+		}
+		if (bComponentPin.type === "input" && bConnections.length > 0) {
+			console.warn(`Input pin already has a connection: ${bNodePin.id}`);
 			return false;
 		}
 		const aBitWidthStatus = this.getNodePinBitWidthStatus(a);

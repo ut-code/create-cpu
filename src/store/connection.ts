@@ -71,7 +71,6 @@ export class CCConnectionStore extends EventEmitter<CCConnectionStoreEvents> {
 		const fromNodePinId = connection.from;
 		const toNodePinId = connection.to;
 		if (!this.#store.nodePins.isConnectable(fromNodePinId, toNodePinId)) {
-			window.alert(`Cannot connect pins: ${fromNodePinId} and ${toNodePinId}`);
 			return;
 		}
 		this.#connections.set(connection.id, connection);

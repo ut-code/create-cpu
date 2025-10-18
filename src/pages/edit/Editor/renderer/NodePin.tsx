@@ -134,15 +134,12 @@ export default function CCComponentEditorRendererNodePin({
 		},
 	});
 
-	const isSimulationMode = useComponentEditorStore()(
-		(s) => s.editorMode === "play",
-	);
 	const interfaceComponentPin =
 		store.componentPins.getByImplementation(nodePinId);
 
 	return (
 		<>
-			{isSimulationMode && interfaceComponentPin && (
+			{interfaceComponentPin && (
 				<CCComponentEditorRendererInputValue nodePinId={nodePinId} />
 			)}
 			<g {...draggableProps} style={{ cursor: "pointer" }}>

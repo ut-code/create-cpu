@@ -98,6 +98,11 @@ export const input = createUnaryOperator(
 	"Input",
 	(a) => a,
 );
+export const output = createUnaryOperator(
+	ccIntrinsicComponentTypes.OUTPUT,
+	"Output",
+	(a) => a,
+);
 
 export const aggregate = new IntrinsicComponentDefinition({
 	type: ccIntrinsicComponentTypes.AGGREGATE,
@@ -166,6 +171,7 @@ export const definitions = {
 	[ccIntrinsicComponentTypes.NOT]: not,
 	[ccIntrinsicComponentTypes.XOR]: xor,
 	[ccIntrinsicComponentTypes.INPUT]: input,
+	[ccIntrinsicComponentTypes.OUTPUT]: output,
 	[ccIntrinsicComponentTypes.AGGREGATE]: aggregate,
 	[ccIntrinsicComponentTypes.DECOMPOSE]: decompose,
 	[ccIntrinsicComponentTypes.BROADCAST]: broadcast,

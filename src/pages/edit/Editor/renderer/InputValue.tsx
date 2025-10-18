@@ -11,6 +11,7 @@ import getCCComponentEditorRendererNodeGeometry from "./Node.geometry";
 export type CCComponentEditorRendererInputValueProps = {
 	nodePinId: CCNodePinId;
 };
+// TODO: Change name to CCComponentEditorRendererComponentPin
 export default function CCComponentEditorRendererInputValue({
 	nodePinId,
 }: CCComponentEditorRendererInputValueProps) {
@@ -22,16 +23,35 @@ export default function CCComponentEditorRendererInputValue({
 	);
 	const type = interfaceComponentPin.type;
 
-	const nodePinValue =
-		type === "input"
-			? nullthrows(componentEditorState.getInputValue(interfaceComponentPin.id))
-			: nullthrows(componentEditorState.getNodePinValue(nodePinId));
-	const updateInputValue = () => {
-		componentEditorState.setInputValue(
-			interfaceComponentPin.id,
-			wrappingIncrementSimulationValue(nodePinValue),
-		);
-	};
+	const { label, onClick } =
+		componentEditorState.editorMode === "edit"
+			? {
+					label: interfaceComponentPin.name,
+					onClick: null,
+				}
+			: {
+					label: stringifySimulationValue(
+						type === "input"
+							? nullthrows(
+									componentEditorState.getInputValue(interfaceComponentPin.id),
+								)
+							: nullthrows(componentEditorState.getNodePinValue(nodePinId)),
+					),
+					onClick:
+						type === "input"
+							? () => {
+									const nodePinValue = nullthrows(
+										componentEditorState.getInputValue(
+											interfaceComponentPin.id,
+										),
+									);
+									componentEditorState.setInputValue(
+										interfaceComponentPin.id,
+										wrappingIncrementSimulationValue(nodePinValue),
+									);
+								}
+							: null,
+				};
 
 	const nodePinPosition = nullthrows(
 		getCCComponentEditorRendererNodeGeometry(
@@ -53,9 +73,9 @@ export default function CCComponentEditorRendererInputValue({
 				stroke={theme.palette.textPrimary}
 				fill={theme.palette.white}
 				strokeWidth={1}
-				{...(type === "input"
+				{...(onClick
 					? {
-							onPointerDown: updateInputValue,
+							onPointerDown: onClick,
 							style: { cursor: "pointer" },
 						}
 					: {})}
@@ -70,7 +90,7 @@ export default function CCComponentEditorRendererInputValue({
 				dy={1}
 				style={{ pointerEvents: "none" }}
 			>
-				{stringifySimulationValue(nodePinValue)}
+				{label}
 			</text>
 		</>
 	);

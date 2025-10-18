@@ -52,9 +52,9 @@ function CCComponentEditorContent({
 			<CCComponentEditorNodePinPropertyEditor />
 			{isComponentPropertyDialogOpen && (
 				<ComponentPropertyDialog
+					componentId={componentId}
 					defaultName={component.name}
-					onAccept={(newName) => {
-						store.components.update(componentId, { name: newName });
+					onClose={() => {
 						setIsComponentPropertyDialogOpen(false);
 					}}
 					onCancel={() => {

@@ -7,6 +7,7 @@ import { CCNodeStore } from "./node";
 
 export function createStoreFixture(): CCStore {
 	const store = new CCStore();
+	store.mount();
 
 	const rootComponent = CCComponentStore.create({
 		name: "Root",
