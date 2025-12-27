@@ -314,8 +314,8 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 			throw new Error(`Node pin ${a} or ${b} does not exist in the store`);
 		}
 		if (
-			aNodePin.componentPinId === input.inputPin.A.id ||
-			bNodePin.componentPinId === input.inputPin.A.id ||
+			aNodePin.componentPinId === input.inputPin.In.id ||
+			bNodePin.componentPinId === input.inputPin.In.id ||
 			aNodePin.componentPinId === output.outputPin.Out.id ||
 			bNodePin.componentPinId === output.outputPin.Out.id
 		) {

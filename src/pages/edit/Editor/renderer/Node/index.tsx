@@ -1,14 +1,14 @@
 import nullthrows from "nullthrows";
 import { useState } from "react";
-import { theme } from "../../../../common/theme";
-import { vector2 } from "../../../../common/vector2";
-import type { CCNodeId } from "../../../../store/node";
-import { useStore } from "../../../../store/react";
-import ensureStoreItem from "../../../../store/react/error";
-import { useNode } from "../../../../store/react/selectors";
-import { useComponentEditorStore } from "../store";
-import getCCComponentEditorRendererNodeGeometry from "./Node.geometry";
-import CCComponentEditorRendererNodePin from "./NodePin";
+import { theme } from "../../../../../common/theme";
+import { vector2 } from "../../../../../common/vector2";
+import type { CCNodeId } from "../../../../../store/node";
+import { useStore } from "../../../../../store/react";
+import ensureStoreItem from "../../../../../store/react/error";
+import { useNode } from "../../../../../store/react/selectors";
+import { useComponentEditorStore } from "../../store";
+import getCCComponentEditorRendererNodeGeometry from "./geometry";
+import CCComponentEditorRendererNodePin from "../NodePin";
 
 export type CCComponentEditorRendererNodeProps = {
 	nodeId: CCNodeId;
@@ -24,7 +24,7 @@ const CCComponentEditorRendererNode = ensureStoreItem(
 		const [dragging, setDragging] = useState(false);
 		const [dragStartPosition, setDragStartPosition] = useState(vector2.zero);
 		const [previousNodePosition, setPreviousNodePosition] = useState(
-			vector2.zero,
+			vector2.zero
 		);
 
 		const handlePointerDown = (e: React.PointerEvent) => {
@@ -45,10 +45,10 @@ const CCComponentEditorRendererNode = ensureStoreItem(
 						vector2.mul(
 							vector2.sub(
 								vector2.fromDomEvent(e.nativeEvent),
-								dragStartPosition,
+								dragStartPosition
 							),
-							componentEditorState.perspective.scale,
-						),
+							componentEditorState.perspective.scale
+						)
 					),
 				});
 			}
@@ -77,18 +77,18 @@ const CCComponentEditorRendererNode = ensureStoreItem(
 				>
 					<text
 						fill={theme.palette.textPrimary}
-						x={geometry.x}
-						y={geometry.y - 5}
+						x={geometry.rect.position.x}
+						y={geometry.rect.position.y - 5}
 						textAnchor="start"
 						fontSize={12}
 					>
 						{component.name}
 					</text>
 					<rect
-						x={geometry.x}
-						y={geometry.y}
-						width={geometry.width}
-						height={geometry.height}
+						x={geometry.rect.position.x}
+						y={geometry.rect.position.y}
+						width={geometry.rect.size.x}
+						height={geometry.rect.size.y}
 						fill={theme.palette.white}
 						stroke={
 							componentEditorState.selectedNodeIds.has(nodeId)
@@ -107,6 +107,6 @@ const CCComponentEditorRendererNode = ensureStoreItem(
 				))}
 			</>
 		);
-	},
+	}
 );
 export default CCComponentEditorRendererNode;

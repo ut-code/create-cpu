@@ -1,20 +1,17 @@
 import nullthrows from "nullthrows";
-import { theme } from "../../../../common/theme";
-import type { CCNodePinId } from "../../../../store/nodePin";
-import { useStore } from "../../../../store/react";
-import { useComponentEditorStore } from "../store";
-import {
-	stringifySimulationValue,
-	wrappingIncrementSimulationValue,
-} from "../store/slices/core";
-import getCCComponentEditorRendererNodeGeometry from "./Node.geometry";
-export type CCComponentEditorRendererInputValueProps = {
+import { theme } from "../../../../../common/theme";
+import type { CCNodePinId } from "../../../../../store/nodePin";
+import { useStore } from "../../../../../store/react";
+import { useComponentEditorStore } from "../../store";
+import { stringifySimulationValue } from "../../store/slices/core";
+import getCCComponentEditorRendererNodeGeometry from "./../Node/geometry";
+import { wrappingIncrementSimulationValue } from "../../../../../store/simulation";
+export type CCComponentEditorRendererComponentPinProps = {
 	nodePinId: CCNodePinId;
 };
-// TODO: Change name to CCComponentEditorRendererComponentPin
-export default function CCComponentEditorRendererInputValue({
+export default function CCComponentEditorRendererComponentPin({
 	nodePinId,
-}: CCComponentEditorRendererInputValueProps) {
+}: CCComponentEditorRendererComponentPinProps) {
 	const { store } = useStore();
 	const componentEditorState = useComponentEditorStore()();
 	const nodePin = nullthrows(store.nodePins.get(nodePinId));

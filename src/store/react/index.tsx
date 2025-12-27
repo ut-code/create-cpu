@@ -47,7 +47,7 @@ function useContextValue() {
 			const toNodePin = nullthrows(
 				tempStore.nodePins
 					.getManyByNodeId(sampleNode2.id)
-					.find((nodePin) => nodePin.componentPinId === not.inputPin.A.id),
+					.find((nodePin) => nodePin.componentPinId === not.inputPin.In.id),
 			);
 			const sampleConnection = CCConnectionStore.create({
 				parentComponentId: rootComponent.id,

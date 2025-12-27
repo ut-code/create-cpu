@@ -39,7 +39,7 @@ export function createStoreFixture(): CCStore {
 		store.nodePins
 			.getManyByNodeId(sampleNode2.id)
 			.find(
-				(nodePin) => nodePin.componentPinId === intrinsics.not.inputPin.A.id,
+				(nodePin) => nodePin.componentPinId === intrinsics.not.inputPin.In.id,
 			),
 	);
 	const sampleConnection = CCConnectionStore.create({

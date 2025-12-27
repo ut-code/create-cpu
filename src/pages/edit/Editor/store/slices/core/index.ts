@@ -1,45 +1,23 @@
 import nullthrows from "nullthrows";
 import invariant from "tiny-invariant";
-import type { CCComponentId } from "../../../../../../store/component";
-import simulateComponent from "../../../../../../store/componentEvaluator";
+// import type { CCComponentId } from "../../../../../../store/component";
+import simulateComponent from "../../../../../../store/simulation";
 import type { CCComponentPinId } from "../../../../../../store/componentPin";
 import type { CCConnectionId } from "../../../../../../store/connection";
 import type { CCNodeId } from "../../../../../../store/node";
 import type { CCNodePinId } from "../../../../../../store/nodePin";
 import type { ComponentEditorSliceCreator } from "../../types";
 import type { EditorStoreCoreSlice } from "./types";
+import type {
+	SimulationValue,
+	SimulationFrame,
+} from "../../../../../../store/simulation";
 
-export type SimulationValue = boolean[];
 export function stringifySimulationValue(value: SimulationValue): string {
 	const binary = value.map((v) => (v ? "1" : "0")).join("");
 	if (value.length <= 4) return binary;
 	return `0x${Number.parseInt(binary, 2).toString(16)}`;
 }
-export function wrappingIncrementSimulationValue(
-	value: SimulationValue,
-): SimulationValue {
-	const result = value.slice();
-	for (let i = result.length - 1; i >= 0; i--) {
-		if (!result[i]) {
-			result[i] = true;
-			break;
-		}
-		result[i] = false; // carry the increment
-	}
-	return result;
-}
-
-export type SimulationFrame = {
-	componentId: CCComponentId;
-	nodes: Map<
-		CCNodeId,
-		{
-			pins: Map<CCNodePinId, SimulationValue>;
-			/** null if intrinsic */
-			child: SimulationFrame | null;
-		}
-	>;
-};
 
 export const createComponentEditorStoreCoreSlice: ComponentEditorSliceCreator<
 	EditorStoreCoreSlice
@@ -84,14 +62,14 @@ export const createComponentEditorStoreCoreSlice: ComponentEditorSliceCreator<
 				},
 				setInputValue(
 					componentPinId: CCComponentPinId,
-					value: SimulationValue,
+					value: SimulationValue
 				) {
 					set((state) => {
 						return {
 							...state,
 							inputValues: new Map(state.inputValues).set(
 								componentPinId,
-								value,
+								value
 							),
 						};
 					});
@@ -109,7 +87,7 @@ export const createComponentEditorStoreCoreSlice: ComponentEditorSliceCreator<
 					set((state) => ({
 						...state,
 						selectedNodeIds: new Set(
-							exclusive ? ids : [...state.selectedNodeIds, ...ids],
+							exclusive ? ids : [...state.selectedNodeIds, ...ids]
 						),
 						selectedConnectionIds: new Set(),
 					}));
@@ -119,8 +97,8 @@ export const createComponentEditorStoreCoreSlice: ComponentEditorSliceCreator<
 						...state,
 						selectedNodeIds: new Set(
 							[...state.selectedNodeIds].filter(
-								(nodeId) => !ids.includes(nodeId),
-							),
+								(nodeId) => !ids.includes(nodeId)
+							)
 						),
 						selectedConnectionIds: new Set(),
 					}));
@@ -129,7 +107,7 @@ export const createComponentEditorStoreCoreSlice: ComponentEditorSliceCreator<
 					set((state) => ({
 						...state,
 						selectedConnectionIds: new Set(
-							exclusive ? ids : [...state.selectedConnectionIds, ...ids],
+							exclusive ? ids : [...state.selectedConnectionIds, ...ids]
 						),
 						selectedNodeIds: new Set(),
 					}));
@@ -137,16 +115,14 @@ export const createComponentEditorStoreCoreSlice: ComponentEditorSliceCreator<
 				getNodePinValue(nodePinId: CCNodePinId): SimulationValue | undefined {
 					const { nodeId } = nullthrows(store.nodePins.get(nodePinId));
 					return nullthrows(
-						nullthrows(simulationCachedFrames[get().timeStep]).nodes.get(
-							nodeId,
-						),
+						nullthrows(simulationCachedFrames[get().timeStep]).nodes.get(nodeId)
 					).pins.get(nodePinId);
 				},
 				getComponentPinValue(
-					componentPinId: CCComponentPinId,
+					componentPinId: CCComponentPinId
 				): SimulationValue | undefined {
 					const componentPin = nullthrows(
-						store.componentPins.get(componentPinId),
+						store.componentPins.get(componentPinId)
 					);
 					invariant(componentPin.implementation);
 					const nodePinId = componentPin.implementation;
@@ -197,8 +173,8 @@ export const createComponentEditorStoreCoreSlice: ComponentEditorSliceCreator<
 					}
 					simulationCachedFrames.push(
 						nullthrows(
-							simulateComponent(store, componentId, inputValues, previousFrame),
-						),
+							simulateComponent(store, componentId, inputValues, previousFrame)
+						)
 					);
 					isUpdated = true;
 				}

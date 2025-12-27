@@ -1,5 +1,5 @@
-import { vector2 } from "../../../../common/vector2";
-import { useComponentEditorStore } from "../store";
+import { vector2 } from "../../../../../common/vector2";
+import { useComponentEditorStore } from "../../store";
 
 export default function CCComponentEditorRendererBackground() {
 	const componentEditorState = useComponentEditorStore()();

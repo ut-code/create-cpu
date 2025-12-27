@@ -1,16 +1,19 @@
 import { KDTree } from "mnemonist";
 import nullthrows from "nullthrows";
 import { type PointerEvent, type ReactNode, useState } from "react";
-import { theme } from "../../../../common/theme";
-import { type Vector2, vector2 } from "../../../../common/vector2";
-import { useDraggable } from "../../../../hooks/drag";
-import { CCConnectionStore } from "../../../../store/connection";
-import type { CCNodePinId } from "../../../../store/nodePin";
-import { useStore } from "../../../../store/react";
-import { useComponentEditorStore } from "../store";
-import { CCComponentEditorRendererConnectionCore } from "./Connection";
-import CCComponentEditorRendererInputValue from "./InputValue";
-import getCCComponentEditorRendererNodeGeometry from "./Node.geometry";
+import { theme } from "../../../../../common/theme";
+import { type Vector2, vector2 } from "../../../../../common/vector2";
+import { useDraggable } from "../../../../../hooks/drag";
+import { CCConnectionStore } from "../../../../../store/connection";
+import type { CCNodePinId } from "../../../../../store/nodePin";
+import { useStore } from "../../../../../store/react";
+import { useComponentEditorStore } from "../../store";
+import {
+	CCComponentEditorRendererConnectionCore,
+	type CCComponentEditorRendererConnectionEndpoint,
+} from "./../Connection";
+import CCComponentEditorRendererComponentPin from "./../ComponentPin";
+import getCCComponentEditorRendererNodeGeometry from "./../Node/geometry";
 
 const NODE_PIN_POSITION_SENSITIVITY = 10;
 
@@ -61,17 +64,24 @@ export default function CCComponentEditorRendererNodePin({
 			nearestNodePinPosition.x - draggingState.cursorPosition.x,
 			nearestNodePinPosition.y - draggingState.cursorPosition.y,
 		);
+
+		const startEndpoint: CCComponentEditorRendererConnectionEndpoint = {
+			direction: componentPin.type,
+			position,
+		};
+		const endEndpoint: CCComponentEditorRendererConnectionEndpoint = {
+			direction: componentPin.type === "input" ? "output" : "input",
+			position: draggingState.cursorPosition,
+		};
 		if (distance < NODE_PIN_POSITION_SENSITIVITY) {
 			nodePinIdToConnect = nearestNodePinId;
+			endEndpoint.position = nearestNodePinPosition;
 		}
+
 		draggingView = (
 			<CCComponentEditorRendererConnectionCore
-				from={position}
-				to={
-					nodePinIdToConnect
-						? nearestNodePinPosition
-						: draggingState.cursorPosition
-				}
+				from={startEndpoint}
+				to={endEndpoint}
 			/>
 		);
 	}
@@ -140,7 +150,7 @@ export default function CCComponentEditorRendererNodePin({
 	return (
 		<>
 			{interfaceComponentPin && (
-				<CCComponentEditorRendererInputValue nodePinId={nodePinId} />
+				<CCComponentEditorRendererComponentPin nodePinId={nodePinId} />
 			)}
 			<g {...draggableProps} style={{ cursor: "pointer" }}>
 				<rect
