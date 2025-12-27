@@ -37,7 +37,7 @@ export class CCStoreAutoSaver {
 	save(): void {
 		window.localStorage.setItem(
 			CCStoreAutoSaver.localStorageKey,
-			this.#store.toJSON(),
+			this.#store.toJSON()
 		);
 	}
 

@@ -81,7 +81,7 @@ export class CCComponentPinStore extends EventEmitter<CCComponentPinStoreEvents>
 		this.#store.nodePins.on("didRegister", (nodePin) => {
 			if (
 				nodePin.componentPinId !== input.inputPin.A.id &&
-				nodePin.componentPinId !== output.outputPin.id
+				nodePin.componentPinId !== output.outputPin.Out.id
 			) {
 				return;
 			}
@@ -223,30 +223,30 @@ export class CCComponentPinStore extends EventEmitter<CCComponentPinStoreEvents>
 		switch (pin.id) {
 			case nullthrows(and.inputPin.A.id):
 			case nullthrows(and.inputPin.B.id):
-			case nullthrows(and.outputPin.id):
+			case nullthrows(and.outputPin.Out.id):
 			case nullthrows(or.inputPin.A.id):
 			case nullthrows(or.inputPin.B.id):
-			case nullthrows(or.outputPin.id):
+			case nullthrows(or.outputPin.Out.id):
 			case nullthrows(not.inputPin.A.id):
-			case nullthrows(not.outputPin.id):
+			case nullthrows(not.outputPin.Out.id):
 			case nullthrows(xor.inputPin.A.id):
 			case nullthrows(xor.inputPin.B.id):
-			case nullthrows(xor.outputPin.id):
+			case nullthrows(xor.outputPin.Out.id):
 			case nullthrows(input.inputPin.A.id):
-			case nullthrows(input.outputPin.id):
+			case nullthrows(input.outputPin.Out.id):
 			case nullthrows(output.inputPin.A.id):
-			case nullthrows(output.outputPin.id):
+			case nullthrows(output.outputPin.Out.id):
 			case nullthrows(flipflop.inputPin.In.id):
-			case nullthrows(flipflop.outputPin.id): {
+			case nullthrows(flipflop.outputPin.Out.id): {
 				return { isFixed: false, fixMode: "automatic" };
 			}
 			case nullthrows(aggregate.inputPin.In.id): {
 				return { isFixed: false, fixMode: "manual" };
 			}
-			case nullthrows(aggregate.outputPin.id): {
+			case nullthrows(aggregate.outputPin.Out.id): {
 				return { isFixed: false, fixMode: "manual" };
 			}
-			case nullthrows(decompose.outputPin.id): {
+			case nullthrows(decompose.outputPin.Out.id): {
 				return { isFixed: false, fixMode: "manual" };
 			}
 			case nullthrows(decompose.inputPin.In.id): {
@@ -255,7 +255,7 @@ export class CCComponentPinStore extends EventEmitter<CCComponentPinStoreEvents>
 			case nullthrows(broadcast.inputPin.In.id): {
 				return { isFixed: true, bitWidth: 1 };
 			}
-			case nullthrows(broadcast.outputPin.id): {
+			case nullthrows(broadcast.outputPin.Out.id): {
 				return { isFixed: false, fixMode: "manual" };
 			}
 			default: {

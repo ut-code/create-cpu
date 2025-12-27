@@ -4,45 +4,37 @@ import type { CCComponentId } from "../component";
 import type { CCComponentPinId } from "../componentPin";
 import { IntrinsicComponentDefinition } from "./base";
 import {
+	type CCIntrinsicComponentBinaryOperatorSpec,
+	type CCIntrinsicComponentDisplaySpec,
+	type CCIntrinsicComponentSpecByType,
 	type CCIntrinsicComponentType,
 	ccIntrinsicComponentTypes,
+	type CCIntrinsicComponentUnaryOperatorSpec,
 } from "./types";
-
-// function createNullaryOperator(
-// 	type: CCIntrinsicComponentType,
-// 	name: string,
-// 	evaluate: () => boolean
-// ) {
-// 	return new IntrinsicComponentDefinition({
-// 		type,
-// 		name,
-// 		in: {},
-// 		out: { name: "Out" },
-// 		evaluate: (_, output) => {
-// 			invariant(output[0]);
-// 			return [new Array(output[0].bitWidth).fill(evaluate())];
-// 		},
-// 	});
-// }
 
 function createUnaryOperator(
 	type: CCIntrinsicComponentType,
 	name: string,
 	evaluate: (a: boolean) => boolean,
 ) {
-	return new IntrinsicComponentDefinition({
-		type,
-		name,
-		in: {
-			A: { name: "In" },
+	return new IntrinsicComponentDefinition<CCIntrinsicComponentUnaryOperatorSpec>(
+		{
+			type,
+			name,
+			in: { In: { name: "In" } },
+			out: { Out: { name: "Out" } },
+			initialConfig: null,
+			evaluate: (context, nodeId, shape) => {
+				const inputShape = shape.inputNodePinIds.A;
+				invariant(inputShape[0] && !inputShape[1]);
+				const nodePinIdToValue = context.currentFrame.nodes.get(nodeId)?.pins;
+				invariant(nodePinIdToValue);
+				const inputValue = nodePinIdToValue.get(inputShape[0].nodePinId);
+				invariant(inputValue);
+				return [inputValue.map((a) => evaluate(nullthrows(a)))];
+			},
 		},
-		out: { name: "Out" },
-		evaluate: (input) => {
-			invariant(input.A[0] && !input.A[1]);
-			const A = input.A[0];
-			return [A.map((a) => evaluate(nullthrows(a)))];
-		},
-	});
+	);
 }
 
 function createBinaryOperator(
@@ -50,27 +42,36 @@ function createBinaryOperator(
 	name: string,
 	evaluate: (a: boolean, b: boolean) => boolean,
 ) {
-	return new IntrinsicComponentDefinition({
-		type,
-		name,
-		in: {
-			A: { name: "A" },
-			B: { name: "B" },
+	return new IntrinsicComponentDefinition<CCIntrinsicComponentBinaryOperatorSpec>(
+		{
+			type,
+			name,
+			in: { A: { name: "A" }, B: { name: "B" } },
+			out: { Out: { name: "Out" } },
+			initialConfig: null,
+			evaluate: (context, nodeId, shape) => {
+				const inputShapeA = shape.inputNodePinIds.A;
+				const inputShapeB = shape.inputNodePinIds.B;
+				invariant(
+					inputShapeA[0] &&
+						!inputShapeA[1] &&
+						inputShapeB[0] &&
+						!inputShapeB[1],
+				);
+				const nodePinIdToValue = context.currentFrame.nodes.get(nodeId)?.pins;
+				invariant(nodePinIdToValue);
+				const inputValueA = nodePinIdToValue.get(inputShapeA[0].nodePinId);
+				const inputValueB = nodePinIdToValue.get(inputShapeB[0].nodePinId);
+				invariant(inputValueA && inputValueB);
+				invariant(inputValueA.length === inputValueB.length);
+				return [
+					Array.from({ length: inputValueA.length }, (_, i) =>
+						evaluate(nullthrows(inputValueA[i]), nullthrows(inputValueB[i])),
+					),
+				];
+			},
 		},
-		out: { name: "Out" },
-		evaluate: (input) => {
-			invariant(input.A[0] && !input.A[1]);
-			invariant(input.B[0] && !input.B[1]);
-			const A = input.A[0];
-			const B = input.B[0];
-			invariant(A.length === B.length);
-			return [
-				Array.from({ length: A.length }, (_, i) =>
-					evaluate(nullthrows(A[i]), nullthrows(B[i])),
-				),
-			];
-		},
-	});
+	);
 }
 
 export const and = createBinaryOperator(
@@ -104,68 +105,92 @@ export const output = createUnaryOperator(
 	(a) => a,
 );
 
-export const aggregate = new IntrinsicComponentDefinition({
-	type: ccIntrinsicComponentTypes.AGGREGATE,
-	name: "Aggregate",
-	in: {
-		In: { name: "In", isBitWidthConfigurable: true, isSplittable: true },
-	},
-	out: { name: "Out" },
-	evaluate: (input) => {
-		return [input.In.flat()];
-	},
-});
+export const aggregate =
+	new IntrinsicComponentDefinition<CCIntrinsicComponentUnaryOperatorSpec>({
+		type: ccIntrinsicComponentTypes.AGGREGATE,
+		name: "Aggregate",
+		in: {
+			In: { name: "In", isBitWidthConfigurable: true, isSplittable: true },
+		},
+		out: { Out: { name: "Out" } },
+		initialConfig: null,
+		evaluate: (input) => {
+			return [input.In.flat()];
+		},
+	});
 
-export const decompose = new IntrinsicComponentDefinition({
-	type: ccIntrinsicComponentTypes.DECOMPOSE,
-	name: "Decompose",
-	in: {
-		In: { name: "In" },
-	},
-	out: { name: "Out", isBitWidthConfigurable: true, isSplittable: true },
-	evaluate: (input, outputShape) => {
-		invariant(input.In[0] && !input.In[1]);
-		const inputValue = input.In[0];
-		const outputValue = [];
-		let currentIndex = 0;
-		for (const shape of outputShape) {
-			outputValue.push([
-				...inputValue.slice(currentIndex, currentIndex + shape.bitWidth),
-			]);
-			currentIndex += shape.bitWidth;
-		}
-		return outputValue;
-	},
-});
+export const decompose =
+	new IntrinsicComponentDefinition<CCIntrinsicComponentUnaryOperatorSpec>({
+		type: ccIntrinsicComponentTypes.DECOMPOSE,
+		name: "Decompose",
+		in: {
+			In: { name: "In" },
+		},
+		out: {
+			Out: { name: "Out", isBitWidthConfigurable: true, isSplittable: true },
+		},
+		initialConfig: null,
+		evaluate: (input, outputShape) => {
+			invariant(input.In[0] && !input.In[1]);
+			const inputValue = input.In[0];
+			const outputValue = [];
+			let currentIndex = 0;
+			for (const shape of outputShape) {
+				outputValue.push([
+					...inputValue.slice(currentIndex, currentIndex + shape.bitWidth),
+				]);
+				currentIndex += shape.bitWidth;
+			}
+			return outputValue;
+		},
+	});
 
-export const broadcast = new IntrinsicComponentDefinition({
-	type: ccIntrinsicComponentTypes.BROADCAST,
-	name: "Broadcast",
-	in: {
-		In: { name: "In" },
-	},
-	out: { name: "Out", isBitWidthConfigurable: true },
-	evaluate: (input, outputShape) => {
-		invariant(input.In[0] && !input.In[1]);
-		invariant(input.In[0][0] !== undefined && !input.In[0][1]);
-		const inputValue = input.In[0][0];
-		invariant(outputShape[0] && !outputShape[1]);
-		const outputBitWidth = outputShape[0].bitWidth;
-		return [Array.from({ length: outputBitWidth }, () => inputValue)];
-	},
-});
+export const broadcast =
+	new IntrinsicComponentDefinition<CCIntrinsicComponentUnaryOperatorSpec>({
+		type: ccIntrinsicComponentTypes.BROADCAST,
+		name: "Broadcast",
+		in: {
+			In: { name: "In" },
+		},
+		out: { Out: { name: "Out", isBitWidthConfigurable: true } },
+		initialConfig: null,
+		evaluate: (input, outputShape) => {
+			invariant(input.In[0] && !input.In[1]);
+			invariant(input.In[0][0] !== undefined && !input.In[0][1]);
+			const inputValue = input.In[0][0];
+			invariant(outputShape[0] && !outputShape[1]);
+			const outputBitWidth = outputShape[0].bitWidth;
+			return [Array.from({ length: outputBitWidth }, () => inputValue)];
+		},
+	});
 
-export const flipflop = new IntrinsicComponentDefinition({
-	type: ccIntrinsicComponentTypes.FLIPFLOP,
-	name: "FlipFlop",
-	in: {
-		In: { name: "In" },
-	},
-	out: { name: "Out" },
-	evaluate: (_0, _1, previousInput) => previousInput.In,
-});
+export const flipflop =
+	new IntrinsicComponentDefinition<CCIntrinsicComponentUnaryOperatorSpec>({
+		type: ccIntrinsicComponentTypes.FLIPFLOP,
+		name: "FlipFlop",
+		in: {
+			In: { name: "In" },
+		},
+		out: { Out: { name: "Out" } },
+		initialConfig: null,
+		evaluate: (_0, _1, previousInput) => previousInput.In,
+	});
 
-export const definitions = {
+export const display =
+	new IntrinsicComponentDefinition<CCIntrinsicComponentDisplaySpec>({
+		type: ccIntrinsicComponentTypes.DISPLAY,
+		name: "Display",
+		in: { Pixels: { name: "Pixels" } },
+		out: {},
+		initialConfig: { resolution: { x: 100, y: 1000 } },
+		evaluate: () => true,
+	});
+
+export const definitions: {
+	[t in CCIntrinsicComponentType]: IntrinsicComponentDefinition<
+		CCIntrinsicComponentSpecByType[t]
+	>;
+} = {
 	[ccIntrinsicComponentTypes.AND]: and,
 	[ccIntrinsicComponentTypes.OR]: or,
 	[ccIntrinsicComponentTypes.NOT]: not,
@@ -176,7 +201,8 @@ export const definitions = {
 	[ccIntrinsicComponentTypes.DECOMPOSE]: decompose,
 	[ccIntrinsicComponentTypes.BROADCAST]: broadcast,
 	[ccIntrinsicComponentTypes.FLIPFLOP]: flipflop,
-} satisfies Record<CCIntrinsicComponentType, IntrinsicComponentDefinition>;
+	[ccIntrinsicComponentTypes.DISPLAY]: display,
+};
 
 export const definitionByComponentId = new Map<
 	CCComponentId,
