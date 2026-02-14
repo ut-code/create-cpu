@@ -1,6 +1,8 @@
 import nullthrows from "nullthrows";
 import { useState } from "react";
 import { theme } from "../../../../../common/theme";
+import type { Vector2 } from "../../../../../common/vector2";
+import type { CCComponentPinType } from "../../../../../store/componentPin";
 import type { CCConnectionId } from "../../../../../store/connection";
 import { useStore } from "../../../../../store/react";
 import ensureStoreItem from "../../../../../store/react/error";
@@ -8,8 +10,6 @@ import { useNode } from "../../../../../store/react/selectors";
 import { useComponentEditorStore } from "../../store";
 import { stringifySimulationValue } from "../../store/slices/core/index";
 import getCCComponentEditorRendererNodeGeometry from "../Node/geometry";
-import type { Vector2 } from "../../../../../common/vector2";
-import type { CCComponentPinType } from "../../../../../store/componentPin";
 
 export type CCComponentEditorRendererConnectionEndpoint = {
 	direction: CCComponentPinType;

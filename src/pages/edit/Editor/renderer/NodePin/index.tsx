@@ -8,11 +8,11 @@ import { CCConnectionStore } from "../../../../../store/connection";
 import type { CCNodePinId } from "../../../../../store/nodePin";
 import { useStore } from "../../../../../store/react";
 import { useComponentEditorStore } from "../../store";
+import CCComponentEditorRendererComponentPin from "./../ComponentPin";
 import {
 	CCComponentEditorRendererConnectionCore,
 	type CCComponentEditorRendererConnectionEndpoint,
 } from "./../Connection";
-import CCComponentEditorRendererComponentPin from "./../ComponentPin";
 import getCCComponentEditorRendererNodeGeometry from "./../Node/geometry";
 
 const NODE_PIN_POSITION_SENSITIVITY = 10;
@@ -48,23 +48,6 @@ export default function CCComponentEditorRendererNodePin({
 	let draggingView: ReactNode = null;
 	let nodePinIdToConnect: CCNodePinId | null = null;
 	if (draggingState) {
-		const nearestNodePinId =
-			draggingState.nodePinPositionKDTree.nearestNeighbor([
-				draggingState.cursorPosition.x,
-				draggingState.cursorPosition.y,
-			]);
-		const nearestNodePin = nullthrows(store.nodePins.get(nearestNodePinId));
-		const nearestNodePinPosition = nullthrows(
-			getCCComponentEditorRendererNodeGeometry(
-				store,
-				nearestNodePin.nodeId,
-			).nodePinPositionById.get(nearestNodePinId),
-		);
-		const distance = Math.hypot(
-			nearestNodePinPosition.x - draggingState.cursorPosition.x,
-			nearestNodePinPosition.y - draggingState.cursorPosition.y,
-		);
-
 		const startEndpoint: CCComponentEditorRendererConnectionEndpoint = {
 			direction: componentPin.type,
 			position,
@@ -73,9 +56,27 @@ export default function CCComponentEditorRendererNodePin({
 			direction: componentPin.type === "input" ? "output" : "input",
 			position: draggingState.cursorPosition,
 		};
-		if (distance < NODE_PIN_POSITION_SENSITIVITY) {
-			nodePinIdToConnect = nearestNodePinId;
-			endEndpoint.position = nearestNodePinPosition;
+		if (draggingState.nodePinPositionKDTree.size > 0) {
+			const nearestNodePinId =
+				draggingState.nodePinPositionKDTree.nearestNeighbor([
+					draggingState.cursorPosition.x,
+					draggingState.cursorPosition.y,
+				]);
+			const nearestNodePin = nullthrows(store.nodePins.get(nearestNodePinId));
+			const nearestNodePinPosition = nullthrows(
+				getCCComponentEditorRendererNodeGeometry(
+					store,
+					nearestNodePin.nodeId,
+				).nodePinPositionById.get(nearestNodePinId),
+			);
+			const distance = Math.hypot(
+				nearestNodePinPosition.x - draggingState.cursorPosition.x,
+				nearestNodePinPosition.y - draggingState.cursorPosition.y,
+			);
+			if (distance < NODE_PIN_POSITION_SENSITIVITY) {
+				nodePinIdToConnect = nearestNodePinId;
+				endEndpoint.position = nearestNodePinPosition;
+			}
 		}
 
 		draggingView = (

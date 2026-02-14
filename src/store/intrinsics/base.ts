@@ -1,13 +1,13 @@
 import { mapValues } from "es-toolkit";
 import type { CCComponent, CCComponentId } from "../component";
-import type { CCNodePinId } from "../nodePin";
-import type { CCNodeId } from "../node";
 import type { CCComponentPin, CCComponentPinId } from "../componentPin";
+import type { CCNodeId } from "../node";
+import type { CCNodePinId } from "../nodePin";
+import type { SimulationFrame } from "../simulation";
 import type {
 	CCIntrinsicComponentSpec,
 	CCIntrinsicComponentType,
 } from "./types";
-import type { SimulationFrame } from "../simulation";
 
 export type CCIntrinsicComponentShape<Spec extends CCIntrinsicComponentSpec> = {
 	inputShape: Record<Spec["in"], CCComponentPinInstanceShapes>;

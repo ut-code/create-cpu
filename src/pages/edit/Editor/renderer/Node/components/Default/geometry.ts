@@ -1,4 +1,4 @@
-import { vector2, type Vector2 } from "../../../../../../../common/vector2";
+import { type Vector2, vector2 } from "../../../../../../../common/vector2";
 import type { CCNodePinId } from "../../../../../../../store/nodePin";
 import type {
 	CCComponentEditorRendererNodeGeometryCalculator,
@@ -9,7 +9,7 @@ const width = 100;
 const gapY = 20;
 const paddingY = 15;
 
-export const calculateCCComponentRendererNodeDefaultGeometry: CCComponentEditorRendererNodeGeometryCalculator =
+export const ccComponentRendererNodeDefaultGeometryCalculator: CCComponentEditorRendererNodeGeometryCalculator =
 	(source: CCComponentEditorRendererNodeGeometrySource) => {
 		const size: Vector2 = {
 			x: width,
@@ -17,7 +17,7 @@ export const calculateCCComponentRendererNodeDefaultGeometry: CCComponentEditorR
 				gapY *
 					Math.max(
 						source.inputNodePinIds.length,
-						source.outputNodePinIds.length
+						source.outputNodePinIds.length,
 					) +
 				paddingY * 2,
 		};

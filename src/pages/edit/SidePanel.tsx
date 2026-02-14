@@ -1,6 +1,5 @@
 import { Search } from "@mui/icons-material";
 import { Box, InputAdornment, TextField } from "@mui/material";
-import nullthrows from "nullthrows";
 import { useState } from "react";
 import invariant from "tiny-invariant";
 import { setDataTransferAsComponent } from "../../common/serialization";
@@ -18,10 +17,7 @@ function ComponentRenderer({ componentId }: { componentId: CCComponentId }) {
 	const { store } = useStore();
 	const component = store.components.get(componentId);
 	invariant(component);
-	const pins = store.componentPins
-		.getPinIdsByComponentId(componentId)
-		.filter((pinId) => store.componentPins.isInterfacePin(pinId))
-		.map((ccPinId) => nullthrows(store.componentPins.get(ccPinId)));
+	const pins = store.componentPins.getManyByComponentId(componentId);
 
 	return (
 		<div aria-label="Component" role="img">

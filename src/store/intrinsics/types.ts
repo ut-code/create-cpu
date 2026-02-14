@@ -1,3 +1,4 @@
+import type { JsonValue } from "type-fest";
 import type { Vector2 } from "../../common/vector2";
 
 export const ccIntrinsicComponentTypes = {
@@ -18,7 +19,19 @@ export type CCIntrinsicComponentType = keyof typeof ccIntrinsicComponentTypes;
 export type CCIntrinsicComponentSpec = {
 	in: string;
 	out: string;
-	config: unknown;
+	config: JsonValue;
+};
+
+export type CCIntrinsicComponentInputSpec = {
+	in: never;
+	out: "Out";
+	config: null;
+};
+
+export type CCIntrinsicComponentOutputSpec = {
+	in: "In";
+	out: never;
+	config: null;
 };
 
 export type CCIntrinsicComponentUnaryOperatorSpec = {
@@ -44,8 +57,8 @@ export type CCIntrinsicComponentSpecByType = {
 	[ccIntrinsicComponentTypes.OR]: CCIntrinsicComponentBinaryOperatorSpec;
 	[ccIntrinsicComponentTypes.NOT]: CCIntrinsicComponentUnaryOperatorSpec;
 	[ccIntrinsicComponentTypes.XOR]: CCIntrinsicComponentBinaryOperatorSpec;
-	[ccIntrinsicComponentTypes.INPUT]: CCIntrinsicComponentUnaryOperatorSpec;
-	[ccIntrinsicComponentTypes.OUTPUT]: CCIntrinsicComponentUnaryOperatorSpec;
+	[ccIntrinsicComponentTypes.INPUT]: CCIntrinsicComponentInputSpec;
+	[ccIntrinsicComponentTypes.OUTPUT]: CCIntrinsicComponentOutputSpec;
 	[ccIntrinsicComponentTypes.AGGREGATE]: CCIntrinsicComponentUnaryOperatorSpec;
 	[ccIntrinsicComponentTypes.DECOMPOSE]: CCIntrinsicComponentUnaryOperatorSpec;
 	[ccIntrinsicComponentTypes.BROADCAST]: CCIntrinsicComponentUnaryOperatorSpec;

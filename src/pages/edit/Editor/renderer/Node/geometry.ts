@@ -1,14 +1,14 @@
 import nullthrows from "nullthrows";
 import type CCStore from "../../../../../store";
+import type { CCIntrinsicComponentType } from "../../../../../store/intrinsics/types";
 import type { CCNodeId } from "../../../../../store/node";
+import { ccComponentRendererNodeDefaultGeometryCalculator } from "./components/Default/geometry";
 import type {
 	CCComponentEditorRendererNodeGeometryCalculator,
 	CCComponentEditorRendererNodeGeometrySource,
 } from "./types";
-import { calculateCCComponentRendererNodeDefaultGeometry } from "./components/Default/geometry";
-import type { CCIntrinsicComponentType } from "../../../../../store/intrinsics/types";
 
-const geometryCalculators: Partial<
+const specialGeometryCalculators: Partial<
 	Record<
 		CCIntrinsicComponentType,
 		CCComponentEditorRendererNodeGeometryCalculator
@@ -17,7 +17,7 @@ const geometryCalculators: Partial<
 
 export default function getCCComponentEditorRendererNodeGeometry(
 	store: CCStore,
-	nodeId: CCNodeId
+	nodeId: CCNodeId,
 ) {
 	const node = nullthrows(store.nodes.get(nodeId));
 	const component = nullthrows(store.components.get(node.componentId));
@@ -40,7 +40,8 @@ export default function getCCComponentEditorRendererNodeGeometry(
 	};
 
 	const calculator =
-		(component.intrinsicType && geometryCalculators[component.intrinsicType]) ??
-		calculateCCComponentRendererNodeDefaultGeometry;
+		(component.intrinsicType &&
+			specialGeometryCalculators[component.intrinsicType]) ??
+		ccComponentRendererNodeDefaultGeometryCalculator;
 	return calculator(source);
 }

@@ -6,16 +6,18 @@ import { IntrinsicComponentDefinition } from "./base";
 import {
 	type CCIntrinsicComponentBinaryOperatorSpec,
 	type CCIntrinsicComponentDisplaySpec,
+	type CCIntrinsicComponentInputSpec,
+	type CCIntrinsicComponentOutputSpec,
 	type CCIntrinsicComponentSpecByType,
 	type CCIntrinsicComponentType,
-	ccIntrinsicComponentTypes,
 	type CCIntrinsicComponentUnaryOperatorSpec,
+	ccIntrinsicComponentTypes,
 } from "./types";
 
 function createUnaryOperator(
 	type: CCIntrinsicComponentType,
 	name: string,
-	evaluate: (a: boolean) => boolean
+	evaluate: (a: boolean) => boolean,
 ) {
 	return new IntrinsicComponentDefinition<CCIntrinsicComponentUnaryOperatorSpec>(
 		{
@@ -33,7 +35,7 @@ function createUnaryOperator(
 					return false;
 				}
 				const outputValue = Array.from({ length: inputValue.length }, (_, i) =>
-					evaluate(nullthrows(inputValue[i]))
+					evaluate(nullthrows(inputValue[i])),
 				);
 				const outputShape = shape.outputShape.Out;
 				invariant(outputShape[0] && !outputShape[1]);
@@ -41,14 +43,14 @@ function createUnaryOperator(
 				nodePinIdToValue.set(outputShape[0].nodePinId, outputValue);
 				return true;
 			},
-		}
+		},
 	);
 }
 
 function createBinaryOperator(
 	type: CCIntrinsicComponentType,
 	name: string,
-	evaluate: (a: boolean, b: boolean) => boolean
+	evaluate: (a: boolean, b: boolean) => boolean,
 ) {
 	return new IntrinsicComponentDefinition<CCIntrinsicComponentBinaryOperatorSpec>(
 		{
@@ -70,10 +72,10 @@ function createBinaryOperator(
 				}
 				invariant(
 					inputValueA.length === inputValueB.length,
-					"Input lengths must match"
+					"Input lengths must match",
 				);
 				const outputValue = Array.from({ length: inputValueA.length }, (_, i) =>
-					evaluate(nullthrows(inputValueA[i]), nullthrows(inputValueB[i]))
+					evaluate(nullthrows(inputValueA[i]), nullthrows(inputValueB[i])),
 				);
 				const outputShape = shape.outputShape.Out;
 				invariant(outputShape[0] && !outputShape[1]);
@@ -81,40 +83,54 @@ function createBinaryOperator(
 				nodePinIdToValue.set(outputShape[0].nodePinId, outputValue);
 				return true;
 			},
-		}
+		},
 	);
 }
 
 export const and = createBinaryOperator(
 	ccIntrinsicComponentTypes.AND,
 	"And",
-	(a, b) => a && b
+	(a, b) => a && b,
 );
 export const or = createBinaryOperator(
 	ccIntrinsicComponentTypes.OR,
 	"Or",
-	(a, b) => a || b
+	(a, b) => a || b,
 );
 export const not = createUnaryOperator(
 	ccIntrinsicComponentTypes.NOT,
 	"Not",
-	(a) => !a
+	(a) => !a,
 );
 export const xor = createBinaryOperator(
 	ccIntrinsicComponentTypes.XOR,
 	"Xor",
-	(a, b) => a !== b
+	(a, b) => a !== b,
 );
-export const input = createUnaryOperator(
-	ccIntrinsicComponentTypes.INPUT,
-	"Input",
-	(a) => a
-);
-export const output = createUnaryOperator(
-	ccIntrinsicComponentTypes.OUTPUT,
-	"Output",
-	(a) => a
-);
+
+export const input =
+	new IntrinsicComponentDefinition<CCIntrinsicComponentInputSpec>({
+		type: ccIntrinsicComponentTypes.INPUT,
+		name: "Input",
+		in: {},
+		out: { Out: { name: "Out" } },
+		initialConfig: null,
+		evaluate: (_context, _nodeId, _shape) => {
+			return true;
+		},
+	});
+
+export const output =
+	new IntrinsicComponentDefinition<CCIntrinsicComponentOutputSpec>({
+		type: ccIntrinsicComponentTypes.OUTPUT,
+		name: "Output",
+		in: { In: { name: "In" } },
+		out: {},
+		initialConfig: null,
+		evaluate: (_context, _nodeId, _shape) => {
+			return true;
+		},
+	});
 
 export const aggregate =
 	new IntrinsicComponentDefinition<CCIntrinsicComponentUnaryOperatorSpec>({
@@ -129,7 +145,7 @@ export const aggregate =
 			const inputShape = shape.inputShape.In;
 			const nodePinIdToValue = context.currentFrame.nodes.get(nodeId)?.pins;
 			const inputValues = inputShape.map((s) =>
-				nodePinIdToValue?.get(s.nodePinId)
+				nodePinIdToValue?.get(s.nodePinId),
 			);
 			if (inputValues.some((v) => !v) || !nodePinIdToValue) {
 				return false;
@@ -137,7 +153,7 @@ export const aggregate =
 			const outputValue = inputValues.flatMap((v) => nullthrows(v));
 			nodePinIdToValue.set(
 				nullthrows(shape.outputShape.Out[0]?.nodePinId),
-				outputValue
+				outputValue,
 			);
 			return true;
 		},
@@ -167,7 +183,7 @@ export const decompose =
 			for (const shape of outputShape) {
 				nodePinIdToValue.set(
 					shape.nodePinId,
-					inputValue.slice(currentIndex, currentIndex + shape.bitWidth)
+					inputValue.slice(currentIndex, currentIndex + shape.bitWidth),
 				);
 				currentIndex += shape.bitWidth;
 			}
@@ -194,12 +210,12 @@ export const broadcast =
 			if (!inputValue || !nodePinIdToValue) {
 				return false;
 			}
-			invariant(inputValue[0] && !inputValue[1]);
+			invariant(inputValue.length === 1);
 			nodePinIdToValue.set(
 				outputShape[0].nodePinId,
 				Array.from({ length: outputShape[0].bitWidth }, () =>
-					nullthrows(inputValue[0])
-				)
+					nullthrows(inputValue[0]),
+				),
 			);
 			return true;
 		},
@@ -223,7 +239,8 @@ export const flipflop =
 			const previousValue =
 				context.previousFrame?.nodes
 					.get(nodeId)
-					?.pins.get(inputShape[0].nodePinId) ?? [];
+					?.pins.get(inputShape[0].nodePinId) ??
+				new Array(inputShape[0].bitWidth).fill(false);
 			if (!nodePinIdToValue) {
 				return false;
 			}
@@ -270,6 +287,6 @@ export const definitionByComponentPinId = new Map<
 	IntrinsicComponentDefinition
 >(
 	Object.values(definitions).flatMap((definition) =>
-		definition.allPins.map((pin) => [pin.id, definition])
-	)
+		definition.allPins.map((pin) => [pin.id, definition]),
+	),
 );

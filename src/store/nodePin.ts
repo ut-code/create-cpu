@@ -5,13 +5,7 @@ import type { Opaque } from "type-fest";
 import type CCStore from ".";
 import type { CCComponentPinId, CCNodePinBitWidthStatus } from "./componentPin";
 import { IntrinsicComponentDefinition } from "./intrinsics/base";
-import {
-	aggregate,
-	broadcast,
-	decompose,
-	input,
-	output,
-} from "./intrinsics/definitions";
+import { aggregate, broadcast, decompose } from "./intrinsics/definitions";
 import type { CCNodeId } from "./node";
 
 export type CCNodePinId = Opaque<string, "CCNodePinId">;
@@ -312,17 +306,6 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 		const bNodePin = this.get(b);
 		if (!aNodePin || !bNodePin) {
 			throw new Error(`Node pin ${a} or ${b} does not exist in the store`);
-		}
-		if (
-			aNodePin.componentPinId === input.inputPin.In.id ||
-			bNodePin.componentPinId === input.inputPin.In.id ||
-			aNodePin.componentPinId === output.outputPin.Out.id ||
-			bNodePin.componentPinId === output.outputPin.Out.id
-		) {
-			console.warn(
-				`Cannot connect to input pin A or output pin: ${aNodePin.id} and ${bNodePin.id}`,
-			);
-			return false;
 		}
 		const aComponentPin = this.#store.componentPins.get(
 			aNodePin?.componentPinId ?? null,
