@@ -1,45 +1,23 @@
 import nullthrows from "nullthrows";
 import invariant from "tiny-invariant";
-import type { CCComponentId } from "../../../../../../store/component";
-import simulateComponent from "../../../../../../store/componentEvaluator";
 import type { CCComponentPinId } from "../../../../../../store/componentPin";
 import type { CCConnectionId } from "../../../../../../store/connection";
 import type { CCNodeId } from "../../../../../../store/node";
 import type { CCNodePinId } from "../../../../../../store/nodePin";
+import type {
+	SimulationFrame,
+	SimulationValue,
+} from "../../../../../../store/simulation";
+// import type { CCComponentId } from "../../../../../../store/component";
+import simulateComponent from "../../../../../../store/simulation";
 import type { ComponentEditorSliceCreator } from "../../types";
 import type { EditorStoreCoreSlice } from "./types";
 
-export type SimulationValue = boolean[];
 export function stringifySimulationValue(value: SimulationValue): string {
 	const binary = value.map((v) => (v ? "1" : "0")).join("");
 	if (value.length <= 4) return binary;
 	return `0x${Number.parseInt(binary, 2).toString(16)}`;
 }
-export function wrappingIncrementSimulationValue(
-	value: SimulationValue,
-): SimulationValue {
-	const result = value.slice();
-	for (let i = result.length - 1; i >= 0; i--) {
-		if (!result[i]) {
-			result[i] = true;
-			break;
-		}
-		result[i] = false; // carry the increment
-	}
-	return result;
-}
-
-export type SimulationFrame = {
-	componentId: CCComponentId;
-	nodes: Map<
-		CCNodeId,
-		{
-			pins: Map<CCNodePinId, SimulationValue>;
-			/** null if intrinsic */
-			child: SimulationFrame | null;
-		}
-	>;
-};
 
 export const createComponentEditorStoreCoreSlice: ComponentEditorSliceCreator<
 	EditorStoreCoreSlice

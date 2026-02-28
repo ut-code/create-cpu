@@ -7,7 +7,7 @@ import { rect } from "../../../../common/rect";
 import { IntrinsicComponentDefinition } from "../../../../store/intrinsics/base";
 import { CCNodePinStore } from "../../../../store/nodePin";
 import { useStore } from "../../../../store/react";
-import getCCComponentEditorRendererNodeGeometry from "../renderer/Node.geometry";
+import getCCComponentEditorRendererNodeGeometry from "../renderer/Node/geometry";
 import { useComponentEditorStore } from "../store";
 
 export function CCComponentEditorNodePinPropertyEditor() {

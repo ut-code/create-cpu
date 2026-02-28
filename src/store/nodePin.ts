@@ -5,13 +5,7 @@ import type { Opaque } from "type-fest";
 import type CCStore from ".";
 import type { CCComponentPinId, CCNodePinBitWidthStatus } from "./componentPin";
 import { IntrinsicComponentDefinition } from "./intrinsics/base";
-import {
-	aggregate,
-	broadcast,
-	decompose,
-	input,
-	output,
-} from "./intrinsics/definitions";
+import { aggregate, broadcast, decompose } from "./intrinsics/definitions";
 import type { CCNodeId } from "./node";
 
 export type CCNodePinId = Opaque<string, "CCNodePinId">;
@@ -213,8 +207,8 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 				invariant(componentPin);
 				switch (componentPin.id) {
 					case nullthrows(aggregate.inputPin.In.id):
-					case nullthrows(broadcast.outputPin.id):
-					case nullthrows(decompose.outputPin.id):
+					case nullthrows(broadcast.outputPin.Out.id):
+					case nullthrows(decompose.outputPin.Out.id):
 						invariant(
 							manualBitWidth,
 							"aggregate inputPin, broadcast outputPin, or decompose outputPin must have a manual bit width",
@@ -223,7 +217,7 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 							isFixed: true,
 							bitWidth: manualBitWidth,
 						};
-					case nullthrows(aggregate.outputPin.id): {
+					case nullthrows(aggregate.outputPin.Out.id): {
 						const bitWidth = targetNodePins
 							.filter((pin) => {
 								const componentPin = this.#store.componentPins.get(
@@ -312,17 +306,6 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 		const bNodePin = this.get(b);
 		if (!aNodePin || !bNodePin) {
 			throw new Error(`Node pin ${a} or ${b} does not exist in the store`);
-		}
-		if (
-			aNodePin.componentPinId === input.inputPin.A.id ||
-			bNodePin.componentPinId === input.inputPin.A.id ||
-			aNodePin.componentPinId === output.outputPin.id ||
-			bNodePin.componentPinId === output.outputPin.id
-		) {
-			console.warn(
-				`Cannot connect to input pin A or output pin: ${aNodePin.id} and ${bNodePin.id}`,
-			);
-			return false;
 		}
 		const aComponentPin = this.#store.componentPins.get(
 			aNodePin?.componentPinId ?? null,

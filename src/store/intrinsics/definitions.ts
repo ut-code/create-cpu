@@ -4,45 +4,48 @@ import type { CCComponentId } from "../component";
 import type { CCComponentPinId } from "../componentPin";
 import { IntrinsicComponentDefinition } from "./base";
 import {
+	type CCIntrinsicComponentBinaryOperatorSpec,
+	type CCIntrinsicComponentDisplaySpec,
+	type CCIntrinsicComponentInputSpec,
+	type CCIntrinsicComponentNullaryOperatorSpec,
+	type CCIntrinsicComponentOutputSpec,
+	type CCIntrinsicComponentSpecByType,
 	type CCIntrinsicComponentType,
+	type CCIntrinsicComponentUnaryOperatorSpec,
 	ccIntrinsicComponentTypes,
 } from "./types";
-
-// function createNullaryOperator(
-// 	type: CCIntrinsicComponentType,
-// 	name: string,
-// 	evaluate: () => boolean
-// ) {
-// 	return new IntrinsicComponentDefinition({
-// 		type,
-// 		name,
-// 		in: {},
-// 		out: { name: "Out" },
-// 		evaluate: (_, output) => {
-// 			invariant(output[0]);
-// 			return [new Array(output[0].bitWidth).fill(evaluate())];
-// 		},
-// 	});
-// }
 
 function createUnaryOperator(
 	type: CCIntrinsicComponentType,
 	name: string,
 	evaluate: (a: boolean) => boolean,
 ) {
-	return new IntrinsicComponentDefinition({
-		type,
-		name,
-		in: {
-			A: { name: "In" },
+	return new IntrinsicComponentDefinition<CCIntrinsicComponentUnaryOperatorSpec>(
+		{
+			type,
+			name,
+			in: { In: { name: "In" } },
+			out: { Out: { name: "Out" } },
+			initialConfig: null,
+			evaluate: (context, nodeId, shape) => {
+				const inputShape = shape.inputShape.In;
+				invariant(inputShape[0] && !inputShape[1]);
+				const nodePinIdToValue = context.currentFrame.nodes.get(nodeId)?.pins;
+				const inputValue = nodePinIdToValue?.get(inputShape[0].nodePinId);
+				if (!inputValue || !nodePinIdToValue) {
+					return false;
+				}
+				const outputValue = Array.from({ length: inputValue.length }, (_, i) =>
+					evaluate(nullthrows(inputValue[i])),
+				);
+				const outputShape = shape.outputShape.Out;
+				invariant(outputShape[0] && !outputShape[1]);
+
+				nodePinIdToValue.set(outputShape[0].nodePinId, outputValue);
+				return true;
+			},
 		},
-		out: { name: "Out" },
-		evaluate: (input) => {
-			invariant(input.A[0] && !input.A[1]);
-			const A = input.A[0];
-			return [A.map((a) => evaluate(nullthrows(a)))];
-		},
-	});
+	);
 }
 
 function createBinaryOperator(
@@ -50,27 +53,64 @@ function createBinaryOperator(
 	name: string,
 	evaluate: (a: boolean, b: boolean) => boolean,
 ) {
-	return new IntrinsicComponentDefinition({
-		type,
-		name,
-		in: {
-			A: { name: "A" },
-			B: { name: "B" },
+	return new IntrinsicComponentDefinition<CCIntrinsicComponentBinaryOperatorSpec>(
+		{
+			type,
+			name,
+			in: { A: { name: "A" }, B: { name: "B" } },
+			out: { Out: { name: "Out" } },
+			initialConfig: null,
+			evaluate: (context, nodeId, shape) => {
+				const inputShapeA = shape.inputShape.A;
+				const inputShapeB = shape.inputShape.B;
+				invariant(inputShapeA[0] && !inputShapeA[1]);
+				invariant(inputShapeB[0] && !inputShapeB[1]);
+				const nodePinIdToValue = context.currentFrame.nodes.get(nodeId)?.pins;
+				const inputValueA = nodePinIdToValue?.get(inputShapeA[0].nodePinId);
+				const inputValueB = nodePinIdToValue?.get(inputShapeB[0].nodePinId);
+				if (!inputValueA || !inputValueB || !nodePinIdToValue) {
+					return false;
+				}
+				invariant(
+					inputValueA.length === inputValueB.length,
+					"Input lengths must match",
+				);
+				const outputValue = Array.from({ length: inputValueA.length }, (_, i) =>
+					evaluate(nullthrows(inputValueA[i]), nullthrows(inputValueB[i])),
+				);
+				const outputShape = shape.outputShape.Out;
+				invariant(outputShape[0] && !outputShape[1]);
+
+				nodePinIdToValue.set(outputShape[0].nodePinId, outputValue);
+				return true;
+			},
 		},
-		out: { name: "Out" },
-		evaluate: (input) => {
-			invariant(input.A[0] && !input.A[1]);
-			invariant(input.B[0] && !input.B[1]);
-			const A = input.A[0];
-			const B = input.B[0];
-			invariant(A.length === B.length);
-			return [
-				Array.from({ length: A.length }, (_, i) =>
-					evaluate(nullthrows(A[i]), nullthrows(B[i])),
-				),
-			];
+	);
+}
+
+function createNullaryOperator(
+	type: CCIntrinsicComponentType,
+	name: string,
+	value: boolean,
+) {
+	return new IntrinsicComponentDefinition<CCIntrinsicComponentNullaryOperatorSpec>(
+		{
+			type,
+			name,
+			in: {},
+			out: { Out: { name: "Out" } },
+			initialConfig: null,
+			evaluate: (context, nodeId, shape) => {
+				const outputShape = shape.outputShape.Out;
+				invariant(outputShape[0] && !outputShape[1]);
+				const nodePinIdToValue = context.currentFrame.nodes.get(nodeId)?.pins;
+				if (!nodePinIdToValue) return false;
+				const outputValue = new Array(outputShape[0].bitWidth).fill(value);
+				nodePinIdToValue.set(outputShape[0].nodePinId, outputValue);
+				return true;
+			},
 		},
-	});
+	);
 }
 
 export const and = createBinaryOperator(
@@ -93,79 +133,173 @@ export const xor = createBinaryOperator(
 	"Xor",
 	(a, b) => a !== b,
 );
-export const input = createUnaryOperator(
-	ccIntrinsicComponentTypes.INPUT,
-	"Input",
-	(a) => a,
+export const true_ = createNullaryOperator(
+	ccIntrinsicComponentTypes.TRUE,
+	"True",
+	true,
 );
-export const output = createUnaryOperator(
-	ccIntrinsicComponentTypes.OUTPUT,
-	"Output",
-	(a) => a,
+export const false_ = createNullaryOperator(
+	ccIntrinsicComponentTypes.FALSE,
+	"False",
+	false,
 );
 
-export const aggregate = new IntrinsicComponentDefinition({
-	type: ccIntrinsicComponentTypes.AGGREGATE,
-	name: "Aggregate",
-	in: {
-		In: { name: "In", isBitWidthConfigurable: true, isSplittable: true },
-	},
-	out: { name: "Out" },
-	evaluate: (input) => {
-		return [input.In.flat()];
-	},
-});
+export const input =
+	new IntrinsicComponentDefinition<CCIntrinsicComponentInputSpec>({
+		type: ccIntrinsicComponentTypes.INPUT,
+		name: "Input",
+		in: {},
+		out: { Out: { name: "Out" } },
+		initialConfig: null,
+		evaluate: (_context, _nodeId, _shape) => {
+			return true;
+		},
+	});
 
-export const decompose = new IntrinsicComponentDefinition({
-	type: ccIntrinsicComponentTypes.DECOMPOSE,
-	name: "Decompose",
-	in: {
-		In: { name: "In" },
-	},
-	out: { name: "Out", isBitWidthConfigurable: true, isSplittable: true },
-	evaluate: (input, outputShape) => {
-		invariant(input.In[0] && !input.In[1]);
-		const inputValue = input.In[0];
-		const outputValue = [];
-		let currentIndex = 0;
-		for (const shape of outputShape) {
-			outputValue.push([
-				...inputValue.slice(currentIndex, currentIndex + shape.bitWidth),
-			]);
-			currentIndex += shape.bitWidth;
-		}
-		return outputValue;
-	},
-});
+export const output =
+	new IntrinsicComponentDefinition<CCIntrinsicComponentOutputSpec>({
+		type: ccIntrinsicComponentTypes.OUTPUT,
+		name: "Output",
+		in: { In: { name: "In" } },
+		out: {},
+		initialConfig: null,
+		evaluate: (_context, _nodeId, _shape) => {
+			return true;
+		},
+	});
 
-export const broadcast = new IntrinsicComponentDefinition({
-	type: ccIntrinsicComponentTypes.BROADCAST,
-	name: "Broadcast",
-	in: {
-		In: { name: "In" },
-	},
-	out: { name: "Out", isBitWidthConfigurable: true },
-	evaluate: (input, outputShape) => {
-		invariant(input.In[0] && !input.In[1]);
-		invariant(input.In[0][0] !== undefined && !input.In[0][1]);
-		const inputValue = input.In[0][0];
-		invariant(outputShape[0] && !outputShape[1]);
-		const outputBitWidth = outputShape[0].bitWidth;
-		return [Array.from({ length: outputBitWidth }, () => inputValue)];
-	},
-});
+export const aggregate =
+	new IntrinsicComponentDefinition<CCIntrinsicComponentUnaryOperatorSpec>({
+		type: ccIntrinsicComponentTypes.AGGREGATE,
+		name: "Aggregate",
+		in: {
+			In: { name: "In", isBitWidthConfigurable: true, isSplittable: true },
+		},
+		out: { Out: { name: "Out" } },
+		initialConfig: null,
+		evaluate: (context, nodeId, shape) => {
+			const inputShape = shape.inputShape.In;
+			const nodePinIdToValue = context.currentFrame.nodes.get(nodeId)?.pins;
+			const inputValues = inputShape.map((s) =>
+				nodePinIdToValue?.get(s.nodePinId),
+			);
+			if (inputValues.some((v) => !v) || !nodePinIdToValue) {
+				return false;
+			}
+			const outputValue = inputValues.flatMap((v) => nullthrows(v));
+			nodePinIdToValue.set(
+				nullthrows(shape.outputShape.Out[0]?.nodePinId),
+				outputValue,
+			);
+			return true;
+		},
+	});
 
-export const flipflop = new IntrinsicComponentDefinition({
-	type: ccIntrinsicComponentTypes.FLIPFLOP,
-	name: "FlipFlop",
-	in: {
-		In: { name: "In" },
-	},
-	out: { name: "Out" },
-	evaluate: (_0, _1, previousInput) => previousInput.In,
-});
+export const decompose =
+	new IntrinsicComponentDefinition<CCIntrinsicComponentUnaryOperatorSpec>({
+		type: ccIntrinsicComponentTypes.DECOMPOSE,
+		name: "Decompose",
+		in: {
+			In: { name: "In" },
+		},
+		out: {
+			Out: { name: "Out", isBitWidthConfigurable: true, isSplittable: true },
+		},
+		initialConfig: null,
+		evaluate: (context, nodeId, shape) => {
+			const inputShape = shape.inputShape.In;
+			invariant(inputShape[0] && !inputShape[1]);
+			const nodePinIdToValue = context.currentFrame.nodes.get(nodeId)?.pins;
+			const outputShape = shape.outputShape.Out;
+			const inputValue = nodePinIdToValue?.get(inputShape[0].nodePinId);
+			if (!inputValue || !nodePinIdToValue) {
+				return false;
+			}
+			let currentIndex = 0;
+			for (const shape of outputShape) {
+				nodePinIdToValue.set(
+					shape.nodePinId,
+					inputValue.slice(currentIndex, currentIndex + shape.bitWidth),
+				);
+				currentIndex += shape.bitWidth;
+			}
+			return true;
+		},
+	});
 
-export const definitions = {
+export const broadcast =
+	new IntrinsicComponentDefinition<CCIntrinsicComponentUnaryOperatorSpec>({
+		type: ccIntrinsicComponentTypes.BROADCAST,
+		name: "Broadcast",
+		in: {
+			In: { name: "In" },
+		},
+		out: { Out: { name: "Out", isBitWidthConfigurable: true } },
+		initialConfig: null,
+		evaluate: (context, nodeId, shape) => {
+			const inputShape = shape.inputShape.In;
+			invariant(inputShape[0] && !inputShape[1]);
+			const nodePinIdToValue = context.currentFrame.nodes.get(nodeId)?.pins;
+			const outputShape = shape.outputShape.Out;
+			invariant(outputShape[0] && !outputShape[1]);
+			const inputValue = nodePinIdToValue?.get(inputShape[0].nodePinId);
+			if (!inputValue || !nodePinIdToValue) {
+				return false;
+			}
+			invariant(inputValue.length === 1);
+			nodePinIdToValue.set(
+				outputShape[0].nodePinId,
+				Array.from({ length: outputShape[0].bitWidth }, () =>
+					nullthrows(inputValue[0]),
+				),
+			);
+			return true;
+		},
+	});
+
+export const flipflop =
+	new IntrinsicComponentDefinition<CCIntrinsicComponentUnaryOperatorSpec>({
+		type: ccIntrinsicComponentTypes.FLIPFLOP,
+		name: "FlipFlop",
+		in: {
+			In: { name: "In" },
+		},
+		out: { Out: { name: "Out" } },
+		initialConfig: null,
+		evaluate: (context, nodeId, shape) => {
+			const inputShape = shape.inputShape.In;
+			invariant(inputShape[0] && !inputShape[1]);
+			const outputShape = shape.outputShape.Out;
+			invariant(outputShape[0] && !outputShape[1]);
+			const nodePinIdToValue = context.currentFrame.nodes.get(nodeId)?.pins;
+			const previousValue =
+				context.previousFrame?.nodes
+					.get(nodeId)
+					?.pins.get(inputShape[0].nodePinId) ??
+				new Array(inputShape[0].bitWidth).fill(false);
+			if (!nodePinIdToValue) {
+				return false;
+			}
+			nodePinIdToValue.set(outputShape[0].nodePinId, previousValue);
+			return true;
+		},
+	});
+
+export const display =
+	new IntrinsicComponentDefinition<CCIntrinsicComponentDisplaySpec>({
+		type: ccIntrinsicComponentTypes.DISPLAY,
+		name: "Display",
+		in: { Pixels: { name: "Pixels" } },
+		out: {},
+		initialConfig: { resolution: { x: 20, y: 15 } },
+		evaluate: () => true,
+	});
+
+export const definitions: {
+	[t in CCIntrinsicComponentType]: IntrinsicComponentDefinition<
+		CCIntrinsicComponentSpecByType[t]
+	>;
+} = {
 	[ccIntrinsicComponentTypes.AND]: and,
 	[ccIntrinsicComponentTypes.OR]: or,
 	[ccIntrinsicComponentTypes.NOT]: not,
@@ -176,7 +310,10 @@ export const definitions = {
 	[ccIntrinsicComponentTypes.DECOMPOSE]: decompose,
 	[ccIntrinsicComponentTypes.BROADCAST]: broadcast,
 	[ccIntrinsicComponentTypes.FLIPFLOP]: flipflop,
-} satisfies Record<CCIntrinsicComponentType, IntrinsicComponentDefinition>;
+	[ccIntrinsicComponentTypes.DISPLAY]: display,
+	[ccIntrinsicComponentTypes.TRUE]: true_,
+	[ccIntrinsicComponentTypes.FALSE]: false_,
+};
 
 export const definitionByComponentId = new Map<
 	CCComponentId,

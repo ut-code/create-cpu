@@ -1,22 +1,34 @@
 import nullthrows from "nullthrows";
 import { useState } from "react";
-import { theme } from "../../../../common/theme";
-import type { CCConnectionId } from "../../../../store/connection";
-import { useStore } from "../../../../store/react";
-import ensureStoreItem from "../../../../store/react/error";
-import { useNode } from "../../../../store/react/selectors";
-import { useComponentEditorStore } from "../store";
-import { stringifySimulationValue } from "../store/slices/core/index";
-import getCCComponentEditorRendererNodeGeometry from "./Node.geometry";
+import { theme } from "../../../../../common/theme";
+import type { Vector2 } from "../../../../../common/vector2";
+import type { CCComponentPinType } from "../../../../../store/componentPin";
+import type { CCConnectionId } from "../../../../../store/connection";
+import { useStore } from "../../../../../store/react";
+import ensureStoreItem from "../../../../../store/react/error";
+import { useNode } from "../../../../../store/react/selectors";
+import { useComponentEditorStore } from "../../store";
+import { stringifySimulationValue } from "../../store/slices/core/index";
+import getCCComponentEditorRendererNodeGeometry from "../Node/geometry";
+
+export type CCComponentEditorRendererConnectionEndpoint = {
+	direction: CCComponentPinType;
+	position: Vector2;
+};
 
 export type CCComponentEditorRendererConnectionCoreProps = {
-	from: { x: number; y: number };
-	to: { x: number; y: number };
+	from: CCComponentEditorRendererConnectionEndpoint;
+	to: CCComponentEditorRendererConnectionEndpoint;
 	connectionId?: CCConnectionId;
 	onMouseEnter?: React.MouseEventHandler<SVGPathElement>;
 	onMouseLeave?: React.MouseEventHandler<SVGPathElement>;
 };
 
+const straightGap = 10;
+const polarity: Record<CCComponentPinType, number> = {
+	input: -1,
+	output: 1,
+};
 export function CCComponentEditorRendererConnectionCore({
 	from,
 	to,
@@ -24,9 +36,6 @@ export function CCComponentEditorRendererConnectionCore({
 	onMouseEnter,
 	onMouseLeave,
 }: CCComponentEditorRendererConnectionCoreProps) {
-	const straightGap = 10;
-	const direction = from.x < to.x ? 1 : -1;
-
 	const componentEditorState = useComponentEditorStore()();
 
 	const handleClick = (e: React.MouseEvent) => {
@@ -40,17 +49,17 @@ export function CCComponentEditorRendererConnectionCore({
 		// biome-ignore lint/a11y/noStaticElementInteractions: SVG
 		<path
 			d={[
-				`M ${from.x} ${from.y}`,
-				`h ${straightGap * direction}`,
+				`M ${from.position.x} ${from.position.y}`,
+				`h ${straightGap * polarity[from.direction]}`,
 				`C ${[
-					from.x + 4 * straightGap * direction,
-					from.y,
-					to.x - 4 * straightGap * direction,
-					to.y,
-					to.x - straightGap * direction,
-					to.y,
+					from.position.x + 4 * straightGap * polarity[from.direction],
+					from.position.y,
+					to.position.x + 4 * straightGap * polarity[to.direction],
+					to.position.y,
+					to.position.x + straightGap * polarity[to.direction],
+					to.position.y,
 				].join(" ")}`,
-				`h ${straightGap * direction}`,
+				`h ${straightGap * polarity[from.direction]}`,
 			].join(" ")}
 			stroke={
 				connectionId &&
@@ -87,7 +96,13 @@ const CCComponentEditorRendererConnection = ensureStoreItem(
 		const componentEditorState = useComponentEditorStore()();
 		const connection = nullthrows(store.connections.get(connectionId));
 		const fromNodePin = nullthrows(store.nodePins.get(connection.from));
+		const fromComponentPin = nullthrows(
+			store.componentPins.get(fromNodePin.componentPinId),
+		);
 		const toNodePin = nullthrows(store.nodePins.get(connection.to));
+		const toComponentPin = nullthrows(
+			store.componentPins.get(toNodePin.componentPinId),
+		);
 		const fromNode = useNode(fromNodePin.nodeId);
 		const toNode = useNode(toNodePin.nodeId);
 		const fromNodeGeometry = getCCComponentEditorRendererNodeGeometry(
@@ -110,8 +125,11 @@ const CCComponentEditorRendererConnection = ensureStoreItem(
 		return (
 			<>
 				<CCComponentEditorRendererConnectionCore
-					from={fromNodePinPosition}
-					to={toNodePinPosition}
+					from={{
+						direction: fromComponentPin.type,
+						position: fromNodePinPosition,
+					}}
+					to={{ direction: toComponentPin.type, position: toNodePinPosition }}
 					connectionId={connectionId}
 					onMouseEnter={() => {
 						setIsHovered(true);

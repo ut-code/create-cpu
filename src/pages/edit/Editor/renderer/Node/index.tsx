@@ -1,14 +1,32 @@
-import nullthrows from "nullthrows";
 import { useState } from "react";
-import { theme } from "../../../../common/theme";
-import { vector2 } from "../../../../common/vector2";
-import type { CCNodeId } from "../../../../store/node";
-import { useStore } from "../../../../store/react";
-import ensureStoreItem from "../../../../store/react/error";
-import { useNode } from "../../../../store/react/selectors";
-import { useComponentEditorStore } from "../store";
-import getCCComponentEditorRendererNodeGeometry from "./Node.geometry";
-import CCComponentEditorRendererNodePin from "./NodePin";
+import { vector2 } from "../../../../../common/vector2";
+import {
+	type CCIntrinsicComponentType,
+	ccIntrinsicComponentTypes,
+} from "../../../../../store/intrinsics/types";
+import type { CCNodeId } from "../../../../../store/node";
+import { useStore } from "../../../../../store/react";
+import ensureStoreItem from "../../../../../store/react/error";
+import { useComponent, useNode } from "../../../../../store/react/selectors";
+import { useComponentEditorStore } from "../../store";
+import CCComponentEditorRendererNodePin from "../NodePin";
+import { CCComponentEditorRendererNodeDefaultRenderer } from "./components/Default";
+import { CCComponentEditorRendererNodeDisplayRenderer } from "./components/Display";
+import getCCComponentEditorRendererNodeGeometry from "./geometry";
+import type {
+	CCComponentEditorRendererNodeRendererNodeState,
+	CCComponentEditorRendererNodeRendererProps,
+} from "./types";
+
+const specialRenderers: Partial<
+	Record<
+		CCIntrinsicComponentType,
+		React.ComponentType<CCComponentEditorRendererNodeRendererProps>
+	>
+> = {
+	[ccIntrinsicComponentTypes.DISPLAY]:
+		CCComponentEditorRendererNodeDisplayRenderer,
+};
 
 export type CCComponentEditorRendererNodeProps = {
 	nodeId: CCNodeId;
@@ -18,14 +36,21 @@ const CCComponentEditorRendererNode = ensureStoreItem(
 	({ nodeId }: CCComponentEditorRendererNodeProps) => {
 		const { store } = useStore();
 		const node = useNode(nodeId);
-		const component = nullthrows(store.components.get(node.componentId));
-		const geometry = getCCComponentEditorRendererNodeGeometry(store, nodeId);
+		const component = useComponent(node.componentId);
 		const componentEditorState = useComponentEditorStore()();
 		const [dragging, setDragging] = useState(false);
 		const [dragStartPosition, setDragStartPosition] = useState(vector2.zero);
 		const [previousNodePosition, setPreviousNodePosition] = useState(
 			vector2.zero,
 		);
+
+		const geometry = getCCComponentEditorRendererNodeGeometry(store, nodeId);
+		const Renderer =
+			(component.intrinsicType && specialRenderers[component.intrinsicType]) ||
+			CCComponentEditorRendererNodeDefaultRenderer;
+		const nodeState: CCComponentEditorRendererNodeRendererNodeState = {
+			isSelected: componentEditorState.selectedNodeIds.has(nodeId),
+		};
 
 		const handlePointerDown = (e: React.PointerEvent) => {
 			if (e.button === 0) {
@@ -75,28 +100,11 @@ const CCComponentEditorRendererNode = ensureStoreItem(
 						componentEditorState.openContextMenu(e);
 					}}
 				>
-					<text
-						fill={theme.palette.textPrimary}
-						x={geometry.x}
-						y={geometry.y - 5}
-						textAnchor="start"
-						fontSize={12}
-					>
-						{component.name}
-					</text>
-					<rect
-						x={geometry.x}
-						y={geometry.y}
-						width={geometry.width}
-						height={geometry.height}
-						fill={theme.palette.white}
-						stroke={
-							componentEditorState.selectedNodeIds.has(nodeId)
-								? theme.palette.primary
-								: theme.palette.textPrimary
-						}
-						strokeWidth={2}
-						rx={2}
+					<Renderer
+						node={node}
+						nodeState={nodeState}
+						component={component}
+						geometry={geometry}
 					/>
 				</g>
 				{store.nodePins.getManyByNodeId(nodeId).map((nodePin) => (

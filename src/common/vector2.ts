@@ -2,6 +2,7 @@ export type Vector2 = { x: number; y: number };
 
 export const vector2 = {
 	zero: { x: 0, y: 0 },
+	create: (x: number, y: number): Vector2 => ({ x, y }),
 	add: (a: Vector2, b: Vector2): Vector2 => ({
 		x: a.x + b.x,
 		y: a.y + b.y,

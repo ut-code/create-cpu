@@ -1,27 +1,53 @@
 import { mapValues } from "es-toolkit";
 import type { CCComponent, CCComponentId } from "../component";
 import type { CCComponentPin, CCComponentPinId } from "../componentPin";
-import type { CCIntrinsicComponentType } from "./types";
+import type { CCNodeId } from "../node";
+import type { CCNodePinId } from "../nodePin";
+import type { SimulationFrame } from "../simulation";
+import type {
+	CCIntrinsicComponentSpec,
+	CCIntrinsicComponentType,
+} from "./types";
 
-type SimulationValue = boolean[];
+export type CCIntrinsicComponentShape<Spec extends CCIntrinsicComponentSpec> = {
+	inputShape: Record<Spec["in"], CCComponentPinInstanceShapes>;
+	outputShape: Record<Spec["out"], CCComponentPinInstanceShapes>;
+};
+
+export type CCComponentPinInstanceShapes = {
+	nodePinId: CCNodePinId;
+	bitWidth: number;
+}[];
+
+export type ComponentEvaluationContext = {
+	previousFrame: SimulationFrame | null;
+	currentFrame: SimulationFrame;
+};
+
+export type Context = {
+	componentId: CCComponentId;
+};
 
 type IntrinsicComponentPinAttributes = {
 	name: string;
 	isBitWidthConfigurable?: boolean;
 	isSplittable?: boolean;
 };
-type Props<In extends string> = {
+type Props<Spec extends CCIntrinsicComponentSpec> = {
 	type: CCIntrinsicComponentType;
 	name: string;
-	in: Record<In, IntrinsicComponentPinAttributes>;
-	out: IntrinsicComponentPinAttributes;
+	in: Record<Spec["in"], IntrinsicComponentPinAttributes>;
+	out: Record<Spec["out"], IntrinsicComponentPinAttributes>;
+	initialConfig: Spec["config"];
 	evaluate: (
-		input: Record<In, SimulationValue[]>,
-		outputShape: { bitWidth: number }[],
-		previousInput: Record<In, SimulationValue[]>,
-	) => SimulationValue[];
+		context: ComponentEvaluationContext,
+		nodeId: CCNodeId,
+		shape: CCIntrinsicComponentShape<Spec>,
+	) => boolean; // returns whether evaluation succeeded
 };
-export class IntrinsicComponentDefinition<In extends string = string> {
+export class IntrinsicComponentDefinition<
+	Spec extends CCIntrinsicComponentSpec = CCIntrinsicComponentSpec,
+> {
 	static intrinsicComponentPinAttributesByComponentPinId: Map<
 		CCComponentPinId,
 		IntrinsicComponentPinAttributes
@@ -32,13 +58,14 @@ export class IntrinsicComponentDefinition<In extends string = string> {
 	readonly name: string;
 	readonly component: CCComponent;
 	readonly allPins: CCComponentPin[] = [];
-	readonly inputPin: Record<In, CCComponentPin>;
-	readonly outputPin: CCComponentPin;
+	readonly inputPin: Record<Spec["in"], CCComponentPin>;
+	readonly outputPin: Record<Spec["out"], CCComponentPin>;
+	readonly initialConfig: Spec["config"];
 	readonly evaluate: (
-		input: Record<In, SimulationValue[]>,
-		outputShape: { bitWidth: number }[],
-		previousInput: Record<In, SimulationValue[]>,
-	) => SimulationValue[];
+		context: ComponentEvaluationContext,
+		nodeId: CCNodeId,
+		shape: CCIntrinsicComponentShape<Spec>,
+	) => boolean;
 
 	private static _lastIndex = 0;
 
@@ -52,7 +79,7 @@ export class IntrinsicComponentDefinition<In extends string = string> {
 			.padStart(12, "0")}`;
 	}
 
-	constructor(props: Props<In>) {
+	constructor(props: Props<Spec>) {
 		this.id = this._generateId() as CCComponentId;
 		this.type = props.type;
 		this.name = props.name;
@@ -78,30 +105,35 @@ export class IntrinsicComponentDefinition<In extends string = string> {
 			this.allPins.push(pin);
 			return pin;
 		});
-		// this.outputPin = mapValues(props.out, (p) => {
-		// 	const pin: CCComponentPin = {
-		// 		id: this._generateId() as CCComponentPinId,
-		// 		componentId: this.id,
-		// 		type: "output",
-		// 		implementation: null,
-		// 		order: this._lastLocalIndex++,
-		// 		name: p.name,
-		// 	};
-		// 	this.allPins.push(pin);
-		// 	return pin;
-		// });
-		this.outputPin = {
-			id: this._generateId() as CCComponentPinId,
-			componentId: this.id,
-			type: "output",
-			implementation: null,
-			order: this._lastLocalIndex++,
-			name: props.out.name,
-		};
-		IntrinsicComponentDefinition.intrinsicComponentPinAttributesByComponentPinId.set(
-			this.outputPin.id,
-			props.out,
-		);
-		this.allPins.push(this.outputPin);
+		this.outputPin = mapValues(props.out, (attributes) => {
+			const pin: CCComponentPin = {
+				id: this._generateId() as CCComponentPinId,
+				componentId: this.id,
+				type: "output",
+				implementation: null,
+				order: this._lastLocalIndex++,
+				name: attributes.name,
+			};
+			IntrinsicComponentDefinition.intrinsicComponentPinAttributesByComponentPinId.set(
+				pin.id,
+				attributes,
+			);
+			this.allPins.push(pin);
+			return pin;
+		});
+		this.initialConfig = props.initialConfig;
+		// this.outputPin = {
+		// 	id: this._generateId() as CCComponentPinId,
+		// 	componentId: this.id,
+		// 	type: "output",
+		// 	implementation: null,
+		// 	order: this._lastLocalIndex++,
+		// 	name: props.out.name,
+		// };
+		// IntrinsicComponentDefinition.intrinsicComponentPinAttributesByComponentPinId.set(
+		// 	this.outputPin.id,
+		// 	props.out
+		// );
+		// this.allPins.push(this.outputPin);
 	}
 }

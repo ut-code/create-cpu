@@ -1,7 +1,7 @@
 import memoizeOne from "memoize-one";
 import nullthrows from "nullthrows";
 import { useCallback, useMemo, useSyncExternalStore } from "react";
-import type { CCComponentId } from "../component";
+import type { CCComponent, CCComponentId } from "../component";
 import type { CCComponentPin } from "../componentPin";
 import type { CCNode, CCNodeId } from "../node";
 import type { CCNodePin } from "../nodePin";
@@ -29,6 +29,27 @@ export function useComponents() {
 			};
 		},
 		[getSnapshot, store.components],
+	);
+	return useSyncExternalStore(subscribe, getSnapshot);
+}
+
+export function useComponent(componentId: CCComponentId) {
+	const { store } = useStore();
+	const getSnapshot = useCallback(
+		() => nullthrows(store.components.get(componentId)),
+		[store, componentId],
+	);
+	const subscribe = useCallback(
+		(onStoreChange: () => void) => {
+			const handler = (component: CCComponent) => {
+				if (component.id === componentId) onStoreChange();
+			};
+			store.components.on("didUpdate", handler);
+			return () => {
+				store.components.off("didUpdate", handler);
+			};
+		},
+		[store, componentId],
 	);
 	return useSyncExternalStore(subscribe, getSnapshot);
 }
