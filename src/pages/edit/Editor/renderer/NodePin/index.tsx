@@ -5,6 +5,7 @@ import { theme } from "../../../../../common/theme";
 import { type Vector2, vector2 } from "../../../../../common/vector2";
 import { useDraggable } from "../../../../../hooks/drag";
 import { CCConnectionStore } from "../../../../../store/connection";
+import { input, output } from "../../../../../store/intrinsics/definitions";
 import type { CCNodePinId } from "../../../../../store/nodePin";
 import { useStore } from "../../../../../store/react";
 import { useComponentEditorStore } from "../../store";
@@ -183,24 +184,29 @@ export default function CCComponentEditorRendererNodePin({
 					</text>
 				)}
 			</g>
-			<text
-				x={
-					position.x +
-					{
-						input: CCComponentEditorRendererNodePinConstants.SIZE,
-						output: -CCComponentEditorRendererNodePinConstants.SIZE,
-					}[componentPin.type]
-				}
-				y={position.y}
-				textAnchor={
-					{ input: "start" as const, output: "end" as const }[componentPin.type]
-				}
-				dominantBaseline="central"
-				fontSize={12}
-				fill={theme.palette.textPrimary}
-			>
-				{componentPin.name}
-			</text>
+			{componentPin.id !== input.outputPin.Out.id &&
+				componentPin.id !== output.inputPin.In.id && (
+					<text
+						x={
+							position.x +
+							{
+								input: CCComponentEditorRendererNodePinConstants.SIZE,
+								output: -CCComponentEditorRendererNodePinConstants.SIZE,
+							}[componentPin.type]
+						}
+						y={position.y}
+						textAnchor={
+							{ input: "start" as const, output: "end" as const }[
+								componentPin.type
+							]
+						}
+						dominantBaseline="central"
+						fontSize={12}
+						fill={theme.palette.textPrimary}
+					>
+						{componentPin.name}
+					</text>
+				)}
 			{draggingView}
 		</>
 	);

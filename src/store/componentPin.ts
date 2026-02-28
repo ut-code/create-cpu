@@ -9,11 +9,13 @@ import {
 	and,
 	broadcast,
 	decompose,
+	false_,
 	flipflop,
 	input,
 	not,
 	or,
 	output,
+	true_,
 	xor,
 } from "./intrinsics/definitions";
 import type { CCNodePinId } from "./nodePin";
@@ -230,7 +232,9 @@ export class CCComponentPinStore extends EventEmitter<CCComponentPinStoreEvents>
 			case nullthrows(input.outputPin.Out.id):
 			case nullthrows(output.inputPin.In.id):
 			case nullthrows(flipflop.inputPin.In.id):
-			case nullthrows(flipflop.outputPin.Out.id): {
+			case nullthrows(flipflop.outputPin.Out.id):
+			case nullthrows(true_.outputPin.Out.id):
+			case nullthrows(false_.outputPin.Out.id): {
 				return { isFixed: false, fixMode: "automatic" };
 			}
 			case nullthrows(aggregate.inputPin.In.id): {

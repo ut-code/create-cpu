@@ -5,14 +5,19 @@ import type { Opaque } from "type-fest";
 import type { Vector2 } from "../common/vector2";
 import type CCStore from ".";
 import type { CCComponentId } from "./component";
+import { definitionByComponentId } from "./intrinsics/definitions";
+import type { CCIntrinsicComponentSpec } from "./intrinsics/types";
 
 export type CCNodeId = Opaque<string, "CCNodeId">;
 
-export type CCNode = {
+export type CCNode<
+	Spec extends CCIntrinsicComponentSpec = CCIntrinsicComponentSpec,
+> = {
 	readonly id: CCNodeId;
 	readonly parentComponentId: CCComponentId;
 	readonly componentId: CCComponentId;
 	position: Vector2;
+	config: Spec["config"];
 };
 
 export type CCNodeStoreEvents = {
@@ -120,7 +125,10 @@ export class CCNodeStore extends EventEmitter<CCNodeStoreEvents> {
 	 * @param id id of node
 	 * @param value new position
 	 */
-	update(id: CCNodeId, value: Pick<CCNode, "position">): void {
+	update(
+		id: CCNodeId,
+		value: Partial<Pick<CCNode, "position" | "config">>,
+	): void {
 		const existingNode = nullthrows(this.#nodes.get(id));
 		const newNode = { ...existingNode, ...value };
 		this.#nodes.set(id, newNode);
@@ -132,14 +140,11 @@ export class CCNodeStore extends EventEmitter<CCNodeStoreEvents> {
 	 * @param partialNode node without `id`
 	 * @returns new node
 	 */
-	static create(partialNode: Omit<CCNode, "id">): CCNode {
-		// invariant(
-		//   hasVariablePinCount(partialNode.componentId)
-		//     ? partialNode.intrinsicVariablePinCount !== null
-		//     : partialNode.intrinsicVariablePinCount === null
-		// );
+	static create(partialNode: Omit<CCNode, "id" | "config">): CCNode {
+		const definition = definitionByComponentId.get(partialNode.componentId);
 		return {
 			id: crypto.randomUUID() as CCNodeId,
+			config: definition ? definition.initialConfig : null,
 			...partialNode,
 		};
 	}

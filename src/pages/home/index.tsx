@@ -48,6 +48,7 @@ export default function HomePage({ onComponentSelected }: HomePageProps) {
 		if (!file) return;
 		const reader = new FileReader();
 		reader.onload = () => {
+			console.log("Loaded store:", reader.result);
 			resetStore(reader.result as string);
 		};
 		reader.readAsText(file);

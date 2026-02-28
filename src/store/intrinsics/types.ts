@@ -13,6 +13,8 @@ export const ccIntrinsicComponentTypes = {
 	DECOMPOSE: "DECOMPOSE",
 	FLIPFLOP: "FLIPFLOP",
 	DISPLAY: "DISPLAY",
+	TRUE: "TRUE",
+	FALSE: "FALSE",
 } as const;
 export type CCIntrinsicComponentType = keyof typeof ccIntrinsicComponentTypes;
 
@@ -46,6 +48,12 @@ export type CCIntrinsicComponentBinaryOperatorSpec = {
 	config: null;
 };
 
+export type CCIntrinsicComponentNullaryOperatorSpec = {
+	in: never;
+	out: "Out";
+	config: null;
+};
+
 export type CCIntrinsicComponentDisplaySpec = {
 	in: "Pixels";
 	out: never;
@@ -64,4 +72,6 @@ export type CCIntrinsicComponentSpecByType = {
 	[ccIntrinsicComponentTypes.BROADCAST]: CCIntrinsicComponentUnaryOperatorSpec;
 	[ccIntrinsicComponentTypes.FLIPFLOP]: CCIntrinsicComponentUnaryOperatorSpec;
 	[ccIntrinsicComponentTypes.DISPLAY]: CCIntrinsicComponentDisplaySpec;
+	[ccIntrinsicComponentTypes.TRUE]: CCIntrinsicComponentNullaryOperatorSpec;
+	[ccIntrinsicComponentTypes.FALSE]: CCIntrinsicComponentNullaryOperatorSpec;
 };

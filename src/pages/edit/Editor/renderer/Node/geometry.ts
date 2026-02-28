@@ -1,8 +1,12 @@
 import nullthrows from "nullthrows";
 import type CCStore from "../../../../../store";
-import type { CCIntrinsicComponentType } from "../../../../../store/intrinsics/types";
+import {
+	type CCIntrinsicComponentType,
+	ccIntrinsicComponentTypes,
+} from "../../../../../store/intrinsics/types";
 import type { CCNodeId } from "../../../../../store/node";
 import { ccComponentRendererNodeDefaultGeometryCalculator } from "./components/Default/geometry";
+import { ccComponentRendererNodeDisplayGeometryCalculator } from "./components/Display/geometry";
 import type {
 	CCComponentEditorRendererNodeGeometryCalculator,
 	CCComponentEditorRendererNodeGeometrySource,
@@ -13,7 +17,10 @@ const specialGeometryCalculators: Partial<
 		CCIntrinsicComponentType,
 		CCComponentEditorRendererNodeGeometryCalculator
 	>
-> = {};
+> = {
+	[ccIntrinsicComponentTypes.DISPLAY]:
+		ccComponentRendererNodeDisplayGeometryCalculator,
+};
 
 export default function getCCComponentEditorRendererNodeGeometry(
 	store: CCStore,

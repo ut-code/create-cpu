@@ -7,6 +7,7 @@ import {
 	type CCIntrinsicComponentBinaryOperatorSpec,
 	type CCIntrinsicComponentDisplaySpec,
 	type CCIntrinsicComponentInputSpec,
+	type CCIntrinsicComponentNullaryOperatorSpec,
 	type CCIntrinsicComponentOutputSpec,
 	type CCIntrinsicComponentSpecByType,
 	type CCIntrinsicComponentType,
@@ -87,6 +88,31 @@ function createBinaryOperator(
 	);
 }
 
+function createNullaryOperator(
+	type: CCIntrinsicComponentType,
+	name: string,
+	value: boolean,
+) {
+	return new IntrinsicComponentDefinition<CCIntrinsicComponentNullaryOperatorSpec>(
+		{
+			type,
+			name,
+			in: {},
+			out: { Out: { name: "Out" } },
+			initialConfig: null,
+			evaluate: (context, nodeId, shape) => {
+				const outputShape = shape.outputShape.Out;
+				invariant(outputShape[0] && !outputShape[1]);
+				const nodePinIdToValue = context.currentFrame.nodes.get(nodeId)?.pins;
+				if (!nodePinIdToValue) return false;
+				const outputValue = new Array(outputShape[0].bitWidth).fill(value);
+				nodePinIdToValue.set(outputShape[0].nodePinId, outputValue);
+				return true;
+			},
+		},
+	);
+}
+
 export const and = createBinaryOperator(
 	ccIntrinsicComponentTypes.AND,
 	"And",
@@ -106,6 +132,16 @@ export const xor = createBinaryOperator(
 	ccIntrinsicComponentTypes.XOR,
 	"Xor",
 	(a, b) => a !== b,
+);
+export const true_ = createNullaryOperator(
+	ccIntrinsicComponentTypes.TRUE,
+	"True",
+	true,
+);
+export const false_ = createNullaryOperator(
+	ccIntrinsicComponentTypes.FALSE,
+	"False",
+	false,
 );
 
 export const input =
@@ -255,7 +291,7 @@ export const display =
 		name: "Display",
 		in: { Pixels: { name: "Pixels" } },
 		out: {},
-		initialConfig: { resolution: { x: 100, y: 1000 } },
+		initialConfig: { resolution: { x: 20, y: 15 } },
 		evaluate: () => true,
 	});
 
@@ -275,6 +311,8 @@ export const definitions: {
 	[ccIntrinsicComponentTypes.BROADCAST]: broadcast,
 	[ccIntrinsicComponentTypes.FLIPFLOP]: flipflop,
 	[ccIntrinsicComponentTypes.DISPLAY]: display,
+	[ccIntrinsicComponentTypes.TRUE]: true_,
+	[ccIntrinsicComponentTypes.FALSE]: false_,
 };
 
 export const definitionByComponentId = new Map<

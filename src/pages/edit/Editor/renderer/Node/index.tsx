@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { vector2 } from "../../../../../common/vector2";
-import type { CCIntrinsicComponentType } from "../../../../../store/intrinsics/types";
+import {
+	type CCIntrinsicComponentType,
+	ccIntrinsicComponentTypes,
+} from "../../../../../store/intrinsics/types";
 import type { CCNodeId } from "../../../../../store/node";
 import { useStore } from "../../../../../store/react";
 import ensureStoreItem from "../../../../../store/react/error";
@@ -8,6 +11,7 @@ import { useComponent, useNode } from "../../../../../store/react/selectors";
 import { useComponentEditorStore } from "../../store";
 import CCComponentEditorRendererNodePin from "../NodePin";
 import { CCComponentEditorRendererNodeDefaultRenderer } from "./components/Default";
+import { CCComponentEditorRendererNodeDisplayRenderer } from "./components/Display";
 import getCCComponentEditorRendererNodeGeometry from "./geometry";
 import type {
 	CCComponentEditorRendererNodeRendererNodeState,
@@ -19,7 +23,10 @@ const specialRenderers: Partial<
 		CCIntrinsicComponentType,
 		React.ComponentType<CCComponentEditorRendererNodeRendererProps>
 	>
-> = {};
+> = {
+	[ccIntrinsicComponentTypes.DISPLAY]:
+		CCComponentEditorRendererNodeDisplayRenderer,
+};
 
 export type CCComponentEditorRendererNodeProps = {
 	nodeId: CCNodeId;

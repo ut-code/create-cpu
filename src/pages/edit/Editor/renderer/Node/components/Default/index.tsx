@@ -1,12 +1,9 @@
 import { theme } from "../../../../../../../common/theme";
-import { useComponent } from "../../../../../../../store/react/selectors";
 import type { CCComponentEditorRendererNodeRendererProps } from "../../types";
 
 export function CCComponentEditorRendererNodeDefaultRenderer(
 	props: CCComponentEditorRendererNodeRendererProps,
 ) {
-	const component = useComponent(props.node.componentId);
-
 	return (
 		<>
 			<text
@@ -16,7 +13,7 @@ export function CCComponentEditorRendererNodeDefaultRenderer(
 				textAnchor="start"
 				fontSize={12}
 			>
-				{component.name}
+				{props.component.name}
 			</text>
 			<rect
 				x={props.geometry.rect.position.x}
