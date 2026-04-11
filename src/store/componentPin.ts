@@ -36,15 +36,24 @@ export const ccPinTypes: CCComponentPinType[] = ["input", "output"];
 /** null for intrinsic components */
 export type CCPinImplementation = CCNodePinId | null;
 
+/**
+ * The resolved bit width status of a node pin instance.
+ * - `isFixed: false` — the bit width has not yet been determined.
+ * - `isFixed: true` — the bit width is known and available as `bitWidth`.
+ */
 export type CCNodePinBitWidthStatus =
 	| { isFixed: false }
 	| { isFixed: true; bitWidth: number };
 
+/**
+ * The bit width status of a component pin definition.
+ * - `isFixed: false, fixMode: "automatic"` — the bit width is not yet determined and will be inferred automatically from connections.
+ * - `isFixed: false, fixMode: "manual"` — the bit width is not yet determined and must be specified manually by the user.
+ * - `isFixed: true` — the bit width is known and available as `bitWidth`.
+ */
 export type CCComponentPinBitWidthStatus =
 	| { isFixed: false; fixMode: "automatic" | "manual" }
 	| { isFixed: true; bitWidth: number };
-
-export type CCNodePinFixedBitWidth = number;
 
 export type CCComponentPinStoreEvents = {
 	didRegister(pin: CCComponentPin): void;
@@ -217,6 +226,7 @@ export class CCComponentPinStore extends EventEmitter<CCComponentPinStoreEvents>
 	): CCComponentPinBitWidthStatus {
 		const pin = this.#pins.get(pinId);
 		invariant(pin);
+		// TODO: Remove hardcoded intrinsic component pin IDs and replace with a more flexible system, such as metadata on the component definitions.
 		switch (pin.id) {
 			case nullthrows(and.inputPin.A.id):
 			case nullthrows(and.inputPin.B.id):

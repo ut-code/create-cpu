@@ -73,7 +73,15 @@ function createBinaryOperator(
 				}
 				invariant(
 					inputValueA.length === inputValueB.length,
-					"Input lengths must match",
+					"Input lengths must match (name: " +
+						name +
+						", nodeId: " +
+						nodeId +
+						", inputValueA: " +
+						inputValueA +
+						", inputValueB: " +
+						inputValueB +
+						")",
 				);
 				const outputValue = Array.from({ length: inputValueA.length }, (_, i) =>
 					evaluate(nullthrows(inputValueA[i]), nullthrows(inputValueB[i])),
@@ -149,7 +157,7 @@ export const input =
 		type: ccIntrinsicComponentTypes.INPUT,
 		name: "Input",
 		in: {},
-		out: { Out: { name: "Out" } },
+		out: { Out: { name: "In" } },
 		initialConfig: null,
 		evaluate: (_context, _nodeId, _shape) => {
 			return true;
@@ -160,7 +168,7 @@ export const output =
 	new IntrinsicComponentDefinition<CCIntrinsicComponentOutputSpec>({
 		type: ccIntrinsicComponentTypes.OUTPUT,
 		name: "Output",
-		in: { In: { name: "In" } },
+		in: { In: { name: "Out" } },
 		out: {},
 		initialConfig: null,
 		evaluate: (_context, _nodeId, _shape) => {
@@ -272,6 +280,7 @@ export const flipflop =
 			const outputShape = shape.outputShape.Out;
 			invariant(outputShape[0] && !outputShape[1]);
 			const nodePinIdToValue = context.currentFrame.nodes.get(nodeId)?.pins;
+			console.log("FlipFlop evaluate", { nodeId, inputShape, outputShape });
 			const previousValue =
 				context.previousFrame?.nodes
 					.get(nodeId)

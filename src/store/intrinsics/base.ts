@@ -30,6 +30,7 @@ export type Context = {
 
 type IntrinsicComponentPinAttributes = {
 	name: string;
+	bitWidthFixMode?: "fixed" | "configurable" | "splittable";
 	isBitWidthConfigurable?: boolean;
 	isSplittable?: boolean;
 };
@@ -48,11 +49,6 @@ type Props<Spec extends CCIntrinsicComponentSpec> = {
 export class IntrinsicComponentDefinition<
 	Spec extends CCIntrinsicComponentSpec = CCIntrinsicComponentSpec,
 > {
-	static intrinsicComponentPinAttributesByComponentPinId: Map<
-		CCComponentPinId,
-		IntrinsicComponentPinAttributes
-	> = new Map();
-
 	readonly id: CCComponentId;
 	readonly type: CCIntrinsicComponentType;
 	readonly name: string;
@@ -98,7 +94,7 @@ export class IntrinsicComponentDefinition<
 				order: this._lastLocalIndex++,
 				name: attributes.name,
 			};
-			IntrinsicComponentDefinition.intrinsicComponentPinAttributesByComponentPinId.set(
+			IntrinsicComponentDefinition._pinAttributesByPinId.set(
 				pin.id,
 				attributes,
 			);
@@ -114,7 +110,7 @@ export class IntrinsicComponentDefinition<
 				order: this._lastLocalIndex++,
 				name: attributes.name,
 			};
-			IntrinsicComponentDefinition.intrinsicComponentPinAttributesByComponentPinId.set(
+			IntrinsicComponentDefinition._pinAttributesByPinId.set(
 				pin.id,
 				attributes,
 			);
@@ -122,18 +118,15 @@ export class IntrinsicComponentDefinition<
 			return pin;
 		});
 		this.initialConfig = props.initialConfig;
-		// this.outputPin = {
-		// 	id: this._generateId() as CCComponentPinId,
-		// 	componentId: this.id,
-		// 	type: "output",
-		// 	implementation: null,
-		// 	order: this._lastLocalIndex++,
-		// 	name: props.out.name,
-		// };
-		// IntrinsicComponentDefinition.intrinsicComponentPinAttributesByComponentPinId.set(
-		// 	this.outputPin.id,
-		// 	props.out
-		// );
-		// this.allPins.push(this.outputPin);
+	}
+
+	private static _pinAttributesByPinId: Map<
+		CCComponentPinId,
+		IntrinsicComponentPinAttributes
+	> = new Map();
+	static getPinAttributesByPinId(pinId: CCComponentPinId) {
+		return (
+			IntrinsicComponentDefinition._pinAttributesByPinId.get(pinId) ?? null
+		);
 	}
 }

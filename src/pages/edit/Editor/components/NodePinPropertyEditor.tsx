@@ -32,9 +32,7 @@ export function CCComponentEditorNodePinPropertyEditor() {
 		"NodePinPropertyEditor can only be used for node pins with user specified bit width",
 	);
 	const componentPinAttributes = nullthrows(
-		IntrinsicComponentDefinition.intrinsicComponentPinAttributesByComponentPinId.get(
-			target.componentPinId,
-		),
+		IntrinsicComponentDefinition.getPinAttributesByPinId(target.componentPinId),
 		"NodePinPropertyEditor can only be used for intrinsic component pins",
 	);
 
