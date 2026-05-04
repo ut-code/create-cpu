@@ -57,7 +57,20 @@ export class CCNodeStore extends EventEmitter<CCNodeStoreEvents> {
 		}
 	}
 
-	mount() {}
+	mount() {
+		this.#store.components.on("willUnregister", (component) => {
+			const ids = [...this.#nodes.values()]
+				.filter(
+					(node) =>
+						node.parentComponentId === component.id ||
+						node.componentId === component.id,
+				)
+				.map((node) => node.id);
+			if (ids.length > 0) {
+				this.unregister(ids);
+			}
+		});
+	}
 
 	/**
 	 * Register a node
