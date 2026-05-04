@@ -45,6 +45,7 @@ function createShape(
 	store: CCStore,
 	nodeId: CCNodeId,
 	pin: Record<string, CCComponentPin>,
+	context: ComponentEvaluationContext,
 ): Record<string, CCComponentPinInstanceShapes> {
 	const node = nullthrows(store.nodes.get(nodeId));
 	const { componentId } = node;
@@ -63,7 +64,9 @@ function createShape(
 			const bitWidthStatus = store.nodePins.getNodePinBitWidthStatus(
 				nodePin.id,
 			);
-			const bitWidth = !bitWidthStatus.isFixed ? 1 : bitWidthStatus.bitWidth;
+			const bitWidth = !bitWidthStatus.isFixed
+				? context.defaultBitWidth
+				: bitWidthStatus.bitWidth;
 			shape[key].push({ nodePinId: nodePin.id, bitWidth });
 		}
 	}
@@ -73,6 +76,7 @@ function createShape(
 function createIntrinsicComponentShape<Spec extends CCIntrinsicComponentSpec>(
 	store: CCStore,
 	nodeId: CCNodeId,
+	context: ComponentEvaluationContext,
 ): CCIntrinsicComponentShape<Spec> {
 	const node = nullthrows(store.nodes.get(nodeId));
 	const { componentId } = node;
@@ -80,8 +84,8 @@ function createIntrinsicComponentShape<Spec extends CCIntrinsicComponentSpec>(
 	invariant(componentDefinition);
 	const inputPin = componentDefinition.inputPin;
 	const outputPin = componentDefinition.outputPin;
-	const inputShape = createShape(store, nodeId, inputPin);
-	const outputShape = createShape(store, nodeId, outputPin);
+	const inputShape = createShape(store, nodeId, inputPin, context);
+	const outputShape = createShape(store, nodeId, outputPin, context);
 
 	return { inputShape, outputShape };
 }
@@ -95,7 +99,7 @@ function simulateIntrinsic(
 	const { componentId } = node;
 	const componentDefinition = definitionByComponentId.get(componentId);
 	invariant(componentDefinition);
-	const shape = createIntrinsicComponentShape(store, nodeId);
+	const shape = createIntrinsicComponentShape(store, nodeId, context);
 	return componentDefinition.evaluate(context, nodeId, shape);
 }
 
@@ -132,6 +136,27 @@ function simulateNode(
 		}
 	}
 
+	let childDefaultBitWidth = context.defaultBitWidth;
+	for (const nodePin of nodePins) {
+		const componentPin = nullthrows(
+			store.componentPins.get(nodePin.componentPinId),
+		);
+		const componentPinBitWidthStatus =
+			store.componentPins.getComponentPinBitWidthStatus(componentPin.id);
+		if (
+			!componentPinBitWidthStatus.isFixed &&
+			componentPinBitWidthStatus.fixMode === "automatic"
+		) {
+			const nodePinBitWidthStatus = store.nodePins.getNodePinBitWidthStatus(
+				nodePin.id,
+			);
+			if (nodePinBitWidthStatus.isFixed) {
+				childDefaultBitWidth = nodePinBitWidthStatus.bitWidth;
+				break;
+			}
+		}
+	}
+
 	const innerSimulationFrame = simulateComponent(
 		store,
 		component.id,
@@ -139,6 +164,7 @@ function simulateNode(
 		context.previousFrame
 			? nullthrows(context.previousFrame.nodes.get(nodeId)).child
 			: null,
+		childDefaultBitWidth,
 	);
 
 	// Set output values for component to parent
@@ -169,6 +195,7 @@ export default function simulateComponent(
 	componentId: CCComponentId,
 	inputValues: Map<CCComponentPinId, SimulationValue>,
 	previousFrame: SimulationFrame | null,
+	defaultBitWidth: number = 1,
 ): SimulationFrame {
 	const currentSimulationFrame = {
 		componentId: componentId,
@@ -243,6 +270,7 @@ export default function simulateComponent(
 	const childContext = {
 		previousFrame: previousFrame,
 		currentFrame: currentSimulationFrame,
+		defaultBitWidth,
 	};
 
 	while (unevaluatedNodes.size > 0) {

@@ -19,6 +19,7 @@ import {
 	xor,
 } from "./intrinsics/definitions";
 import type { CCNodePinId } from "./nodePin";
+// import { IntrinsicComponentDefinition } from "./intrinsics/base";
 
 export type CCComponentPin = {
 	readonly id: CCComponentPinId;
@@ -226,6 +227,20 @@ export class CCComponentPinStore extends EventEmitter<CCComponentPinStoreEvents>
 	): CCComponentPinBitWidthStatus {
 		const pin = this.#pins.get(pinId);
 		invariant(pin);
+
+		// const intrinsicPinAttributes =
+		// 	IntrinsicComponentDefinition.getPinAttributesByPinId(pin.id);
+		// if (intrinsicPinAttributes) {
+		// 	if (intrinsicPinAttributes.bitWidthPolicy.type === "inferred")
+		// 		return { isFixed: false, fixMode: "automatic" };
+		// 	if (intrinsicPinAttributes.bitWidthPolicy.type === "configurable")
+		// 		return { isFixed: false, fixMode: "manual" };
+		// 	if (intrinsicPinAttributes.bitWidthPolicy.type === "fixed") {
+		// 		const definition = nullthrows(IntrinsicComponentDefinition.getByComponentId(pin.componentId));
+		// 	}
+		// 	throw new Error(`Unknown bit width policy: ${intrinsicPinAttributes.bitWidthPolicy}`);
+		// }
+
 		// TODO: Remove hardcoded intrinsic component pin IDs and replace with a more flexible system, such as metadata on the component definitions.
 		switch (pin.id) {
 			case nullthrows(and.inputPin.A.id):

@@ -22,23 +22,37 @@ export type CCComponentPinInstanceShapes = {
 export type ComponentEvaluationContext = {
 	previousFrame: SimulationFrame | null;
 	currentFrame: SimulationFrame;
+	defaultBitWidth: number;
 };
 
 export type Context = {
 	componentId: CCComponentId;
 };
 
-type IntrinsicComponentPinAttributes = {
+type IntrinsicComponentPinBitWidthPolicy<
+	Spec extends CCIntrinsicComponentSpec,
+> =
+	| { type: "inferred" }
+	| {
+			type: "fixed";
+			calculateBitWidth: (
+				config: Spec["config"],
+				manualBitWidths: Partial<Record<Spec["in" | "out"], number[]>>,
+			) => number;
+	  }
+	| { type: "configurable"; isSplittable: boolean };
+
+type IntrinsicComponentPinAttributes<Spec extends CCIntrinsicComponentSpec> = {
 	name: string;
-	bitWidthFixMode?: "fixed" | "configurable" | "splittable";
+	bitWidthPolicy: IntrinsicComponentPinBitWidthPolicy<Spec>;
 	isBitWidthConfigurable?: boolean;
 	isSplittable?: boolean;
 };
 type Props<Spec extends CCIntrinsicComponentSpec> = {
 	type: CCIntrinsicComponentType;
 	name: string;
-	in: Record<Spec["in"], IntrinsicComponentPinAttributes>;
-	out: Record<Spec["out"], IntrinsicComponentPinAttributes>;
+	in: Record<Spec["in"], IntrinsicComponentPinAttributes<Spec>>;
+	out: Record<Spec["out"], IntrinsicComponentPinAttributes<Spec>>;
 	initialConfig: Spec["config"];
 	evaluate: (
 		context: ComponentEvaluationContext,
@@ -84,7 +98,9 @@ export class IntrinsicComponentDefinition<
 			intrinsicType: props.type,
 			name: this.name,
 		};
+		IntrinsicComponentDefinition._byId.set(this.id, this);
 		this.evaluate = props.evaluate;
+
 		this.inputPin = mapValues(props.in, (attributes) => {
 			const pin: CCComponentPin = {
 				id: this._generateId() as CCComponentPinId,
@@ -96,7 +112,7 @@ export class IntrinsicComponentDefinition<
 			};
 			IntrinsicComponentDefinition._pinAttributesByPinId.set(
 				pin.id,
-				attributes,
+				attributes as IntrinsicComponentPinAttributes<CCIntrinsicComponentSpec>,
 			);
 			this.allPins.push(pin);
 			return pin;
@@ -112,7 +128,7 @@ export class IntrinsicComponentDefinition<
 			};
 			IntrinsicComponentDefinition._pinAttributesByPinId.set(
 				pin.id,
-				attributes,
+				attributes as IntrinsicComponentPinAttributes<CCIntrinsicComponentSpec>,
 			);
 			this.allPins.push(pin);
 			return pin;
@@ -120,9 +136,15 @@ export class IntrinsicComponentDefinition<
 		this.initialConfig = props.initialConfig;
 	}
 
+	private static _byId: Map<CCComponentId, IntrinsicComponentDefinition> =
+		new Map();
+	static getByComponentId(componentId: CCComponentId) {
+		return IntrinsicComponentDefinition._byId.get(componentId) ?? null;
+	}
+
 	private static _pinAttributesByPinId: Map<
 		CCComponentPinId,
-		IntrinsicComponentPinAttributes
+		IntrinsicComponentPinAttributes<CCIntrinsicComponentSpec>
 	> = new Map();
 	static getPinAttributesByPinId(pinId: CCComponentPinId) {
 		return (
