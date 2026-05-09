@@ -11,7 +11,9 @@ export type EditorModePlay = "play";
 
 export type RangeSelect = { start: Vector2; end: Vector2 } | null;
 
-export type InputValueKey = CCComponentPinId;
+export type TimeStep = number;
+
+export type InputValueKey = [CCComponentPinId, TimeStep];
 
 export type NodePinPropertyEditorTarget = {
 	nodeId: CCNodeId;
@@ -29,9 +31,9 @@ export type EditorStoreCoreSlice = {
 	setNodePinPropertyEditorTarget(
 		target: NodePinPropertyEditorTarget | null,
 	): void;
-	inputValues: Map<InputValueKey, SimulationValue>;
-	getInputValue(componentPinId: CCComponentPinId): SimulationValue;
-	setInputValue(componentPinId: CCComponentPinId, value: SimulationValue): void;
+	inputValues: Map<string, SimulationValue>;
+	getInputValue(inputValueKey: InputValueKey): SimulationValue;
+	setInputValue(inputValueKey: InputValueKey, value: SimulationValue): void;
 	setEditorMode(mode: EditorMode): void;
 	setTimeStep(timeStep: number): void;
 	selectNode(ids: CCNodeId[], exclusive: boolean): void;

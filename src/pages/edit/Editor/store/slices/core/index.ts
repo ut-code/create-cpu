@@ -11,7 +11,7 @@ import type {
 // import type { CCComponentId } from "../../../../../../store/component";
 import simulateComponent from "../../../../../../store/simulation";
 import type { ComponentEditorSliceCreator } from "../../types";
-import type { EditorStoreCoreSlice } from "./types";
+import type { EditorStoreCoreSlice, InputValueKey } from "./types";
 
 export function stringifySimulationValue(value: SimulationValue): string {
 	const binary = value.map((v) => (v ? "1" : "0")).join("");
@@ -43,11 +43,20 @@ export const createComponentEditorStoreCoreSlice: ComponentEditorSliceCreator<
 				},
 				/** @private */
 				inputValues: new Map(),
-				getInputValue(componentPinId: CCComponentPinId) {
-					const value = get().inputValues.get(componentPinId);
+				getInputValue(inputValueKey: InputValueKey) {
+					const value = get().inputValues.get(JSON.stringify(inputValueKey));
 					if (!value) {
+						const previousTimeStepValue = get().inputValues.get(
+							JSON.stringify([inputValueKey[0], inputValueKey[1] - 1]),
+						);
+						if (previousTimeStepValue) {
+							get().setInputValue(inputValueKey, previousTimeStepValue);
+							return previousTimeStepValue;
+						}
 						const bitWidthStatus =
-							store.componentPins.getComponentPinBitWidthStatus(componentPinId);
+							store.componentPins.getComponentPinBitWidthStatus(
+								inputValueKey[0],
+							);
 						if (bitWidthStatus.isFixed) {
 							const newValue = new Array(bitWidthStatus.bitWidth).fill(false);
 							return newValue;
@@ -60,15 +69,12 @@ export const createComponentEditorStoreCoreSlice: ComponentEditorSliceCreator<
 					}
 					return value;
 				},
-				setInputValue(
-					componentPinId: CCComponentPinId,
-					value: SimulationValue,
-				) {
+				setInputValue(inputValueKey: InputValueKey, value: SimulationValue) {
 					set((state) => {
 						return {
 							...state,
 							inputValues: new Map(state.inputValues).set(
-								componentPinId,
+								JSON.stringify(inputValueKey),
 								value,
 							),
 						};
@@ -170,7 +176,10 @@ export const createComponentEditorStoreCoreSlice: ComponentEditorSliceCreator<
 					for (const pin of pins) {
 						invariant(pin.implementation);
 						if (pin.type === "input") {
-							inputValues.set(pin.id, editorState.getInputValue(pin.id));
+							inputValues.set(
+								pin.id,
+								editorState.getInputValue([pin.id, timeStep]),
+							);
 						}
 					}
 					simulationCachedFrames.push(

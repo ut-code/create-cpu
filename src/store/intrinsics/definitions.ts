@@ -198,7 +198,7 @@ export const aggregate =
 					type: "fixed",
 					calculateBitWidth: (_, manualBitWidths) =>
 						manualBitWidths?.In?.reduce((sum, bitWidth) => sum + bitWidth, 0) ??
-						0,
+						1,
 				},
 			},
 		},
@@ -234,7 +234,7 @@ export const decompose =
 						manualBitWidths?.Out?.reduce(
 							(sum, bitWidth) => sum + bitWidth,
 							0,
-						) ?? 0,
+						) ?? 1,
 				},
 			},
 		},

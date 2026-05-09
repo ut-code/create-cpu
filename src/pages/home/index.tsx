@@ -2,7 +2,6 @@ import {
 	Add as AddIcon,
 	Download as DownloadIcon,
 	MoreVert as MoreVertIcon,
-	NoteAdd as NoteAddIcon,
 	Upload as UploadIcon,
 } from "@mui/icons-material";
 import {
@@ -76,9 +75,6 @@ export default function HomePage({ onComponentSelected }: HomePageProps) {
 					File
 				</Typography>
 				<Box sx={{ display: "flex", gap: 1 }}>
-					<Button variant="outlined" startIcon={<NoteAddIcon />} disabled>
-						New File
-					</Button>
 					<Button
 						variant="outlined"
 						color="inherit"
@@ -100,6 +96,21 @@ export default function HomePage({ onComponentSelected }: HomePageProps) {
 						startIcon={<UploadIcon />}
 					>
 						Import
+					</Button>
+					<div style={{ flexGrow: 1 }} />
+					<Button
+						variant="text"
+						color="error"
+						onClick={() => {
+							if (
+								confirm(
+									"Are you sure you want to reset the store? This action cannot be undone.",
+								)
+							)
+								resetStore();
+						}}
+					>
+						Reset
 					</Button>
 				</Box>
 				<Box sx={{ display: "flex", alignItems: "center", mt: 4 }}>
