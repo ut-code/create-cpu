@@ -4,20 +4,8 @@ import invariant from "tiny-invariant";
 import type { Opaque } from "type-fest";
 import type CCStore from ".";
 import type { CCComponentId } from "./component";
-import {
-	aggregate,
-	and,
-	broadcast,
-	decompose,
-	false_,
-	flipflop,
-	input,
-	not,
-	or,
-	output,
-	true_,
-	xor,
-} from "./intrinsics/definitions";
+import { IntrinsicComponentDefinition } from "./intrinsics/base";
+import { aggregate, decompose, input, output } from "./intrinsics/definitions";
 import type { CCNodePinId } from "./nodePin";
 
 export type CCComponentPin = {
@@ -36,15 +24,24 @@ export const ccPinTypes: CCComponentPinType[] = ["input", "output"];
 /** null for intrinsic components */
 export type CCPinImplementation = CCNodePinId | null;
 
+/**
+ * The resolved bit width status of a node pin instance.
+ * - `isFixed: false` — the bit width has not yet been determined.
+ * - `isFixed: true` — the bit width is known and available as `bitWidth`.
+ */
 export type CCNodePinBitWidthStatus =
 	| { isFixed: false }
 	| { isFixed: true; bitWidth: number };
 
+/**
+ * The bit width status of a component pin definition.
+ * - `isFixed: false, fixMode: "automatic"` — the bit width is not yet determined and will be inferred automatically from connections.
+ * - `isFixed: false, fixMode: "manual"` — the bit width is not yet determined and must be specified manually by the user.
+ * - `isFixed: true` — the bit width is known and available as `bitWidth`.
+ */
 export type CCComponentPinBitWidthStatus =
 	| { isFixed: false; fixMode: "automatic" | "manual" }
 	| { isFixed: true; bitWidth: number };
-
-export type CCNodePinFixedBitWidth = number;
 
 export type CCComponentPinStoreEvents = {
 	didRegister(pin: CCComponentPin): void;
@@ -217,57 +214,52 @@ export class CCComponentPinStore extends EventEmitter<CCComponentPinStoreEvents>
 	): CCComponentPinBitWidthStatus {
 		const pin = this.#pins.get(pinId);
 		invariant(pin);
-		switch (pin.id) {
-			case nullthrows(and.inputPin.A.id):
-			case nullthrows(and.inputPin.B.id):
-			case nullthrows(and.outputPin.Out.id):
-			case nullthrows(or.inputPin.A.id):
-			case nullthrows(or.inputPin.B.id):
-			case nullthrows(or.outputPin.Out.id):
-			case nullthrows(not.inputPin.In.id):
-			case nullthrows(not.outputPin.Out.id):
-			case nullthrows(xor.inputPin.A.id):
-			case nullthrows(xor.inputPin.B.id):
-			case nullthrows(xor.outputPin.Out.id):
-			case nullthrows(input.outputPin.Out.id):
-			case nullthrows(output.inputPin.In.id):
-			case nullthrows(flipflop.inputPin.In.id):
-			case nullthrows(flipflop.outputPin.Out.id):
-			case nullthrows(true_.outputPin.Out.id):
-			case nullthrows(false_.outputPin.Out.id): {
+
+		// Intrinsic components
+		const intrinsicPinAttributes =
+			IntrinsicComponentDefinition.getPinAttributesByPinId(pin.id);
+		if (intrinsicPinAttributes) {
+			// TODO: This is a temporary workaround to allow the bit width of aggregate and decompose pins to be calculated outside of the normal inference process.
+			// We should eventually refactor the bit width inference process to handle these cases more elegantly.
+			if (pin.id === aggregate.outputPin.Out.id)
+				return { isFixed: false, fixMode: "manual" };
+			if (pin.id === decompose.inputPin.In.id)
+				return { isFixed: false, fixMode: "manual" };
+
+			if (intrinsicPinAttributes.bitWidthPolicy.type === "inferred")
 				return { isFixed: false, fixMode: "automatic" };
-			}
-			case nullthrows(aggregate.inputPin.In.id): {
+			if (intrinsicPinAttributes.bitWidthPolicy.type === "configurable")
 				return { isFixed: false, fixMode: "manual" };
-			}
-			case nullthrows(aggregate.outputPin.Out.id): {
-				return { isFixed: false, fixMode: "manual" };
-			}
-			case nullthrows(decompose.outputPin.Out.id): {
-				return { isFixed: false, fixMode: "manual" };
-			}
-			case nullthrows(decompose.inputPin.In.id): {
-				return { isFixed: false, fixMode: "manual" };
-			}
-			case nullthrows(broadcast.inputPin.In.id): {
-				return { isFixed: true, bitWidth: 1 };
-			}
-			case nullthrows(broadcast.outputPin.Out.id): {
-				return { isFixed: false, fixMode: "manual" };
-			}
-			default: {
-				if (pin.implementation === null) {
-					throw new Error("unreachable");
-				}
-				const bitWidthStatus = this.#store.nodePins.getNodePinBitWidthStatus(
-					pin.implementation,
+			if (intrinsicPinAttributes.bitWidthPolicy.type === "fixed") {
+				const definition = nullthrows(
+					IntrinsicComponentDefinition.getByComponentId(pin.componentId),
+					`Intrinsic component definition not found for component ID: ${pin.componentId}`,
 				);
-				if (bitWidthStatus.isFixed) {
-					return bitWidthStatus;
-				} else {
-					return { isFixed: false, fixMode: "automatic" };
-				}
+				return {
+					isFixed: true,
+					bitWidth: intrinsicPinAttributes.bitWidthPolicy.calculateBitWidth(
+						definition.initialConfig,
+						{},
+					),
+				};
 			}
+			throw new Error(
+				`Unknown bit width policy: ${intrinsicPinAttributes.bitWidthPolicy satisfies never}`,
+			);
+		}
+
+		// User-defined components
+		invariant(
+			pin.implementation,
+			"Pin implementation must be defined for user-defined components",
+		);
+		const bitWidthStatus = this.#store.nodePins.getNodePinBitWidthStatus(
+			pin.implementation,
+		);
+		if (bitWidthStatus.isFixed) {
+			return bitWidthStatus;
+		} else {
+			return { isFixed: false, fixMode: "automatic" };
 		}
 	}
 

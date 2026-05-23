@@ -4,6 +4,7 @@ import nullthrows from "nullthrows";
 import { useState } from "react";
 import invariant from "tiny-invariant";
 import { rect } from "../../../../common/rect";
+import { CCConnectionStore } from "../../../../store/connection";
 import { IntrinsicComponentDefinition } from "../../../../store/intrinsics/base";
 import { CCNodePinStore } from "../../../../store/nodePin";
 import { useStore } from "../../../../store/react";
@@ -32,9 +33,7 @@ export function CCComponentEditorNodePinPropertyEditor() {
 		"NodePinPropertyEditor can only be used for node pins with user specified bit width",
 	);
 	const componentPinAttributes = nullthrows(
-		IntrinsicComponentDefinition.intrinsicComponentPinAttributesByComponentPinId.get(
-			target.componentPinId,
-		),
+		IntrinsicComponentDefinition.getPinAttributesByPinId(target.componentPinId),
 		"NodePinPropertyEditor can only be used for intrinsic component pins",
 	);
 
@@ -128,10 +127,28 @@ export function CCComponentEditorNodePinPropertyEditor() {
 										connection.from === nodePin.id
 											? connection.to
 											: connection.from;
+									const fromNodePinId =
+										connection.from === nodePin.id
+											? nodePin.id
+											: anotherNodePinId;
+									const toNodePinId =
+										connection.from === nodePin.id
+											? anotherNodePinId
+											: nodePin.id;
+									const parentComponentId = connection.parentComponentId;
+									store.connections.unregister([connection.id]);
 									if (
-										!store.nodePins.isConnectable(nodePin.id, anotherNodePinId)
+										store.nodePins.isConnectable(nodePin.id, anotherNodePinId)
 									) {
-										store.connections.unregister([connection.id]);
+										// reconnect if still connectable after bit width change
+										store.connections.register(
+											CCConnectionStore.create({
+												parentComponentId,
+												from: fromNodePinId,
+												to: toNodePinId,
+												bentPortion: 0.5,
+											}),
+										);
 									}
 								}
 							}

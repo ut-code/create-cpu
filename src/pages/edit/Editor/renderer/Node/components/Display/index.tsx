@@ -1,12 +1,27 @@
+import nullthrows from "nullthrows";
 import { theme } from "../../../../../../../common/theme";
+import { display } from "../../../../../../../store/intrinsics/definitions";
 import type { CCIntrinsicComponentDisplaySpec } from "../../../../../../../store/intrinsics/types";
-import type { CCNode } from "../../../../../../../store/node";
+import { useStore } from "../../../../../../../store/react";
+import { useComponentEditorStore } from "../../../../store";
 import type { CCComponentEditorRendererNodeRendererProps } from "../../types";
 
 export function CCComponentEditorRendererNodeDisplayRenderer(
 	props: CCComponentEditorRendererNodeRendererProps,
 ) {
-	const node = props.node as CCNode<CCIntrinsicComponentDisplaySpec>;
+	const { store } = useStore();
+	const config = props.node.config as CCIntrinsicComponentDisplaySpec["config"];
+	const inputNodePin = nullthrows(
+		store.nodePins
+			.getManyByNodeId(props.node.id)
+			.find((pin) => pin.componentPinId === display.inputPin.Pixels.id),
+		`Display node ${props.node.id} is missing input pin`,
+	);
+	const editorState = useComponentEditorStore()();
+	const inputValue =
+		editorState.editorMode === "play"
+			? editorState.getNodePinValue(inputNodePin.id)
+			: undefined;
 
 	return (
 		<>
@@ -38,12 +53,12 @@ export function CCComponentEditorRendererNodeDisplayRenderer(
 				fontSize={16}
 				fill={theme.palette.textPrimary}
 			>
-				{node.config.resolution.x}x{node.config.resolution.y}
+				{config.resolution.x}x{config.resolution.y}
 			</text>
-			{Array(node.config.resolution.y)
+			{Array(config.resolution.y)
 				.keys()
 				.map((y) =>
-					Array(node.config.resolution.x)
+					Array(config.resolution.x)
 						.keys()
 						.map((x) => (
 							<rect
@@ -52,7 +67,14 @@ export function CCComponentEditorRendererNodeDisplayRenderer(
 								y={props.geometry.rect.position.y + 8 + y * 12}
 								width={12}
 								height={12}
-								fill={theme.palette.white}
+								fill={
+									inputValue?.[
+										config.resolution.x * config.resolution.y -
+											(1 + x + config.resolution.x * y)
+									]
+										? theme.palette.black
+										: theme.palette.white
+								}
 								stroke={theme.palette.editorGrid}
 							/>
 						))

@@ -24,8 +24,8 @@ function createUnaryOperator(
 		{
 			type,
 			name,
-			in: { In: { name: "In" } },
-			out: { Out: { name: "Out" } },
+			in: { In: { name: "In", bitWidthPolicy: { type: "inferred" } } },
+			out: { Out: { name: "Out", bitWidthPolicy: { type: "inferred" } } },
 			initialConfig: null,
 			evaluate: (context, nodeId, shape) => {
 				const inputShape = shape.inputShape.In;
@@ -57,8 +57,11 @@ function createBinaryOperator(
 		{
 			type,
 			name,
-			in: { A: { name: "A" }, B: { name: "B" } },
-			out: { Out: { name: "Out" } },
+			in: {
+				A: { name: "A", bitWidthPolicy: { type: "inferred" } },
+				B: { name: "B", bitWidthPolicy: { type: "inferred" } },
+			},
+			out: { Out: { name: "Out", bitWidthPolicy: { type: "inferred" } } },
 			initialConfig: null,
 			evaluate: (context, nodeId, shape) => {
 				const inputShapeA = shape.inputShape.A;
@@ -73,7 +76,15 @@ function createBinaryOperator(
 				}
 				invariant(
 					inputValueA.length === inputValueB.length,
-					"Input lengths must match",
+					"Input lengths must match (name: " +
+						name +
+						", nodeId: " +
+						nodeId +
+						", inputValueA: " +
+						inputValueA +
+						", inputValueB: " +
+						inputValueB +
+						")",
 				);
 				const outputValue = Array.from({ length: inputValueA.length }, (_, i) =>
 					evaluate(nullthrows(inputValueA[i]), nullthrows(inputValueB[i])),
@@ -98,7 +109,7 @@ function createNullaryOperator(
 			type,
 			name,
 			in: {},
-			out: { Out: { name: "Out" } },
+			out: { Out: { name: "Out", bitWidthPolicy: { type: "inferred" } } },
 			initialConfig: null,
 			evaluate: (context, nodeId, shape) => {
 				const outputShape = shape.outputShape.Out;
@@ -149,7 +160,7 @@ export const input =
 		type: ccIntrinsicComponentTypes.INPUT,
 		name: "Input",
 		in: {},
-		out: { Out: { name: "Out" } },
+		out: { Out: { name: "In", bitWidthPolicy: { type: "inferred" } } },
 		initialConfig: null,
 		evaluate: (_context, _nodeId, _shape) => {
 			return true;
@@ -160,7 +171,7 @@ export const output =
 	new IntrinsicComponentDefinition<CCIntrinsicComponentOutputSpec>({
 		type: ccIntrinsicComponentTypes.OUTPUT,
 		name: "Output",
-		in: { In: { name: "In" } },
+		in: { In: { name: "Out", bitWidthPolicy: { type: "inferred" } } },
 		out: {},
 		initialConfig: null,
 		evaluate: (_context, _nodeId, _shape) => {
@@ -173,9 +184,24 @@ export const aggregate =
 		type: ccIntrinsicComponentTypes.AGGREGATE,
 		name: "Aggregate",
 		in: {
-			In: { name: "In", isBitWidthConfigurable: true, isSplittable: true },
+			In: {
+				name: "In",
+				bitWidthPolicy: { type: "configurable", isSplittable: true },
+				isBitWidthConfigurable: true,
+				isSplittable: true,
+			},
 		},
-		out: { Out: { name: "Out" } },
+		out: {
+			Out: {
+				name: "Out",
+				bitWidthPolicy: {
+					type: "fixed",
+					calculateBitWidth: (_, manualBitWidths) =>
+						manualBitWidths?.In?.reduce((sum, bitWidth) => sum + bitWidth, 0) ??
+						1,
+				},
+			},
+		},
 		initialConfig: null,
 		evaluate: (context, nodeId, shape) => {
 			const inputShape = shape.inputShape.In;
@@ -200,10 +226,25 @@ export const decompose =
 		type: ccIntrinsicComponentTypes.DECOMPOSE,
 		name: "Decompose",
 		in: {
-			In: { name: "In" },
+			In: {
+				name: "In",
+				bitWidthPolicy: {
+					type: "fixed",
+					calculateBitWidth: (_, manualBitWidths) =>
+						manualBitWidths?.Out?.reduce(
+							(sum, bitWidth) => sum + bitWidth,
+							0,
+						) ?? 1,
+				},
+			},
 		},
 		out: {
-			Out: { name: "Out", isBitWidthConfigurable: true, isSplittable: true },
+			Out: {
+				name: "Out",
+				bitWidthPolicy: { type: "configurable", isSplittable: true },
+				isBitWidthConfigurable: true,
+				isSplittable: true,
+			},
 		},
 		initialConfig: null,
 		evaluate: (context, nodeId, shape) => {
@@ -232,9 +273,18 @@ export const broadcast =
 		type: ccIntrinsicComponentTypes.BROADCAST,
 		name: "Broadcast",
 		in: {
-			In: { name: "In" },
+			In: {
+				name: "In",
+				bitWidthPolicy: { type: "fixed", calculateBitWidth: () => 1 },
+			},
 		},
-		out: { Out: { name: "Out", isBitWidthConfigurable: true } },
+		out: {
+			Out: {
+				name: "Out",
+				bitWidthPolicy: { type: "configurable", isSplittable: false },
+				isBitWidthConfigurable: true,
+			},
+		},
 		initialConfig: null,
 		evaluate: (context, nodeId, shape) => {
 			const inputShape = shape.inputShape.In;
@@ -261,10 +311,8 @@ export const flipflop =
 	new IntrinsicComponentDefinition<CCIntrinsicComponentUnaryOperatorSpec>({
 		type: ccIntrinsicComponentTypes.FLIPFLOP,
 		name: "FlipFlop",
-		in: {
-			In: { name: "In" },
-		},
-		out: { Out: { name: "Out" } },
+		in: { In: { name: "In", bitWidthPolicy: { type: "inferred" } } },
+		out: { Out: { name: "Out", bitWidthPolicy: { type: "inferred" } } },
 		initialConfig: null,
 		evaluate: (context, nodeId, shape) => {
 			const inputShape = shape.inputShape.In;
@@ -272,6 +320,7 @@ export const flipflop =
 			const outputShape = shape.outputShape.Out;
 			invariant(outputShape[0] && !outputShape[1]);
 			const nodePinIdToValue = context.currentFrame.nodes.get(nodeId)?.pins;
+			console.log("FlipFlop evaluate", { nodeId, inputShape, outputShape });
 			const previousValue =
 				context.previousFrame?.nodes
 					.get(nodeId)
@@ -289,7 +338,16 @@ export const display =
 	new IntrinsicComponentDefinition<CCIntrinsicComponentDisplaySpec>({
 		type: ccIntrinsicComponentTypes.DISPLAY,
 		name: "Display",
-		in: { Pixels: { name: "Pixels" } },
+		in: {
+			Pixels: {
+				name: "Pixels",
+				bitWidthPolicy: {
+					type: "fixed",
+					calculateBitWidth: (config) =>
+						config.resolution.x * config.resolution.y,
+				},
+			},
+		},
 		out: {},
 		initialConfig: { resolution: { x: 20, y: 15 } },
 		evaluate: () => true,
