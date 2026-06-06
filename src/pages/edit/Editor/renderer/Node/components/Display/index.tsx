@@ -5,6 +5,9 @@ import type { CCIntrinsicComponentDisplaySpec } from "../../../../../../../store
 import { useStore } from "../../../../../../../store/react";
 import { useComponentEditorStore } from "../../../../store";
 import type { CCComponentEditorRendererNodeRendererProps } from "../../types";
+import { CCComponentEditorRendererNodeDefaultRenderer } from "../Default";
+import { CCComponentEditorRendererNodeDisplayRendererConfigSettingButton } from "./ConfigSettingButton";
+import { ccComponentEditorRendererNodeDisplayLayoutConstants } from "./geometry";
 
 export function CCComponentEditorRendererNodeDisplayRenderer(
 	props: CCComponentEditorRendererNodeRendererProps,
@@ -23,38 +26,27 @@ export function CCComponentEditorRendererNodeDisplayRenderer(
 			? editorState.getNodePinValue(inputNodePin.id)
 			: undefined;
 
+	const { padding, gridSize, gridSizeDisplayWidth } =
+		ccComponentEditorRendererNodeDisplayLayoutConstants;
+
 	return (
 		<>
-			<rect
-				x={props.geometry.rect.position.x}
-				y={props.geometry.rect.position.y}
-				width={props.geometry.rect.size.x}
-				height={props.geometry.rect.size.y}
-				fill={theme.palette.white}
-				stroke={
-					props.nodeState.isSelected
-						? theme.palette.primary
-						: theme.palette.textPrimary
-				}
-				strokeWidth={2}
-				rx={2}
-			/>
+			<CCComponentEditorRendererNodeDefaultRenderer {...props} />
 			<text
-				x={props.geometry.rect.position.x + 8}
-				y={props.geometry.rect.position.y + 20}
-				fontSize={12}
-				fill={theme.palette.textPrimary}
-			>
-				Display
-			</text>
-			<text
-				x={props.geometry.rect.position.x + 8}
-				y={props.geometry.rect.position.y + 40}
+				x={padding}
+				y={padding}
 				fontSize={16}
 				fill={theme.palette.textPrimary}
+				dominantBaseline="hanging"
 			>
 				{config.resolution.x}x{config.resolution.y}
 			</text>
+			<foreignObject x={padding / 2} y={padding + 16} width={32} height={32}>
+				<CCComponentEditorRendererNodeDisplayRendererConfigSettingButton
+					nodeId={props.node.id}
+					geometry={props.geometry}
+				/>
+			</foreignObject>
 			{Array(config.resolution.y)
 				.keys()
 				.map((y) =>
@@ -63,10 +55,10 @@ export function CCComponentEditorRendererNodeDisplayRenderer(
 						.map((x) => (
 							<rect
 								key={`${x}-${y}`}
-								x={props.geometry.rect.position.x + 64 + x * 12}
-								y={props.geometry.rect.position.y + 8 + y * 12}
-								width={12}
-								height={12}
+								x={padding + gridSizeDisplayWidth + x * gridSize}
+								y={padding + y * gridSize}
+								width={gridSize}
+								height={gridSize}
 								fill={
 									inputValue?.[
 										config.resolution.x * config.resolution.y -

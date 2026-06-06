@@ -1,50 +1,41 @@
-import { type Vector2, vector2 } from "../../../../../../../common/vector2";
+import type { Vector2 } from "../../../../../../../common/vector2";
 import type { CCNodePinId } from "../../../../../../../store/nodePin";
 import type {
-	CCComponentEditorRendererNodeGeometryCalculator,
-	CCComponentEditorRendererNodeGeometrySource,
+	CCComponentEditorRendererNodeLayout,
+	CCComponentEditorRendererNodeLayoutSource,
 } from "../../types";
 
 const width = 100;
 const gapY = 20;
 const paddingY = 15;
 
-export const ccComponentRendererNodeDefaultGeometryCalculator: CCComponentEditorRendererNodeGeometryCalculator =
-	(source: CCComponentEditorRendererNodeGeometrySource) => {
-		const size: Vector2 = {
-			x: width,
-			y:
-				gapY *
-					Math.max(
-						source.inputNodePinIds.length,
-						source.outputNodePinIds.length,
-					) +
-				paddingY * 2,
-		};
-
-		const nodePinPositionById = new Map<CCNodePinId, Vector2>();
-		for (const [index, nodePinId] of source.inputNodePinIds.entries()) {
-			nodePinPositionById.set(nodePinId, {
-				x: source.position.x - size.x / 2,
-				y:
-					source.position.y +
-					gapY * (index - source.inputNodePinIds.length / 2 + 0.5),
-			});
-		}
-		for (const [index, nodePinId] of source.outputNodePinIds.entries()) {
-			nodePinPositionById.set(nodePinId, {
-				x: source.position.x + size.x / 2,
-				y:
-					source.position.y +
-					gapY * (index - source.outputNodePinIds.length / 2 + 0.5),
-			});
-		}
-
-		return {
-			rect: {
-				position: vector2.sub(source.position, vector2.div(size, 2)),
-				size,
-			},
-			nodePinPositionById,
-		};
+export function ccComponentRendererNodeDefaultLayoutCalculator(
+	source: CCComponentEditorRendererNodeLayoutSource,
+): CCComponentEditorRendererNodeLayout {
+	const size: Vector2 = {
+		x: width,
+		y:
+			gapY *
+				Math.max(
+					source.inputNodePinIds.length,
+					source.outputNodePinIds.length,
+				) +
+			paddingY * 2,
 	};
+
+	const nodePinOffsetById = new Map<CCNodePinId, Vector2>();
+
+	const startYIn =
+		size.y / 2 - (gapY * (source.inputNodePinIds.length - 1)) / 2;
+	for (const [index, pinId] of source.inputNodePinIds.entries()) {
+		nodePinOffsetById.set(pinId, { x: 0, y: startYIn + gapY * index });
+	}
+
+	const startYOut =
+		size.y / 2 - (gapY * (source.outputNodePinIds.length - 1)) / 2;
+	for (const [index, pinId] of source.outputNodePinIds.entries()) {
+		nodePinOffsetById.set(pinId, { x: size.x, y: startYOut + gapY * index });
+	}
+
+	return { size, nodePinOffsetById };
+}

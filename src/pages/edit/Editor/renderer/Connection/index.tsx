@@ -9,7 +9,7 @@ import ensureStoreItem from "../../../../../store/react/error";
 import { useNode } from "../../../../../store/react/selectors";
 import { useComponentEditorStore } from "../../store";
 import { stringifySimulationValue } from "../../store/slices/core/index";
-import getCCComponentEditorRendererNodeGeometry from "../Node/geometry";
+import { getCCComponentEditorRendererNodeGeometry } from "../Node/geometry";
 
 export type CCComponentEditorRendererConnectionEndpoint = {
 	direction: CCComponentPinType;

@@ -8,7 +8,7 @@ import { CCConnectionStore } from "../../../../store/connection";
 import { IntrinsicComponentDefinition } from "../../../../store/intrinsics/base";
 import { CCNodePinStore } from "../../../../store/nodePin";
 import { useStore } from "../../../../store/react";
-import getCCComponentEditorRendererNodeGeometry from "../renderer/Node/geometry";
+import { getCCComponentEditorRendererNodeGeometry } from "../renderer/Node/geometry";
 import { useComponentEditorStore } from "../store";
 
 export function CCComponentEditorNodePinPropertyEditor() {
@@ -123,33 +123,22 @@ export function CCComponentEditorNodePinPropertyEditor() {
 									nodePin.id,
 								);
 								for (const connection of connections) {
-									const anotherNodePinId =
-										connection.from === nodePin.id
-											? connection.to
-											: connection.from;
-									const fromNodePinId =
-										connection.from === nodePin.id
-											? nodePin.id
-											: anotherNodePinId;
-									const toNodePinId =
-										connection.from === nodePin.id
-											? anotherNodePinId
-											: nodePin.id;
+									const from = connection.from;
+									const to = connection.to;
 									const parentComponentId = connection.parentComponentId;
-									store.connections.unregister([connection.id]);
-									if (
-										store.nodePins.isConnectable(nodePin.id, anotherNodePinId)
-									) {
-										// reconnect if still connectable after bit width change
-										store.connections.register(
-											CCConnectionStore.create({
-												parentComponentId,
-												from: fromNodePinId,
-												to: toNodePinId,
-												bentPortion: 0.5,
-											}),
-										);
-									}
+									store.connections.unregister([connection.id]).then(() => {
+										if (store.nodePins.isConnectable(from, to)) {
+											// reconnect if still connectable after bit width change
+											store.connections.register(
+												CCConnectionStore.create({
+													parentComponentId,
+													from,
+													to,
+													bentPortion: 0.5,
+												}),
+											);
+										}
+									});
 								}
 							}
 							continue;

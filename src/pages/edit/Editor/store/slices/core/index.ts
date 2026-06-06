@@ -191,11 +191,6 @@ export const createComponentEditorStoreCoreSlice: ComponentEditorSliceCreator<
 				}
 				if (isUpdated) editorStore.setState((s) => ({ ...s }));
 			};
-			store.nodes.on("didRegister", executeSimulation);
-			store.nodes.on("didUpdate", executeSimulation);
-			store.nodes.on("didUnregister", executeSimulation);
-			store.connections.on("didRegister", executeSimulation);
-			store.connections.on("didUnregister", executeSimulation);
 			editorStore.subscribe(executeSimulation);
 		},
 	};

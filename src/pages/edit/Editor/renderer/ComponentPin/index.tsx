@@ -5,7 +5,7 @@ import { useStore } from "../../../../../store/react";
 import { wrappingIncrementSimulationValue } from "../../../../../store/simulation";
 import { useComponentEditorStore } from "../../store";
 import { stringifySimulationValue } from "../../store/slices/core";
-import getCCComponentEditorRendererNodeGeometry from "./../Node/geometry";
+import { getCCComponentEditorRendererNodeGeometry } from "./../Node/geometry";
 export type CCComponentEditorRendererComponentPinProps = {
 	nodePinId: CCNodePinId;
 };

@@ -61,6 +61,35 @@ export class CCConnectionStore extends EventEmitter<CCConnectionStoreEvents> {
 				this.unregister(connections.map((connection) => connection.id));
 			}
 		});
+		this.#store.connections.on("didRegister", (connection) => {
+			const component = nullthrows(
+				this.#store.components.get(connection.parentComponentId),
+			);
+			const nodes = this.#store.nodes.getManyByComponentId(component.id);
+			for (const node of nodes) {
+				const nodePins = this.#store.nodePins.getManyByNodeId(node.id);
+				for (const nodePin of nodePins) {
+					const connections = this.getConnectionsByNodePinId(nodePin.id);
+					for (const connection of connections) {
+						const parentComponentId = connection.parentComponentId;
+						const from = connection.from;
+						const to = connection.to;
+						this.unregister([connection.id]).then(() => {
+							if (this.#store.nodePins.isConnectable(from, to)) {
+								this.register(
+									CCConnectionStore.create({
+										from,
+										to,
+										parentComponentId,
+										bentPortion: 0.5,
+									}),
+								);
+							}
+						});
+					}
+				}
+			}
+		});
 	}
 
 	/**

@@ -1,37 +1,43 @@
 import nullthrows from "nullthrows";
+import { type Vector2, vector2 } from "../../../../../common/vector2";
 import type CCStore from "../../../../../store";
 import {
 	type CCIntrinsicComponentType,
 	ccIntrinsicComponentTypes,
 } from "../../../../../store/intrinsics/types";
 import type { CCNodeId } from "../../../../../store/node";
-import { ccComponentRendererNodeDefaultGeometryCalculator } from "./components/Default/geometry";
-import { ccComponentRendererNodeDisplayGeometryCalculator } from "./components/Display/geometry";
+import { ccComponentRendererNodeDefaultLayoutCalculator } from "./components/Default/geometry";
+import { ccComponentRendererNodeDisplayLayoutCalculator } from "./components/Display/geometry";
 import type {
-	CCComponentEditorRendererNodeGeometryCalculator,
-	CCComponentEditorRendererNodeGeometrySource,
+	CCComponentEditorRendererNodeGeometry,
+	CCComponentEditorRendererNodeLayout,
+	CCComponentEditorRendererNodeLayoutSource,
 } from "./types";
 
-const specialGeometryCalculators: Partial<
-	Record<
-		CCIntrinsicComponentType,
-		CCComponentEditorRendererNodeGeometryCalculator
-	>
-> = {
+const specialLayoutCalculators: {
+	[key in CCIntrinsicComponentType]?: (
+		source: CCComponentEditorRendererNodeLayoutSource,
+	) => CCComponentEditorRendererNodeLayout;
+} = {
 	[ccIntrinsicComponentTypes.DISPLAY]:
-		ccComponentRendererNodeDisplayGeometryCalculator,
+		ccComponentRendererNodeDisplayLayoutCalculator,
 };
 
-export default function getCCComponentEditorRendererNodeGeometry(
+export function getCCComponentEditorRendererNodeLayout(
 	store: CCStore,
 	nodeId: CCNodeId,
-) {
+): CCComponentEditorRendererNodeLayout {
 	const node = nullthrows(store.nodes.get(nodeId));
 	const component = nullthrows(store.components.get(node.componentId));
 	const nodePins = store.nodePins.getManyByNodeId(nodeId);
 
-	const source: CCComponentEditorRendererNodeGeometrySource = {
-		position: node.position,
+	const layoutCalculator =
+		(component.intrinsicType &&
+			specialLayoutCalculators[component.intrinsicType]) ??
+		ccComponentRendererNodeDefaultLayoutCalculator;
+
+	return layoutCalculator({
+		config: node.config,
 		inputNodePinIds: nodePins
 			.filter((np) => {
 				const cp = nullthrows(store.componentPins.get(np.componentPinId));
@@ -44,11 +50,32 @@ export default function getCCComponentEditorRendererNodeGeometry(
 				return cp.type === "output";
 			})
 			.map((np) => np.id),
-	};
+	});
+}
 
-	const calculator =
-		(component.intrinsicType &&
-			specialGeometryCalculators[component.intrinsicType]) ??
-		ccComponentRendererNodeDefaultGeometryCalculator;
-	return calculator(source);
+export function ccComponentEditorRendererLayoutToGeometry(
+	layout: CCComponentEditorRendererNodeLayout,
+	nodePosition: Vector2,
+): CCComponentEditorRendererNodeGeometry {
+	const position = vector2.sub(nodePosition, vector2.div(layout.size, 2));
+	return {
+		rect: { position: position, size: layout.size },
+		nodePinPositionById: new Map(
+			layout.nodePinOffsetById
+				.entries()
+				.map(([nodePinId, offset]) => [
+					nodePinId,
+					vector2.add(position, offset),
+				]),
+		),
+	};
+}
+
+export function getCCComponentEditorRendererNodeGeometry(
+	store: CCStore,
+	nodeId: CCNodeId,
+): CCComponentEditorRendererNodeGeometry {
+	const node = nullthrows(store.nodes.get(nodeId));
+	const layout = getCCComponentEditorRendererNodeLayout(store, nodeId);
+	return ccComponentEditorRendererLayoutToGeometry(layout, node.position);
 }
