@@ -7,8 +7,6 @@ import type {
 	CCComponentEditorRendererNodeLayoutSource,
 } from "../../types";
 
-const size = { x: 320, y: 200 };
-
 export const ccComponentEditorRendererNodeDisplayLayoutConstants = {
 	padding: 8,
 	gridSize: 12,
@@ -22,11 +20,13 @@ export function ccComponentRendererNodeDisplayLayoutCalculator(
 		ccComponentEditorRendererNodeDisplayLayoutConstants;
 	const config = source.config as CCIntrinsicComponentDisplaySpec["config"];
 
+	const size = {
+		x: gridSizeDisplayWidth + gridSize * config.resolution.x + padding * 2,
+		y: gridSize * config.resolution.y + padding * 2,
+	};
+
 	return {
-		size: {
-			x: gridSizeDisplayWidth + gridSize * config.resolution.x + padding * 2,
-			y: gridSize * config.resolution.y + padding * 2,
-		},
+		size,
 		nodePinOffsetById: new Map<CCNodePinId, Vector2>([
 			[nullthrows(source.inputNodePinIds[0]), vector2.create(0, size.y / 2)],
 		]),

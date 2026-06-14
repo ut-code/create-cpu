@@ -208,6 +208,7 @@ export class CCComponentPinStore extends EventEmitter<CCComponentPinStoreEvents>
 	 * Get the bit width status of a component pin
 	 * @param pinId id of pin
 	 * @returns bit width status of the pin
+	 * @deprecated use getNodePinBitWidthStatus instead
 	 */
 	getComponentPinBitWidthStatus(
 		pinId: CCComponentPinId,

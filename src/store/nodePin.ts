@@ -37,6 +37,12 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 
 	#markedAsDeleted: Set<CCNodePinId> = new Set();
 
+	#bitWidthCache: Map<CCNodePinId, CCNodePinBitWidthStatus> = new Map();
+
+	#clearBitWidthCache(): void {
+		this.#bitWidthCache.clear();
+	}
+
 	/**
 	 * Constructor of CCNodePinStore
 	 * @param store store
@@ -54,6 +60,10 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 	}
 
 	mount() {
+		this.#store.connections.on("didRegister", () => this.#clearBitWidthCache());
+		this.#store.connections.on("didUnregister", () =>
+			this.#clearBitWidthCache(),
+		);
 		this.#store.nodes.on("didRegister", (node) => {
 			const componentPins = this.#store.componentPins.getManyByComponentId(
 				node.componentId,
@@ -105,6 +115,7 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 		invariant(this.#store.componentPins.get(nodePin.componentPinId));
 		invariant(this.#store.nodes.get(nodePin.nodeId));
 		this.#nodePins.set(nodePin.id, nodePin);
+		this.#clearBitWidthCache();
 		this.emit("didRegister", nodePin);
 	}
 
@@ -119,6 +130,7 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 			this.emit("willUnregister", nodePin);
 			this.#nodePins.delete(nodePin.id);
 		});
+		this.#clearBitWidthCache();
 		this.emit("didUnregister", nodePin);
 		this.#markedAsDeleted.delete(id);
 	}
@@ -127,6 +139,7 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 		const existingNodePin = nullthrows(this.#nodePins.get(id));
 		const newNodePin = { ...existingNodePin, ...value };
 		this.#nodePins.set(id, newNodePin);
+		this.#clearBitWidthCache();
 		this.emit("didUpdate", newNodePin);
 	}
 
@@ -181,6 +194,8 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 	 * @returns bit width status of the pin
 	 */
 	getNodePinBitWidthStatus(nodePinId: CCNodePinId): CCNodePinBitWidthStatus {
+		const cached = this.#bitWidthCache.get(nodePinId);
+		if (cached) return cached;
 		const traverseNodePinBitWidthStatus = (
 			targetNodePinId: CCNodePinId,
 			seen: Set<CCNodeId>,
@@ -294,7 +309,9 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 			}
 			return givenComponentPinBitWidthStatus;
 		};
-		return traverseNodePinBitWidthStatus(nodePinId, new Set());
+		const result = traverseNodePinBitWidthStatus(nodePinId, new Set());
+		this.#bitWidthCache.set(nodePinId, result);
+		return result;
 	}
 
 	isMarkedAsDeleted(id: CCNodePinId) {

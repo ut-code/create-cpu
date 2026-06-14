@@ -13,7 +13,11 @@ export function CCComponentEditorRendererNodeDisplayRenderer(
 	props: CCComponentEditorRendererNodeRendererProps,
 ) {
 	const { store } = useStore();
+
 	const config = props.node.config as CCIntrinsicComponentDisplaySpec["config"];
+	const updateConfig = (newConfig: CCIntrinsicComponentDisplaySpec["config"]) =>
+		store.nodes.update(props.node.id, { config: newConfig });
+
 	const inputNodePin = nullthrows(
 		store.nodePins
 			.getManyByNodeId(props.node.id)
@@ -43,8 +47,8 @@ export function CCComponentEditorRendererNodeDisplayRenderer(
 			</text>
 			<foreignObject x={padding / 2} y={padding + 16} width={32} height={32}>
 				<CCComponentEditorRendererNodeDisplayRendererConfigSettingButton
-					nodeId={props.node.id}
-					geometry={props.geometry}
+					config={config}
+					onConfigChange={updateConfig}
 				/>
 			</foreignObject>
 			{Array(config.resolution.y)
