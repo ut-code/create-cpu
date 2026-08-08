@@ -30,10 +30,10 @@ export default function CCComponentEditorRendererComponentPin({
 					label: stringifySimulationValue(
 						type === "input"
 							? nullthrows(
-									componentEditorState.getInputValue([
-										interfaceComponentPin.id,
-										componentEditorState.timeStep,
-									]),
+									componentEditorState.getInputValue({
+										componentPinId: interfaceComponentPin.id,
+										timeStep: componentEditorState.timeStep,
+									}),
 								)
 							: nullthrows(componentEditorState.getNodePinValue(nodePinId)),
 					),
@@ -41,13 +41,16 @@ export default function CCComponentEditorRendererComponentPin({
 						type === "input"
 							? () => {
 									const nodePinValue = nullthrows(
-										componentEditorState.getInputValue([
-											interfaceComponentPin.id,
-											componentEditorState.timeStep,
-										]),
+										componentEditorState.getInputValue({
+											componentPinId: interfaceComponentPin.id,
+											timeStep: componentEditorState.timeStep,
+										}),
 									);
 									componentEditorState.setInputValue(
-										[interfaceComponentPin.id, componentEditorState.timeStep],
+										{
+											componentPinId: interfaceComponentPin.id,
+											timeStep: componentEditorState.timeStep,
+										},
 										wrappingIncrementSimulationValue(nodePinValue),
 									);
 								}

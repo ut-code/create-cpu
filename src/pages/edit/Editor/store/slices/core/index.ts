@@ -87,7 +87,7 @@ export const createComponentEditorStoreCoreSlice: ComponentEditorSliceCreator<
 						return {
 							...state,
 							inputValues: new Map(state.inputValues).set(
-								JSON.stringify(inputValueKey),
+								serializeInputValueKey(inputValueKey),
 								value,
 							),
 						};
