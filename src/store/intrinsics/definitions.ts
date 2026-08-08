@@ -357,7 +357,7 @@ export const const_ =
 			Out: {
 				name: "Out",
 				bitWidthPolicy: {
-					type: "fixed",
+					type: "calculated",
 					calculateBitWidth: (config) => config.data.length,
 				},
 			},
