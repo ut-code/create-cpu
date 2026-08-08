@@ -100,7 +100,7 @@ function simulateIntrinsic(
 	const componentDefinition = definitionByComponentId.get(componentId);
 	invariant(componentDefinition);
 	const shape = createIntrinsicComponentShape(store, nodeId, context);
-	return componentDefinition.evaluate(context, nodeId, shape);
+	return componentDefinition.evaluate(context, nodeId, shape, node.config);
 }
 
 function simulateNode(

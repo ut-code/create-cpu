@@ -10,6 +10,7 @@ import ensureStoreItem from "../../../../../store/react/error";
 import { useComponent, useNode } from "../../../../../store/react/selectors";
 import { useComponentEditorStore } from "../../store";
 import CCComponentEditorRendererNodePin from "../NodePin";
+import { CCComponentEditorRendererNodeConstRenderer } from "./components/Const";
 import { CCComponentEditorRendererNodeDefaultRenderer } from "./components/Default";
 import { CCComponentEditorRendererNodeDisplayRenderer } from "./components/Display";
 import {
@@ -29,6 +30,7 @@ const specialRenderers: Partial<
 > = {
 	[ccIntrinsicComponentTypes.DISPLAY]:
 		CCComponentEditorRendererNodeDisplayRenderer,
+	[ccIntrinsicComponentTypes.CONST]: CCComponentEditorRendererNodeConstRenderer,
 };
 
 export type CCComponentEditorRendererNodeProps = {
