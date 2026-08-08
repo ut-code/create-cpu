@@ -6,6 +6,7 @@ import {
 	ccIntrinsicComponentTypes,
 } from "../../../../../store/intrinsics/types";
 import type { CCNodeId } from "../../../../../store/node";
+import { ccComponentRendererNodeConstLayoutCalculator } from "./components/Const/geometry";
 import { ccComponentRendererNodeDefaultLayoutCalculator } from "./components/Default/geometry";
 import { ccComponentRendererNodeDisplayLayoutCalculator } from "./components/Display/geometry";
 import type {
@@ -21,6 +22,8 @@ const specialLayoutCalculators: {
 } = {
 	[ccIntrinsicComponentTypes.DISPLAY]:
 		ccComponentRendererNodeDisplayLayoutCalculator,
+	[ccIntrinsicComponentTypes.CONST]:
+		ccComponentRendererNodeConstLayoutCalculator,
 };
 
 export function getCCComponentEditorRendererNodeLayout(

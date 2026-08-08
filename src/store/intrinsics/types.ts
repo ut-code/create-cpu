@@ -1,5 +1,6 @@
 import type { JsonValue } from "type-fest";
 import type { Vector2 } from "../../common/vector2";
+import type { SimulationValue } from "../simulation";
 
 export const ccIntrinsicComponentTypes = {
 	AND: "AND",
@@ -13,6 +14,7 @@ export const ccIntrinsicComponentTypes = {
 	DECOMPOSE: "DECOMPOSE",
 	FLIPFLOP: "FLIPFLOP",
 	DISPLAY: "DISPLAY",
+	CONST: "CONST",
 	TRUE: "TRUE",
 	FALSE: "FALSE",
 } as const;
@@ -60,6 +62,12 @@ export type CCIntrinsicComponentDisplaySpec = {
 	config: { resolution: Vector2 };
 };
 
+export type CCIntrinsicComponentConstSpec = {
+	in: never;
+	out: "Out";
+	config: { data: SimulationValue };
+};
+
 export type CCIntrinsicComponentSpecByType = {
 	[ccIntrinsicComponentTypes.AND]: CCIntrinsicComponentBinaryOperatorSpec;
 	[ccIntrinsicComponentTypes.OR]: CCIntrinsicComponentBinaryOperatorSpec;
@@ -72,6 +80,7 @@ export type CCIntrinsicComponentSpecByType = {
 	[ccIntrinsicComponentTypes.BROADCAST]: CCIntrinsicComponentUnaryOperatorSpec;
 	[ccIntrinsicComponentTypes.FLIPFLOP]: CCIntrinsicComponentUnaryOperatorSpec;
 	[ccIntrinsicComponentTypes.DISPLAY]: CCIntrinsicComponentDisplaySpec;
+	[ccIntrinsicComponentTypes.CONST]: CCIntrinsicComponentConstSpec;
 	[ccIntrinsicComponentTypes.TRUE]: CCIntrinsicComponentNullaryOperatorSpec;
 	[ccIntrinsicComponentTypes.FALSE]: CCIntrinsicComponentNullaryOperatorSpec;
 };

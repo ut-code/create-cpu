@@ -64,10 +64,7 @@ export function CCComponentEditorRendererNodeDisplayRenderer(
 								width={gridSize}
 								height={gridSize}
 								fill={
-									inputValue?.[
-										config.resolution.x * config.resolution.y -
-											(1 + x + config.resolution.x * y)
-									]
+									inputValue?.[x + config.resolution.x * y]
 										? theme.palette.black
 										: theme.palette.white
 								}

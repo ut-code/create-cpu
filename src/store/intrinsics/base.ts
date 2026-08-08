@@ -48,17 +48,23 @@ type IntrinsicComponentPinAttributes<Spec extends CCIntrinsicComponentSpec> = {
 	isBitWidthConfigurable?: boolean;
 	isSplittable?: boolean;
 };
+
+type IntrinsicComponentEvaluationFunction<
+	Spec extends CCIntrinsicComponentSpec,
+> = (
+	context: ComponentEvaluationContext,
+	nodeId: CCNodeId,
+	shape: CCIntrinsicComponentShape<Spec>,
+	config: Spec["config"],
+) => boolean;
+
 type Props<Spec extends CCIntrinsicComponentSpec> = {
 	type: CCIntrinsicComponentType;
 	name: string;
 	in: Record<Spec["in"], IntrinsicComponentPinAttributes<Spec>>;
 	out: Record<Spec["out"], IntrinsicComponentPinAttributes<Spec>>;
 	initialConfig: Spec["config"];
-	evaluate: (
-		context: ComponentEvaluationContext,
-		nodeId: CCNodeId,
-		shape: CCIntrinsicComponentShape<Spec>,
-	) => boolean; // returns whether evaluation succeeded
+	evaluate: IntrinsicComponentEvaluationFunction<Spec>;
 };
 export class IntrinsicComponentDefinition<
 	Spec extends CCIntrinsicComponentSpec = CCIntrinsicComponentSpec,
@@ -71,11 +77,7 @@ export class IntrinsicComponentDefinition<
 	readonly inputPin: Record<Spec["in"], CCComponentPin>;
 	readonly outputPin: Record<Spec["out"], CCComponentPin>;
 	readonly initialConfig: Spec["config"];
-	readonly evaluate: (
-		context: ComponentEvaluationContext,
-		nodeId: CCNodeId,
-		shape: CCIntrinsicComponentShape<Spec>,
-	) => boolean;
+	readonly evaluate: IntrinsicComponentEvaluationFunction<Spec>;
 
 	private static _lastIndex = 0;
 

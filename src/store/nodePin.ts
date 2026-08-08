@@ -380,6 +380,8 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 			console.warn(
 				`Cannot connect pins with fixed bit width: ${aNodePin.id} and ${bNodePin.id}`,
 			);
+			console.log(`Bit width of ${aNodePin.id}: ${aBitWidthStatus.bitWidth}`);
+			console.log(`Bit width of ${bNodePin.id}: ${bBitWidthStatus.bitWidth}`);
 			return aBitWidthStatus.bitWidth === bBitWidthStatus.bitWidth;
 		}
 		return true;
