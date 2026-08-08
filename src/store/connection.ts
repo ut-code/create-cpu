@@ -61,6 +61,55 @@ export class CCConnectionStore extends EventEmitter<CCConnectionStoreEvents> {
 				this.unregister(connections.map((connection) => connection.id));
 			}
 		});
+		// A config change can change the bit width of a pin (e.g. the resolution of a
+		// display), which invalidates the connections that were valid when they were made.
+		// CCStore mounts CCNodePinStore first, so its bit width cache is already dropped.
+		this.#store.nodes.on("didUpdateConfig", (node) => {
+			// TODO: Dropping a connection can in turn invalidate another one. Resolving that
+			// needs a repeated sweep, which the re-validation on `didRegister` below lacks too.
+			const invalidatedConnections = this.getMany().filter(
+				(connection) =>
+					connection.parentComponentId === node.parentComponentId &&
+					!this.#store.nodePins.hasCompatibleBitWidths(
+						connection.from,
+						connection.to,
+					),
+			);
+			if (invalidatedConnections.length > 0) {
+				this.unregister(
+					invalidatedConnections.map((connection) => connection.id),
+				);
+			}
+		});
+		this.#store.connections.on("didRegister", (connection) => {
+			const component = nullthrows(
+				this.#store.components.get(connection.parentComponentId),
+			);
+			const nodes = this.#store.nodes.getManyByComponentId(component.id);
+			for (const node of nodes) {
+				const nodePins = this.#store.nodePins.getManyByNodeId(node.id);
+				for (const nodePin of nodePins) {
+					const connections = this.getConnectionsByNodePinId(nodePin.id);
+					for (const connection of connections) {
+						const parentComponentId = connection.parentComponentId;
+						const from = connection.from;
+						const to = connection.to;
+						this.unregister([connection.id]).then(() => {
+							if (this.#store.nodePins.isConnectable(from, to)) {
+								this.register(
+									CCConnectionStore.create({
+										from,
+										to,
+										parentComponentId,
+										bentPortion: 0.5,
+									}),
+								);
+							}
+						});
+					}
+				}
+			}
+		});
 	}
 
 	/**

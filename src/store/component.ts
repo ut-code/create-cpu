@@ -219,3 +219,28 @@ export function validateAllComponents(store: CCStore) {
 		validateComponent(store, component.id);
 	}
 }
+
+export function isEachInputPinConnected(
+	store: CCStore,
+	componentId: CCComponentId,
+) {
+	const component = nullthrows(store.components.get(componentId));
+	if (component.intrinsicType) return true;
+	const nodes = store.nodes.getManyByParentComponentId(componentId);
+	for (const node of nodes) {
+		const nodePins = store.nodePins.getManyByNodeId(node.id);
+		for (const nodePin of nodePins) {
+			const componentPin = nullthrows(
+				store.componentPins.get(nodePin.componentPinId),
+			);
+			if (componentPin.type === "input") {
+				const connectionsAssociatedWithNodePin =
+					store.connections.getConnectionsByNodePinId(nodePin.id);
+				if (connectionsAssociatedWithNodePin.length === 0) {
+					return false;
+				}
+			}
+		}
+	}
+	return true;
+}

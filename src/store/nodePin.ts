@@ -5,7 +5,6 @@ import type { Opaque } from "type-fest";
 import type CCStore from ".";
 import type { CCComponentPinId, CCNodePinBitWidthStatus } from "./componentPin";
 import { IntrinsicComponentDefinition } from "./intrinsics/base";
-import { aggregate, broadcast, decompose } from "./intrinsics/definitions";
 import type { CCNodeId } from "./node";
 
 export type CCNodePinId = Opaque<string, "CCNodePinId">;
@@ -37,6 +36,12 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 
 	#markedAsDeleted: Set<CCNodePinId> = new Set();
 
+	#bitWidthCache: Map<CCNodePinId, CCNodePinBitWidthStatus> = new Map();
+
+	#clearBitWidthCache(): void {
+		this.#bitWidthCache.clear();
+	}
+
 	/**
 	 * Constructor of CCNodePinStore
 	 * @param store store
@@ -54,6 +59,12 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 	}
 
 	mount() {
+		this.#store.connections.on("didRegister", () => this.#clearBitWidthCache());
+		this.#store.connections.on("didUnregister", () =>
+			this.#clearBitWidthCache(),
+		);
+		// A calculated bit width may be derived from the config of its node
+		this.#store.nodes.on("didUpdateConfig", () => this.#clearBitWidthCache());
 		this.#store.nodes.on("didRegister", (node) => {
 			const componentPins = this.#store.componentPins.getManyByComponentId(
 				node.componentId,
@@ -105,6 +116,7 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 		invariant(this.#store.componentPins.get(nodePin.componentPinId));
 		invariant(this.#store.nodes.get(nodePin.nodeId));
 		this.#nodePins.set(nodePin.id, nodePin);
+		this.#clearBitWidthCache();
 		this.emit("didRegister", nodePin);
 	}
 
@@ -119,6 +131,7 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 			this.emit("willUnregister", nodePin);
 			this.#nodePins.delete(nodePin.id);
 		});
+		this.#clearBitWidthCache();
 		this.emit("didUnregister", nodePin);
 		this.#markedAsDeleted.delete(id);
 	}
@@ -127,6 +140,7 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 		const existingNodePin = nullthrows(this.#nodePins.get(id));
 		const newNodePin = { ...existingNodePin, ...value };
 		this.#nodePins.set(id, newNodePin);
+		this.#clearBitWidthCache();
 		this.emit("didUpdate", newNodePin);
 	}
 
@@ -174,6 +188,38 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 		);
 	}
 
+	static #requireManualBitWidth(nodePin: CCNodePin): number {
+		invariant(
+			nodePin.manualBitWidth !== null && nodePin.manualBitWidth > 0,
+			`Node pin ${nodePin.id} of a configurable component pin must have a positive manual bit width, but got ${nodePin.manualBitWidth}`,
+		);
+		return nodePin.manualBitWidth;
+	}
+
+	/**
+	 * Collect the manually specified bit widths of the pins of a single node, grouped by
+	 * the pin key of its intrinsic component definition (e.g. `In`, `Out`) and ordered by
+	 * the order of the node pins.
+	 * @param nodePins all pins of one node
+	 * @returns the bit widths of the pins of configurable component pins
+	 */
+	static #collectManualBitWidths(
+		nodePins: CCNodePin[],
+	): Partial<Record<string, number[]>> {
+		const manualBitWidths: Partial<Record<string, number[]>> = {};
+		for (const nodePin of nodePins.toSorted((a, b) => a.order - b.order)) {
+			const attributes = IntrinsicComponentDefinition.getPinAttributesByPinId(
+				nodePin.componentPinId,
+			);
+			// Only a configurable pin carries a manual bit width; the others are null
+			if (attributes?.bitWidthPolicy.type !== "configurable") continue;
+			const bitWidths = manualBitWidths[attributes.key] ?? [];
+			bitWidths.push(CCNodePinStore.#requireManualBitWidth(nodePin));
+			manualBitWidths[attributes.key] = bitWidths;
+		}
+		return manualBitWidths;
+	}
+
 	/**
 	 * Get the bit width status of a node pin
 	 * @param pinId id of pin
@@ -181,101 +227,79 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 	 * @returns bit width status of the pin
 	 */
 	getNodePinBitWidthStatus(nodePinId: CCNodePinId): CCNodePinBitWidthStatus {
+		const cached = this.#bitWidthCache.get(nodePinId);
+		if (cached) return cached;
 		const traverseNodePinBitWidthStatus = (
 			targetNodePinId: CCNodePinId,
 			seen: Set<CCNodeId>,
 		): CCNodePinBitWidthStatus => {
-			const {
-				nodeId: targetNodeId,
-				componentPinId: targetComponentPinId,
-				manualBitWidth,
-			} = nullthrows(this.get(targetNodePinId));
+			const targetNodePin = nullthrows(this.get(targetNodePinId));
+			const { nodeId: targetNodeId, componentPinId: targetComponentPinId } =
+				targetNodePin;
 
 			seen.add(targetNodeId);
 			const targetNode = nullthrows(this.#store.nodes.get(targetNodeId));
 			const targetNodePins = this.getManyByNodeId(targetNode.id);
-			const givenComponentPinBitWidthStatus =
-				this.#store.componentPins.getComponentPinBitWidthStatus(
+			const attributes =
+				IntrinsicComponentDefinition.getPinAttributesByPinId(
 					targetComponentPinId,
 				);
-			if (givenComponentPinBitWidthStatus.isFixed) {
-				return givenComponentPinBitWidthStatus;
-			}
-			if (givenComponentPinBitWidthStatus.fixMode === "manual") {
-				const componentPin =
-					this.#store.componentPins.get(targetComponentPinId);
-				invariant(componentPin);
-				switch (componentPin.id) {
-					case nullthrows(aggregate.inputPin.In.id):
-					case nullthrows(broadcast.outputPin.Out.id):
-					case nullthrows(decompose.outputPin.Out.id):
-						invariant(
-							manualBitWidth,
-							"aggregate inputPin, broadcast outputPin, or decompose outputPin must have a manual bit width",
-						);
+			if (attributes) {
+				switch (attributes.bitWidthPolicy.type) {
+					case "configurable":
 						return {
 							isFixed: true,
-							bitWidth: manualBitWidth,
+							bitWidth: CCNodePinStore.#requireManualBitWidth(targetNodePin),
 						};
-					case nullthrows(aggregate.outputPin.Out.id): {
-						const bitWidth = targetNodePins
-							.filter((pin) => {
-								const componentPin = this.#store.componentPins.get(
-									pin.componentPinId,
-								);
-								invariant(componentPin);
-								return componentPin.type === "input";
-							})
-							.reduce((acc, pin) => {
-								invariant(pin.manualBitWidth);
-								return acc + pin.manualBitWidth;
-							}, 0);
+					case "calculated":
 						return {
 							isFixed: true,
-							bitWidth,
+							bitWidth: attributes.bitWidthPolicy.calculateBitWidth(
+								targetNode.config,
+								CCNodePinStore.#collectManualBitWidths(targetNodePins),
+							),
 						};
-					}
-					case nullthrows(decompose.inputPin.In.id): {
-						const bitWidth = targetNodePins
-							.filter((pin) => {
-								const componentPin = this.#store.componentPins.get(
-									pin.componentPinId,
-								);
-								invariant(componentPin);
-								return componentPin.type === "output";
-							})
-							.reduce((acc, pin) => {
-								invariant(pin.manualBitWidth);
-								return acc + pin.manualBitWidth;
-							}, 0);
-						return {
-							isFixed: true,
-							bitWidth,
-						};
-					}
+					case "inferred":
+						// Resolved from the pins it is connected to, below
+						break;
 					default:
 						throw new Error(
-							`Bit width status of ${componentPin.id} is undecidable`,
+							`Unknown bit width policy: ${attributes.bitWidthPolicy satisfies never}`,
 						);
 				}
-			}
-			for (const targetNodePin of targetNodePins) {
-				const targetComponentPinBitWidthStatus =
+			} else {
+				// A user defined component pin is fixed by the implementation of its component
+				const componentPinBitWidthStatus =
 					this.#store.componentPins.getComponentPinBitWidthStatus(
-						targetNodePin.componentPinId,
+						targetComponentPinId,
 					);
-				if (targetComponentPinBitWidthStatus.isFixed) {
+				if (componentPinBitWidthStatus.isFixed) {
+					return componentPinBitWidthStatus;
+				}
+			}
+			// The bit width of an inferred pin is shared with the other inferred pins of its
+			// node, so any of them may be the one that is connected to a pin of a known width.
+			for (const siblingNodePin of targetNodePins) {
+				const siblingComponentPinBitWidthStatus =
+					this.#store.componentPins.getComponentPinBitWidthStatus(
+						siblingNodePin.componentPinId,
+					);
+				if (siblingComponentPinBitWidthStatus.isFixed) {
 					continue;
 				}
-				if (targetComponentPinBitWidthStatus.fixMode === "manual") {
-					throw new Error("unreachable");
+				if (siblingComponentPinBitWidthStatus.fixMode === "nodeDependent") {
+					// The bit width of a node dependent pin never propagates to its sibling
+					// pins, so no intrinsic component mixes it with inferred pins.
+					throw new Error(
+						`Component pin ${siblingNodePin.componentPinId} must not mix a node dependent bit width with inferred sibling pins`,
+					);
 				}
 				const connections = nullthrows(
-					this.#store.connections.getConnectionsByNodePinId(targetNodePin.id),
+					this.#store.connections.getConnectionsByNodePinId(siblingNodePin.id),
 				);
 				for (const connection of connections) {
 					const componentPin = nullthrows(
-						this.#store.componentPins.get(targetNodePin.componentPinId),
+						this.#store.componentPins.get(siblingNodePin.componentPinId),
 					);
 					const connectedNodePinId =
 						componentPin.type === "input" ? connection.from : connection.to;
@@ -292,9 +316,11 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 					}
 				}
 			}
-			return givenComponentPinBitWidthStatus;
+			return { isFixed: false };
 		};
-		return traverseNodePinBitWidthStatus(nodePinId, new Set());
+		const result = traverseNodePinBitWidthStatus(nodePinId, new Set());
+		this.#bitWidthCache.set(nodePinId, result);
+		return result;
 	}
 
 	isMarkedAsDeleted(id: CCNodePinId) {
@@ -357,15 +383,27 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 			console.warn(`Input pin already has a connection: ${bNodePin.id}`);
 			return false;
 		}
-		const aBitWidthStatus = this.getNodePinBitWidthStatus(a);
-		const bBitWidthStatus = this.getNodePinBitWidthStatus(b);
-		if (aBitWidthStatus.isFixed && bBitWidthStatus.isFixed) {
+		if (!this.hasCompatibleBitWidths(a, b)) {
 			console.warn(
-				`Cannot connect pins with fixed bit width: ${aNodePin.id} and ${bNodePin.id}`,
+				`Cannot connect pins with conflicting bit widths: ${aNodePin.id} and ${bNodePin.id}`,
 			);
-			return aBitWidthStatus.bitWidth === bBitWidthStatus.bitWidth;
+			return false;
 		}
 		return true;
+	}
+
+	/**
+	 * Check whether two node pins can carry the same value. A pin whose bit width is not
+	 * fixed yet adapts to the pin it is connected to, so it is compatible with any pin.
+	 * @param a id of a pin
+	 * @param b id of the other pin
+	 * @returns whether the bit widths of the two pins do not conflict
+	 */
+	hasCompatibleBitWidths(a: CCNodePinId, b: CCNodePinId): boolean {
+		const aBitWidthStatus = this.getNodePinBitWidthStatus(a);
+		const bBitWidthStatus = this.getNodePinBitWidthStatus(b);
+		if (!aBitWidthStatus.isFixed || !bBitWidthStatus.isFixed) return true;
+		return aBitWidthStatus.bitWidth === bBitWidthStatus.bitWidth;
 	}
 
 	/**
@@ -385,7 +423,7 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 			id: crypto.randomUUID() as CCNodePinId,
 			manualBitWidth:
 				partialPin.manualBitWidth ??
-				(attributes?.isBitWidthConfigurable ? 1 : null),
+				(attributes?.bitWidthPolicy.type === "configurable" ? 1 : null),
 		};
 	}
 

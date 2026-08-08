@@ -11,7 +11,11 @@ import type {
 // import type { CCComponentId } from "../../../../../../store/component";
 import simulateComponent from "../../../../../../store/simulation";
 import type { ComponentEditorSliceCreator } from "../../types";
-import type { EditorStoreCoreSlice, InputValueKey } from "./types";
+import {
+	type EditorStoreCoreSlice,
+	type InputValueKey,
+	serializeInputValueKey,
+} from "./types";
 
 export function stringifySimulationValue(value: SimulationValue): string {
 	const binary = value.map((v) => (v ? "1" : "0")).join("");
@@ -44,37 +48,46 @@ export const createComponentEditorStoreCoreSlice: ComponentEditorSliceCreator<
 				/** @private */
 				inputValues: new Map(),
 				getInputValue(inputValueKey: InputValueKey) {
-					const value = get().inputValues.get(JSON.stringify(inputValueKey));
-					if (!value) {
-						const previousTimeStepValue = get().inputValues.get(
-							JSON.stringify([inputValueKey[0], inputValueKey[1] - 1]),
-						);
-						if (previousTimeStepValue) {
-							get().setInputValue(inputValueKey, previousTimeStepValue);
-							return previousTimeStepValue;
-						}
-						const bitWidthStatus =
-							store.componentPins.getComponentPinBitWidthStatus(
-								inputValueKey[0],
-							);
-						if (bitWidthStatus.isFixed) {
-							const newValue = new Array(bitWidthStatus.bitWidth).fill(false);
-							return newValue;
-						}
-						if (bitWidthStatus.fixMode === "manual") {
-							throw new Error("Cannot determine bit width");
-						}
-						const newValue = [false];
-						return newValue;
+					// If value exists for the current time step, return it
+					const value = get().inputValues.get(
+						serializeInputValueKey(inputValueKey),
+					);
+					if (value) return value;
+
+					// If not, try to find the value from the previous time step
+					const previousTimeStepValue = get().inputValues.get(
+						serializeInputValueKey({
+							...inputValueKey,
+							timeStep: inputValueKey.timeStep - 1,
+						}),
+					);
+					if (previousTimeStepValue) {
+						get().setInputValue(inputValueKey, previousTimeStepValue);
+						return previousTimeStepValue;
 					}
-					return value;
+
+					// If not found, initialize the value based on the bit width of the pin
+					const componentPin = nullthrows(
+						store.componentPins.get(inputValueKey.componentPinId),
+					);
+					const bitWidthStatus = store.nodePins.getNodePinBitWidthStatus(
+						nullthrows(
+							componentPin.implementation,
+							"Cannot get input value for intrinsic component pin",
+						),
+					);
+					return bitWidthStatus.isFixed
+						? // If the bit width is fixed, initialize the value with the specified bit width
+							new Array(bitWidthStatus.bitWidth).fill(false)
+						: // If the bit width is not fixed, initialize the single-bit value as false
+							[false];
 				},
 				setInputValue(inputValueKey: InputValueKey, value: SimulationValue) {
 					set((state) => {
 						return {
 							...state,
 							inputValues: new Map(state.inputValues).set(
-								JSON.stringify(inputValueKey),
+								serializeInputValueKey(inputValueKey),
 								value,
 							),
 						};
@@ -178,7 +191,7 @@ export const createComponentEditorStoreCoreSlice: ComponentEditorSliceCreator<
 						if (pin.type === "input") {
 							inputValues.set(
 								pin.id,
-								editorState.getInputValue([pin.id, timeStep]),
+								editorState.getInputValue({ componentPinId: pin.id, timeStep }),
 							);
 						}
 					}
@@ -191,11 +204,6 @@ export const createComponentEditorStoreCoreSlice: ComponentEditorSliceCreator<
 				}
 				if (isUpdated) editorStore.setState((s) => ({ ...s }));
 			};
-			store.nodes.on("didRegister", executeSimulation);
-			store.nodes.on("didUpdate", executeSimulation);
-			store.nodes.on("didUnregister", executeSimulation);
-			store.connections.on("didRegister", executeSimulation);
-			store.connections.on("didUnregister", executeSimulation);
 			editorStore.subscribe(executeSimulation);
 		},
 	};

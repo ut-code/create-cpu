@@ -5,6 +5,7 @@ import type { CCComponentPinId } from "../componentPin";
 import { IntrinsicComponentDefinition } from "./base";
 import {
 	type CCIntrinsicComponentBinaryOperatorSpec,
+	type CCIntrinsicComponentConstSpec,
 	type CCIntrinsicComponentDisplaySpec,
 	type CCIntrinsicComponentInputSpec,
 	type CCIntrinsicComponentNullaryOperatorSpec,
@@ -187,15 +188,13 @@ export const aggregate =
 			In: {
 				name: "In",
 				bitWidthPolicy: { type: "configurable", isSplittable: true },
-				isBitWidthConfigurable: true,
-				isSplittable: true,
 			},
 		},
 		out: {
 			Out: {
 				name: "Out",
 				bitWidthPolicy: {
-					type: "fixed",
+					type: "calculated",
 					calculateBitWidth: (_, manualBitWidths) =>
 						manualBitWidths?.In?.reduce((sum, bitWidth) => sum + bitWidth, 0) ??
 						1,
@@ -229,7 +228,7 @@ export const decompose =
 			In: {
 				name: "In",
 				bitWidthPolicy: {
-					type: "fixed",
+					type: "calculated",
 					calculateBitWidth: (_, manualBitWidths) =>
 						manualBitWidths?.Out?.reduce(
 							(sum, bitWidth) => sum + bitWidth,
@@ -242,8 +241,6 @@ export const decompose =
 			Out: {
 				name: "Out",
 				bitWidthPolicy: { type: "configurable", isSplittable: true },
-				isBitWidthConfigurable: true,
-				isSplittable: true,
 			},
 		},
 		initialConfig: null,
@@ -275,14 +272,13 @@ export const broadcast =
 		in: {
 			In: {
 				name: "In",
-				bitWidthPolicy: { type: "fixed", calculateBitWidth: () => 1 },
+				bitWidthPolicy: { type: "calculated", calculateBitWidth: () => 1 },
 			},
 		},
 		out: {
 			Out: {
 				name: "Out",
 				bitWidthPolicy: { type: "configurable", isSplittable: false },
-				isBitWidthConfigurable: true,
 			},
 		},
 		initialConfig: null,
@@ -320,7 +316,6 @@ export const flipflop =
 			const outputShape = shape.outputShape.Out;
 			invariant(outputShape[0] && !outputShape[1]);
 			const nodePinIdToValue = context.currentFrame.nodes.get(nodeId)?.pins;
-			console.log("FlipFlop evaluate", { nodeId, inputShape, outputShape });
 			const previousValue =
 				context.previousFrame?.nodes
 					.get(nodeId)
@@ -342,7 +337,7 @@ export const display =
 			Pixels: {
 				name: "Pixels",
 				bitWidthPolicy: {
-					type: "fixed",
+					type: "calculated",
 					calculateBitWidth: (config) =>
 						config.resolution.x * config.resolution.y,
 				},
@@ -351,6 +346,31 @@ export const display =
 		out: {},
 		initialConfig: { resolution: { x: 20, y: 15 } },
 		evaluate: () => true,
+	});
+
+export const const_ =
+	new IntrinsicComponentDefinition<CCIntrinsicComponentConstSpec>({
+		type: ccIntrinsicComponentTypes.CONST,
+		name: "Const",
+		in: {},
+		out: {
+			Out: {
+				name: "Out",
+				bitWidthPolicy: {
+					type: "calculated",
+					calculateBitWidth: (config) => config.data.length,
+				},
+			},
+		},
+		initialConfig: { data: new Array(8).fill(false) },
+		evaluate: (context, nodeId, shape, config) => {
+			const outputShape = shape.outputShape.Out;
+			invariant(outputShape[0] && !outputShape[1]);
+			const nodePinIdToValue = context.currentFrame.nodes.get(nodeId)?.pins;
+			if (!nodePinIdToValue) return false;
+			nodePinIdToValue.set(outputShape[0].nodePinId, config.data);
+			return true;
+		},
 	});
 
 export const definitions: {
@@ -369,6 +389,7 @@ export const definitions: {
 	[ccIntrinsicComponentTypes.BROADCAST]: broadcast,
 	[ccIntrinsicComponentTypes.FLIPFLOP]: flipflop,
 	[ccIntrinsicComponentTypes.DISPLAY]: display,
+	[ccIntrinsicComponentTypes.CONST]: const_,
 	[ccIntrinsicComponentTypes.TRUE]: true_,
 	[ccIntrinsicComponentTypes.FALSE]: false_,
 };
@@ -376,13 +397,21 @@ export const definitions: {
 export const definitionByComponentId = new Map<
 	CCComponentId,
 	IntrinsicComponentDefinition
->(Object.values(definitions).map((definition) => [definition.id, definition]));
+>(
+	Object.values(definitions).map((definition) => [
+		definition.id,
+		definition as IntrinsicComponentDefinition,
+	]),
+);
 
 export const definitionByComponentPinId = new Map<
 	CCComponentPinId,
 	IntrinsicComponentDefinition
 >(
 	Object.values(definitions).flatMap((definition) =>
-		definition.allPins.map((pin) => [pin.id, definition]),
+		definition.allPins.map((pin) => [
+			pin.id,
+			definition as IntrinsicComponentDefinition,
+		]),
 	),
 );

@@ -5,7 +5,7 @@ import type { Opaque } from "type-fest";
 import type CCStore from ".";
 import type { CCComponentId } from "./component";
 import { IntrinsicComponentDefinition } from "./intrinsics/base";
-import { aggregate, decompose, input, output } from "./intrinsics/definitions";
+import { input, output } from "./intrinsics/definitions";
 import type { CCNodePinId } from "./nodePin";
 
 export type CCComponentPin = {
@@ -36,11 +36,13 @@ export type CCNodePinBitWidthStatus =
 /**
  * The bit width status of a component pin definition.
  * - `isFixed: false, fixMode: "automatic"` — the bit width is not yet determined and will be inferred automatically from connections.
- * - `isFixed: false, fixMode: "manual"` — the bit width is not yet determined and must be specified manually by the user.
- * - `isFixed: true` — the bit width is known and available as `bitWidth`.
+ * - `isFixed: false, fixMode: "nodeDependent"` — the bit width differs per node instance
+ *   (it comes from the config of the node and/or the bit widths manually specified for its
+ *   pins), so it can only be resolved by {@link CCNodePinStore.getNodePinBitWidthStatus}.
+ * - `isFixed: true` — the bit width is determined by the component definition itself and available as `bitWidth`.
  */
 export type CCComponentPinBitWidthStatus =
-	| { isFixed: false; fixMode: "automatic" | "manual" }
+	| { isFixed: false; fixMode: "automatic" | "nodeDependent" }
 	| { isFixed: true; bitWidth: number };
 
 export type CCComponentPinStoreEvents = {
@@ -205,7 +207,9 @@ export class CCComponentPinStore extends EventEmitter<CCComponentPinStoreEvents>
 	}
 
 	/**
-	 * Get the bit width status of a component pin
+	 * Get how the bit width of a component pin is determined. It is resolved only as far
+	 * as the component definition allows; use {@link CCNodePinStore.getNodePinBitWidthStatus}
+	 * to get the width of a concrete node pin.
 	 * @param pinId id of pin
 	 * @returns bit width status of the pin
 	 */
@@ -219,33 +223,19 @@ export class CCComponentPinStore extends EventEmitter<CCComponentPinStoreEvents>
 		const intrinsicPinAttributes =
 			IntrinsicComponentDefinition.getPinAttributesByPinId(pin.id);
 		if (intrinsicPinAttributes) {
-			// TODO: This is a temporary workaround to allow the bit width of aggregate and decompose pins to be calculated outside of the normal inference process.
-			// We should eventually refactor the bit width inference process to handle these cases more elegantly.
-			if (pin.id === aggregate.outputPin.Out.id)
-				return { isFixed: false, fixMode: "manual" };
-			if (pin.id === decompose.inputPin.In.id)
-				return { isFixed: false, fixMode: "manual" };
-
-			if (intrinsicPinAttributes.bitWidthPolicy.type === "inferred")
-				return { isFixed: false, fixMode: "automatic" };
-			if (intrinsicPinAttributes.bitWidthPolicy.type === "configurable")
-				return { isFixed: false, fixMode: "manual" };
-			if (intrinsicPinAttributes.bitWidthPolicy.type === "fixed") {
-				const definition = nullthrows(
-					IntrinsicComponentDefinition.getByComponentId(pin.componentId),
-					`Intrinsic component definition not found for component ID: ${pin.componentId}`,
-				);
-				return {
-					isFixed: true,
-					bitWidth: intrinsicPinAttributes.bitWidthPolicy.calculateBitWidth(
-						definition.initialConfig,
-						{},
-					),
-				};
+			switch (intrinsicPinAttributes.bitWidthPolicy.type) {
+				case "inferred":
+					return { isFixed: false, fixMode: "automatic" };
+				// Both policies need the node the pin belongs to (its config and the bit widths
+				// manually specified for its pins), which is unknown at the component pin level.
+				case "configurable":
+				case "calculated":
+					return { isFixed: false, fixMode: "nodeDependent" };
+				default:
+					throw new Error(
+						`Unknown bit width policy: ${intrinsicPinAttributes.bitWidthPolicy satisfies never}`,
+					);
 			}
-			throw new Error(
-				`Unknown bit width policy: ${intrinsicPinAttributes.bitWidthPolicy satisfies never}`,
-			);
 		}
 
 		// User-defined components

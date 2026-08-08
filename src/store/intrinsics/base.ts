@@ -29,12 +29,20 @@ export type Context = {
 	componentId: CCComponentId;
 };
 
+/**
+ * How the bit width of an intrinsic component pin is determined.
+ * - `inferred` — inferred from the pins it is transitively connected to.
+ * - `calculated` — derived from the config of the node and the bit widths manually
+ *   specified for its pins, so it can only be resolved for a concrete node.
+ * - `configurable` — specified manually by the user on each node pin. `isSplittable`
+ *   tells whether the pin may be split into multiple node pins.
+ */
 type IntrinsicComponentPinBitWidthPolicy<
 	Spec extends CCIntrinsicComponentSpec,
 > =
 	| { type: "inferred" }
 	| {
-			type: "fixed";
+			type: "calculated";
 			calculateBitWidth: (
 				config: Spec["config"],
 				manualBitWidths: Partial<Record<Spec["in" | "out"], number[]>>,
@@ -45,20 +53,31 @@ type IntrinsicComponentPinBitWidthPolicy<
 type IntrinsicComponentPinAttributes<Spec extends CCIntrinsicComponentSpec> = {
 	name: string;
 	bitWidthPolicy: IntrinsicComponentPinBitWidthPolicy<Spec>;
-	isBitWidthConfigurable?: boolean;
-	isSplittable?: boolean;
 };
+
+/**
+ * The attributes of an intrinsic component pin, along with the `key` identifying it
+ * within its component definition (e.g. `In`, `Out`, `Pixels`).
+ */
+export type RegisteredIntrinsicComponentPinAttributes =
+	IntrinsicComponentPinAttributes<CCIntrinsicComponentSpec> & { key: string };
+
+type IntrinsicComponentEvaluationFunction<
+	Spec extends CCIntrinsicComponentSpec,
+> = (
+	context: ComponentEvaluationContext,
+	nodeId: CCNodeId,
+	shape: CCIntrinsicComponentShape<Spec>,
+	config: Spec["config"],
+) => boolean;
+
 type Props<Spec extends CCIntrinsicComponentSpec> = {
 	type: CCIntrinsicComponentType;
 	name: string;
 	in: Record<Spec["in"], IntrinsicComponentPinAttributes<Spec>>;
 	out: Record<Spec["out"], IntrinsicComponentPinAttributes<Spec>>;
 	initialConfig: Spec["config"];
-	evaluate: (
-		context: ComponentEvaluationContext,
-		nodeId: CCNodeId,
-		shape: CCIntrinsicComponentShape<Spec>,
-	) => boolean; // returns whether evaluation succeeded
+	evaluate: IntrinsicComponentEvaluationFunction<Spec>;
 };
 export class IntrinsicComponentDefinition<
 	Spec extends CCIntrinsicComponentSpec = CCIntrinsicComponentSpec,
@@ -71,11 +90,7 @@ export class IntrinsicComponentDefinition<
 	readonly inputPin: Record<Spec["in"], CCComponentPin>;
 	readonly outputPin: Record<Spec["out"], CCComponentPin>;
 	readonly initialConfig: Spec["config"];
-	readonly evaluate: (
-		context: ComponentEvaluationContext,
-		nodeId: CCNodeId,
-		shape: CCIntrinsicComponentShape<Spec>,
-	) => boolean;
+	readonly evaluate: IntrinsicComponentEvaluationFunction<Spec>;
 
 	private static _lastIndex = 0;
 
@@ -101,39 +116,34 @@ export class IntrinsicComponentDefinition<
 		IntrinsicComponentDefinition._byId.set(this.id, this);
 		this.evaluate = props.evaluate;
 
-		this.inputPin = mapValues(props.in, (attributes) => {
-			const pin: CCComponentPin = {
-				id: this._generateId() as CCComponentPinId,
-				componentId: this.id,
-				type: "input",
-				implementation: null,
-				order: this._lastLocalIndex++,
-				name: attributes.name,
-			};
-			IntrinsicComponentDefinition._pinAttributesByPinId.set(
-				pin.id,
-				attributes as IntrinsicComponentPinAttributes<CCIntrinsicComponentSpec>,
-			);
-			this.allPins.push(pin);
-			return pin;
-		});
-		this.outputPin = mapValues(props.out, (attributes) => {
-			const pin: CCComponentPin = {
-				id: this._generateId() as CCComponentPinId,
-				componentId: this.id,
-				type: "output",
-				implementation: null,
-				order: this._lastLocalIndex++,
-				name: attributes.name,
-			};
-			IntrinsicComponentDefinition._pinAttributesByPinId.set(
-				pin.id,
-				attributes as IntrinsicComponentPinAttributes<CCIntrinsicComponentSpec>,
-			);
-			this.allPins.push(pin);
-			return pin;
-		});
+		this.inputPin = mapValues(props.in, (attributes, key) =>
+			this._registerPin("input", key, attributes),
+		);
+		this.outputPin = mapValues(props.out, (attributes, key) =>
+			this._registerPin("output", key, attributes),
+		);
 		this.initialConfig = props.initialConfig;
+	}
+
+	private _registerPin(
+		type: CCComponentPin["type"],
+		key: string,
+		attributes: IntrinsicComponentPinAttributes<Spec>,
+	): CCComponentPin {
+		const pin: CCComponentPin = {
+			id: this._generateId() as CCComponentPinId,
+			componentId: this.id,
+			type,
+			implementation: null,
+			order: this._lastLocalIndex++,
+			name: attributes.name,
+		};
+		IntrinsicComponentDefinition._pinAttributesByPinId.set(pin.id, {
+			...(attributes as IntrinsicComponentPinAttributes<CCIntrinsicComponentSpec>),
+			key,
+		});
+		this.allPins.push(pin);
+		return pin;
 	}
 
 	private static _byId: Map<CCComponentId, IntrinsicComponentDefinition> =
@@ -144,8 +154,9 @@ export class IntrinsicComponentDefinition<
 
 	private static _pinAttributesByPinId: Map<
 		CCComponentPinId,
-		IntrinsicComponentPinAttributes<CCIntrinsicComponentSpec>
+		RegisteredIntrinsicComponentPinAttributes
 	> = new Map();
+	/** @returns the attributes of the pin, or null if it is not an intrinsic component pin */
 	static getPinAttributesByPinId(pinId: CCComponentPinId) {
 		return (
 			IntrinsicComponentDefinition._pinAttributesByPinId.get(pinId) ?? null
