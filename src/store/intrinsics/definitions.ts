@@ -187,15 +187,13 @@ export const aggregate =
 			In: {
 				name: "In",
 				bitWidthPolicy: { type: "configurable", isSplittable: true },
-				isBitWidthConfigurable: true,
-				isSplittable: true,
 			},
 		},
 		out: {
 			Out: {
 				name: "Out",
 				bitWidthPolicy: {
-					type: "fixed",
+					type: "calculated",
 					calculateBitWidth: (_, manualBitWidths) =>
 						manualBitWidths?.In?.reduce((sum, bitWidth) => sum + bitWidth, 0) ??
 						1,
@@ -229,7 +227,7 @@ export const decompose =
 			In: {
 				name: "In",
 				bitWidthPolicy: {
-					type: "fixed",
+					type: "calculated",
 					calculateBitWidth: (_, manualBitWidths) =>
 						manualBitWidths?.Out?.reduce(
 							(sum, bitWidth) => sum + bitWidth,
@@ -242,8 +240,6 @@ export const decompose =
 			Out: {
 				name: "Out",
 				bitWidthPolicy: { type: "configurable", isSplittable: true },
-				isBitWidthConfigurable: true,
-				isSplittable: true,
 			},
 		},
 		initialConfig: null,
@@ -275,14 +271,13 @@ export const broadcast =
 		in: {
 			In: {
 				name: "In",
-				bitWidthPolicy: { type: "fixed", calculateBitWidth: () => 1 },
+				bitWidthPolicy: { type: "calculated", calculateBitWidth: () => 1 },
 			},
 		},
 		out: {
 			Out: {
 				name: "Out",
 				bitWidthPolicy: { type: "configurable", isSplittable: false },
-				isBitWidthConfigurable: true,
 			},
 		},
 		initialConfig: null,
@@ -342,7 +337,7 @@ export const display =
 			Pixels: {
 				name: "Pixels",
 				bitWidthPolicy: {
-					type: "fixed",
+					type: "calculated",
 					calculateBitWidth: (config) =>
 						config.resolution.x * config.resolution.y,
 				},

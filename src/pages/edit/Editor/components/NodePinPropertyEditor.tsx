@@ -169,31 +169,32 @@ export function CCComponentEditorNodePinPropertyEditor() {
 					})}
 				</Stack>
 				<Stack direction="row" gap={1} sx={{ mt: 1 }}>
-					{componentPinAttributes.isSplittable && (
-						<>
-							<Button
-								type="button"
-								variant="outlined"
-								size="small"
-								onClick={() => {
-									setNewBitWidthList([...bitWidthList, 1]);
-								}}
-							>
-								Add
-							</Button>
-							<Button
-								type="button"
-								variant="outlined"
-								size="small"
-								disabled={bitWidthList.length <= 1}
-								onClick={() => {
-									setNewBitWidthList(bitWidthList.slice(0, -1));
-								}}
-							>
-								Remove
-							</Button>
-						</>
-					)}
+					{componentPinAttributes.bitWidthPolicy.type === "configurable" &&
+						componentPinAttributes.bitWidthPolicy.isSplittable && (
+							<>
+								<Button
+									type="button"
+									variant="outlined"
+									size="small"
+									onClick={() => {
+										setNewBitWidthList([...bitWidthList, 1]);
+									}}
+								>
+									Add
+								</Button>
+								<Button
+									type="button"
+									variant="outlined"
+									size="small"
+									disabled={bitWidthList.length <= 1}
+									onClick={() => {
+										setNewBitWidthList(bitWidthList.slice(0, -1));
+									}}
+								>
+									Remove
+								</Button>
+							</>
+						)}
 					<Button
 						type="submit"
 						variant="contained"
