@@ -12,6 +12,8 @@ export const ccIntrinsicComponentTypes = {
 	AGGREGATE: "AGGREGATE",
 	BROADCAST: "BROADCAST",
 	DECOMPOSE: "DECOMPOSE",
+	ANDN: "ANDN",
+	ORN: "ORN",
 	FLIPFLOP: "FLIPFLOP",
 	DISPLAY: "DISPLAY",
 	CONST: "CONST",
@@ -62,10 +64,18 @@ export type CCIntrinsicComponentDisplaySpec = {
 	config: { resolution: Vector2 };
 };
 
+export type CCIntrinsicComponentConstSpecConfigViewMode =
+	| "binary"
+	| "hex"
+	| "utf-8";
+
 export type CCIntrinsicComponentConstSpec = {
 	in: never;
 	out: "Out";
-	config: { data: SimulationValue };
+	config: {
+		mode: CCIntrinsicComponentConstSpecConfigViewMode;
+		data: SimulationValue;
+	};
 };
 
 export type CCIntrinsicComponentSpecByType = {
@@ -78,6 +88,8 @@ export type CCIntrinsicComponentSpecByType = {
 	[ccIntrinsicComponentTypes.AGGREGATE]: CCIntrinsicComponentUnaryOperatorSpec;
 	[ccIntrinsicComponentTypes.DECOMPOSE]: CCIntrinsicComponentUnaryOperatorSpec;
 	[ccIntrinsicComponentTypes.BROADCAST]: CCIntrinsicComponentUnaryOperatorSpec;
+	[ccIntrinsicComponentTypes.ANDN]: CCIntrinsicComponentUnaryOperatorSpec;
+	[ccIntrinsicComponentTypes.ORN]: CCIntrinsicComponentUnaryOperatorSpec;
 	[ccIntrinsicComponentTypes.FLIPFLOP]: CCIntrinsicComponentUnaryOperatorSpec;
 	[ccIntrinsicComponentTypes.DISPLAY]: CCIntrinsicComponentDisplaySpec;
 	[ccIntrinsicComponentTypes.CONST]: CCIntrinsicComponentConstSpec;

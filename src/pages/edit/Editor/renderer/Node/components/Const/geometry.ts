@@ -16,9 +16,9 @@ export function ccComponentRendererNodeConstLayoutCalculator(
 	source: CCComponentEditorRendererNodeLayoutSource,
 ): CCComponentEditorRendererNodeLayout {
 	return {
-		size: vector2.create(400, 100),
+		size: vector2.create(300, 200),
 		nodePinOffsetById: new Map<CCNodePinId, Vector2>([
-			[nullthrows(source.outputNodePinIds[0]), vector2.create(400, 50)],
+			[nullthrows(source.outputNodePinIds[0]), vector2.create(300, 100)],
 		]),
 	};
 }

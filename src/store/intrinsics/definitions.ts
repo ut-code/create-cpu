@@ -265,6 +265,76 @@ export const decompose =
 		},
 	});
 
+export const and_n =
+	new IntrinsicComponentDefinition<CCIntrinsicComponentUnaryOperatorSpec>({
+		type: ccIntrinsicComponentTypes.ANDN,
+		name: "AndN",
+		in: {
+			In: {
+				name: "In",
+				bitWidthPolicy: { type: "configurable", isSplittable: true },
+			},
+		},
+		out: {
+			Out: {
+				name: "Out",
+				bitWidthPolicy: { type: "calculated", calculateBitWidth: () => 1 },
+			},
+		},
+		initialConfig: null,
+		evaluate: (context, nodeId, shape) => {
+			const inputShape = shape.inputShape.In;
+			const nodePinIdToValue = context.currentFrame.nodes.get(nodeId)?.pins;
+			const inputValues = inputShape.map((s) =>
+				nodePinIdToValue?.get(s.nodePinId),
+			);
+			if (inputValues.some((v) => !v) || !nodePinIdToValue) {
+				return false;
+			}
+			const outputValue = inputValues.every((v) =>
+				nullthrows(v).every(Boolean),
+			);
+			nodePinIdToValue.set(nullthrows(shape.outputShape.Out[0]?.nodePinId), [
+				outputValue,
+			]);
+			return true;
+		},
+	});
+
+export const or_n =
+	new IntrinsicComponentDefinition<CCIntrinsicComponentUnaryOperatorSpec>({
+		type: ccIntrinsicComponentTypes.ORN,
+		name: "OrN",
+		in: {
+			In: {
+				name: "In",
+				bitWidthPolicy: { type: "configurable", isSplittable: true },
+			},
+		},
+		out: {
+			Out: {
+				name: "Out",
+				bitWidthPolicy: { type: "calculated", calculateBitWidth: () => 1 },
+			},
+		},
+		initialConfig: null,
+		evaluate: (context, nodeId, shape) => {
+			const inputShape = shape.inputShape.In;
+			const nodePinIdToValue = context.currentFrame.nodes.get(nodeId)?.pins;
+			const inputValues = inputShape.map((s) =>
+				nodePinIdToValue?.get(s.nodePinId),
+			);
+			if (inputValues.some((v) => !v) || !nodePinIdToValue) {
+				return false;
+			}
+			const outputValue = inputValues.some((v) => nullthrows(v).some(Boolean));
+			nodePinIdToValue.set(nullthrows(shape.outputShape.Out[0]?.nodePinId), [
+				outputValue,
+			]);
+			return true;
+		},
+	});
+
 export const broadcast =
 	new IntrinsicComponentDefinition<CCIntrinsicComponentUnaryOperatorSpec>({
 		type: ccIntrinsicComponentTypes.BROADCAST,
@@ -362,7 +432,7 @@ export const const_ =
 				},
 			},
 		},
-		initialConfig: { data: new Array(8).fill(false) },
+		initialConfig: { mode: "binary", data: new Array(8).fill(false) },
 		evaluate: (context, nodeId, shape, config) => {
 			const outputShape = shape.outputShape.Out;
 			invariant(outputShape[0] && !outputShape[1]);
@@ -392,6 +462,8 @@ export const definitions: {
 	[ccIntrinsicComponentTypes.CONST]: const_,
 	[ccIntrinsicComponentTypes.TRUE]: true_,
 	[ccIntrinsicComponentTypes.FALSE]: false_,
+	[ccIntrinsicComponentTypes.ANDN]: and_n,
+	[ccIntrinsicComponentTypes.ORN]: or_n,
 };
 
 export const definitionByComponentId = new Map<
