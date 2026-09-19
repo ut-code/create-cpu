@@ -1,7 +1,11 @@
 import memoizeOne from "memoize-one";
 import nullthrows from "nullthrows";
 import { useCallback, useMemo, useSyncExternalStore } from "react";
-import type { CCComponent, CCComponentId } from "../component";
+import {
+	type CCComponent,
+	type CCComponentId,
+	isEachInputPinConnected,
+} from "../component";
 import type { CCComponentPin } from "../componentPin";
 import type { CCNode, CCNodeId } from "../node";
 import type { CCNodePin } from "../nodePin";
@@ -182,6 +186,40 @@ export function useNodePins(nodeId: CCNodeId) {
 			};
 		},
 		[store, nodeId],
+	);
+	return useSyncExternalStore(subscribe, getSnapshot);
+}
+
+export function useCanSimulate(componentId: CCComponentId) {
+	const { store } = useStore();
+	const getSnapshot = useCallback(
+		() => isEachInputPinConnected(store, componentId),
+		[store, componentId],
+	);
+	const subscribe = useCallback(
+		(onStoreChange: () => void) => {
+			store.nodes.on("didRegister", onStoreChange);
+			store.nodes.on("didUnregister", onStoreChange);
+			store.nodePins.on("didRegister", onStoreChange);
+			store.nodePins.on("didUnregister", onStoreChange);
+			store.componentPins.on("didRegister", onStoreChange);
+			store.componentPins.on("didUpdate", onStoreChange);
+			store.componentPins.on("didUnregister", onStoreChange);
+			store.connections.on("didRegister", onStoreChange);
+			store.connections.on("didUnregister", onStoreChange);
+			return () => {
+				store.nodes.off("didRegister", onStoreChange);
+				store.nodes.off("didUnregister", onStoreChange);
+				store.nodePins.off("didRegister", onStoreChange);
+				store.nodePins.off("didUnregister", onStoreChange);
+				store.componentPins.off("didRegister", onStoreChange);
+				store.componentPins.off("didUpdate", onStoreChange);
+				store.componentPins.off("didUnregister", onStoreChange);
+				store.connections.off("didRegister", onStoreChange);
+				store.connections.off("didUnregister", onStoreChange);
+			};
+		},
+		[store],
 	);
 	return useSyncExternalStore(subscribe, getSnapshot);
 }

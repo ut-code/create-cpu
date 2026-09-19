@@ -8,18 +8,18 @@ export function CCComponentEditorRendererNodeDefaultRenderer(
 		<>
 			<text
 				fill={theme.palette.textPrimary}
-				x={props.geometry.rect.position.x}
-				y={props.geometry.rect.position.y - 5}
+				x={0}
+				y={-5}
 				textAnchor="start"
 				fontSize={12}
 			>
 				{props.component.name}
 			</text>
 			<rect
-				x={props.geometry.rect.position.x}
-				y={props.geometry.rect.position.y}
-				width={props.geometry.rect.size.x}
-				height={props.geometry.rect.size.y}
+				x={0}
+				y={0}
+				width="100%"
+				height="100%"
 				fill={theme.palette.white}
 				stroke={
 					props.nodeState.isSelected

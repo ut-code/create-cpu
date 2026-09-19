@@ -1,33 +1,34 @@
+import nullthrows from "nullthrows";
 import { type Vector2, vector2 } from "../../../../../../../common/vector2";
+import type { CCIntrinsicComponentDisplaySpec } from "../../../../../../../store/intrinsics/types";
 import type { CCNodePinId } from "../../../../../../../store/nodePin";
 import type {
-	CCComponentEditorRendererNodeGeometryCalculator,
-	CCComponentEditorRendererNodeGeometrySource,
+	CCComponentEditorRendererNodeLayout,
+	CCComponentEditorRendererNodeLayoutSource,
 } from "../../types";
 
-const width = 320;
-const height = 200;
+export const ccComponentEditorRendererNodeDisplayLayoutConstants = {
+	padding: 8,
+	gridSize: 12,
+	gridSizeDisplayWidth: 60,
+};
 
-export const ccComponentRendererNodeDisplayGeometryCalculator: CCComponentEditorRendererNodeGeometryCalculator =
-	(source: CCComponentEditorRendererNodeGeometrySource) => {
-		const size: Vector2 = {
-			x: width,
-			y: height,
-		};
+export function ccComponentRendererNodeDisplayLayoutCalculator(
+	source: CCComponentEditorRendererNodeLayoutSource,
+): CCComponentEditorRendererNodeLayout {
+	const { padding, gridSize, gridSizeDisplayWidth } =
+		ccComponentEditorRendererNodeDisplayLayoutConstants;
+	const config = source.config as CCIntrinsicComponentDisplaySpec["config"];
 
-		return {
-			rect: {
-				position: vector2.sub(source.position, vector2.div(size, 2)),
-				size,
-			},
-			nodePinPositionById: new Map<CCNodePinId, Vector2>(
-				source.inputNodePinIds.map(
-					(id) =>
-						[
-							id,
-							vector2.create(source.position.x - size.x / 2, source.position.y),
-						] as const,
-				),
-			),
-		};
+	const size = {
+		x: gridSizeDisplayWidth + gridSize * config.resolution.x + padding * 2,
+		y: gridSize * config.resolution.y + padding * 2,
 	};
+
+	return {
+		size,
+		nodePinOffsetById: new Map<CCNodePinId, Vector2>([
+			[nullthrows(source.inputNodePinIds[0]), vector2.create(0, size.y / 2)],
+		]),
+	};
+}

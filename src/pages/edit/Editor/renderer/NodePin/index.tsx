@@ -14,7 +14,7 @@ import {
 	CCComponentEditorRendererConnectionCore,
 	type CCComponentEditorRendererConnectionEndpoint,
 } from "./../Connection";
-import getCCComponentEditorRendererNodeGeometry from "./../Node/geometry";
+import { getCCComponentEditorRendererNodeGeometry } from "./../Node/geometry";
 
 const NODE_PIN_POSITION_SENSITIVITY = 10;
 

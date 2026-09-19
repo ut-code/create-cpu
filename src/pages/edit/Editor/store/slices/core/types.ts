@@ -13,7 +13,13 @@ export type RangeSelect = { start: Vector2; end: Vector2 } | null;
 
 export type TimeStep = number;
 
-export type InputValueKey = [CCComponentPinId, TimeStep];
+export type InputValueKey = {
+	componentPinId: CCComponentPinId;
+	timeStep: TimeStep;
+};
+export function serializeInputValueKey(key: InputValueKey): string {
+	return `${key.componentPinId}:${key.timeStep}`;
+}
 
 export type NodePinPropertyEditorTarget = {
 	nodeId: CCNodeId;

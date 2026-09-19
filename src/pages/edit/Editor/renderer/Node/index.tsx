@@ -10,9 +10,13 @@ import ensureStoreItem from "../../../../../store/react/error";
 import { useComponent, useNode } from "../../../../../store/react/selectors";
 import { useComponentEditorStore } from "../../store";
 import CCComponentEditorRendererNodePin from "../NodePin";
+import { CCComponentEditorRendererNodeConstRenderer } from "./components/Const";
 import { CCComponentEditorRendererNodeDefaultRenderer } from "./components/Default";
 import { CCComponentEditorRendererNodeDisplayRenderer } from "./components/Display";
-import getCCComponentEditorRendererNodeGeometry from "./geometry";
+import {
+	ccComponentEditorRendererLayoutToGeometry,
+	getCCComponentEditorRendererNodeLayout,
+} from "./geometry";
 import type {
 	CCComponentEditorRendererNodeRendererNodeState,
 	CCComponentEditorRendererNodeRendererProps,
@@ -26,6 +30,7 @@ const specialRenderers: Partial<
 > = {
 	[ccIntrinsicComponentTypes.DISPLAY]:
 		CCComponentEditorRendererNodeDisplayRenderer,
+	[ccIntrinsicComponentTypes.CONST]: CCComponentEditorRendererNodeConstRenderer,
 };
 
 export type CCComponentEditorRendererNodeProps = {
@@ -44,7 +49,11 @@ const CCComponentEditorRendererNode = ensureStoreItem(
 			vector2.zero,
 		);
 
-		const geometry = getCCComponentEditorRendererNodeGeometry(store, nodeId);
+		const layout = getCCComponentEditorRendererNodeLayout(store, nodeId);
+		const geometry = ccComponentEditorRendererLayoutToGeometry(
+			layout,
+			node.position,
+		);
 		const Renderer =
 			(component.intrinsicType && specialRenderers[component.intrinsicType]) ||
 			CCComponentEditorRendererNodeDefaultRenderer;
@@ -86,8 +95,13 @@ const CCComponentEditorRendererNode = ensureStoreItem(
 
 		return (
 			<>
-				{/** biome-ignore lint/a11y/noStaticElementInteractions: SVG */}
-				<g
+				{/** biome-ignore lint/a11y/noSvgWithoutTitle: SVG */}
+				<svg
+					x={geometry.rect.position.x}
+					y={geometry.rect.position.y}
+					width={geometry.rect.size.x}
+					height={geometry.rect.size.y}
+					overflow="visible"
 					onPointerDown={handlePointerDown}
 					onPointerMove={handlePointerMove}
 					onPointerUp={handlePointerUp}
@@ -104,9 +118,10 @@ const CCComponentEditorRendererNode = ensureStoreItem(
 						node={node}
 						nodeState={nodeState}
 						component={component}
+						layout={layout}
 						geometry={geometry}
 					/>
-				</g>
+				</svg>
 				{store.nodePins.getManyByNodeId(nodeId).map((nodePin) => (
 					<CCComponentEditorRendererNodePin
 						key={nodePin.id}

@@ -8,15 +8,17 @@ export type CCComponentEditorRendererNodeRendererProps = {
 	node: CCNode;
 	nodeState: CCComponentEditorRendererNodeRendererNodeState;
 	component: CCComponent;
+	layout: CCComponentEditorRendererNodeLayout;
 	geometry: CCComponentEditorRendererNodeGeometry;
 };
 
-export type CCComponentEditorRendererNodeRendererNodeState = {
-	isSelected: boolean;
+export type CCComponentEditorRendererNodeLayout = {
+	size: Vector2;
+	nodePinOffsetById: Map<CCNodePinId, Vector2>;
 };
 
-export type CCComponentEditorRendererNodeGeometrySource = {
-	position: Vector2;
+export type CCComponentEditorRendererNodeLayoutSource = {
+	config: CCNode["config"];
 	inputNodePinIds: CCNodePinId[];
 	outputNodePinIds: CCNodePinId[];
 };
@@ -26,6 +28,6 @@ export type CCComponentEditorRendererNodeGeometry = {
 	nodePinPositionById: Map<CCNodePinId, Vector2>;
 };
 
-export type CCComponentEditorRendererNodeGeometryCalculator = (
-	source: CCComponentEditorRendererNodeGeometrySource,
-) => CCComponentEditorRendererNodeGeometry;
+export type CCComponentEditorRendererNodeRendererNodeState = {
+	isSelected: boolean;
+};

@@ -5,7 +5,7 @@ import { useStore } from "../../../../../store/react";
 import { wrappingIncrementSimulationValue } from "../../../../../store/simulation";
 import { useComponentEditorStore } from "../../store";
 import { stringifySimulationValue } from "../../store/slices/core";
-import getCCComponentEditorRendererNodeGeometry from "./../Node/geometry";
+import { getCCComponentEditorRendererNodeGeometry } from "./../Node/geometry";
 export type CCComponentEditorRendererComponentPinProps = {
 	nodePinId: CCNodePinId;
 };
@@ -30,10 +30,10 @@ export default function CCComponentEditorRendererComponentPin({
 					label: stringifySimulationValue(
 						type === "input"
 							? nullthrows(
-									componentEditorState.getInputValue([
-										interfaceComponentPin.id,
-										componentEditorState.timeStep,
-									]),
+									componentEditorState.getInputValue({
+										componentPinId: interfaceComponentPin.id,
+										timeStep: componentEditorState.timeStep,
+									}),
 								)
 							: nullthrows(componentEditorState.getNodePinValue(nodePinId)),
 					),
@@ -41,13 +41,16 @@ export default function CCComponentEditorRendererComponentPin({
 						type === "input"
 							? () => {
 									const nodePinValue = nullthrows(
-										componentEditorState.getInputValue([
-											interfaceComponentPin.id,
-											componentEditorState.timeStep,
-										]),
+										componentEditorState.getInputValue({
+											componentPinId: interfaceComponentPin.id,
+											timeStep: componentEditorState.timeStep,
+										}),
 									);
 									componentEditorState.setInputValue(
-										[interfaceComponentPin.id, componentEditorState.timeStep],
+										{
+											componentPinId: interfaceComponentPin.id,
+											timeStep: componentEditorState.timeStep,
+										},
 										wrappingIncrementSimulationValue(nodePinValue),
 									);
 								}

@@ -1,5 +1,6 @@
 import type { JsonValue } from "type-fest";
 import type { Vector2 } from "../../common/vector2";
+import type { SimulationValue } from "../simulation";
 
 export const ccIntrinsicComponentTypes = {
 	AND: "AND",
@@ -11,8 +12,11 @@ export const ccIntrinsicComponentTypes = {
 	AGGREGATE: "AGGREGATE",
 	BROADCAST: "BROADCAST",
 	DECOMPOSE: "DECOMPOSE",
+	ANDN: "ANDN",
+	ORN: "ORN",
 	FLIPFLOP: "FLIPFLOP",
 	DISPLAY: "DISPLAY",
+	CONST: "CONST",
 	TRUE: "TRUE",
 	FALSE: "FALSE",
 } as const;
@@ -60,6 +64,20 @@ export type CCIntrinsicComponentDisplaySpec = {
 	config: { resolution: Vector2 };
 };
 
+export type CCIntrinsicComponentConstSpecConfigViewMode =
+	| "binary"
+	| "hex"
+	| "utf-8";
+
+export type CCIntrinsicComponentConstSpec = {
+	in: never;
+	out: "Out";
+	config: {
+		mode: CCIntrinsicComponentConstSpecConfigViewMode;
+		data: SimulationValue;
+	};
+};
+
 export type CCIntrinsicComponentSpecByType = {
 	[ccIntrinsicComponentTypes.AND]: CCIntrinsicComponentBinaryOperatorSpec;
 	[ccIntrinsicComponentTypes.OR]: CCIntrinsicComponentBinaryOperatorSpec;
@@ -70,8 +88,11 @@ export type CCIntrinsicComponentSpecByType = {
 	[ccIntrinsicComponentTypes.AGGREGATE]: CCIntrinsicComponentUnaryOperatorSpec;
 	[ccIntrinsicComponentTypes.DECOMPOSE]: CCIntrinsicComponentUnaryOperatorSpec;
 	[ccIntrinsicComponentTypes.BROADCAST]: CCIntrinsicComponentUnaryOperatorSpec;
+	[ccIntrinsicComponentTypes.ANDN]: CCIntrinsicComponentUnaryOperatorSpec;
+	[ccIntrinsicComponentTypes.ORN]: CCIntrinsicComponentUnaryOperatorSpec;
 	[ccIntrinsicComponentTypes.FLIPFLOP]: CCIntrinsicComponentUnaryOperatorSpec;
 	[ccIntrinsicComponentTypes.DISPLAY]: CCIntrinsicComponentDisplaySpec;
+	[ccIntrinsicComponentTypes.CONST]: CCIntrinsicComponentConstSpec;
 	[ccIntrinsicComponentTypes.TRUE]: CCIntrinsicComponentNullaryOperatorSpec;
 	[ccIntrinsicComponentTypes.FALSE]: CCIntrinsicComponentNullaryOperatorSpec;
 };

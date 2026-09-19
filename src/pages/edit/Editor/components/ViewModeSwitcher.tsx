@@ -1,9 +1,11 @@
 import { Edit, PlayArrow } from "@mui/icons-material";
 import { Fab } from "@mui/material";
+import { useCanSimulate } from "../../../../store/react/selectors";
 import { useComponentEditorStore } from "../store";
 
 export default function CCComponentEditorViewModeSwitcher() {
 	const componentEditorState = useComponentEditorStore()();
+	const canSimulate = useCanSimulate(componentEditorState.componentId);
 
 	return (
 		<Fab
@@ -15,6 +17,7 @@ export default function CCComponentEditorViewModeSwitcher() {
 				);
 				componentEditorState.setTimeStep(0);
 			}}
+			disabled={!canSimulate}
 		>
 			{componentEditorState.editorMode === "edit" ? <PlayArrow /> : <Edit />}
 		</Fab>

@@ -25,6 +25,11 @@ export type CCNodeStoreEvents = {
 	willUnregister(node: CCNode): void;
 	didUnregister(node: CCNode): void;
 	didUpdate(node: CCNode): void;
+	/**
+	 * Emitted in addition to `didUpdate` when the config of a node changed, so that
+	 * listeners depending on the config are not woken up by frequent position updates.
+	 */
+	didUpdateConfig(node: CCNode): void;
 };
 export const ccNodeStoreChangeEventTypes: (keyof CCNodeStoreEvents)[] = [
 	"didRegister",
@@ -145,6 +150,9 @@ export class CCNodeStore extends EventEmitter<CCNodeStoreEvents> {
 		const existingNode = nullthrows(this.#nodes.get(id));
 		const newNode = { ...existingNode, ...value };
 		this.#nodes.set(id, newNode);
+		if ("config" in value && value.config !== existingNode.config) {
+			this.emit("didUpdateConfig", newNode);
+		}
 		this.emit("didUpdate", newNode);
 	}
 
