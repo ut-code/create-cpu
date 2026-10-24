@@ -16,16 +16,14 @@ import {
 	Typography,
 } from "@mui/material";
 import { useRef, useState } from "react";
+import { Link, useNavigate } from "react-router";
 import { type CCComponentId, CCComponentStore } from "../../store/component";
 import { useStore } from "../../store/react";
 import { useComponents } from "../../store/react/selectors";
 
-export type HomePageProps = {
-	onComponentSelected: (componentId: CCComponentId) => void;
-};
-
-export default function HomePage({ onComponentSelected }: HomePageProps) {
+export default function HomePage() {
 	const { store, resetStore } = useStore();
+	const navigate = useNavigate();
 	const components = useComponents().filter(
 		(component) => !component.intrinsicType,
 	);
@@ -60,7 +58,7 @@ export default function HomePage({ onComponentSelected }: HomePageProps) {
 			name: "New Component",
 		});
 		store.components.register(component);
-		onComponentSelected(component.id);
+		navigate(`/components/${component.id}`);
 	};
 
 	const [componentMenuState, setComponentMenuState] = useState<{
@@ -147,6 +145,8 @@ export default function HomePage({ onComponentSelected }: HomePageProps) {
 							sx={{ position: "relative" }}
 						>
 							<CardActionArea
+								component={Link}
+								to={`/components/${component.id}`}
 								sx={{
 									display: "flex",
 									flexDirection: "column",
@@ -155,7 +155,6 @@ export default function HomePage({ onComponentSelected }: HomePageProps) {
 									height: "100%",
 									p: 2,
 								}}
-								onClick={() => onComponentSelected(component.id)}
 							>
 								<Typography variant="h6">{component.name}</Typography>
 								<Typography variant="body2" color="text.secondary">
