@@ -1,10 +1,19 @@
 import { CCStoreAutoSaver } from "./autoSaver";
-import { CCComponentStore } from "./component";
-import { CCComponentPinStore } from "./componentPin";
-import { CCConnectionStore } from "./connection";
+import {
+	CCComponentStore,
+	ccComponentStoreChangeEventTypes,
+} from "./component";
+import {
+	CCComponentPinStore,
+	ccComponentPinStoreChangeEventTypes,
+} from "./componentPin";
+import {
+	CCConnectionStore,
+	ccConnectionStoreChangeEventTypes,
+} from "./connection";
 import * as intrinsics from "./intrinsics/definitions";
 import { CCNodeStore } from "./node";
-import { CCNodePinStore } from "./nodePin";
+import { CCNodePinStore, ccNodePinStoreChangeEventTypes } from "./nodePin";
 import TransactionManager from "./transaction";
 
 /**
@@ -25,6 +34,17 @@ export default class CCStore {
 
 	autoSaver: CCStoreAutoSaver;
 
+	#revision = 0;
+
+	/**
+	 * How many circuit changes the store has seen. Anything derived from the circuit, such
+	 * as a simulation netlist, can be cached against this number and rebuilt once it
+	 * changes. Moving a node does not change the circuit, so it does not count.
+	 */
+	get revision(): number {
+		return this.#revision;
+	}
+
 	/**
 	 * Constructor of CCStore
 	 * @param rootComponent root component
@@ -44,6 +64,31 @@ export default class CCStore {
 			for (const pin of definition.allPins) {
 				this.componentPins.register(pin);
 			}
+		}
+
+		const countRevision = () => {
+			this.#revision += 1;
+		};
+		for (const eventType of ccComponentStoreChangeEventTypes) {
+			this.components.on(eventType, countRevision);
+		}
+		for (const eventType of ccComponentPinStoreChangeEventTypes) {
+			this.componentPins.on(eventType, countRevision);
+		}
+		// `didUpdate` of the node store also fires for position changes, which the circuit
+		// does not depend on, so only the config is watched here.
+		for (const eventType of [
+			"didRegister",
+			"didUnregister",
+			"didUpdateConfig",
+		] as const) {
+			this.nodes.on(eventType, countRevision);
+		}
+		for (const eventType of ccNodePinStoreChangeEventTypes) {
+			this.nodePins.on(eventType, countRevision);
+		}
+		for (const eventType of ccConnectionStoreChangeEventTypes) {
+			this.connections.on(eventType, countRevision);
 		}
 	}
 

@@ -42,6 +42,10 @@ export default function CCComponentEditorRendererNodePin({
 		).nodePinPositionById.get(nodePinId),
 	);
 
+	const isNodePinPropertyConfigurable =
+		componentEditorState.editorMode === "edit" &&
+		nodePin.manualBitWidth !== null;
+
 	const [draggingState, setDraggingState] = useState<{
 		cursorPosition: Vector2;
 		nodePinPositionKDTree: KDTree<CCNodePinId>;
@@ -138,7 +142,7 @@ export default function CCComponentEditorRendererNodePin({
 			setDraggingState(null);
 		},
 		onClick: () => {
-			if (nodePin.manualBitWidth === null) return;
+			if (!isNodePinPropertyConfigurable) return;
 			componentEditorState.setNodePinPropertyEditorTarget({
 				componentPinId: nodePin.componentPinId,
 				nodeId: nodePin.nodeId,
@@ -154,7 +158,12 @@ export default function CCComponentEditorRendererNodePin({
 			{interfaceComponentPin && (
 				<CCComponentEditorRendererComponentPin nodePinId={nodePinId} />
 			)}
-			<g {...draggableProps} style={{ cursor: "pointer" }}>
+			<g
+				{...draggableProps}
+				style={{
+					cursor: isNodePinPropertyConfigurable ? "pointer" : undefined,
+				}}
+			>
 				<rect
 					x={position.x - CCComponentEditorRendererNodePinConstants.SIZE / 2}
 					y={position.y - CCComponentEditorRendererNodePinConstants.SIZE / 2}
@@ -197,7 +206,7 @@ export default function CCComponentEditorRendererNodePin({
 						y={position.y}
 						textAnchor={
 							{ input: "start" as const, output: "end" as const }[
-								componentPin.type
+							componentPin.type
 							]
 						}
 						dominantBaseline="central"

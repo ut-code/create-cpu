@@ -9,6 +9,7 @@ import type { CCComponentEditorRendererNodeRendererProps } from "../../types";
 import { CCComponentEditorRendererNodeDefaultRenderer } from "../Default";
 import { ccComponentEditorRendererNodeConstLayoutConstants as constants } from "./geometry";
 import { formatConstData, parseConstData } from "./value";
+import { useComponentEditorStore } from "../../../../store";
 
 const modes: Record<Mode, string> = {
 	binary: "Binary",
@@ -32,6 +33,7 @@ export function CCComponentEditorRendererNodeConstRenderer(
 	props: CCComponentEditorRendererNodeRendererProps,
 ) {
 	const { store } = useStore();
+	const editorMode = useComponentEditorStore()((state) => state.editorMode);
 	const config = props.node.config as CCIntrinsicComponentConstSpec["config"];
 
 	const [text, setText] = useState(() =>
@@ -75,6 +77,7 @@ export function CCComponentEditorRendererNodeConstRenderer(
 						exclusive
 						size="small"
 						sx={{ width: "100%" }}
+						disabled={editorMode !== "edit"}
 					>
 						{Object.entries(modes).map(([mode, label]) => (
 							<ToggleButton key={mode} value={mode} sx={{ flex: 1, p: 0.25 }}>
@@ -87,6 +90,7 @@ export function CCComponentEditorRendererNodeConstRenderer(
 						onChange={(e) => changeText(e.target.value)}
 						spellCheck={false}
 						sx={{ borderColor: isInvalid ? "error.main" : "divider" }}
+						disabled={editorMode !== "edit"}
 					/>
 				</Stack>
 			</foreignObject>
