@@ -1,14 +1,8 @@
 import { Box } from "@mui/material";
-import { useState } from "react";
+import { Outlet } from "react-router";
 import GlobalHeader from "./components/GlobalHeader";
-import EditPage from "./pages/edit";
-import HomePage from "./pages/home";
-import type { CCComponentId } from "./store/component";
 
 export default function App() {
-	const [editedComponentId, setEditedComponentId] =
-		useState<CCComponentId | null>(null);
-
 	return (
 		<Box
 			sx={{
@@ -18,17 +12,7 @@ export default function App() {
 			}}
 		>
 			<GlobalHeader style={{ gridColumn: "1 / -1" }} />
-			{editedComponentId ? (
-				<EditPage
-					editedComponentId={editedComponentId}
-					onEditOtherComponent={setEditedComponentId}
-					onClose={() => {
-						setEditedComponentId(null);
-					}}
-				/>
-			) : (
-				<HomePage onComponentSelected={setEditedComponentId} />
-			)}
+			<Outlet />
 		</Box>
 	);
 }
