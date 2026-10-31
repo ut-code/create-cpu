@@ -9,7 +9,6 @@ import { input, output } from "../../../../../store/intrinsics/definitions";
 import type { CCNodePinId } from "../../../../../store/nodePin";
 import { useStore } from "../../../../../store/react";
 import { useComponentEditorStore } from "../../store";
-import CCComponentEditorRendererComponentPin from "./../ComponentPin";
 import {
 	CCComponentEditorRendererConnectionCore,
 	type CCComponentEditorRendererConnectionEndpoint,
@@ -146,14 +145,8 @@ export default function CCComponentEditorRendererNodePin({
 		},
 	});
 
-	const interfaceComponentPin =
-		store.componentPins.getByImplementation(nodePinId);
-
 	return (
 		<>
-			{interfaceComponentPin && (
-				<CCComponentEditorRendererComponentPin nodePinId={nodePinId} />
-			)}
 			<g {...draggableProps} style={{ cursor: "pointer" }}>
 				<rect
 					x={position.x - CCComponentEditorRendererNodePinConstants.SIZE / 2}

@@ -9,6 +9,7 @@ import type { CCNodeId } from "../../../../../store/node";
 import { ccComponentRendererNodeConstLayoutCalculator } from "./components/Const/geometry";
 import { ccComponentRendererNodeDefaultLayoutCalculator } from "./components/Default/geometry";
 import { ccComponentRendererNodeDisplayLayoutCalculator } from "./components/Display/geometry";
+import { ccComponentRendererNodeInterfaceLayoutCalculator } from "./components/Interface/geometry";
 import type {
 	CCComponentEditorRendererNodeGeometry,
 	CCComponentEditorRendererNodeLayout,
@@ -24,6 +25,10 @@ const specialLayoutCalculators: {
 		ccComponentRendererNodeDisplayLayoutCalculator,
 	[ccIntrinsicComponentTypes.CONST]:
 		ccComponentRendererNodeConstLayoutCalculator,
+	[ccIntrinsicComponentTypes.INPUT]:
+		ccComponentRendererNodeInterfaceLayoutCalculator,
+	[ccIntrinsicComponentTypes.OUTPUT]:
+		ccComponentRendererNodeInterfaceLayoutCalculator,
 };
 
 export function getCCComponentEditorRendererNodeLayout(
