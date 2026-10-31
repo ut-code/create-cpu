@@ -38,12 +38,7 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 
 	#bitWidthCache: Map<CCNodePinId, CCNodePinBitWidthStatus> = new Map();
 
-	/**
-	 * Forget the cached bit widths. The store does so on every change it is told about,
-	 * but a connection is deleted before that is announced, so whoever reads bit widths
-	 * right after deleting one has to call this first.
-	 */
-	clearBitWidthCache(): void {
+	#clearBitWidthCache(): void {
 		this.#bitWidthCache.clear();
 	}
 
@@ -64,12 +59,12 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 	}
 
 	mount() {
-		this.#store.connections.on("didRegister", () => this.clearBitWidthCache());
+		this.#store.connections.on("didRegister", () => this.#clearBitWidthCache());
 		this.#store.connections.on("didUnregister", () =>
-			this.clearBitWidthCache(),
+			this.#clearBitWidthCache(),
 		);
 		// A calculated bit width may be derived from the config of its node
-		this.#store.nodes.on("didUpdateConfig", () => this.clearBitWidthCache());
+		this.#store.nodes.on("didUpdateConfig", () => this.#clearBitWidthCache());
 		this.#store.nodes.on("didRegister", (node) => {
 			const componentPins = this.#store.componentPins.getManyByComponentId(
 				node.componentId,
@@ -121,7 +116,7 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 		invariant(this.#store.componentPins.get(nodePin.componentPinId));
 		invariant(this.#store.nodes.get(nodePin.nodeId));
 		this.#nodePins.set(nodePin.id, nodePin);
-		this.clearBitWidthCache();
+		this.#clearBitWidthCache();
 		this.emit("didRegister", nodePin);
 	}
 
@@ -135,8 +130,10 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 		await this.#store.transactionManager.runInTransaction(() => {
 			this.emit("willUnregister", nodePin);
 			this.#nodePins.delete(nodePin.id);
+			// Its removal is announced only when the transaction ends, but the bit widths
+			// derived from it are stale from now on
+			this.#clearBitWidthCache();
 		});
-		this.clearBitWidthCache();
 		this.emit("didUnregister", nodePin);
 		this.#markedAsDeleted.delete(id);
 	}
@@ -145,7 +142,7 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 		const existingNodePin = nullthrows(this.#nodePins.get(id));
 		const newNodePin = { ...existingNodePin, ...value };
 		this.#nodePins.set(id, newNodePin);
-		this.clearBitWidthCache();
+		this.#clearBitWidthCache();
 		this.emit("didUpdate", newNodePin);
 	}
 

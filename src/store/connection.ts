@@ -113,9 +113,6 @@ export class CCConnectionStore extends EventEmitter<CCConnectionStoreEvents> {
 		this.#isRevalidating = true;
 		try {
 			for (;;) {
-				// The connections dropped in the previous round are gone, but their removal is
-				// announced asynchronously, so the bit widths cached before it are stale.
-				this.#store.nodePins.clearBitWidthCache();
 				const incompatibleConnections = this.getMany().filter(
 					(connection) =>
 						!this.#store.nodePins.hasCompatibleBitWidths(
@@ -158,10 +155,15 @@ export class CCConnectionStore extends EventEmitter<CCConnectionStoreEvents> {
 				this.emit("willUnregister", connection);
 				this.#connections.delete(connection.id);
 			}
+			// Announced as soon as the connections are gone, not when the transaction ends.
+			// Otherwise a listener of a change announced in between, such as a renderer
+			// subscribed to the node at one end, would look up a connection that is gone
+			// while the list of connections still has it. Removing a connection cascades
+			// to nothing, so its listeners see no half-removed state.
+			for (const connection of connections) {
+				this.emit("didUnregister", connection);
+			}
 		});
-		for (const connection of connections) {
-			this.emit("didUnregister", connection);
-		}
 	}
 
 	/**
