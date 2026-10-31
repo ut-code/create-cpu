@@ -1,17 +1,24 @@
+import { mapValues } from "es-toolkit";
 import nullthrows from "nullthrows";
 import invariant from "tiny-invariant";
 import type CCStore from ".";
 import type { CCComponentId } from "./component";
-import type { CCComponentPin, CCComponentPinId } from "./componentPin";
+import type { CCComponentPinId } from "./componentPin";
 import type {
-	CCComponentPinInstanceShapes,
-	CCIntrinsicComponentShape,
-	ComponentEvaluationContext,
+	IntrinsicEvaluationEnvironment,
+	IntrinsicPinValues,
 } from "./intrinsics/base";
-import { definitionByComponentId } from "./intrinsics/definitions";
 import type { CCIntrinsicComponentSpec } from "./intrinsics/types";
+import {
+	buildSimulationNetlist,
+	describeInstance,
+	type SimulationInstance,
+	type SimulationNetId,
+	type SimulationNetlist,
+	simulationTerminalKey,
+} from "./netlist";
 import type { CCNodeId } from "./node";
-import type { CCNodePin, CCNodePinId } from "./nodePin";
+import type { CCNodePinId } from "./nodePin";
 
 export type SimulationValue = boolean[];
 
@@ -29,280 +36,168 @@ export function wrappingIncrementSimulationValue(
 	return result;
 }
 
-export type SimulationFrame = {
-	componentId: CCComponentId;
-	nodes: Map<
-		CCNodeId,
+/**
+ * The values of one time step. Every pin that carries the same value shares one net, so
+ * a frame stores one value per net and resolves pins through the netlist.
+ */
+export class SimulationFrame {
+	constructor(
+		readonly netlist: SimulationNetlist,
+		readonly netValues: ReadonlyMap<SimulationNetId, SimulationValue>,
+	) {}
+
+	get componentId(): CCComponentId {
+		return this.netlist.componentId;
+	}
+
+	/**
+	 * Value at a pin of a node of the simulated component.
+	 * @param nodePinId id of the node pin
+	 * @returns the value, or undefined if the pin carries no value in this time step
+	 */
+	getNodePinValue(nodePinId: CCNodePinId): SimulationValue | undefined {
+		const netId = this.netlist.netByNodePin.get(nodePinId);
+		return netId === undefined ? undefined : this.netValues.get(netId);
+	}
+
+	/**
+	 * Value at a pin of a node inside one of the components the simulated component uses.
+	 * @param path node ids from the simulated component down to the node of the pin
+	 * @param nodePinId id of the node pin
+	 */
+	getNodePinValueAt(
+		path: readonly CCNodeId[],
+		nodePinId: CCNodePinId,
+	): SimulationValue | undefined {
+		const netId = this.netlist.netByTerminal.get(
+			simulationTerminalKey(path, nodePinId),
+		);
+		return netId === undefined ? undefined : this.netValues.get(netId);
+	}
+}
+
+const netlistCacheByStore = new WeakMap<
+	CCStore,
+	Map<string, SimulationNetlist>
+>();
+
+/**
+ * The netlist of a component, rebuilt whenever the store changed since it was built.
+ */
+function getSimulationNetlist(
+	store: CCStore,
+	componentId: CCComponentId,
+	defaultBitWidth: number,
+): SimulationNetlist {
+	let cacheByComponent = netlistCacheByStore.get(store);
+	if (!cacheByComponent) {
+		cacheByComponent = new Map();
+		netlistCacheByStore.set(store, cacheByComponent);
+	}
+	const cacheKey = `${componentId}:${defaultBitWidth}`;
+	const cached = cacheByComponent.get(cacheKey);
+	if (cached && cached.revision === store.revision) return cached;
+	const netlist = buildSimulationNetlist(store, componentId, defaultBitWidth);
+	cacheByComponent.set(cacheKey, netlist);
+	return netlist;
+}
+
+/** The values arriving at the input pins of an instance, read from the nets. */
+function collectInputs(
+	instance: SimulationInstance,
+	netValues: ReadonlyMap<SimulationNetId, SimulationValue>,
+): IntrinsicPinValues<string> {
+	return mapValues(instance.inputShape, (pins) =>
+		pins.map((pin) =>
+			// The order guarantees that every driver ran first, so a value can only be
+			// missing when it was never supplied to an input pin of the component.
+			nullthrows(
+				netValues.get(pin.netId),
+				`No value reaches pin ${pin.nodePinId}`,
+			),
+		),
+	);
+}
+
+/** Compute the outputs of one instance in the current time step. */
+function evaluateInstance(
+	instance: SimulationInstance,
+	netValues: ReadonlyMap<SimulationNetId, SimulationValue>,
+	previousFrame: SimulationFrame | null,
+): IntrinsicPinValues<string> {
+	const { behavior } = instance;
+	const environment: IntrinsicEvaluationEnvironment<CCIntrinsicComponentSpec> =
 		{
-			pins: Map<CCNodePinId, SimulationValue>;
-			/** null if intrinsic */
-			child: SimulationFrame | null;
-		}
-	>;
-};
-
-function createShape(
-	store: CCStore,
-	nodeId: CCNodeId,
-	pin: Record<string, CCComponentPin>,
-	context: ComponentEvaluationContext,
-): Record<string, CCComponentPinInstanceShapes> {
-	const node = nullthrows(store.nodes.get(nodeId));
-	const { componentId } = node;
-	const nodePins = store.nodePins.getManyByNodeId(nodeId);
-	const componentDefinition = definitionByComponentId.get(componentId);
-	invariant(componentDefinition);
-	const shape: Record<string, CCComponentPinInstanceShapes> = {};
-	for (const key in pin) {
-		const componentPin = nullthrows(pin[key]);
-		const inputNodePins = nodePins.filter(
-			(nodePin: CCNodePin) => componentPin.id === nodePin.componentPinId,
-		);
-		inputNodePins.sort((a, b) => a.order - b.order);
-		shape[key] = [];
-		for (const nodePin of inputNodePins) {
-			const bitWidthStatus = store.nodePins.getNodePinBitWidthStatus(
-				nodePin.id,
+			outputBitWidths: mapValues(instance.outputShape, (pins) =>
+				pins.map((pin) => pin.bitWidth),
+			),
+			config: instance.config,
+		};
+	try {
+		if (behavior.kind === "sequential") {
+			return behavior.evaluate(
+				previousFrame && collectInputs(instance, previousFrame.netValues),
+				environment,
 			);
-			const bitWidth = !bitWidthStatus.isFixed
-				? context.defaultBitWidth
-				: bitWidthStatus.bitWidth;
-			shape[key].push({ nodePinId: nodePin.id, bitWidth });
 		}
+		return behavior.evaluate(collectInputs(instance, netValues), environment);
+	} catch (error) {
+		// The evaluation functions only see values, so tell which node they belong to
+		throw new Error(
+			`${describeInstance(instance)} could not be evaluated: ${
+				error instanceof Error ? error.message : String(error)
+			}`,
+			{ cause: error },
+		);
 	}
-	return shape;
 }
 
-function createIntrinsicComponentShape<Spec extends CCIntrinsicComponentSpec>(
-	store: CCStore,
-	nodeId: CCNodeId,
-	context: ComponentEvaluationContext,
-): CCIntrinsicComponentShape<Spec> {
-	const node = nullthrows(store.nodes.get(nodeId));
-	const { componentId } = node;
-	const componentDefinition = definitionByComponentId.get(componentId);
-	invariant(componentDefinition);
-	const inputPin = componentDefinition.inputPin;
-	const outputPin = componentDefinition.outputPin;
-	const inputShape = createShape(store, nodeId, inputPin, context);
-	const outputShape = createShape(store, nodeId, outputPin, context);
-
-	return { inputShape, outputShape };
-}
-
-function simulateIntrinsic(
-	store: CCStore,
-	nodeId: CCNodeId,
-	context: ComponentEvaluationContext,
-): boolean {
-	const node = nullthrows(store.nodes.get(nodeId));
-	const { componentId } = node;
-	const componentDefinition = definitionByComponentId.get(componentId);
-	invariant(componentDefinition);
-	const shape = createIntrinsicComponentShape(store, nodeId, context);
-	return componentDefinition.evaluate(context, nodeId, shape, node.config);
-}
-
-function simulateNode(
-	store: CCStore,
-	nodeId: CCNodeId,
-	context: ComponentEvaluationContext,
-): boolean {
-	const node = nullthrows(store.nodes.get(nodeId));
-	const component = store.components.get(node.componentId);
-	if (!component) throw new Error(`Component ${component} is not defined.`);
-	if (component.intrinsicType) {
-		return simulateIntrinsic(store, nodeId, context);
-	}
-	const nodePins = store.nodePins.getManyByNodeId(nodeId);
-	const outerNodePinValues: Map<CCNodePinId, SimulationValue> = nullthrows(
-		context.currentFrame.nodes.get(nodeId)?.pins,
-	);
-
-	const inputValues: Map<CCComponentPinId, SimulationValue> = new Map();
-	// check all input values are in context
-	for (const outerNodePin of nodePins) {
-		const componentPin = nullthrows(
-			store.componentPins.get(outerNodePin.componentPinId),
-		);
-		if (componentPin.type === "input") {
-			if (!outerNodePinValues.has(outerNodePin.id)) {
-				return false;
-			}
-			inputValues.set(
-				componentPin.id,
-				nullthrows(outerNodePinValues.get(outerNodePin.id)),
-			);
-		}
-	}
-
-	let childDefaultBitWidth = context.defaultBitWidth;
-	for (const nodePin of nodePins) {
-		const componentPin = nullthrows(
-			store.componentPins.get(nodePin.componentPinId),
-		);
-		const componentPinBitWidthStatus =
-			store.componentPins.getComponentPinBitWidthStatus(componentPin.id);
-		if (
-			!componentPinBitWidthStatus.isFixed &&
-			componentPinBitWidthStatus.fixMode === "automatic"
-		) {
-			const nodePinBitWidthStatus = store.nodePins.getNodePinBitWidthStatus(
-				nodePin.id,
-			);
-			if (nodePinBitWidthStatus.isFixed) {
-				childDefaultBitWidth = nodePinBitWidthStatus.bitWidth;
-				break;
-			}
-		}
-	}
-
-	const innerSimulationFrame = simulateComponent(
-		store,
-		component.id,
-		inputValues,
-		context.previousFrame
-			? nullthrows(context.previousFrame.nodes.get(nodeId)).child
-			: null,
-		childDefaultBitWidth,
-	);
-
-	// Set output values for component to parent
-	for (const nodePin of nodePins) {
-		const componentPin = nullthrows(
-			store.componentPins.get(nodePin.componentPinId),
-		);
-		if (componentPin.type === "output") {
-			const implementationNodePin = nullthrows(
-				store.nodePins.get(nullthrows(componentPin.implementation)),
-			);
-			const value = nullthrows(
-				innerSimulationFrame.nodes
-					.get(implementationNodePin.nodeId)
-					?.pins.get(implementationNodePin.id),
-			);
-			outerNodePinValues.set(nodePin.id, value);
-		}
-	}
-
-	nullthrows(context.currentFrame.nodes.get(nodeId)).child =
-		innerSimulationFrame;
-	return true;
-}
-
+/**
+ * Simulate one time step of a component. Every flip-flop of the component and of the
+ * components it uses is clocked once, so a flip-flop outputs what its input carried in
+ * the previous time step.
+ * @param store store to read the circuit from
+ * @param componentId component to simulate
+ * @param inputValues values supplied to the input pins of the component
+ * @param previousFrame the previous time step, or null for the first one
+ * @param defaultBitWidth bit width of the pins of the component whose width is not fixed
+ * @returns the values of this time step
+ */
 export default function simulateComponent(
 	store: CCStore,
 	componentId: CCComponentId,
 	inputValues: Map<CCComponentPinId, SimulationValue>,
-	previousFrame: SimulationFrame | null,
-	defaultBitWidth: number = 1,
+	previousFrame: SimulationFrame | null = null,
+	defaultBitWidth = 1,
 ): SimulationFrame {
-	const currentSimulationFrame = {
-		componentId: componentId,
-		nodes: new Map<
-			CCNodeId,
-			{
-				pins: Map<CCNodePinId, SimulationValue>;
-				/** null if intrinsic */
-				child: SimulationFrame | null;
-			}
-		>(),
-	};
-	const children = store.nodes.getManyByParentComponentId(componentId);
+	const netlist = getSimulationNetlist(store, componentId, defaultBitWidth);
+	invariant(
+		previousFrame === null || previousFrame.netlist === netlist,
+		"The previous frame was simulated from another revision of the store",
+	);
 
-	for (const child of children) {
-		const pins = store.nodePins.getManyByNodeId(child.id);
-		for (const pin of pins) {
-			const componentPin = nullthrows(
-				store.componentPins.get(pin.componentPinId),
+	const netValues = new Map<SimulationNetId, SimulationValue>();
+	for (const [componentPinId, value] of inputValues) {
+		const netId = netlist.netByInputComponentPin.get(componentPinId);
+		if (netId !== undefined) netValues.set(netId, value);
+	}
+
+	for (const instance of netlist.instances) {
+		const outputs = evaluateInstance(instance, netValues, previousFrame);
+		for (const [key, pins] of Object.entries(instance.outputShape)) {
+			const values = nullthrows(
+				outputs[key],
+				`${describeInstance(instance)} did not output ${key}`,
 			);
-			if (componentPin.type === "input") {
-				const connections = nullthrows(
-					store.connections.getConnectionsByNodePinId(pin.id),
-				);
-				if (connections.length === 0) {
-					throw new Error(
-						`Input pin ${pin.id} of node ${child.id} is not connected.`,
-					);
-				}
+			invariant(
+				values.length === pins.length,
+				`${describeInstance(instance)} output ${values.length} values for the ${pins.length} pins of ${key}`,
+			);
+			for (const [index, pin] of pins.entries()) {
+				netValues.set(pin.netId, nullthrows(values[index]));
 			}
 		}
 	}
 
-	const nodePinInputNumber = new Map<CCNodeId, number>();
-
-	// Initialize maps
-	for (const child of children) {
-		const innerPins = store.nodePins.getManyByNodeId(child.id);
-		let inputPinNumber = 0;
-		for (const innerPin of innerPins) {
-			const componentPin = nullthrows(
-				store.componentPins.get(innerPin.componentPinId),
-			);
-			if (componentPin.type === "input") {
-				inputPinNumber += 1;
-			}
-		}
-		nodePinInputNumber.set(child.id, inputPinNumber);
-		currentSimulationFrame.nodes.set(child.id, {
-			pins: new Map(),
-			child: null,
-		});
-	}
-
-	for (const [componentPinId, inputValue] of inputValues) {
-		const componentPin = nullthrows(store.componentPins.get(componentPinId));
-		if (componentPin.type === "input") {
-			const connectedNodePin = nullthrows(
-				store.nodePins.get(nullthrows(componentPin.implementation)),
-			);
-			currentSimulationFrame.nodes
-				.get(connectedNodePin.nodeId)
-				?.pins.set(connectedNodePin.id, inputValue);
-		}
-	}
-
-	const unevaluatedNodes = new Set<CCNodeId>();
-	for (const child of children) {
-		unevaluatedNodes.add(child.id);
-	}
-
-	const childContext = {
-		previousFrame: previousFrame,
-		currentFrame: currentSimulationFrame,
-		defaultBitWidth,
-	};
-
-	while (unevaluatedNodes.size > 0) {
-		const currentNodeId = nullthrows([...unevaluatedNodes][0]);
-		unevaluatedNodes.delete(currentNodeId);
-
-		if (simulateNode(store, currentNodeId, childContext)) {
-			// propagate output values through connections
-			const currentNodePinValues = nullthrows(
-				childContext.currentFrame.nodes.get(currentNodeId)?.pins,
-			);
-			for (const [nodePinId, outputValue] of currentNodePinValues) {
-				const nodePin = nullthrows(store.nodePins.get(nodePinId));
-				const componentPin = nullthrows(
-					store.componentPins.get(nodePin.componentPinId),
-				);
-				if (componentPin.type === "output") {
-					const connections = nullthrows(
-						store.connections.getConnectionsByNodePinId(nodePinId),
-					);
-					for (const connection of connections) {
-						const toNodePin = nullthrows(store.nodePins.get(connection.to));
-						const toNodePinValues = nullthrows(
-							childContext.currentFrame.nodes.get(toNodePin.nodeId)?.pins,
-						);
-						toNodePinValues.set(toNodePin.id, outputValue);
-					}
-				}
-			}
-		} else {
-			unevaluatedNodes.add(currentNodeId);
-		}
-	}
-	return currentSimulationFrame;
+	return new SimulationFrame(netlist, netValues);
 }

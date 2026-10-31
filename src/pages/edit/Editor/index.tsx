@@ -9,6 +9,7 @@ import CCComponentEditorContextMenu from "./components/ContextMenu";
 import CCComponentEditorFrameControl from "./components/FrameControl";
 import CCComponentEditorGrid from "./components/Grid";
 import { CCComponentEditorNodePinPropertyEditor } from "./components/NodePinPropertyEditor";
+import CCComponentEditorSimulationErrorAlert from "./components/SimulationErrorAlert";
 import CCComponentEditorTitleBar from "./components/TitleBar";
 import CCComponentEditorViewModeSwitcher from "./components/ViewModeSwitcher";
 import CCComponentEditorRenderer from "./renderer";
@@ -50,6 +51,7 @@ function CCComponentEditorContent({
 			<CCComponentEditorFrameControl />
 			<CCComponentEditorContextMenu onEditComponent={onEditComponent} />
 			<CCComponentEditorNodePinPropertyEditor />
+			<CCComponentEditorSimulationErrorAlert />
 			{isComponentPropertyDialogOpen && (
 				<ComponentPropertyDialog
 					componentId={componentId}

@@ -16,6 +16,12 @@ import {
 	ccIntrinsicComponentTypes,
 } from "./types";
 
+/** The one entry of a pin key that cannot be split into multiple node pins. */
+function single<T>(values: readonly T[]): T {
+	invariant(values.length === 1, `Expected a single pin, got ${values.length}`);
+	return nullthrows(values[0]);
+}
+
 function createUnaryOperator(
 	type: CCIntrinsicComponentType,
 	name: string,
@@ -28,22 +34,9 @@ function createUnaryOperator(
 			in: { In: { name: "In", bitWidthPolicy: { type: "inferred" } } },
 			out: { Out: { name: "Out", bitWidthPolicy: { type: "inferred" } } },
 			initialConfig: null,
-			evaluate: (context, nodeId, shape) => {
-				const inputShape = shape.inputShape.In;
-				invariant(inputShape[0] && !inputShape[1]);
-				const nodePinIdToValue = context.currentFrame.nodes.get(nodeId)?.pins;
-				const inputValue = nodePinIdToValue?.get(inputShape[0].nodePinId);
-				if (!inputValue || !nodePinIdToValue) {
-					return false;
-				}
-				const outputValue = Array.from({ length: inputValue.length }, (_, i) =>
-					evaluate(nullthrows(inputValue[i])),
-				);
-				const outputShape = shape.outputShape.Out;
-				invariant(outputShape[0] && !outputShape[1]);
-
-				nodePinIdToValue.set(outputShape[0].nodePinId, outputValue);
-				return true;
+			behavior: {
+				kind: "combinational",
+				evaluate: ({ In }) => ({ Out: [single(In).map((a) => evaluate(a))] }),
 			},
 		},
 	);
@@ -64,37 +57,17 @@ function createBinaryOperator(
 			},
 			out: { Out: { name: "Out", bitWidthPolicy: { type: "inferred" } } },
 			initialConfig: null,
-			evaluate: (context, nodeId, shape) => {
-				const inputShapeA = shape.inputShape.A;
-				const inputShapeB = shape.inputShape.B;
-				invariant(inputShapeA[0] && !inputShapeA[1]);
-				invariant(inputShapeB[0] && !inputShapeB[1]);
-				const nodePinIdToValue = context.currentFrame.nodes.get(nodeId)?.pins;
-				const inputValueA = nodePinIdToValue?.get(inputShapeA[0].nodePinId);
-				const inputValueB = nodePinIdToValue?.get(inputShapeB[0].nodePinId);
-				if (!inputValueA || !inputValueB || !nodePinIdToValue) {
-					return false;
-				}
-				invariant(
-					inputValueA.length === inputValueB.length,
-					"Input lengths must match (name: " +
-						name +
-						", nodeId: " +
-						nodeId +
-						", inputValueA: " +
-						inputValueA +
-						", inputValueB: " +
-						inputValueB +
-						")",
-				);
-				const outputValue = Array.from({ length: inputValueA.length }, (_, i) =>
-					evaluate(nullthrows(inputValueA[i]), nullthrows(inputValueB[i])),
-				);
-				const outputShape = shape.outputShape.Out;
-				invariant(outputShape[0] && !outputShape[1]);
-
-				nodePinIdToValue.set(outputShape[0].nodePinId, outputValue);
-				return true;
+			behavior: {
+				kind: "combinational",
+				evaluate: ({ A, B }) => {
+					const a = single(A);
+					const b = single(B);
+					invariant(
+						a.length === b.length,
+						`Input lengths must match (A: ${a.length}, B: ${b.length})`,
+					);
+					return { Out: [a.map((bit, i) => evaluate(bit, nullthrows(b[i])))] };
+				},
 			},
 		},
 	);
@@ -112,14 +85,11 @@ function createNullaryOperator(
 			in: {},
 			out: { Out: { name: "Out", bitWidthPolicy: { type: "inferred" } } },
 			initialConfig: null,
-			evaluate: (context, nodeId, shape) => {
-				const outputShape = shape.outputShape.Out;
-				invariant(outputShape[0] && !outputShape[1]);
-				const nodePinIdToValue = context.currentFrame.nodes.get(nodeId)?.pins;
-				if (!nodePinIdToValue) return false;
-				const outputValue = new Array(outputShape[0].bitWidth).fill(value);
-				nodePinIdToValue.set(outputShape[0].nodePinId, outputValue);
-				return true;
+			behavior: {
+				kind: "combinational",
+				evaluate: (_, { outputBitWidths }) => ({
+					Out: [new Array(single(outputBitWidths.Out)).fill(value)],
+				}),
 			},
 		},
 	);
@@ -163,9 +133,7 @@ export const input =
 		in: {},
 		out: { Out: { name: "In", bitWidthPolicy: { type: "inferred" } } },
 		initialConfig: null,
-		evaluate: (_context, _nodeId, _shape) => {
-			return true;
-		},
+		behavior: null,
 	});
 
 export const output =
@@ -175,9 +143,7 @@ export const output =
 		in: { In: { name: "Out", bitWidthPolicy: { type: "inferred" } } },
 		out: {},
 		initialConfig: null,
-		evaluate: (_context, _nodeId, _shape) => {
-			return true;
-		},
+		behavior: null,
 	});
 
 export const aggregate =
@@ -202,21 +168,9 @@ export const aggregate =
 			},
 		},
 		initialConfig: null,
-		evaluate: (context, nodeId, shape) => {
-			const inputShape = shape.inputShape.In;
-			const nodePinIdToValue = context.currentFrame.nodes.get(nodeId)?.pins;
-			const inputValues = inputShape.map((s) =>
-				nodePinIdToValue?.get(s.nodePinId),
-			);
-			if (inputValues.some((v) => !v) || !nodePinIdToValue) {
-				return false;
-			}
-			const outputValue = inputValues.flatMap((v) => nullthrows(v));
-			nodePinIdToValue.set(
-				nullthrows(shape.outputShape.Out[0]?.nodePinId),
-				outputValue,
-			);
-			return true;
+		behavior: {
+			kind: "combinational",
+			evaluate: ({ In }) => ({ Out: [In.flat()] }),
 		},
 	});
 
@@ -244,24 +198,19 @@ export const decompose =
 			},
 		},
 		initialConfig: null,
-		evaluate: (context, nodeId, shape) => {
-			const inputShape = shape.inputShape.In;
-			invariant(inputShape[0] && !inputShape[1]);
-			const nodePinIdToValue = context.currentFrame.nodes.get(nodeId)?.pins;
-			const outputShape = shape.outputShape.Out;
-			const inputValue = nodePinIdToValue?.get(inputShape[0].nodePinId);
-			if (!inputValue || !nodePinIdToValue) {
-				return false;
-			}
-			let currentIndex = 0;
-			for (const shape of outputShape) {
-				nodePinIdToValue.set(
-					shape.nodePinId,
-					inputValue.slice(currentIndex, currentIndex + shape.bitWidth),
-				);
-				currentIndex += shape.bitWidth;
-			}
-			return true;
+		behavior: {
+			kind: "combinational",
+			evaluate: ({ In }, { outputBitWidths }) => {
+				const value = single(In);
+				let offset = 0;
+				return {
+					Out: outputBitWidths.Out.map((bitWidth) => {
+						const part = value.slice(offset, offset + bitWidth);
+						offset += bitWidth;
+						return part;
+					}),
+				};
+			},
 		},
 	});
 
@@ -282,22 +231,11 @@ export const and_n =
 			},
 		},
 		initialConfig: null,
-		evaluate: (context, nodeId, shape) => {
-			const inputShape = shape.inputShape.In;
-			const nodePinIdToValue = context.currentFrame.nodes.get(nodeId)?.pins;
-			const inputValues = inputShape.map((s) =>
-				nodePinIdToValue?.get(s.nodePinId),
-			);
-			if (inputValues.some((v) => !v) || !nodePinIdToValue) {
-				return false;
-			}
-			const outputValue = inputValues.every((v) =>
-				nullthrows(v).every(Boolean),
-			);
-			nodePinIdToValue.set(nullthrows(shape.outputShape.Out[0]?.nodePinId), [
-				outputValue,
-			]);
-			return true;
+		behavior: {
+			kind: "combinational",
+			evaluate: ({ In }) => ({
+				Out: [[In.every((value) => value.every(Boolean))]],
+			}),
 		},
 	});
 
@@ -318,20 +256,11 @@ export const or_n =
 			},
 		},
 		initialConfig: null,
-		evaluate: (context, nodeId, shape) => {
-			const inputShape = shape.inputShape.In;
-			const nodePinIdToValue = context.currentFrame.nodes.get(nodeId)?.pins;
-			const inputValues = inputShape.map((s) =>
-				nodePinIdToValue?.get(s.nodePinId),
-			);
-			if (inputValues.some((v) => !v) || !nodePinIdToValue) {
-				return false;
-			}
-			const outputValue = inputValues.some((v) => nullthrows(v).some(Boolean));
-			nodePinIdToValue.set(nullthrows(shape.outputShape.Out[0]?.nodePinId), [
-				outputValue,
-			]);
-			return true;
+		behavior: {
+			kind: "combinational",
+			evaluate: ({ In }) => ({
+				Out: [[In.some((value) => value.some(Boolean))]],
+			}),
 		},
 	});
 
@@ -352,24 +281,14 @@ export const broadcast =
 			},
 		},
 		initialConfig: null,
-		evaluate: (context, nodeId, shape) => {
-			const inputShape = shape.inputShape.In;
-			invariant(inputShape[0] && !inputShape[1]);
-			const nodePinIdToValue = context.currentFrame.nodes.get(nodeId)?.pins;
-			const outputShape = shape.outputShape.Out;
-			invariant(outputShape[0] && !outputShape[1]);
-			const inputValue = nodePinIdToValue?.get(inputShape[0].nodePinId);
-			if (!inputValue || !nodePinIdToValue) {
-				return false;
-			}
-			invariant(inputValue.length === 1);
-			nodePinIdToValue.set(
-				outputShape[0].nodePinId,
-				Array.from({ length: outputShape[0].bitWidth }, () =>
-					nullthrows(inputValue[0]),
-				),
-			);
-			return true;
+		behavior: {
+			kind: "combinational",
+			evaluate: ({ In }, { outputBitWidths }) => {
+				const bit = single(single(In));
+				return {
+					Out: [new Array(single(outputBitWidths.Out)).fill(bit)],
+				};
+			},
 		},
 	});
 
@@ -380,22 +299,16 @@ export const flipflop =
 		in: { In: { name: "In", bitWidthPolicy: { type: "inferred" } } },
 		out: { Out: { name: "Out", bitWidthPolicy: { type: "inferred" } } },
 		initialConfig: null,
-		evaluate: (context, nodeId, shape) => {
-			const inputShape = shape.inputShape.In;
-			invariant(inputShape[0] && !inputShape[1]);
-			const outputShape = shape.outputShape.Out;
-			invariant(outputShape[0] && !outputShape[1]);
-			const nodePinIdToValue = context.currentFrame.nodes.get(nodeId)?.pins;
-			const previousValue =
-				context.previousFrame?.nodes
-					.get(nodeId)
-					?.pins.get(inputShape[0].nodePinId) ??
-				new Array(inputShape[0].bitWidth).fill(false);
-			if (!nodePinIdToValue) {
-				return false;
-			}
-			nodePinIdToValue.set(outputShape[0].nodePinId, previousValue);
-			return true;
+		behavior: {
+			kind: "sequential",
+			// Nothing has been fed to it before the first time step, so it starts from zero
+			evaluate: (previousInputs, { outputBitWidths }) => ({
+				Out: [
+					previousInputs
+						? single(previousInputs.In)
+						: new Array(single(outputBitWidths.Out)).fill(false),
+				],
+			}),
 		},
 	});
 
@@ -415,7 +328,8 @@ export const display =
 		},
 		out: {},
 		initialConfig: { resolution: { x: 20, y: 15 } },
-		evaluate: () => true,
+		// The renderer reads the pixels from the input pin; there is nothing to compute
+		behavior: { kind: "combinational", evaluate: () => ({}) },
 	});
 
 export const const_ =
@@ -433,13 +347,9 @@ export const const_ =
 			},
 		},
 		initialConfig: { mode: "binary", data: new Array(8).fill(false) },
-		evaluate: (context, nodeId, shape, config) => {
-			const outputShape = shape.outputShape.Out;
-			invariant(outputShape[0] && !outputShape[1]);
-			const nodePinIdToValue = context.currentFrame.nodes.get(nodeId)?.pins;
-			if (!nodePinIdToValue) return false;
-			nodePinIdToValue.set(outputShape[0].nodePinId, config.data);
-			return true;
+		behavior: {
+			kind: "combinational",
+			evaluate: (_, { config }) => ({ Out: [config.data] }),
 		},
 	});
 

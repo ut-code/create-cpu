@@ -45,6 +45,9 @@ export type EditorStoreCoreSlice = {
 	selectNode(ids: CCNodeId[], exclusive: boolean): void;
 	unselectNode(ids: CCNodeId[]): void;
 	selectConnection(ids: CCConnectionId[], exclusive: boolean): void;
+	/** message the last simulation attempt failed with, if it failed */
+	simulationError: string | null;
+	dismissSimulationError(): void;
 	getNodePinValue(nodePinId: CCNodePinId): SimulationValue | undefined;
 	getComponentPinValue(
 		componentPinId: CCComponentPinId,
