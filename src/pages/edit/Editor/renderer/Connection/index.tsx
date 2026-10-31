@@ -1,12 +1,12 @@
 import nullthrows from "nullthrows";
 import { useState } from "react";
-import { theme } from "../../../../../common/theme";
 import type { Vector2 } from "../../../../../common/vector2";
 import type { CCComponentPinType } from "../../../../../store/componentPin";
 import type { CCConnectionId } from "../../../../../store/connection";
 import { useStore } from "../../../../../store/react";
 import ensureStoreItem from "../../../../../store/react/error";
 import { useNode } from "../../../../../store/react/selectors";
+import { theme } from "../../../../../style";
 import { useComponentEditorStore } from "../../store";
 import { stringifySimulationValue } from "../../store/slices/core/index";
 import { getCCComponentEditorRendererNodeGeometry } from "../Node/geometry";
@@ -64,8 +64,8 @@ export function CCComponentEditorRendererConnectionCore({
 			stroke={
 				connectionId &&
 				componentEditorState.selectedConnectionIds.has(connectionId)
-					? theme.palette.primary
-					: theme.palette.textPrimary
+					? theme.colors.primary
+					: theme.colors.textPrimary
 			}
 			strokeWidth="2"
 			fill="none"
@@ -139,7 +139,7 @@ const CCComponentEditorRendererConnection = ensureStoreItem(
 					}}
 				/>
 				{isHovered && componentEditorState.editorMode === "play" && (
-					<text fontSize={10} fill={theme.palette.textPrimary}>
+					<text fontSize={10} fill={theme.colors.textPrimary}>
 						<textPath
 							href={`#${connectionId}`}
 							startOffset="50%"

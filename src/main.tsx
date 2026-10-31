@@ -3,7 +3,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter, Route, Routes } from "react-router";
 import App from "./App";
-import "./index.css";
+import "./style.css";
 import { muiTheme } from "./common/theme";
 import EditPage from "./pages/edit";
 import HomePage from "./pages/home";

@@ -1,0 +1,30 @@
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+
+:root {
+	font-family: sans-serif;
+
+	/* Keep in sync with the colors in style.ts */
+	--color-black: #000000;
+	--color-white: #ffffff;
+	--color-text-primary: #444444;
+	--color-primary: #009966;
+	--color-error: #ff0000;
+	--color-border: #bbbbbb;
+	--color-editor-background: #fafafa;
+	--color-editor-grid: #dddddd;
+}
+
+:root,
+body,
+#root {
+	height: 100%;
+}
+
+body {
+	margin: 0;
+	overflow: hidden;
+}
