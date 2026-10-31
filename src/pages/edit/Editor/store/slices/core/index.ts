@@ -132,12 +132,10 @@ export const createComponentEditorStoreCoreSlice: ComponentEditorSliceCreator<
 					}));
 				},
 				getNodePinValue(nodePinId: CCNodePinId): SimulationValue | undefined {
-					const { nodeId } = nullthrows(store.nodePins.get(nodePinId));
 					return nullthrows(
-						nullthrows(simulationCachedFrames[get().timeStep]).nodes.get(
-							nodeId,
-						),
-					).pins.get(nodePinId);
+						simulationCachedFrames[get().timeStep],
+						`Time step ${get().timeStep} has not been simulated`,
+					).getNodePinValue(nodePinId);
 				},
 				getComponentPinValue(
 					componentPinId: CCComponentPinId,
@@ -155,22 +153,14 @@ export const createComponentEditorStoreCoreSlice: ComponentEditorSliceCreator<
 			const executeSimulation = () => {
 				if (editorStore.getState().editorMode !== "play") return;
 
-				const newSimulationCacheKey =
-					store.nodes
-						.getMany()
-						.map((node) => node.id)
-						.join() +
-					store.nodePins
-						.getMany()
-						.map((nodePin) => `${nodePin.id}_${nodePin.manualBitWidth || 0}`)
-						.join(",") +
-					store.connections
-						.getMany()
-						.map((connection) => connection.id)
-						.join() +
-					[...editorStore.getState().inputValues.entries()]
-						.map(([key, value]) => key + value.join())
-						.join();
+				// The netlist is cached against the revision of the store, so the key only
+				// has to cover that revision and the values fed to the input pins.
+				const newSimulationCacheKey = [
+					store.revision,
+					...[...editorStore.getState().inputValues.entries()].map(
+						([key, value]) => `${key}${value.join()}`,
+					),
+				].join("|");
 				if (newSimulationCacheKey !== simulationCacheKey) {
 					simulationCacheKey = newSimulationCacheKey;
 					simulationCachedFrames = [];
@@ -191,14 +181,15 @@ export const createComponentEditorStoreCoreSlice: ComponentEditorSliceCreator<
 						if (pin.type === "input") {
 							inputValues.set(
 								pin.id,
-								editorState.getInputValue({ componentPinId: pin.id, timeStep }),
+								editorState.getInputValue({
+									componentPinId: pin.id,
+									timeStep,
+								}),
 							);
 						}
 					}
 					simulationCachedFrames.push(
-						nullthrows(
-							simulateComponent(store, componentId, inputValues, previousFrame),
-						),
+						simulateComponent(store, componentId, inputValues, previousFrame),
 					);
 					isUpdated = true;
 				}
