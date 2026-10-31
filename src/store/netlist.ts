@@ -30,7 +30,7 @@
 
 import nullthrows from "nullthrows";
 import invariant from "tiny-invariant";
-import type { Opaque } from "type-fest";
+import type { Tagged } from "type-fest";
 import type CCStore from ".";
 import type { CCComponentId } from "./component";
 import type { CCComponentPinId } from "./componentPin";
@@ -44,10 +44,10 @@ import type { CCNode, CCNodeId } from "./node";
 import type { CCNodePinId } from "./nodePin";
 
 /** Identity of a net: the key of the terminal driving it. */
-export type SimulationNetId = Opaque<string, "SimulationNetId">;
+export type SimulationNetId = Tagged<string, "SimulationNetId">;
 
 /** Identity of a terminal: the path of its node instance plus its node pin. */
-export type SimulationTerminalKey = Opaque<string, "SimulationTerminalKey">;
+export type SimulationTerminalKey = Tagged<string, "SimulationTerminalKey">;
 
 /**
  * Key of the pin `nodePinId` of the node instance at `path`.
