@@ -114,18 +114,6 @@ export class CCNodeStore extends EventEmitter<CCNodeStoreEvents> {
 		return this.#nodes.get(id);
 	}
 
-	/**
-	 * Get all of nodes by parent component id
-	 * @param parentComponentId id of parent component
-	 * @returns nodes of parent component
-	 * @deprecated in favor of {@link getManyByParentComponentId}
-	 */
-	getNodeIdsByParentComponentId(parentComponentId: CCComponentId): CCNodeId[] {
-		return this.getManyByParentComponentId(parentComponentId).map(
-			(node) => node.id,
-		);
-	}
-
 	getManyByParentComponentId(parentComponentId: CCComponentId): CCNode[] {
 		return [...this.#nodes.values()].filter(
 			(node) => node.parentComponentId === parentComponentId,

@@ -186,17 +186,6 @@ export class CCConnectionStore extends EventEmitter<CCConnectionStoreEvents> {
 	}
 
 	/**
-	 * Check if no connection of the pin of the node existsno connection of the pin of the node exists
-	 * @param nodeId id of node
-	 * @param pinId id of pin
-	 * @returns if no connection of the pin of the node exists, `true` returns (otherwise `false`)
-	 * @deprecated in favor of {@link getConnectionsByNodePinId}
-	 */
-	hasNoConnectionOf(nodePinId: CCNodePinId): boolean {
-		return this.getConnectionsByNodePinId(nodePinId).length === 0;
-	}
-
-	/**
 	 * Create a new connection
 	 * @param partialConnection connection without `id`
 	 * @returns a new connection
