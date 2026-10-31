@@ -61,55 +61,76 @@ export class CCConnectionStore extends EventEmitter<CCConnectionStoreEvents> {
 				this.unregister(connections.map((connection) => connection.id));
 			}
 		});
-		// A config change can change the bit width of a pin (e.g. the resolution of a
-		// display), which invalidates the connections that were valid when they were made.
+		// Bit widths are inferred across connections and component boundaries, so a change
+		// can alter the width of a pin far from it, even in another component that uses
+		// the changed one (e.g. a constant inside it growing). Every connection is checked
+		// again after any change that can affect a bit width.
 		// CCStore mounts CCNodePinStore first, so its bit width cache is already dropped.
-		this.#store.nodes.on("didUpdateConfig", (node) => {
-			// TODO: Dropping a connection can in turn invalidate another one. Resolving that
-			// needs a repeated sweep, which the re-validation on `didRegister` below lacks too.
-			const invalidatedConnections = this.getMany().filter(
-				(connection) =>
-					connection.parentComponentId === node.parentComponentId &&
-					!this.#store.nodePins.hasCompatibleBitWidths(
-						connection.from,
-						connection.to,
-					),
-			);
-			if (invalidatedConnections.length > 0) {
+		const revalidate = () => this.#dropIncompatibleConnections();
+		this.#store.nodes.on("didUpdateConfig", revalidate);
+		for (const eventType of [
+			"didRegister",
+			"didUnregister",
+			"didUpdate",
+		] as const) {
+			this.#store.nodePins.on(eventType, revalidate);
+		}
+		this.on("didRegister", revalidate);
+		this.on("didUnregister", revalidate);
+		// A restored circuit may contain connections that were broken before this check
+		revalidate();
+	}
+
+	/** whether connections are being revalidated, to not start over from within */
+	#isRevalidating = false;
+
+	/** how many {@link batchBitWidthChanges} calls are running */
+	#batchDepth = 0;
+
+	/**
+	 * Run `fn`, which changes bit widths in several steps, and revalidate the connections
+	 * only once it is done. Checking after each step could drop a connection that is
+	 * inconsistent only in an intermediate state, e.g. while the split pins of an
+	 * aggregate node are resized one by one.
+	 * @param fn function making the changes
+	 */
+	batchBitWidthChanges(fn: () => void): void {
+		this.#batchDepth += 1;
+		try {
+			fn();
+		} finally {
+			this.#batchDepth -= 1;
+		}
+		this.#dropIncompatibleConnections();
+	}
+
+	/**
+	 * Drop every connection whose two ends have conflicting bit widths. Dropping one can
+	 * change the inferred width of other pins, so this repeats until nothing is dropped.
+	 */
+	#dropIncompatibleConnections(): void {
+		if (this.#isRevalidating || this.#batchDepth > 0) return;
+		this.#isRevalidating = true;
+		try {
+			for (;;) {
+				// The connections dropped in the previous round are gone, but their removal is
+				// announced asynchronously, so the bit widths cached before it are stale.
+				this.#store.nodePins.clearBitWidthCache();
+				const incompatibleConnections = this.getMany().filter(
+					(connection) =>
+						!this.#store.nodePins.hasCompatibleBitWidths(
+							connection.from,
+							connection.to,
+						),
+				);
+				if (incompatibleConnections.length === 0) break;
 				this.unregister(
-					invalidatedConnections.map((connection) => connection.id),
+					incompatibleConnections.map((connection) => connection.id),
 				);
 			}
-		});
-		this.#store.connections.on("didRegister", (connection) => {
-			const component = nullthrows(
-				this.#store.components.get(connection.parentComponentId),
-			);
-			const nodes = this.#store.nodes.getManyByComponentId(component.id);
-			for (const node of nodes) {
-				const nodePins = this.#store.nodePins.getManyByNodeId(node.id);
-				for (const nodePin of nodePins) {
-					const connections = this.getConnectionsByNodePinId(nodePin.id);
-					for (const connection of connections) {
-						const parentComponentId = connection.parentComponentId;
-						const from = connection.from;
-						const to = connection.to;
-						this.unregister([connection.id]).then(() => {
-							if (this.#store.nodePins.isConnectable(from, to)) {
-								this.register(
-									CCConnectionStore.create({
-										from,
-										to,
-										parentComponentId,
-										bentPortion: 0.5,
-									}),
-								);
-							}
-						});
-					}
-				}
-			}
-		});
+		} finally {
+			this.#isRevalidating = false;
+		}
 	}
 
 	/**
