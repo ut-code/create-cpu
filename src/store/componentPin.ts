@@ -166,16 +166,6 @@ export class CCComponentPinStore extends EventEmitter<CCComponentPinStoreEvents>
 	 * Get all of pins by component id
 	 * @param componentId id of component
 	 * @returns pins of component
-	 * @deprecated in favor of {@link getManyByComponentId}
-	 */
-	getPinIdsByComponentId(componentId: CCComponentId): CCComponentPinId[] {
-		return this.getManyByComponentId(componentId).map((pin) => pin.id);
-	}
-
-	/**
-	 * Get all of pins by component id
-	 * @param componentId id of component
-	 * @returns pins of component
 	 */
 	getManyByComponentId(componentId: CCComponentId): CCComponentPin[] {
 		return [...this.#pins.values()].filter(
