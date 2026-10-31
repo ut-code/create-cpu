@@ -1,13 +1,13 @@
 import { KDTree } from "mnemonist";
 import nullthrows from "nullthrows";
 import { type PointerEvent, type ReactNode, useState } from "react";
-import { theme } from "../../../../../common/theme";
 import { type Vector2, vector2 } from "../../../../../common/vector2";
 import { useDraggable } from "../../../../../hooks/drag";
 import { CCConnectionStore } from "../../../../../store/connection";
 import { input, output } from "../../../../../store/intrinsics/definitions";
 import type { CCNodePinId } from "../../../../../store/nodePin";
 import { useStore } from "../../../../../store/react";
+import { theme } from "../../../../../style";
 import { useComponentEditorStore } from "../../store";
 import {
 	CCComponentEditorRendererConnectionCore,
@@ -154,8 +154,8 @@ export default function CCComponentEditorRendererNodePin({
 					width={CCComponentEditorRendererNodePinConstants.SIZE}
 					height={CCComponentEditorRendererNodePinConstants.SIZE}
 					rx={3}
-					fill={theme.palette.white}
-					stroke={theme.palette.textPrimary}
+					fill={theme.colors.white}
+					stroke={theme.colors.textPrimary}
 					strokeWidth={2}
 				/>
 				{nodePin.manualBitWidth !== null && (
@@ -171,7 +171,7 @@ export default function CCComponentEditorRendererNodePin({
 									? 6
 									: 8
 						}
-						fill={theme.palette.textPrimary}
+						fill={theme.colors.textPrimary}
 					>
 						{nodePin.manualBitWidth >= 100 ? "99+" : nodePin.manualBitWidth}
 					</text>
@@ -195,7 +195,7 @@ export default function CCComponentEditorRendererNodePin({
 						}
 						dominantBaseline="central"
 						fontSize={12}
-						fill={theme.palette.textPrimary}
+						fill={theme.colors.textPrimary}
 					>
 						{componentPin.name}
 					</text>

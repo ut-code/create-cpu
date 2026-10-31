@@ -1,7 +1,7 @@
 import nullthrows from "nullthrows";
-import { theme } from "../../../../../../../common/theme";
 import { useStore } from "../../../../../../../store/react";
 import { wrappingIncrementSimulationValue } from "../../../../../../../store/simulation";
+import { theme } from "../../../../../../../style";
 import { useComponentEditorStore } from "../../../../store";
 import { stringifySimulationValue } from "../../../../store/slices/core";
 import type { CCComponentEditorRendererNodeRendererProps } from "../../types";
@@ -60,8 +60,8 @@ export function CCComponentEditorRendererNodeInterfaceRenderer(
 				height={labelHeight}
 				rx={labelHeight / 2}
 				ry={labelHeight / 2}
-				stroke={theme.palette.textPrimary}
-				fill={theme.palette.white}
+				stroke={theme.colors.textPrimary}
+				fill={theme.colors.white}
 				strokeWidth={1}
 				{...(onClick
 					? {
@@ -77,7 +77,7 @@ export function CCComponentEditorRendererNodeInterfaceRenderer(
 			<text
 				x={width / 2}
 				y={height / 2}
-				fill={theme.palette.textPrimary}
+				fill={theme.colors.textPrimary}
 				textAnchor="middle"
 				dominantBaseline="middle"
 				fontSize={10}

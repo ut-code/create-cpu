@@ -1,6 +1,6 @@
 import type { ReactElement } from "react";
-import { theme } from "../../../../common/theme";
 import { vector2 } from "../../../../common/vector2";
+import { theme } from "../../../../style";
 import { useComponentEditorStore } from "../store";
 
 export default function CCComponentEditorGrid() {
@@ -27,7 +27,7 @@ export default function CCComponentEditorGrid() {
 					left: 0,
 					width: "1px",
 					height: "100%",
-					backgroundColor: theme.palette.editorGrid,
+					backgroundColor: theme.colors.editorGrid,
 					transform: `translateX(${x}px)`,
 				}}
 			/>,
@@ -48,7 +48,7 @@ export default function CCComponentEditorGrid() {
 					left: 0,
 					width: "100%",
 					height: "1px",
-					backgroundColor: theme.palette.editorGrid,
+					backgroundColor: theme.colors.editorGrid,
 					transform: `translateY(${y}px)`,
 				}}
 			/>,

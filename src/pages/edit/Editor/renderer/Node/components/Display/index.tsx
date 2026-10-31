@@ -1,8 +1,8 @@
 import nullthrows from "nullthrows";
-import { theme } from "../../../../../../../common/theme";
 import { display } from "../../../../../../../store/intrinsics/definitions";
 import type { CCIntrinsicComponentDisplaySpec } from "../../../../../../../store/intrinsics/types";
 import { useStore } from "../../../../../../../store/react";
+import { theme } from "../../../../../../../style";
 import { useComponentEditorStore } from "../../../../store";
 import type { CCComponentEditorRendererNodeRendererProps } from "../../types";
 import { CCComponentEditorRendererNodeDefaultRenderer } from "../Default";
@@ -40,7 +40,7 @@ export function CCComponentEditorRendererNodeDisplayRenderer(
 				x={padding}
 				y={padding}
 				fontSize={16}
-				fill={theme.palette.textPrimary}
+				fill={theme.colors.textPrimary}
 				dominantBaseline="hanging"
 			>
 				{config.resolution.x}x{config.resolution.y}
@@ -65,10 +65,10 @@ export function CCComponentEditorRendererNodeDisplayRenderer(
 								height={gridSize}
 								fill={
 									inputValue?.[x + config.resolution.x * y]
-										? theme.palette.black
-										: theme.palette.white
+										? theme.colors.black
+										: theme.colors.white
 								}
-								stroke={theme.palette.editorGrid}
+								stroke={theme.colors.editorGrid}
 							/>
 						))
 						.toArray(),

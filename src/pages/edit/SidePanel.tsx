@@ -3,11 +3,11 @@ import { Box, InputAdornment, TextField } from "@mui/material";
 import { useState } from "react";
 import invariant from "tiny-invariant";
 import { setDataTransferAsComponent } from "../../common/serialization";
-import { theme } from "../../common/theme";
 import { type CCComponentId, isIncluding } from "../../store/component";
 import { ccPinTypes } from "../../store/componentPin";
 import { useStore } from "../../store/react";
 import { useComponents } from "../../store/react/selectors";
+import { theme } from "../../style";
 
 export type SidePanelProps = {
 	editedComponentId: CCComponentId;
@@ -28,9 +28,9 @@ function ComponentRenderer({ componentId }: { componentId: CCComponentId }) {
 					gridTemplateColumns: "1fr 1fr",
 					alignItems: "center",
 					marginTop: "4px",
-					border: `2px solid ${theme.palette.black}`,
+					border: `2px solid ${theme.colors.black}`,
 					borderRadius: "2px",
-					background: theme.palette.white,
+					background: theme.colors.white,
 				}}
 			>
 				{ccPinTypes.map((type) => (
@@ -70,9 +70,9 @@ function ComponentRenderer({ componentId }: { componentId: CCComponentId }) {
 										style={{
 											width: "10px",
 											height: "10px",
-											border: `2px solid ${theme.palette.black}`,
+											border: `2px solid ${theme.colors.black}`,
 											borderRadius: "4px",
-											background: theme.palette.white,
+											background: theme.colors.white,
 										}}
 									/>
 									<div>{pin.name}</div>
