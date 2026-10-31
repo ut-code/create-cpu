@@ -380,6 +380,7 @@ export const flipflop =
 		in: { In: { name: "In", bitWidthPolicy: { type: "inferred" } } },
 		out: { Out: { name: "Out", bitWidthPolicy: { type: "inferred" } } },
 		initialConfig: null,
+		isSequential: true,
 		evaluate: (context, nodeId, shape) => {
 			const inputShape = shape.inputShape.In;
 			invariant(inputShape[0] && !inputShape[1]);

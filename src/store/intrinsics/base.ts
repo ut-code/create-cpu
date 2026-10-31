@@ -3,7 +3,7 @@ import type { CCComponent, CCComponentId } from "../component";
 import type { CCComponentPin, CCComponentPinId } from "../componentPin";
 import type { CCNodeId } from "../node";
 import type { CCNodePinId } from "../nodePin";
-import type { SimulationFrame } from "../simulation";
+import type { IntrinsicEvaluationFrame } from "../simulation";
 import type {
 	CCIntrinsicComponentSpec,
 	CCIntrinsicComponentType,
@@ -20,8 +20,8 @@ export type CCComponentPinInstanceShapes = {
 }[];
 
 export type ComponentEvaluationContext = {
-	previousFrame: SimulationFrame | null;
-	currentFrame: SimulationFrame;
+	previousFrame: IntrinsicEvaluationFrame | null;
+	currentFrame: IntrinsicEvaluationFrame;
 	defaultBitWidth: number;
 };
 
@@ -78,6 +78,12 @@ type Props<Spec extends CCIntrinsicComponentSpec> = {
 	out: Record<Spec["out"], IntrinsicComponentPinAttributes<Spec>>;
 	initialConfig: Spec["config"];
 	evaluate: IntrinsicComponentEvaluationFunction<Spec>;
+	/**
+	 * Whether the outputs are derived from the previous time step instead of the current
+	 * inputs. Such a component is what lets a circuit contain a feedback loop: the
+	 * simulation can evaluate it before the values of its inputs are known.
+	 */
+	isSequential?: boolean;
 };
 export class IntrinsicComponentDefinition<
 	Spec extends CCIntrinsicComponentSpec = CCIntrinsicComponentSpec,
@@ -91,6 +97,8 @@ export class IntrinsicComponentDefinition<
 	readonly outputPin: Record<Spec["out"], CCComponentPin>;
 	readonly initialConfig: Spec["config"];
 	readonly evaluate: IntrinsicComponentEvaluationFunction<Spec>;
+	/** @see {@link Props.isSequential} */
+	readonly isSequential: boolean;
 
 	private static _lastIndex = 0;
 
@@ -123,6 +131,7 @@ export class IntrinsicComponentDefinition<
 			this._registerPin("output", key, attributes),
 		);
 		this.initialConfig = props.initialConfig;
+		this.isSequential = props.isSequential ?? false;
 	}
 
 	private _registerPin(
