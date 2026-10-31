@@ -1,4 +1,5 @@
 import { Stack, styled, ToggleButton, ToggleButtonGroup } from "@mui/material";
+import { isEqual } from "es-toolkit";
 import { useState } from "react";
 import type {
 	CCIntrinsicComponentConstSpec,
@@ -52,9 +53,16 @@ export function CCComponentEditorRendererNodeConstRenderer(
 
 	const changeText = (newText: string) => {
 		setText(newText);
-		const data = parseConstData(newText, config.mode);
-		setIsInvalid(!data);
-		if (data) updateConfig({ ...config, data });
+		setIsInvalid(!parseConstData(newText, config.mode));
+	};
+
+	// Applied only once the edit is done rather than on each keystroke: the bit width
+	// follows the length of the text, so an edit like 0000 -> 000 -> 0001 would pass
+	// through another width and drop the connections that width conflicts with.
+	const applyText = () => {
+		const data = parseConstData(text, config.mode);
+		if (!data || isEqual(data, config.data)) return;
+		updateConfig({ ...config, data });
 	};
 
 	return (
@@ -88,6 +96,18 @@ export function CCComponentEditorRendererNodeConstRenderer(
 					<Editor
 						value={text}
 						onChange={(e) => changeText(e.target.value)}
+						onBlur={applyText}
+						onKeyDown={(e) => {
+							// Shift+Enter inserts a line break, which UTF-8 text may contain
+							if (
+								e.key === "Enter" &&
+								!e.shiftKey &&
+								!e.nativeEvent.isComposing
+							) {
+								e.preventDefault();
+								applyText();
+							}
+						}}
 						spellCheck={false}
 						sx={{ borderColor: isInvalid ? "error.main" : "divider" }}
 						disabled={editorMode !== "edit"}
