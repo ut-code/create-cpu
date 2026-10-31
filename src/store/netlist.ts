@@ -34,7 +34,10 @@ import type { Opaque } from "type-fest";
 import type CCStore from ".";
 import type { CCComponentId } from "./component";
 import type { CCComponentPinId } from "./componentPin";
-import type { IntrinsicComponentDefinition } from "./intrinsics/base";
+import type {
+	IntrinsicComponentBehavior,
+	IntrinsicComponentDefinition,
+} from "./intrinsics/base";
 import { definitionByComponentId } from "./intrinsics/definitions";
 import { ccIntrinsicComponentTypes } from "./intrinsics/types";
 import type { CCNode, CCNodeId } from "./node";
@@ -78,13 +81,11 @@ export type SimulationInstance = {
 	readonly nodeId: CCNodeId;
 	readonly definition: IntrinsicComponentDefinition;
 	readonly config: CCNode["config"];
-	/** bit width used for the pins of this instance whose width is not fixed */
-	readonly defaultBitWidth: number;
 	/** pins grouped by the pin key of the definition (e.g. `A`, `In`), ordered by pin order */
 	readonly inputShape: Record<string, SimulationPinInstance[]>;
 	readonly outputShape: Record<string, SimulationPinInstance[]>;
-	/** whether the outputs are derived from the previous time step instead of the inputs */
-	readonly isSequential: boolean;
+	/** how the outputs are computed, taken from the definition */
+	readonly behavior: IntrinsicComponentBehavior;
 };
 
 /**
@@ -348,12 +349,15 @@ export function buildSimulationNetlist(
 				definitionByComponentId.get(node.componentId),
 				`Intrinsic component ${node.componentId} has no definition`,
 			);
+			const behavior = nullthrows(
+				definition.behavior,
+				`Intrinsic component ${definition.name} cannot be evaluated`,
+			);
 			instances.push({
 				path: nodePath,
 				nodeId: node.id,
 				definition,
 				config: node.config,
-				defaultBitWidth: instanceDefaultBitWidth,
 				inputShape: resolveShape(
 					nodePath,
 					node.id,
@@ -366,7 +370,7 @@ export function buildSimulationNetlist(
 					definition.outputPin,
 					instanceDefaultBitWidth,
 				),
-				isSequential: definition.isSequential,
+				behavior,
 			});
 		}
 	};
@@ -412,7 +416,8 @@ export function simulationPinsOfShape(
 	return Object.values(shape).flat();
 }
 
-function describeInstance(instance: SimulationInstance): string {
+/** Name of an instance for error messages, e.g. `Not(nodeA/nodeB)`. */
+export function describeInstance(instance: SimulationInstance): string {
 	return `${instance.definition.name}(${instance.path.join("/")})`;
 }
 
@@ -445,7 +450,7 @@ function sortInstancesByDependency(
 		// A sequential instance answers with the value of the previous time step, so it
 		// does not wait for the instances driving its inputs. That is what makes a loop
 		// containing one resolvable.
-		if (instance.isSequential) continue;
+		if (instance.behavior.kind === "sequential") continue;
 		for (const pin of simulationPinsOfShape(instance.inputShape)) {
 			const driver = driverByNet.get(pin.netId);
 			if (driver === undefined) continue; // supplied from outside the component
