@@ -13,6 +13,7 @@ import CCComponentEditorRendererNodePin from "../NodePin";
 import { CCComponentEditorRendererNodeConstRenderer } from "./components/Const";
 import { CCComponentEditorRendererNodeDefaultRenderer } from "./components/Default";
 import { CCComponentEditorRendererNodeDisplayRenderer } from "./components/Display";
+import { CCComponentEditorRendererNodeInterfaceRenderer } from "./components/Interface";
 import {
 	ccComponentEditorRendererLayoutToGeometry,
 	getCCComponentEditorRendererNodeLayout,
@@ -31,6 +32,10 @@ const specialRenderers: Partial<
 	[ccIntrinsicComponentTypes.DISPLAY]:
 		CCComponentEditorRendererNodeDisplayRenderer,
 	[ccIntrinsicComponentTypes.CONST]: CCComponentEditorRendererNodeConstRenderer,
+	[ccIntrinsicComponentTypes.INPUT]:
+		CCComponentEditorRendererNodeInterfaceRenderer,
+	[ccIntrinsicComponentTypes.OUTPUT]:
+		CCComponentEditorRendererNodeInterfaceRenderer,
 };
 
 export type CCComponentEditorRendererNodeProps = {
