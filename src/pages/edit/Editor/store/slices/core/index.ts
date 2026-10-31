@@ -29,6 +29,8 @@ export const createComponentEditorStoreCoreSlice: ComponentEditorSliceCreator<
 	let simulationCacheKey = "";
 	/** index = timeStep */
 	let simulationCachedFrames: SimulationFrame[] = [];
+	/** set when the circuit cannot be simulated, to not retry on every change */
+	let hasSimulationFailed = false;
 
 	return {
 		define: (set, get) => {
@@ -96,8 +98,17 @@ export const createComponentEditorStoreCoreSlice: ComponentEditorSliceCreator<
 				setRangeSelect(rangeSelect) {
 					set((state) => ({ ...state, rangeSelect }));
 				},
+				simulationError: null,
+				dismissSimulationError() {
+					set((state) => ({ ...state, simulationError: null }));
+				},
 				setEditorMode(mode) {
-					set((state) => ({ ...state, editorMode: mode }));
+					hasSimulationFailed = false;
+					set((state) => ({
+						...state,
+						editorMode: mode,
+						simulationError: null,
+					}));
 				},
 				setTimeStep(timeStep: number) {
 					set((state) => ({ ...state, timeStep }));
@@ -164,34 +175,50 @@ export const createComponentEditorStoreCoreSlice: ComponentEditorSliceCreator<
 				if (newSimulationCacheKey !== simulationCacheKey) {
 					simulationCacheKey = newSimulationCacheKey;
 					simulationCachedFrames = [];
+					hasSimulationFailed = false;
 				}
+				if (hasSimulationFailed) return;
 
 				const editorState = editorStore.getState();
 				let isUpdated = false;
-				for (
-					let timeStep = simulationCachedFrames.length;
-					timeStep <= editorState.timeStep;
-					timeStep += 1
-				) {
-					const previousFrame = simulationCachedFrames[timeStep - 1] ?? null;
-					const inputValues = new Map<CCComponentPinId, SimulationValue>();
-					const pins = store.componentPins.getManyByComponentId(componentId);
-					for (const pin of pins) {
-						invariant(pin.implementation);
-						if (pin.type === "input") {
-							inputValues.set(
-								pin.id,
-								editorState.getInputValue({
-									componentPinId: pin.id,
-									timeStep,
-								}),
-							);
+				try {
+					for (
+						let timeStep = simulationCachedFrames.length;
+						timeStep <= editorState.timeStep;
+						timeStep += 1
+					) {
+						const previousFrame = simulationCachedFrames[timeStep - 1] ?? null;
+						const inputValues = new Map<CCComponentPinId, SimulationValue>();
+						const pins = store.componentPins.getManyByComponentId(componentId);
+						for (const pin of pins) {
+							invariant(pin.implementation);
+							if (pin.type === "input") {
+								inputValues.set(
+									pin.id,
+									editorState.getInputValue({
+										componentPinId: pin.id,
+										timeStep,
+									}),
+								);
+							}
 						}
+						simulationCachedFrames.push(
+							simulateComponent(store, componentId, inputValues, previousFrame),
+						);
+						isUpdated = true;
 					}
-					simulationCachedFrames.push(
-						simulateComponent(store, componentId, inputValues, previousFrame),
-					);
-					isUpdated = true;
+				} catch (error) {
+					// Back to edit mode: without frames the renderers have no values to show.
+					hasSimulationFailed = true;
+					simulationCachedFrames = [];
+					editorStore.setState((state) => ({
+						...state,
+						editorMode: "edit",
+						timeStep: 0,
+						simulationError:
+							error instanceof Error ? error.message : String(error),
+					}));
+					return;
 				}
 				if (isUpdated) editorStore.setState((s) => ({ ...s }));
 			};
