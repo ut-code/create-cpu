@@ -1,13 +1,13 @@
 import EventEmitter from "eventemitter3";
 import nullthrows from "nullthrows";
-import type { Opaque } from "type-fest";
+import type { Tagged } from "type-fest";
 import type CCStore from ".";
 import type { CCComponentId } from "./component";
 import type { CCComponentPinId } from "./componentPin";
 import type { CCNodeId } from "./node";
 import type { CCNodePinId } from "./nodePin";
 
-export type CCConnectionId = Opaque<string, "CCConnectionId">;
+export type CCConnectionId = Tagged<string, "CCConnectionId">;
 
 export type CCConnectionEndpoint = {
 	readonly nodeId: CCNodeId;

@@ -1,13 +1,13 @@
 import EventEmitter from "eventemitter3";
 import nullthrows from "nullthrows";
 import invariant from "tiny-invariant";
-import type { Opaque } from "type-fest";
+import type { Tagged } from "type-fest";
 import type CCStore from ".";
 import type { CCComponentPinId, CCNodePinBitWidthStatus } from "./componentPin";
 import { IntrinsicComponentDefinition } from "./intrinsics/base";
 import type { CCNodeId } from "./node";
 
-export type CCNodePinId = Opaque<string, "CCNodePinId">;
+export type CCNodePinId = Tagged<string, "CCNodePinId">;
 
 export type CCNodePin = {
 	id: CCNodePinId;
