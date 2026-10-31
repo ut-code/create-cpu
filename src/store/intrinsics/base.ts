@@ -1,33 +1,11 @@
 import { mapValues } from "es-toolkit";
 import type { CCComponent, CCComponentId } from "../component";
 import type { CCComponentPin, CCComponentPinId } from "../componentPin";
-import type { CCNodeId } from "../node";
-import type { CCNodePinId } from "../nodePin";
-import type { IntrinsicEvaluationFrame } from "../simulation";
+import type { SimulationValue } from "../simulation";
 import type {
 	CCIntrinsicComponentSpec,
 	CCIntrinsicComponentType,
 } from "./types";
-
-export type CCIntrinsicComponentShape<Spec extends CCIntrinsicComponentSpec> = {
-	inputShape: Record<Spec["in"], CCComponentPinInstanceShapes>;
-	outputShape: Record<Spec["out"], CCComponentPinInstanceShapes>;
-};
-
-export type CCComponentPinInstanceShapes = {
-	nodePinId: CCNodePinId;
-	bitWidth: number;
-}[];
-
-export type ComponentEvaluationContext = {
-	previousFrame: IntrinsicEvaluationFrame | null;
-	currentFrame: IntrinsicEvaluationFrame;
-	defaultBitWidth: number;
-};
-
-export type Context = {
-	componentId: CCComponentId;
-};
 
 /**
  * How the bit width of an intrinsic component pin is determined.
@@ -62,14 +40,48 @@ type IntrinsicComponentPinAttributes<Spec extends CCIntrinsicComponentSpec> = {
 export type RegisteredIntrinsicComponentPinAttributes =
 	IntrinsicComponentPinAttributes<CCIntrinsicComponentSpec> & { key: string };
 
-type IntrinsicComponentEvaluationFunction<
+/**
+ * The values of the pins of one intrinsic node, grouped by pin key. A pin key can have
+ * more than one node pin when it is split, so each key holds the values in pin order.
+ */
+export type IntrinsicPinValues<Key extends string> = Record<
+	Key,
+	SimulationValue[]
+>;
+
+/** What an intrinsic node needs to know about itself besides its input values. */
+export type IntrinsicEvaluationEnvironment<
 	Spec extends CCIntrinsicComponentSpec,
-> = (
-	context: ComponentEvaluationContext,
-	nodeId: CCNodeId,
-	shape: CCIntrinsicComponentShape<Spec>,
-	config: Spec["config"],
-) => boolean;
+> = {
+	/** bit widths of the output pins, grouped like {@link IntrinsicPinValues} */
+	outputBitWidths: Record<Spec["out"], number[]>;
+	config: Spec["config"];
+};
+
+/**
+ * How the outputs of an intrinsic node are computed in one time step.
+ * - `combinational` — from the inputs of the same time step.
+ * - `sequential` — from the inputs of the previous time step (`null` in the first one).
+ *   It does not see the current inputs at all, because it is evaluated before they are
+ *   known. That is what lets a circuit contain a feedback loop through such a node.
+ */
+export type IntrinsicComponentBehavior<
+	Spec extends CCIntrinsicComponentSpec = CCIntrinsicComponentSpec,
+> =
+	| {
+			kind: "combinational";
+			evaluate(
+				inputs: IntrinsicPinValues<Spec["in"]>,
+				environment: IntrinsicEvaluationEnvironment<Spec>,
+			): IntrinsicPinValues<Spec["out"]>;
+	  }
+	| {
+			kind: "sequential";
+			evaluate(
+				previousInputs: IntrinsicPinValues<Spec["in"]> | null,
+				environment: IntrinsicEvaluationEnvironment<Spec>,
+			): IntrinsicPinValues<Spec["out"]>;
+	  };
 
 type Props<Spec extends CCIntrinsicComponentSpec> = {
 	type: CCIntrinsicComponentType;
@@ -77,13 +89,11 @@ type Props<Spec extends CCIntrinsicComponentSpec> = {
 	in: Record<Spec["in"], IntrinsicComponentPinAttributes<Spec>>;
 	out: Record<Spec["out"], IntrinsicComponentPinAttributes<Spec>>;
 	initialConfig: Spec["config"];
-	evaluate: IntrinsicComponentEvaluationFunction<Spec>;
 	/**
-	 * Whether the outputs are derived from the previous time step instead of the current
-	 * inputs. Such a component is what lets a circuit contain a feedback loop: the
-	 * simulation can evaluate it before the values of its inputs are known.
+	 * null for `Input` and `Output`, which only carry a value across a component
+	 * boundary and are resolved away before the simulation evaluates anything
 	 */
-	isSequential?: boolean;
+	behavior: IntrinsicComponentBehavior<Spec> | null;
 };
 export class IntrinsicComponentDefinition<
 	Spec extends CCIntrinsicComponentSpec = CCIntrinsicComponentSpec,
@@ -96,9 +106,8 @@ export class IntrinsicComponentDefinition<
 	readonly inputPin: Record<Spec["in"], CCComponentPin>;
 	readonly outputPin: Record<Spec["out"], CCComponentPin>;
 	readonly initialConfig: Spec["config"];
-	readonly evaluate: IntrinsicComponentEvaluationFunction<Spec>;
-	/** @see {@link Props.isSequential} */
-	readonly isSequential: boolean;
+	/** @see {@link Props.behavior} */
+	readonly behavior: IntrinsicComponentBehavior<Spec> | null;
 
 	private static _lastIndex = 0;
 
@@ -122,7 +131,7 @@ export class IntrinsicComponentDefinition<
 			name: this.name,
 		};
 		IntrinsicComponentDefinition._byId.set(this.id, this);
-		this.evaluate = props.evaluate;
+		this.behavior = props.behavior;
 
 		this.inputPin = mapValues(props.in, (attributes, key) =>
 			this._registerPin("input", key, attributes),
@@ -131,7 +140,6 @@ export class IntrinsicComponentDefinition<
 			this._registerPin("output", key, attributes),
 		);
 		this.initialConfig = props.initialConfig;
-		this.isSequential = props.isSequential ?? false;
 	}
 
 	private _registerPin(

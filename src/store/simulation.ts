@@ -1,13 +1,20 @@
+import { mapValues } from "es-toolkit";
+import nullthrows from "nullthrows";
 import invariant from "tiny-invariant";
 import type CCStore from ".";
 import type { CCComponentId } from "./component";
 import type { CCComponentPinId } from "./componentPin";
+import type {
+	IntrinsicEvaluationEnvironment,
+	IntrinsicPinValues,
+} from "./intrinsics/base";
+import type { CCIntrinsicComponentSpec } from "./intrinsics/types";
 import {
 	buildSimulationNetlist,
+	describeInstance,
 	type SimulationInstance,
 	type SimulationNetId,
 	type SimulationNetlist,
-	simulationPinsOfShape,
 	simulationTerminalKey,
 } from "./netlist";
 import type { CCNodeId } from "./node";
@@ -28,23 +35,6 @@ export function wrappingIncrementSimulationValue(
 	}
 	return result;
 }
-
-/**
- * The pin values of a single node instance, shaped like a frame of a whole component so
- * that the evaluation function of an intrinsic component does not have to know how the
- * circuit is flattened for simulation.
- */
-export type IntrinsicEvaluationFrame = {
-	componentId: CCComponentId;
-	nodes: Map<
-		CCNodeId,
-		{
-			pins: Map<CCNodePinId, SimulationValue>;
-			/** always null: a flattened instance has no frame of its own */
-			child: IntrinsicEvaluationFrame | null;
-		}
-	>;
-};
 
 /**
  * The values of one time step. Every pin that carries the same value shares one net, so
@@ -112,28 +102,54 @@ function getSimulationNetlist(
 	return netlist;
 }
 
-function createEvaluationFrame(
-	componentId: CCComponentId,
-	nodeId: CCNodeId,
-	pins: Map<CCNodePinId, SimulationValue>,
-): IntrinsicEvaluationFrame {
-	return { componentId, nodes: new Map([[nodeId, { pins, child: null }]]) };
+/** The values arriving at the input pins of an instance, read from the nets. */
+function collectInputs(
+	instance: SimulationInstance,
+	netValues: ReadonlyMap<SimulationNetId, SimulationValue>,
+): IntrinsicPinValues<string> {
+	return mapValues(instance.inputShape, (pins) =>
+		pins.map((pin) =>
+			// The order guarantees that every driver ran first, so a value can only be
+			// missing when it was never supplied to an input pin of the component.
+			nullthrows(
+				netValues.get(pin.netId),
+				`No value reaches pin ${pin.nodePinId}`,
+			),
+		),
+	);
 }
 
-/** The pin values this instance had in the previous time step. */
-function collectPreviousPins(
+/** Compute the outputs of one instance in the current time step. */
+function evaluateInstance(
 	instance: SimulationInstance,
-	previousFrame: SimulationFrame,
-): Map<CCNodePinId, SimulationValue> {
-	const pins = new Map<CCNodePinId, SimulationValue>();
-	for (const pin of [
-		...simulationPinsOfShape(instance.inputShape),
-		...simulationPinsOfShape(instance.outputShape),
-	]) {
-		const value = previousFrame.netValues.get(pin.netId);
-		if (value) pins.set(pin.nodePinId, value);
+	netValues: ReadonlyMap<SimulationNetId, SimulationValue>,
+	previousFrame: SimulationFrame | null,
+): IntrinsicPinValues<string> {
+	const { behavior } = instance;
+	const environment: IntrinsicEvaluationEnvironment<CCIntrinsicComponentSpec> =
+		{
+			outputBitWidths: mapValues(instance.outputShape, (pins) =>
+				pins.map((pin) => pin.bitWidth),
+			),
+			config: instance.config,
+		};
+	try {
+		if (behavior.kind === "sequential") {
+			return behavior.evaluate(
+				previousFrame && collectInputs(instance, previousFrame.netValues),
+				environment,
+			);
+		}
+		return behavior.evaluate(collectInputs(instance, netValues), environment);
+	} catch (error) {
+		// The evaluation functions only see values, so tell which node they belong to
+		throw new Error(
+			`${describeInstance(instance)} could not be evaluated: ${
+				error instanceof Error ? error.message : String(error)
+			}`,
+			{ cause: error },
+		);
 	}
-	return pins;
 }
 
 /**
@@ -167,40 +183,19 @@ export default function simulateComponent(
 	}
 
 	for (const instance of netlist.instances) {
-		const pins = new Map<CCNodePinId, SimulationValue>();
-		for (const pin of simulationPinsOfShape(instance.inputShape)) {
-			const value = netValues.get(pin.netId);
-			if (value) pins.set(pin.nodePinId, value);
-		}
-		const succeeded = instance.definition.evaluate(
-			{
-				previousFrame:
-					previousFrame &&
-					createEvaluationFrame(
-						componentId,
-						instance.nodeId,
-						collectPreviousPins(instance, previousFrame),
-					),
-				currentFrame: createEvaluationFrame(componentId, instance.nodeId, pins),
-				defaultBitWidth: instance.defaultBitWidth,
-			},
-			instance.nodeId,
-			{ inputShape: instance.inputShape, outputShape: instance.outputShape },
-			instance.config,
-		);
-		if (!succeeded) {
-			// The order guarantees that every driver ran first, so a value can only be
-			// missing when it was never supplied to an input pin of the component.
-			const missing = simulationPinsOfShape(instance.inputShape)
-				.filter((pin) => !pins.has(pin.nodePinId))
-				.map((pin) => pin.nodePinId);
-			throw new Error(
-				`Node ${instance.nodeId} (${instance.definition.name}) could not be evaluated. Pins without a value: ${missing.join(", ") || "none"}`,
+		const outputs = evaluateInstance(instance, netValues, previousFrame);
+		for (const [key, pins] of Object.entries(instance.outputShape)) {
+			const values = nullthrows(
+				outputs[key],
+				`${describeInstance(instance)} did not output ${key}`,
 			);
-		}
-		for (const pin of simulationPinsOfShape(instance.outputShape)) {
-			const value = pins.get(pin.nodePinId);
-			if (value) netValues.set(pin.netId, value);
+			invariant(
+				values.length === pins.length,
+				`${describeInstance(instance)} output ${values.length} values for the ${pins.length} pins of ${key}`,
+			);
+			for (const [index, pin] of pins.entries()) {
+				netValues.set(pin.netId, nullthrows(values[index]));
+			}
 		}
 	}
 
