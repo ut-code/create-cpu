@@ -1,0 +1,60 @@
+.text {
+	padding: 0;
+	border: none;
+	background: none;
+	color: inherit;
+	font: inherit;
+	text-align: center;
+
+	&:is(button) {
+		cursor: pointer;
+	}
+}
+
+.bits {
+	display: flex;
+	align-self: center;
+	overflow: hidden;
+	border: 0.5px solid var(--color-border);
+	border-radius: 2px;
+
+	&.single {
+		align-self: stretch;
+	}
+}
+
+.bit {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	width: 10px;
+	height: 12px;
+	padding: 0;
+	border: none;
+	background: var(--color-white);
+	color: inherit;
+	font: inherit;
+	font-size: 8px;
+	text-align: center;
+
+	& + & {
+		border-left: 0.5px solid var(--color-border);
+	}
+
+	&.on {
+		background: var(--color-primary-light);
+		color: var(--color-white);
+	}
+
+	.single > & {
+		flex: 1;
+	}
+
+	.wide > & {
+		width: 16px;
+	}
+
+	&:is(button) {
+		cursor: pointer;
+	}
+}

@@ -2,14 +2,14 @@ import nullthrows from "nullthrows";
 import { ccIntrinsicComponentTypes } from "../../../../../../../store/intrinsics/types";
 import { useStore } from "../../../../../../../store/react";
 import { useComponentPin } from "../../../../../../../store/react/selectors";
-import { wrappingIncrementSimulationValue } from "../../../../../../../store/simulation";
+import type { SimulationValue } from "../../../../../../../store/simulation";
 import { useComponentEditorStore } from "../../../../store";
-import { stringifySimulationValue } from "../../../../store/slices/core";
 import nodeStyles from "../../style.module.css";
 import type { CCComponentEditorRendererNodeRendererProps } from "../../types";
 import { ccComponentEditorRendererNodeInterfaceLayoutConstants as constants } from "./geometry";
 import { CCComponentEditorRendererNodeInterfaceRendererRenameButton } from "./RenameButton";
 import styles from "./style.module.css";
+import { CCComponentEditorRendererNodeInterfaceRendererValue } from "./Value";
 
 export function CCComponentEditorRendererNodeInterfaceRenderer(
 	props: CCComponentEditorRendererNodeRendererProps,
@@ -26,29 +26,23 @@ export function CCComponentEditorRendererNodeInterfaceRenderer(
 	);
 	const isEditMode = editorState.editorMode === "edit";
 
-	const { value, onClick } = isEditMode
-		? { value: null, onClick: null }
+	const simulation = isEditMode
+		? null
 		: componentPin.type === "input"
 			? (() => {
 					const inputValueKey = {
 						componentPinId: componentPin.id,
 						timeStep: editorState.timeStep,
 					};
-					const value = nullthrows(editorState.getInputValue(inputValueKey));
 					return {
-						value: stringifySimulationValue(value),
-						onClick: () =>
-							editorState.setInputValue(
-								inputValueKey,
-								wrappingIncrementSimulationValue(value),
-							),
+						value: nullthrows(editorState.getInputValue(inputValueKey)),
+						onChange: (value: SimulationValue) =>
+							editorState.setInputValue(inputValueKey, value),
 					};
 				})()
 			: {
-					value: stringifySimulationValue(
-						nullthrows(editorState.getNodePinValue(nodePin.id)),
-					),
-					onClick: null,
+					value: nullthrows(editorState.getNodePinValue(nodePin.id)),
+					onChange: null,
 				};
 
 	const { bodyWidth, arrowDepth, width, height } = constants;
@@ -65,16 +59,6 @@ export function CCComponentEditorRendererNodeInterfaceRenderer(
 				points={points}
 				strokeLinejoin="round"
 				className={nodeStyles.shape}
-				{...(onClick
-					? {
-							onPointerDown: (e: React.PointerEvent) => {
-								// Prevent the node from being selected or dragged
-								e.stopPropagation();
-								onClick();
-							},
-							style: { cursor: "pointer" },
-						}
-					: {})}
 			/>
 			<foreignObject
 				x={bodyX}
@@ -83,7 +67,7 @@ export function CCComponentEditorRendererNodeInterfaceRenderer(
 				height={height}
 				className={styles.contentContainer}
 			>
-				{isEditMode ? (
+				{simulation === null ? (
 					<div className={styles.edit}>
 						<span className={styles.name}>{componentPin.name}</span>
 						<CCComponentEditorRendererNodeInterfaceRendererRenameButton
@@ -96,7 +80,10 @@ export function CCComponentEditorRendererNodeInterfaceRenderer(
 				) : (
 					<div className={styles.simulation}>
 						<span className={styles.name}>{componentPin.name}</span>
-						<span className={styles.value}>{value}</span>
+						<CCComponentEditorRendererNodeInterfaceRendererValue
+							value={simulation.value}
+							onChange={simulation.onChange}
+						/>
 					</div>
 				)}
 			</foreignObject>

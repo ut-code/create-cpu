@@ -6,6 +6,7 @@ export const theme = {
 		white: "#ffffff",
 		textPrimary: "#444444",
 		primary: "#009966",
+		primaryLight: "#33ad84",
 		error: "#ff0000",
 		border: "#bbbbbb",
 		editorBackground: "#fafafa",

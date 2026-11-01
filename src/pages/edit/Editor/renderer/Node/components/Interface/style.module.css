@@ -26,12 +26,9 @@
 	justify-content: center;
 	height: 100%;
 	padding: 0 4px;
+	gap: 1px;
 
 	& .name {
 		font-size: 8px;
-	}
-
-	& .value {
-		text-align: center;
 	}
 }
