@@ -1,6 +1,6 @@
 import { chunk } from "es-toolkit";
-import type { CCIntrinsicComponentConstSpecConfigViewMode as Mode } from "../../../../../../../store/intrinsics/types";
-import type { SimulationValue } from "../../../../../../../store/simulation";
+import type { CCIntrinsicComponentConstSpecConfigViewMode as Mode } from "../../../../../store/intrinsics/types";
+import type { SimulationValue } from "../../../../../store/simulation";
 
 const bitsPerHexDigit = 4;
 const bitsPerByte = 8;
@@ -23,7 +23,10 @@ function padBits(bits: SimulationValue, unit: number): boolean[] {
 	return [...Array<boolean>(padding).fill(false), ...bits];
 }
 
-export function formatConstData(data: SimulationValue, mode: Mode): string {
+export function formatSimulationValue(
+	data: SimulationValue,
+	mode: Mode,
+): string {
 	switch (mode) {
 		case "binary":
 			return data.map((bit) => (bit ? "1" : "0")).join("");
@@ -42,7 +45,7 @@ export function formatConstData(data: SimulationValue, mode: Mode): string {
 }
 
 /** Returns null if `text` is not a valid representation in `mode`. */
-export function parseConstData(
+export function parseSimulationValue(
 	text: string,
 	mode: Mode,
 ): SimulationValue | null {
@@ -65,4 +68,16 @@ export function parseConstData(
 			return [...bytes].flatMap((byte) => toBits(byte, bitsPerByte));
 		}
 	}
+}
+
+export function fitSimulationValue(
+	value: SimulationValue,
+	bitWidth: number,
+): SimulationValue | null {
+	const overflow = value.length - bitWidth;
+	if (overflow <= 0) {
+		return [...Array<boolean>(-overflow).fill(false), ...value];
+	}
+	if (value.slice(0, overflow).some((bit) => bit)) return null;
+	return value.slice(overflow);
 }

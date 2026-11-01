@@ -15,20 +15,6 @@ import type { CCNodePin, CCNodePinId } from "./nodePin";
 
 export type SimulationValue = boolean[];
 
-export function wrappingIncrementSimulationValue(
-	value: SimulationValue,
-): SimulationValue {
-	const result = value.slice();
-	for (let i = result.length - 1; i >= 0; i--) {
-		if (!result[i]) {
-			result[i] = true;
-			break;
-		}
-		result[i] = false; // carry the increment
-	}
-	return result;
-}
-
 export type SimulationFrame = {
 	componentId: CCComponentId;
 	nodes: Map<
