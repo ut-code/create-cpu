@@ -33,7 +33,7 @@ export function CCComponentEditorRendererNodeInterfaceRendererRenameButton(
 					setNewName(props.name);
 				}}
 			>
-				<Edit sx={{ width: "10px", height: "12px" }} />
+				<Edit sx={{ width: "10px", height: "10px" }} />
 			</IconButton>
 			<Popover
 				anchorEl={anchorEl}

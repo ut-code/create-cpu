@@ -1,9 +1,7 @@
 import clsx from "clsx";
-import {
-	type SimulationValue,
-	wrappingIncrementSimulationValue,
-} from "../../../../../../../../store/simulation";
+import type { SimulationValue } from "../../../../../../../../store/simulation";
 import { stringifySimulationValue } from "../../../../../store/slices/core";
+import { CCComponentEditorRendererNodeInterfaceRendererValueEditButton } from "./EditButton";
 import styles from "./style.module.css";
 
 /** Values up to this bit width are shown bit by bit */
@@ -22,18 +20,16 @@ export function CCComponentEditorRendererNodeInterfaceRendererValue({
 	onChange,
 }: Props) {
 	if (value.length > maxBitWidthToShowBits) {
-		const label = stringifySimulationValue(value);
-		return onChange ? (
-			<button
-				type="button"
-				className={styles.text}
-				onPointerDown={(e) => e.stopPropagation()}
-				onClick={() => onChange(wrappingIncrementSimulationValue(value))}
-			>
-				{label}
-			</button>
-		) : (
-			<span className={styles.text}>{label}</span>
+		return (
+			<span className={styles.text}>
+				{stringifySimulationValue(value)}
+				{onChange && (
+					<CCComponentEditorRendererNodeInterfaceRendererValueEditButton
+						value={value}
+						onChange={onChange}
+					/>
+				)}
+			</span>
 		);
 	}
 
