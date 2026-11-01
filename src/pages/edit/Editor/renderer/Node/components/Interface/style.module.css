@@ -1,0 +1,19 @@
+/* Let the clicks reach the shape behind, except on the buttons */
+.labelContainer {
+	pointer-events: none;
+}
+
+.labelContainer button {
+	pointer-events: auto;
+}
+
+.label {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 2px;
+	height: 100%;
+	color: var(--color-text-primary);
+	font-size: 10px;
+	white-space: nowrap;
+}

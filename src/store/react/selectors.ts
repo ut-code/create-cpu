@@ -6,7 +6,7 @@ import {
 	type CCComponentId,
 	isEachInputPinConnected,
 } from "../component";
-import type { CCComponentPin } from "../componentPin";
+import type { CCComponentPin, CCComponentPinId } from "../componentPin";
 import type { CCNode, CCNodeId } from "../node";
 import type { CCNodePin } from "../nodePin";
 import { useStore } from ".";
@@ -137,6 +137,27 @@ export function useNode(nodeId: CCNodeId) {
 			};
 		},
 		[store, nodeId],
+	);
+	return useSyncExternalStore(subscribe, getSnapshot);
+}
+
+export function useComponentPin(componentPinId: CCComponentPinId) {
+	const { store } = useStore();
+	const getSnapshot = useCallback(
+		() => nullthrows(store.componentPins.get(componentPinId)),
+		[store, componentPinId],
+	);
+	const subscribe = useCallback(
+		(onStoreChange: () => void) => {
+			const handler = (componentPin: CCComponentPin) => {
+				if (componentPin.id === componentPinId) onStoreChange();
+			};
+			store.componentPins.on("didUpdate", handler);
+			return () => {
+				store.componentPins.off("didUpdate", handler);
+			};
+		},
+		[store, componentPinId],
 	);
 	return useSyncExternalStore(subscribe, getSnapshot);
 }

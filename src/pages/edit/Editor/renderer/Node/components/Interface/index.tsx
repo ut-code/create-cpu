@@ -1,12 +1,15 @@
 import nullthrows from "nullthrows";
 import { ccIntrinsicComponentTypes } from "../../../../../../../store/intrinsics/types";
 import { useStore } from "../../../../../../../store/react";
+import { useComponentPin } from "../../../../../../../store/react/selectors";
 import { wrappingIncrementSimulationValue } from "../../../../../../../store/simulation";
 import { useComponentEditorStore } from "../../../../store";
 import { stringifySimulationValue } from "../../../../store/slices/core";
 import styles from "../../style.module.css";
 import type { CCComponentEditorRendererNodeRendererProps } from "../../types";
 import { ccComponentEditorRendererNodeInterfaceLayoutConstants as constants } from "./geometry";
+import { CCComponentEditorRendererNodeInterfaceRendererRenameButton } from "./RenameButton";
+import interfaceStyles from "./style.module.css";
 
 export function CCComponentEditorRendererNodeInterfaceRenderer(
 	props: CCComponentEditorRendererNodeRendererProps,
@@ -18,35 +21,35 @@ export function CCComponentEditorRendererNodeInterfaceRenderer(
 		store.nodePins.getManyByNodeId(props.node.id)[0],
 		`Interface node ${props.node.id} is missing its pin`,
 	);
-	const componentPin = nullthrows(
-		store.componentPins.getByImplementation(nodePin.id),
+	const componentPin = useComponentPin(
+		nullthrows(store.componentPins.getByImplementation(nodePin.id)).id,
 	);
+	const isEditMode = editorState.editorMode === "edit";
 
-	const { label, onClick } =
-		editorState.editorMode === "edit"
-			? { label: componentPin.name, onClick: null }
-			: componentPin.type === "input"
-				? (() => {
-						const inputValueKey = {
-							componentPinId: componentPin.id,
-							timeStep: editorState.timeStep,
-						};
-						const value = nullthrows(editorState.getInputValue(inputValueKey));
-						return {
-							label: stringifySimulationValue(value),
-							onClick: () =>
-								editorState.setInputValue(
-									inputValueKey,
-									wrappingIncrementSimulationValue(value),
-								),
-						};
-					})()
-				: {
-						label: stringifySimulationValue(
-							nullthrows(editorState.getNodePinValue(nodePin.id)),
-						),
-						onClick: null,
+	const { label, onClick } = isEditMode
+		? { label: componentPin.name, onClick: null }
+		: componentPin.type === "input"
+			? (() => {
+					const inputValueKey = {
+						componentPinId: componentPin.id,
+						timeStep: editorState.timeStep,
 					};
+					const value = nullthrows(editorState.getInputValue(inputValueKey));
+					return {
+						label: stringifySimulationValue(value),
+						onClick: () =>
+							editorState.setInputValue(
+								inputValueKey,
+								wrappingIncrementSimulationValue(value),
+							),
+					};
+				})()
+			: {
+					label: stringifySimulationValue(
+						nullthrows(editorState.getNodePinValue(nodePin.id)),
+					),
+					onClick: null,
+				};
 
 	const { bodyWidth, arrowDepth, width, height } = constants;
 	const isPinOnRight =
@@ -73,18 +76,25 @@ export function CCComponentEditorRendererNodeInterfaceRenderer(
 						}
 					: {})}
 			/>
-			<text
-				x={bodyX + bodyWidth / 2}
-				y={height / 2}
-				className={styles.text}
-				textAnchor="middle"
-				dominantBaseline="middle"
-				fontSize={10}
-				dy={1}
-				style={{ pointerEvents: "none" }}
+			<foreignObject
+				x={bodyX}
+				y={0}
+				width={bodyWidth}
+				height={height}
+				className={interfaceStyles.labelContainer}
 			>
-				{label}
-			</text>
+				<div className={interfaceStyles.label}>
+					{label}
+					{isEditMode && (
+						<CCComponentEditorRendererNodeInterfaceRendererRenameButton
+							name={componentPin.name}
+							onNameChange={(name) =>
+								store.componentPins.update(componentPin.id, { name })
+							}
+						/>
+					)}
+				</div>
+			</foreignObject>
 		</>
 	);
 }
