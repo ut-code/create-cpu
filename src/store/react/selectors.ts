@@ -151,7 +151,10 @@ export function useComponentPins(componentId: CCComponentId) {
 	const subscribe = useCallback(
 		(onStoreChange: () => void) => {
 			const handler = (componentPin: CCComponentPin) => {
-				if (componentPin.componentId === componentId) onStoreChange();
+				if (componentPin.componentId === componentId) {
+					getSnapshot.clear();
+					onStoreChange();
+				}
 			};
 			store.componentPins.on("didRegister", handler);
 			store.componentPins.on("didUpdate", handler);
@@ -162,7 +165,7 @@ export function useComponentPins(componentId: CCComponentId) {
 				store.componentPins.off("didUnregister", handler);
 			};
 		},
-		[store, componentId],
+		[getSnapshot, store, componentId],
 	);
 	return useSyncExternalStore(subscribe, getSnapshot);
 }
@@ -176,7 +179,10 @@ export function useNodePins(nodeId: CCNodeId) {
 	const subscribe = useCallback(
 		(onStoreChange: () => void) => {
 			const handler = (nodePin: CCNodePin) => {
-				if (nodePin.nodeId === nodeId) onStoreChange();
+				if (nodePin.nodeId === nodeId) {
+					getSnapshot.clear();
+					onStoreChange();
+				}
 			};
 			store.nodePins.on("didRegister", handler);
 			store.nodePins.on("didUnregister", handler);
@@ -185,7 +191,7 @@ export function useNodePins(nodeId: CCNodeId) {
 				store.nodePins.off("didUnregister", handler);
 			};
 		},
-		[store, nodeId],
+		[getSnapshot, store, nodeId],
 	);
 	return useSyncExternalStore(subscribe, getSnapshot);
 }
