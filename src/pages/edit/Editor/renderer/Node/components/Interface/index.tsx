@@ -5,11 +5,11 @@ import { useComponentPin } from "../../../../../../../store/react/selectors";
 import { wrappingIncrementSimulationValue } from "../../../../../../../store/simulation";
 import { useComponentEditorStore } from "../../../../store";
 import { stringifySimulationValue } from "../../../../store/slices/core";
-import styles from "../../style.module.css";
+import nodeStyles from "../../style.module.css";
 import type { CCComponentEditorRendererNodeRendererProps } from "../../types";
 import { ccComponentEditorRendererNodeInterfaceLayoutConstants as constants } from "./geometry";
 import { CCComponentEditorRendererNodeInterfaceRendererRenameButton } from "./RenameButton";
-import interfaceStyles from "./style.module.css";
+import styles from "./style.module.css";
 
 export function CCComponentEditorRendererNodeInterfaceRenderer(
 	props: CCComponentEditorRendererNodeRendererProps,
@@ -26,8 +26,8 @@ export function CCComponentEditorRendererNodeInterfaceRenderer(
 	);
 	const isEditMode = editorState.editorMode === "edit";
 
-	const { label, onClick } = isEditMode
-		? { label: componentPin.name, onClick: null }
+	const { value, onClick } = isEditMode
+		? { value: null, onClick: null }
 		: componentPin.type === "input"
 			? (() => {
 					const inputValueKey = {
@@ -36,7 +36,7 @@ export function CCComponentEditorRendererNodeInterfaceRenderer(
 					};
 					const value = nullthrows(editorState.getInputValue(inputValueKey));
 					return {
-						label: stringifySimulationValue(value),
+						value: stringifySimulationValue(value),
 						onClick: () =>
 							editorState.setInputValue(
 								inputValueKey,
@@ -45,7 +45,7 @@ export function CCComponentEditorRendererNodeInterfaceRenderer(
 					};
 				})()
 			: {
-					label: stringifySimulationValue(
+					value: stringifySimulationValue(
 						nullthrows(editorState.getNodePinValue(nodePin.id)),
 					),
 					onClick: null,
@@ -64,7 +64,7 @@ export function CCComponentEditorRendererNodeInterfaceRenderer(
 			<polygon
 				points={points}
 				strokeLinejoin="round"
-				className={styles.shape}
+				className={nodeStyles.shape}
 				{...(onClick
 					? {
 							onPointerDown: (e: React.PointerEvent) => {
@@ -81,19 +81,24 @@ export function CCComponentEditorRendererNodeInterfaceRenderer(
 				y={0}
 				width={bodyWidth}
 				height={height}
-				className={interfaceStyles.labelContainer}
+				className={styles.contentContainer}
 			>
-				<div className={interfaceStyles.label}>
-					{label}
-					{isEditMode && (
+				{isEditMode ? (
+					<div className={styles.edit}>
+						<span className={styles.name}>{componentPin.name}</span>
 						<CCComponentEditorRendererNodeInterfaceRendererRenameButton
 							name={componentPin.name}
 							onNameChange={(name) =>
 								store.componentPins.update(componentPin.id, { name })
 							}
 						/>
-					)}
-				</div>
+					</div>
+				) : (
+					<div className={styles.simulation}>
+						<span className={styles.name}>{componentPin.name}</span>
+						<span className={styles.value}>{value}</span>
+					</div>
+				)}
 			</foreignObject>
 		</>
 	);
