@@ -1,19 +1,37 @@
-/* Let the clicks reach the shape behind, except on the buttons */
-.labelContainer {
+.contentContainer {
+	color: var(--color-text-primary);
+	font-size: 10px;
+	white-space: nowrap;
+	/* Let the clicks reach the shape behind, except on the buttons */
 	pointer-events: none;
+
+	& button {
+		pointer-events: auto;
+	}
 }
 
-.labelContainer button {
-	pointer-events: auto;
-}
-
-.label {
+/* The pin name followed by the rename button */
+.edit {
 	display: flex;
 	align-items: center;
 	justify-content: center;
 	gap: 2px;
 	height: 100%;
-	color: var(--color-text-primary);
-	font-size: 10px;
-	white-space: nowrap;
+}
+
+/* The pin name on the first line and the value on the second */
+.simulation {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	height: 100%;
+	padding: 0 4px;
+
+	& .name {
+		font-size: 8px;
+	}
+
+	& .value {
+		text-align: center;
+	}
 }
