@@ -5,11 +5,14 @@ import type {
 	CCComponentEditorRendererNodeLayoutSource,
 } from "../../types";
 
+const bodyWidth = 70;
+const arrowDepth = 10;
+
 export const ccComponentEditorRendererNodeInterfaceLayoutConstants = {
-	width: 70,
+	bodyWidth,
+	arrowDepth,
+	width: bodyWidth + arrowDepth,
 	height: 30,
-	labelWidth: 54,
-	labelHeight: 16,
 };
 
 export function ccComponentRendererNodeInterfaceLayoutCalculator(

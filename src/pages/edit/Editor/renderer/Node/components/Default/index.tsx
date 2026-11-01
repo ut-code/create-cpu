@@ -1,4 +1,4 @@
-import { theme } from "../../../../../../../style";
+import styles from "../../style.module.css";
 import type { CCComponentEditorRendererNodeRendererProps } from "../../types";
 
 export function CCComponentEditorRendererNodeDefaultRenderer(
@@ -7,7 +7,7 @@ export function CCComponentEditorRendererNodeDefaultRenderer(
 	return (
 		<>
 			<text
-				fill={theme.colors.textPrimary}
+				className={styles.text}
 				x={0}
 				y={-5}
 				textAnchor="start"
@@ -20,14 +20,8 @@ export function CCComponentEditorRendererNodeDefaultRenderer(
 				y={0}
 				width="100%"
 				height="100%"
-				fill={theme.colors.white}
-				stroke={
-					props.nodeState.isSelected
-						? theme.colors.primary
-						: theme.colors.textPrimary
-				}
-				strokeWidth={2}
 				rx={2}
+				className={styles.shape}
 			/>
 		</>
 	);

@@ -1,11 +1,11 @@
 import nullthrows from "nullthrows";
+import { ccIntrinsicComponentTypes } from "../../../../../../../store/intrinsics/types";
 import { useStore } from "../../../../../../../store/react";
 import { wrappingIncrementSimulationValue } from "../../../../../../../store/simulation";
-import { theme } from "../../../../../../../style";
 import { useComponentEditorStore } from "../../../../store";
 import { stringifySimulationValue } from "../../../../store/slices/core";
+import styles from "../../style.module.css";
 import type { CCComponentEditorRendererNodeRendererProps } from "../../types";
-import { CCComponentEditorRendererNodeDefaultRenderer } from "../Default";
 import { ccComponentEditorRendererNodeInterfaceLayoutConstants as constants } from "./geometry";
 
 export function CCComponentEditorRendererNodeInterfaceRenderer(
@@ -48,21 +48,20 @@ export function CCComponentEditorRendererNodeInterfaceRenderer(
 						onClick: null,
 					};
 
-	const { width, height, labelWidth, labelHeight } = constants;
+	const { bodyWidth, arrowDepth, width, height } = constants;
+	const isPinOnRight =
+		props.component.intrinsicType === ccIntrinsicComponentTypes.INPUT;
+	const bodyX = isPinOnRight ? 0 : arrowDepth;
+	const points = isPinOnRight
+		? `0,0  ${bodyWidth},0  ${width},${height / 2}  ${bodyWidth},${height}  0,${height}`
+		: `${arrowDepth},0  ${width},0  ${width},${height}  ${arrowDepth},${height}  0,${height / 2}`;
 
 	return (
 		<>
-			<CCComponentEditorRendererNodeDefaultRenderer {...props} />
-			<rect
-				x={(width - labelWidth) / 2}
-				y={(height - labelHeight) / 2}
-				width={labelWidth}
-				height={labelHeight}
-				rx={labelHeight / 2}
-				ry={labelHeight / 2}
-				stroke={theme.colors.textPrimary}
-				fill={theme.colors.white}
-				strokeWidth={1}
+			<polygon
+				points={points}
+				strokeLinejoin="round"
+				className={styles.shape}
 				{...(onClick
 					? {
 							onPointerDown: (e: React.PointerEvent) => {
@@ -75,9 +74,9 @@ export function CCComponentEditorRendererNodeInterfaceRenderer(
 					: {})}
 			/>
 			<text
-				x={width / 2}
+				x={bodyX + bodyWidth / 2}
 				y={height / 2}
-				fill={theme.colors.textPrimary}
+				className={styles.text}
 				textAnchor="middle"
 				dominantBaseline="middle"
 				fontSize={10}

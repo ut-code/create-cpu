@@ -18,10 +18,8 @@ import {
 	ccComponentEditorRendererLayoutToGeometry,
 	getCCComponentEditorRendererNodeLayout,
 } from "./geometry";
-import type {
-	CCComponentEditorRendererNodeRendererNodeState,
-	CCComponentEditorRendererNodeRendererProps,
-} from "./types";
+import styles from "./style.module.css";
+import type { CCComponentEditorRendererNodeRendererProps } from "./types";
 
 const specialRenderers: Partial<
 	Record<
@@ -62,9 +60,7 @@ const CCComponentEditorRendererNode = ensureStoreItem(
 		const Renderer =
 			(component.intrinsicType && specialRenderers[component.intrinsicType]) ||
 			CCComponentEditorRendererNodeDefaultRenderer;
-		const nodeState: CCComponentEditorRendererNodeRendererNodeState = {
-			isSelected: componentEditorState.selectedNodeIds.has(nodeId),
-		};
+		const isSelected = componentEditorState.selectedNodeIds.has(nodeId);
 
 		const handlePointerDown = (e: React.PointerEvent) => {
 			if (e.button === 0) {
@@ -107,6 +103,7 @@ const CCComponentEditorRendererNode = ensureStoreItem(
 					width={geometry.rect.size.x}
 					height={geometry.rect.size.y}
 					overflow="visible"
+					className={isSelected ? styles.selected : undefined}
 					onPointerDown={handlePointerDown}
 					onPointerMove={handlePointerMove}
 					onPointerUp={handlePointerUp}
@@ -121,7 +118,6 @@ const CCComponentEditorRendererNode = ensureStoreItem(
 				>
 					<Renderer
 						node={node}
-						nodeState={nodeState}
 						component={component}
 						layout={layout}
 						geometry={geometry}

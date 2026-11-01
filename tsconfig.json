@@ -7,7 +7,9 @@
 		"moduleResolution": "bundler",
 		"noEmit": true,
 		"jsx": "react-jsx",
-		"verbatimModuleSyntax": true
+		"verbatimModuleSyntax": true,
+		// Conflicts with CSS Modules
+		"noPropertyAccessFromIndexSignature": false
 	},
 	"include": ["src"]
 }
