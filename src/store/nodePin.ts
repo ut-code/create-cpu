@@ -130,8 +130,10 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 		await this.#store.transactionManager.runInTransaction(() => {
 			this.emit("willUnregister", nodePin);
 			this.#nodePins.delete(nodePin.id);
+			// Its removal is announced only when the transaction ends, but the bit widths
+			// derived from it are stale from now on
+			this.#clearBitWidthCache();
 		});
-		this.#clearBitWidthCache();
 		this.emit("didUnregister", nodePin);
 		this.#markedAsDeleted.delete(id);
 	}
