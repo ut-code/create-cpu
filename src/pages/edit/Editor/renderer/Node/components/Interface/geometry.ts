@@ -5,7 +5,7 @@ import type {
 	CCComponentEditorRendererNodeLayoutSource,
 } from "../../types";
 
-const bodyWidth = 70;
+const bodyWidth = 90;
 const arrowDepth = 10;
 
 export const ccComponentEditorRendererNodeInterfaceLayoutConstants = {
