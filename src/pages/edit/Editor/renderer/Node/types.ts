@@ -6,7 +6,6 @@ import type { CCNodePinId } from "../../../../../store/nodePin";
 
 export type CCComponentEditorRendererNodeRendererProps = {
 	node: CCNode;
-	nodeState: CCComponentEditorRendererNodeRendererNodeState;
 	component: CCComponent;
 	layout: CCComponentEditorRendererNodeLayout;
 	geometry: CCComponentEditorRendererNodeGeometry;
@@ -26,8 +25,4 @@ export type CCComponentEditorRendererNodeLayoutSource = {
 export type CCComponentEditorRendererNodeGeometry = {
 	rect: Rect;
 	nodePinPositionById: Map<CCNodePinId, Vector2>;
-};
-
-export type CCComponentEditorRendererNodeRendererNodeState = {
-	isSelected: boolean;
 };

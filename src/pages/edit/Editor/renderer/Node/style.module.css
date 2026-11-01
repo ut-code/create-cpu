@@ -1,0 +1,14 @@
+/* Shared by the node renderers. `selected` is given to the element wrapping a node. */
+.shape {
+	fill: var(--color-white);
+	stroke: var(--color-text-primary);
+	stroke-width: 2;
+}
+
+.selected .shape {
+	stroke: var(--color-primary);
+}
+
+.text {
+	fill: var(--color-text-primary);
+}
