@@ -1,11 +1,11 @@
 import nullthrows from "nullthrows";
 import invariant from "tiny-invariant";
-import type { Tagged } from "type-fest";
-import { CCBaseStore, type CCBaseStoreEvents } from "./base";
+import { CCObjectStoreBase, type CCObjectStoreEvents } from "./base";
 import type { CCComponentId } from "./component";
 import { IntrinsicComponentDefinition } from "./intrinsics/base";
 import { input, output } from "./intrinsics/definitions";
 import type { CCNodePinId } from "./nodePin";
+import type { CCObjectId } from "./types";
 
 export type CCComponentPin = {
 	readonly id: CCComponentPinId;
@@ -16,7 +16,7 @@ export type CCComponentPin = {
 	name: string;
 };
 
-export type CCComponentPinId = Tagged<string, "CCPinId">;
+export type CCComponentPinId = CCObjectId<"componentPins">;
 export type CCComponentPinType = "input" | "output";
 export const ccPinTypes: CCComponentPinType[] = ["input", "output"];
 
@@ -44,7 +44,7 @@ export type CCComponentPinBitWidthStatus =
 	| { isFixed: false; fixMode: "automatic" | "nodeDependent" }
 	| { isFixed: true; bitWidth: number };
 
-export type CCComponentPinStoreEvents = CCBaseStoreEvents<CCComponentPin> & {
+export type CCComponentPinStoreEvents = CCObjectStoreEvents<CCComponentPin> & {
 	didUpdate(pin: CCComponentPin): void;
 };
 export const ccComponentPinStoreChangeEventTypes: (keyof CCComponentPinStoreEvents)[] =
@@ -53,11 +53,15 @@ export const ccComponentPinStoreChangeEventTypes: (keyof CCComponentPinStoreEven
 /**
  * Store of pins
  */
-export class CCComponentPinStore extends CCBaseStore<
-	CCComponentPinId,
-	CCComponentPin,
+export class CCComponentPinStore extends CCObjectStoreBase<
+	"componentPins",
 	CCComponentPinStoreEvents
 > {
+	readonly references = {
+		componentId: "components",
+		implementation: "nodePins",
+	} as const;
+
 	import(componentPins: CCComponentPin[]): void {
 		for (const pin of componentPins) {
 			this.objects.set(pin.id, pin);

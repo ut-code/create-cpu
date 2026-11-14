@@ -14,33 +14,43 @@ import { input, output } from "./intrinsics/definitions";
 import { type CCNode, CCNodeStore } from "./node";
 import { type CCNodePinId, CCNodePinStore } from "./nodePin";
 import type { SimulationValue } from "./simulation";
+import {
+	type CCObjectByType,
+	type CCObjectId,
+	type CCObjectType,
+	ccObjectTypes,
+} from "./types";
 
 export function expectConsistentStore(store: CCStore) {
-	const nodes = store.nodes.getMany();
-	for (const node of nodes) {
-		expect(store.components.get(node.componentId)).toBeDefined();
-		expect(store.components.get(node.parentComponentId)).toBeDefined();
+	for (const type of ccObjectTypes) {
+		expectReferencesToExist(store, type);
 	}
 
-	const componentPins = store.componentPins.getMany();
-	for (const componentPin of componentPins) {
-		expect(store.componentPins.get(componentPin.id)).toBeDefined();
-		expect(store.components.get(componentPin.componentId)).toBeDefined();
-	}
-
-	const nodePins = store.nodePins.getMany();
-	for (const nodePin of nodePins) {
-		expect(store.nodes.get(nodePin.nodeId)).toBeDefined();
-		expect(store.componentPins.get(nodePin.componentPinId)).toBeDefined();
-	}
-
-	const connections = store.connections.getMany();
-	for (const connection of store.connections.getMany()) {
-		expect(store.nodePins.get(connection.from)).toBeDefined();
-		expect(store.nodePins.get(connection.to)).toBeDefined();
-	}
 	// Ensure an input pin is only connected to one output pin
+	const connections = store.connections.getMany();
 	expect(connections).toEqual(uniqBy(connections, (c) => c.to));
+}
+
+/** Expect every object of `type` to refer only to objects in the store. */
+function expectReferencesToExist<K extends CCObjectType>(
+	store: CCStore,
+	type: K,
+) {
+	const objectStore = store.getObjectStore(type);
+	const references = Object.entries(objectStore.references) as [
+		keyof CCObjectByType[K],
+		CCObjectType,
+	][];
+	for (const object of objectStore.getMany()) {
+		for (const [field, targetType] of references) {
+			const targetId = object[field] as CCObjectId | null;
+			if (targetId === null) continue;
+			expect(
+				store.getObjectStore(targetType).get(targetId),
+				`${type}.${String(field)} of ${object.id}`,
+			).toBeDefined();
+		}
+	}
 }
 
 /**
