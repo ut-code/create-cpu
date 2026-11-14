@@ -9,6 +9,19 @@ export type EditorMode = EditorModeEdit | EditorModePlay;
 export type EditorModeEdit = "edit";
 export type EditorModePlay = "play";
 
+export type PlaybackMode = "manual" | "auto";
+
+export const MIN_PLAYBACK_SPEED = 0.1;
+export const MAX_PLAYBACK_SPEED = 60;
+
+export function isValidPlaybackSpeed(speed: number): boolean {
+	return (
+		Number.isFinite(speed) &&
+		speed >= MIN_PLAYBACK_SPEED &&
+		speed <= MAX_PLAYBACK_SPEED
+	);
+}
+
 export type RangeSelect = { start: Vector2; end: Vector2 } | null;
 
 export type TimeStep = number;
@@ -29,6 +42,9 @@ export type NodePinPropertyEditorTarget = {
 export type EditorStoreCoreSlice = {
 	editorMode: EditorMode;
 	timeStep: number;
+	playbackMode: PlaybackMode;
+	/** Simulation steps per second. */
+	playbackSpeed: number;
 	selectedNodeIds: Set<CCNodeId>;
 	rangeSelect: RangeSelect;
 	setRangeSelect(rangeSelect: RangeSelect): void;
@@ -42,6 +58,8 @@ export type EditorStoreCoreSlice = {
 	setInputValue(inputValueKey: InputValueKey, value: SimulationValue): void;
 	setEditorMode(mode: EditorMode): void;
 	setTimeStep(timeStep: number): void;
+	setPlaybackMode(mode: PlaybackMode): void;
+	setPlaybackSpeed(speed: number): void;
 	selectNode(ids: CCNodeId[], exclusive: boolean): void;
 	unselectNode(ids: CCNodeId[]): void;
 	selectConnection(ids: CCConnectionId[], exclusive: boolean): void;

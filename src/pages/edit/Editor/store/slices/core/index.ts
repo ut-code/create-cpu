@@ -14,6 +14,7 @@ import type { ComponentEditorSliceCreator } from "../../types";
 import {
 	type EditorStoreCoreSlice,
 	type InputValueKey,
+	isValidPlaybackSpeed,
 	serializeInputValueKey,
 } from "./types";
 
@@ -35,6 +36,8 @@ export const createComponentEditorStoreCoreSlice: ComponentEditorSliceCreator<
 			return {
 				editorMode: "edit",
 				timeStep: 0,
+				playbackMode: "manual",
+				playbackSpeed: 1,
 				selectedNodeIds: new Set(),
 				rangeSelect: null,
 				selectedConnectionIds: new Set(),
@@ -54,17 +57,22 @@ export const createComponentEditorStoreCoreSlice: ComponentEditorSliceCreator<
 					);
 					if (value) return value;
 
-					// If not, try to find the value from the previous time step
-					const previousTimeStepValue = get().inputValues.get(
-						serializeInputValueKey({
-							...inputValueKey,
-							timeStep: inputValueKey.timeStep - 1,
-						}),
-					);
-					if (previousTimeStepValue) {
-						get().setInputValue(inputValueKey, previousTimeStepValue);
-						return previousTimeStepValue;
+					// Inherit the latest earlier input without updating the store during simulation.
+					const prefix = `${inputValueKey.componentPinId}:`;
+					let latestTimeStep = -1;
+					let previousValue: SimulationValue | undefined;
+					for (const [key, value] of get().inputValues) {
+						if (!key.startsWith(prefix)) continue;
+						const timeStep = Number(key.slice(prefix.length));
+						if (
+							timeStep < inputValueKey.timeStep &&
+							timeStep > latestTimeStep
+						) {
+							latestTimeStep = timeStep;
+							previousValue = value;
+						}
 					}
+					if (previousValue) return previousValue;
 
 					// If not found, initialize the value based on the bit width of the pin
 					const componentPin = nullthrows(
@@ -97,10 +105,22 @@ export const createComponentEditorStoreCoreSlice: ComponentEditorSliceCreator<
 					set((state) => ({ ...state, rangeSelect }));
 				},
 				setEditorMode(mode) {
-					set((state) => ({ ...state, editorMode: mode }));
+					set((state) => ({
+						...state,
+						editorMode: mode,
+						playbackMode: "manual",
+					}));
 				},
 				setTimeStep(timeStep: number) {
 					set((state) => ({ ...state, timeStep }));
+				},
+				setPlaybackMode(playbackMode) {
+					if (get().editorMode !== "play") return;
+					set((state) => ({ ...state, playbackMode }));
+				},
+				setPlaybackSpeed(playbackSpeed) {
+					if (!isValidPlaybackSpeed(playbackSpeed)) return;
+					set((state) => ({ ...state, playbackSpeed }));
 				},
 				selectNode(ids: CCNodeId[], exclusive: boolean) {
 					set((state) => ({
