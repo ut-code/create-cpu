@@ -4,7 +4,6 @@ import type { Vector2 } from "../../../../../common/vector2";
 import type { CCComponentPinType } from "../../../../../store/componentPin";
 import type { CCConnectionId } from "../../../../../store/connection";
 import { useStore } from "../../../../../store/react";
-import ensureStoreItem from "../../../../../store/react/error";
 import {
 	useIsConnectionInBitWidthConflict,
 	useNode,
@@ -98,73 +97,74 @@ export function CCComponentEditorRendererConnectionCore({
 export type CCComponentEditorRendererConnectionProps = {
 	connectionId: CCConnectionId;
 };
-const CCComponentEditorRendererConnection = ensureStoreItem(
-	(props, store) => store.connections.get(props.connectionId),
-	({ connectionId }: CCComponentEditorRendererConnectionProps) => {
-		const { store } = useStore();
-		const componentEditorState = useComponentEditorStore()();
-		const connection = nullthrows(store.connections.get(connectionId));
-		const fromNodePin = nullthrows(store.nodePins.get(connection.from));
-		const fromComponentPin = nullthrows(
-			store.componentPins.get(fromNodePin.componentPinId),
-		);
-		const toNodePin = nullthrows(store.nodePins.get(connection.to));
-		const toComponentPin = nullthrows(
-			store.componentPins.get(toNodePin.componentPinId),
-		);
-		const fromNode = useNode(fromNodePin.nodeId);
-		const toNode = useNode(toNodePin.nodeId);
-		const fromNodeGeometry = getCCComponentEditorRendererNodeGeometry(
+export default function CCComponentEditorRendererConnection({
+	connectionId,
+}: CCComponentEditorRendererConnectionProps) {
+	const { store } = useStore();
+	const componentEditorState = useComponentEditorStore()();
+	const connection = store.connections.get(connectionId);
+	const fromNodePin = connection && store.nodePins.get(connection.from);
+	const toNodePin = connection && store.nodePins.get(connection.to);
+	// Subscribed to follow the nodes at both ends when they move
+	const fromNode = useNode(fromNodePin?.nodeId);
+	const toNode = useNode(toNodePin?.nodeId);
+	const isInBitWidthConflict = useIsConnectionInBitWidthConflict(connectionId);
+	const [isHovered, setIsHovered] = useState(false);
+
+	// Moving a node re-renders this alone, which can happen after the connection is
+	// removed but before the list of connections drops it
+	if (!connection || !fromNodePin || !toNodePin || !fromNode || !toNode) {
+		return null;
+	}
+	const fromComponentPin = nullthrows(
+		store.componentPins.get(fromNodePin.componentPinId),
+	);
+	const toComponentPin = nullthrows(
+		store.componentPins.get(toNodePin.componentPinId),
+	);
+	const fromNodePinPosition = nullthrows(
+		getCCComponentEditorRendererNodeGeometry(
 			store,
 			fromNode.id,
-		);
-		const toNodeGeometry = getCCComponentEditorRendererNodeGeometry(
+		).nodePinPositionById.get(fromNodePin.id),
+	);
+	const toNodePinPosition = nullthrows(
+		getCCComponentEditorRendererNodeGeometry(
 			store,
 			toNode.id,
-		);
-		const fromNodePinPosition = nullthrows(
-			fromNodeGeometry.nodePinPositionById.get(fromNodePin.id),
-		);
-		const toNodePinPosition = nullthrows(
-			toNodeGeometry.nodePinPositionById.get(toNodePin.id),
-		);
+		).nodePinPositionById.get(toNodePin.id),
+	);
 
-		const [isHovered, setIsHovered] = useState(false);
-		const isInBitWidthConflict =
-			useIsConnectionInBitWidthConflict(connectionId);
-
-		return (
-			<>
-				<CCComponentEditorRendererConnectionCore
-					from={{
-						direction: fromComponentPin.type,
-						position: fromNodePinPosition,
-					}}
-					to={{ direction: toComponentPin.type, position: toNodePinPosition }}
-					connectionId={connectionId}
-					isInBitWidthConflict={isInBitWidthConflict}
-					onMouseEnter={() => {
-						setIsHovered(true);
-					}}
-					onMouseLeave={() => {
-						setIsHovered(false);
-					}}
-				/>
-				{isHovered && componentEditorState.editorMode === "play" && (
-					<text fontSize={10} fill={theme.colors.textPrimary}>
-						<textPath
-							href={`#${connectionId}`}
-							startOffset="50%"
-							textAnchor="middle"
-						>
-							{stringifySimulationValue(
-								nullthrows(componentEditorState.getNodePinValue(toNodePin.id)),
-							)}
-						</textPath>
-					</text>
-				)}
-			</>
-		);
-	},
-);
-export default CCComponentEditorRendererConnection;
+	return (
+		<>
+			<CCComponentEditorRendererConnectionCore
+				from={{
+					direction: fromComponentPin.type,
+					position: fromNodePinPosition,
+				}}
+				to={{ direction: toComponentPin.type, position: toNodePinPosition }}
+				connectionId={connectionId}
+				isInBitWidthConflict={isInBitWidthConflict}
+				onMouseEnter={() => {
+					setIsHovered(true);
+				}}
+				onMouseLeave={() => {
+					setIsHovered(false);
+				}}
+			/>
+			{isHovered && componentEditorState.editorMode === "play" && (
+				<text fontSize={10} fill={theme.colors.textPrimary}>
+					<textPath
+						href={`#${connectionId}`}
+						startOffset="50%"
+						textAnchor="middle"
+					>
+						{stringifySimulationValue(
+							nullthrows(componentEditorState.getNodePinValue(toNodePin.id)),
+						)}
+					</textPath>
+				</text>
+			)}
+		</>
+	);
+}

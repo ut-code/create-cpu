@@ -1,4 +1,3 @@
-import nullthrows from "nullthrows";
 import { useCallback, useRef, useSyncExternalStore } from "react";
 import {
 	type CCComponent,
@@ -100,10 +99,17 @@ export function useConnectionIds(parentComponentId: CCComponentId) {
 	return useStoreList(read, subscribe);
 }
 
-export function useComponent(componentId: CCComponentId) {
+/*
+ * The hooks reading a single object return undefined once it is gone. A component can
+ * be re-rendered by its own subscription before the list it comes from drops it, so it
+ * renders nothing instead of failing.
+ */
+
+export function useComponent(componentId: CCComponentId | undefined) {
 	const { store } = useStore();
 	const getSnapshot = useCallback(
-		() => nullthrows(store.components.get(componentId)),
+		() =>
+			componentId === undefined ? undefined : store.components.get(componentId),
 		[store, componentId],
 	);
 	const subscribe = useCallback(
@@ -121,10 +127,10 @@ export function useComponent(componentId: CCComponentId) {
 	return useSyncExternalStore(subscribe, getSnapshot);
 }
 
-export function useNode(nodeId: CCNodeId) {
+export function useNode(nodeId: CCNodeId | undefined) {
 	const { store } = useStore();
 	const getSnapshot = useCallback(
-		() => nullthrows(store.nodes.get(nodeId)),
+		() => (nodeId === undefined ? undefined : store.nodes.get(nodeId)),
 		[store, nodeId],
 	);
 	const subscribe = useCallback(
@@ -142,10 +148,13 @@ export function useNode(nodeId: CCNodeId) {
 	return useSyncExternalStore(subscribe, getSnapshot);
 }
 
-export function useComponentPin(componentPinId: CCComponentPinId) {
+export function useComponentPin(componentPinId: CCComponentPinId | undefined) {
 	const { store } = useStore();
 	const getSnapshot = useCallback(
-		() => nullthrows(store.componentPins.get(componentPinId)),
+		() =>
+			componentPinId === undefined
+				? undefined
+				: store.componentPins.get(componentPinId),
 		[store, componentPinId],
 	);
 	const subscribe = useCallback(
