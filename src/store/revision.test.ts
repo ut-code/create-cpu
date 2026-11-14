@@ -4,6 +4,7 @@ import {
 	connectTestNodePins,
 	createTestStore,
 	registerTestComponent,
+	registerTestInputNode,
 	registerTestNode,
 	testBits,
 	testNodePin,
@@ -53,11 +54,14 @@ describe("Store revision", () => {
 	it("announces an update with the updated object", () => {
 		const store = createTestStore();
 		const root = registerTestComponent(store, "Root");
+		const input = registerTestInputNode(store, root.id, "In");
 		const names: string[] = [];
 		store.components.on("didUpdate", (component) => names.push(component.name));
+		store.componentPins.on("didUpdate", (pin) => names.push(pin.name));
 
 		store.components.update(root.id, { name: "Renamed" });
+		store.componentPins.update(input.componentPinId, { name: "Renamed In" });
 
-		expect(names).toEqual(["Renamed"]);
+		expect(names).toEqual(["Renamed", "Renamed In"]);
 	});
 });

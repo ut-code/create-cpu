@@ -75,9 +75,9 @@ export default class CCStore {
 	}
 
 	/**
-	 * Listen to every change of the circuit, i.e. of what the store {@link revision}
-	 * counts. Anything derived from more than one object, such as a bit width that a
-	 * change in another component can alter, has to be recomputed on any of them.
+	 * Listen to the announcements of the changes of the circuit. Anything derived from
+	 * more than one object, such as a bit width that a change in another component can
+	 * alter, has to be recomputed on any of them.
 	 * @param listener called synchronously on each change
 	 * @returns a function to stop listening
 	 */
@@ -136,8 +136,7 @@ export default class CCStore {
 
 	/**
 	 * Restore the objects of a store saved with {@link toJSON}. Some stores add them
-	 * without announcing them, so this must run before {@link mount}, while nothing
-	 * derived from them (such as the bit widths cached by the node pin store) exists yet.
+	 * without announcing them, so this must run before {@link mount}.
 	 */
 	importJson(json: string) {
 		const { components, nodes, componentPins, nodePins, connections } =
