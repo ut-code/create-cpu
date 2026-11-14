@@ -285,6 +285,52 @@ describe("bit width groups", () => {
 		expect(conflictingConnectionCount(store)).toBe(0);
 	});
 
+	it("lets a conflict grow only by pins that fix no width", () => {
+		// Const(8) -> And.A, And.Out -> Display(4), with And.B left open
+		const store = createTestStore();
+		const root = registerTestComponent(store, "Root");
+		const constant = registerConst(store, root.id, 8);
+		const andNode = registerTestNode(store, root.id, and.component.id);
+		const screen = registerDisplay(store, root.id, 4, 2);
+		connectTestNodePins(
+			store,
+			root.id,
+			constant.out,
+			testNodePin(store, andNode, and.inputPin.A),
+		);
+		const andOut = testNodePin(store, andNode, and.outputPin.Out);
+		const andB = testNodePin(store, andNode, and.inputPin.B);
+		connectTestNodePins(store, root.id, andOut, screen.pixels);
+		const probe = registerTestNode(store, root.id, not.component.id);
+		const sameWidth = registerConst(store, root.id, 8);
+		const otherWidth = registerConst(store, root.id, 4);
+		// Allowed before the conflict, so what is refused below is due to it
+		expect(store.nodePins.isConnectable(sameWidth.out, andB)).toBe(true);
+		store.nodes.update(screen.node.id, {
+			config: { resolution: { x: 2, y: 2 }, pixelOrder: "row-major" },
+		});
+		expect(conflictingConnectionCount(store)).toBe(2);
+
+		// A node fixing no width takes part in the conflict, and leaves it once fixed
+		expect(
+			tryConnect(
+				store,
+				root.id,
+				andOut,
+				testNodePin(store, probe, not.inputPin.In),
+			),
+		).toBe(true);
+		expect(conflictingConnectionCount(store)).toBe(3);
+		// A pin fixing a width of its own is refused, even one the group has already
+		expect(tryConnect(store, root.id, sameWidth.out, andB)).toBe(false);
+		expect(tryConnect(store, root.id, otherWidth.out, andB)).toBe(false);
+
+		store.nodes.update(screen.node.id, {
+			config: { resolution: { x: 4, y: 2 }, pixelOrder: "row-major" },
+		});
+		expect(conflictingConnectionCount(store)).toBe(0);
+	});
+
 	it("refuses a new connection that would tie conflicting widths together", () => {
 		const store = createTestStore();
 		const inverter = registerInverterComponent(store);

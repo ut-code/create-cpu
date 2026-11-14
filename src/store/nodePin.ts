@@ -310,12 +310,13 @@ export class CCNodePinStore extends CCBaseStore<
 	}
 
 	/**
-	 * Check whether two node pins of the same component can be connected without a bit
-	 * width conflict. A pin whose bit width is not fixed yet adapts to the pin it is
-	 * connected to, and so do the pins tied to it.
+	 * Check whether two node pins of the same component can be connected without
+	 * causing a bit width conflict. A pin whose bit width is not fixed yet adapts to the
+	 * pin it is connected to, and so do the pins tied to it.
 	 * @param a id of a pin
 	 * @param b id of the other pin
-	 * @returns whether the pins tied to either of them would agree on one bit width
+	 * @returns whether the connection brings no new width into a conflict
+	 * @see ComponentBitWidths.canTie
 	 */
 	hasCompatibleBitWidths(a: CCNodePinId, b: CCNodePinId): boolean {
 		return this.#getBitWidthsAround(a).canTie(a, b);

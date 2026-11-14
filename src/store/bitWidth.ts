@@ -157,13 +157,24 @@ export class ComponentBitWidths {
 		return false;
 	}
 
-	/** Whether tying two pins together would leave their merged group without conflict. */
+	/**
+	 * Whether two pins may be tied together. It is refused only when it brings a width
+	 * into a group that does not have it yet and leaves that group in conflict.
+	 *
+	 * A group already in conflict may still grow by pins fixing no width, e.g. a node
+	 * appended to probe it. They take whatever width the group settles on, so fixing
+	 * the original conflict fixes them too. A pin fixing a width of its own is refused
+	 * even if the group has that width already, since it would stay in conflict when
+	 * the conflict is fixed the other way.
+	 */
 	canTie(a: CCNodePinId, b: CCNodePinId): boolean {
-		const merged = new Set([
-			...this.#getBitWidths(this.getGroup(a)),
-			...this.#getBitWidths(this.getGroup(b)),
-		]);
-		return merged.size <= 1;
+		const groupA = this.getGroup(a);
+		const groupB = this.getGroup(b);
+		if (groupA === groupB) return true;
+		const bitWidthsA = this.#getBitWidths(groupA);
+		const bitWidthsB = this.#getBitWidths(groupB);
+		if (bitWidthsA.size === 0 || bitWidthsB.size === 0) return true;
+		return new Set([...bitWidthsA, ...bitWidthsB]).size <= 1;
 	}
 
 	#getBitWidths(groupId: BitWidthGroupId): ReadonlySet<number> {
