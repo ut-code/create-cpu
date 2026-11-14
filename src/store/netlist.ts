@@ -43,6 +43,12 @@ import { ccIntrinsicComponentTypes } from "./intrinsics/types";
 import type { CCNode, CCNodeId } from "./node";
 import type { CCNodePinId } from "./nodePin";
 
+/**
+ * Bit width of a pin of the simulated component that the circuit leaves open. The values
+ * fed to such an input pin must be this wide, so whoever supplies them uses it as well.
+ */
+export const DEFAULT_SIMULATION_BIT_WIDTH = 1;
+
 /** Identity of a net: the key of the terminal driving it. */
 export type SimulationNetId = Tagged<string, "SimulationNetId">;
 
@@ -177,7 +183,7 @@ function resolveInstanceDefaultBitWidth(
 export function buildSimulationNetlist(
 	store: CCStore,
 	componentId: CCComponentId,
-	defaultBitWidth = 1,
+	defaultBitWidth = DEFAULT_SIMULATION_BIT_WIDTH,
 ): SimulationNetlist {
 	const netByTerminal = new Map<SimulationTerminalKey, SimulationNetId>();
 	const instances: SimulationInstance[] = [];

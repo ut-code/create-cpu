@@ -2,6 +2,7 @@ import nullthrows from "nullthrows";
 import invariant from "tiny-invariant";
 import type { CCComponentPinId } from "../../../../../../store/componentPin";
 import type { CCConnectionId } from "../../../../../../store/connection";
+import { DEFAULT_SIMULATION_BIT_WIDTH } from "../../../../../../store/netlist";
 import type { CCNodeId } from "../../../../../../store/node";
 import type { CCNodePinId } from "../../../../../../store/nodePin";
 import type {
@@ -10,6 +11,7 @@ import type {
 } from "../../../../../../store/simulation";
 // import type { CCComponentId } from "../../../../../../store/component";
 import simulateComponent from "../../../../../../store/simulation";
+import { fitSimulationValue } from "../../../components/ValueEditor/value";
 import type { ComponentEditorSliceCreator } from "../../types";
 import {
 	type EditorStoreCoreSlice,
@@ -53,30 +55,6 @@ export const createComponentEditorStoreCoreSlice: ComponentEditorSliceCreator<
 				/** @private */
 				inputValues: new Map(),
 				getInputValue(inputValueKey: InputValueKey) {
-					// If value exists for the current time step, return it
-					const value = get().inputValues.get(
-						serializeInputValueKey(inputValueKey),
-					);
-					if (value) return value;
-
-					// Inherit the latest earlier input without updating the store during simulation.
-					const prefix = `${inputValueKey.componentPinId}:`;
-					let latestTimeStep = -1;
-					let previousValue: SimulationValue | undefined;
-					for (const [key, value] of get().inputValues) {
-						if (!key.startsWith(prefix)) continue;
-						const timeStep = Number(key.slice(prefix.length));
-						if (
-							timeStep < inputValueKey.timeStep &&
-							timeStep > latestTimeStep
-						) {
-							latestTimeStep = timeStep;
-							previousValue = value;
-						}
-					}
-					if (previousValue) return previousValue;
-
-					// If not found, initialize the value based on the bit width of the pin
 					const componentPin = nullthrows(
 						store.componentPins.get(inputValueKey.componentPinId),
 					);
@@ -86,11 +64,38 @@ export const createComponentEditorStoreCoreSlice: ComponentEditorSliceCreator<
 							"Cannot get input value for intrinsic component pin",
 						),
 					);
-					return bitWidthStatus.isFixed
-						? // If the bit width is fixed, initialize the value with the specified bit width
-							new Array(bitWidthStatus.bitWidth).fill(false)
-						: // If the bit width is not fixed, initialize the single-bit value as false
-							[false];
+					const bitWidth = bitWidthStatus.isFixed
+						? bitWidthStatus.bitWidth
+						: DEFAULT_SIMULATION_BIT_WIDTH;
+
+					// The value set for the current time step, or else the latest earlier one,
+					// inherited without updating the store during simulation
+					let value = get().inputValues.get(
+						serializeInputValueKey(inputValueKey),
+					);
+					if (!value) {
+						const prefix = `${inputValueKey.componentPinId}:`;
+						let latestTimeStep = -1;
+						for (const [key, previousValue] of get().inputValues) {
+							if (!key.startsWith(prefix)) continue;
+							const timeStep = Number(key.slice(prefix.length));
+							if (
+								timeStep < inputValueKey.timeStep &&
+								timeStep > latestTimeStep
+							) {
+								latestTimeStep = timeStep;
+								value = previousValue;
+							}
+						}
+					}
+
+					// The bit width may have changed since the value was set, e.g. by connecting
+					// the pin to one of a fixed width. Keep the value if it fits the new width,
+					// and start over from zero if it does not.
+					return (
+						(value && fitSimulationValue(value, bitWidth)) ??
+						new Array(bitWidth).fill(false)
+					);
 				},
 				setInputValue(inputValueKey: InputValueKey, value: SimulationValue) {
 					set((state) => {
