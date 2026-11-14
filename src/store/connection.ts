@@ -49,13 +49,22 @@ export class CCConnectionStore extends CCBaseStore<
 	}
 
 	/**
-	 * Register a connection
+	 * Register a connection, unless its pins cannot be connected
 	 * @param connection connection to be registered
+	 * @param options.allowBitWidthConflict keep the connection even if its pins fix
+	 *   different bit widths, to copy one that is in conflict as it is
 	 */
-	register(connection: CCConnection): void {
-		const fromNodePinId = connection.from;
-		const toNodePinId = connection.to;
-		if (!this.store.nodePins.isConnectable(fromNodePinId, toNodePinId)) {
+	register(
+		connection: CCConnection,
+		options: { allowBitWidthConflict?: boolean } = {},
+	): void {
+		if (
+			!this.store.nodePins.isConnectable(
+				connection.from,
+				connection.to,
+				options,
+			)
+		) {
 			return;
 		}
 		this.objects.set(connection.id, connection);

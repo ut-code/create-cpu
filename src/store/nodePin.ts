@@ -226,7 +226,25 @@ export class CCNodePinStore extends CCBaseStore<
 		return this.#markedAsDeleted.has(id);
 	}
 
-	isConnectable(a: CCNodePinId, b: CCNodePinId) {
+	/**
+	 * Check whether two node pins can be connected.
+	 *
+	 * Only the component the connection is drawn in is checked for a bit width
+	 * conflict. A connection inside a component can still cause one in the components
+	 * using it, e.g. by tying an input to an output whose widths differ outside. That is
+	 * accepted, just like a config change inside a component that does the same: the
+	 * conflicting connections are highlighted where they are, and the simulation refuses
+	 * to run until they are fixed.
+	 * @param a id of a pin
+	 * @param b id of the other pin
+	 * @param options.allowBitWidthConflict skip the bit width check, to copy a connection
+	 *   as it is even when it is in conflict
+	 */
+	isConnectable(
+		a: CCNodePinId,
+		b: CCNodePinId,
+		{ allowBitWidthConflict = false }: { allowBitWidthConflict?: boolean } = {},
+	) {
 		const aNodePin = this.get(a);
 		const bNodePin = this.get(b);
 		if (!aNodePin || !bNodePin) {
@@ -282,7 +300,7 @@ export class CCNodePinStore extends CCBaseStore<
 			console.warn(`Input pin already has a connection: ${bNodePin.id}`);
 			return false;
 		}
-		if (!this.hasCompatibleBitWidths(a, b)) {
+		if (!allowBitWidthConflict && !this.hasCompatibleBitWidths(a, b)) {
 			console.warn(
 				`Cannot connect pins with conflicting bit widths: ${aNodePin.id} and ${bNodePin.id}`,
 			);
