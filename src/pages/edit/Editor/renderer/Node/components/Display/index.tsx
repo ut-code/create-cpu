@@ -64,7 +64,11 @@ export function CCComponentEditorRendererNodeDisplayRenderer(
 								width={gridSize}
 								height={gridSize}
 								fill={
-									inputValue?.[x + config.resolution.x * y]
+									inputValue?.[
+										config.pixelOrder === "column-major"
+											? y + config.resolution.y * x
+											: x + config.resolution.x * y
+									]
 										? theme.colors.black
 										: theme.colors.white
 								}

@@ -3,6 +3,7 @@ import {
 	Button,
 	FormLabel,
 	IconButton,
+	MenuItem,
 	Popover,
 	Stack,
 	TextField,
@@ -97,6 +98,23 @@ export function CCComponentEditorRendererNodeDisplayRendererConfigSettingButton(
 							}}
 						/>
 					</Stack>
+					<TextField
+						select
+						label="Pixel order"
+						value={newConfig.pixelOrder ?? "row-major"}
+						onChange={(e) => {
+							const pixelOrder = e.target.value;
+							if (pixelOrder === "row-major" || pixelOrder === "column-major") {
+								setNewConfig((prev) => ({ ...prev, pixelOrder }));
+							}
+						}}
+						size="small"
+						fullWidth
+						sx={{ mt: 2 }}
+					>
+						<MenuItem value="row-major">Row-major</MenuItem>
+						<MenuItem value="column-major">Column-major</MenuItem>
+					</TextField>
 					<Stack direction="row" justifyContent="flex-end" mt={2} gap={1}>
 						<Button
 							type="button"
