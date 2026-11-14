@@ -271,6 +271,23 @@ describe("Node pin store", () => {
 			expect(store.connections.getMany()).toHaveLength(0);
 		});
 
+		it("should announce a dropped connection before the config change that drops it", () => {
+			const { store, displayNode } = connectBroadcastToDisplay(20 * 15);
+			const events: string[] = [];
+			store.connections.on("didUnregister", () =>
+				events.push("connection removed"),
+			);
+			store.nodes.on("didUpdate", () => events.push("node updated"));
+
+			// A renderer of the connection subscribed to the display re-renders on "node
+			// updated", so by then the list of connections must no longer contain it
+			store.nodes.update(displayNode.id, {
+				config: { resolution: { x: 4, y: 3 } },
+			});
+
+			expect(events).toEqual(["connection removed", "node updated"]);
+		});
+
 		it("should keep the connections that stay consistent across a display config change", () => {
 			const { store, displayNode } = connectBroadcastToDisplay(20 * 15);
 
