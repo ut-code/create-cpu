@@ -1,7 +1,6 @@
-import EventEmitter from "eventemitter3";
 import nullthrows from "nullthrows";
 import type { Tagged } from "type-fest";
-import type CCStore from ".";
+import { CCBaseStore, type CCBaseStoreEvents } from "./base";
 import type { CCComponentId } from "./component";
 import type { CCComponentPinId } from "./componentPin";
 import type { CCNodeId } from "./node";
@@ -22,40 +21,26 @@ export type CCConnection = {
 	bentPortion: number;
 };
 
-export type CCConnectionStoreEvents = {
-	didRegister(Connection: CCConnection): void;
-	willUnregister(Connection: CCConnection): void;
-	didUnregister(Connection: CCConnection): void;
-};
+export type CCConnectionStoreEvents = CCBaseStoreEvents<CCConnection>;
 export const ccConnectionStoreChangeEventTypes: (keyof CCConnectionStoreEvents)[] =
 	["didRegister", "didUnregister"];
 
 /**
  * Store of connections
  */
-export class CCConnectionStore extends EventEmitter<CCConnectionStoreEvents> {
-	#store: CCStore;
-
-	#connections: Map<CCConnectionId, CCConnection> = new Map();
-
-	/**
-	 * Constructor of CCConnectionStore
-	 * @param store store
-	 * @param connections initial connections
-	 */
-	constructor(store: CCStore) {
-		super();
-		this.#store = store;
-	}
-
+export class CCConnectionStore extends CCBaseStore<
+	CCConnectionId,
+	CCConnection,
+	CCConnectionStoreEvents
+> {
 	import(connections: CCConnection[]): void {
 		for (const connection of connections) {
-			this.#connections.set(connection.id, connection);
+			this.objects.set(connection.id, connection);
 		}
 	}
 
 	mount() {
-		this.#store.nodePins.on("willUnregister", (nodePin) => {
+		this.store.nodePins.on("willUnregister", (nodePin) => {
 			const connections = this.getConnectionsByNodePinId(nodePin.id);
 			if (connections.length > 0) {
 				this.unregister(connections.map((connection) => connection.id));
@@ -64,13 +49,13 @@ export class CCConnectionStore extends EventEmitter<CCConnectionStoreEvents> {
 		// A config change can change the bit width of a pin (e.g. the resolution of a
 		// display), which invalidates the connections that were valid when they were made.
 		// CCStore mounts CCNodePinStore first, so its bit width cache is already dropped.
-		this.#store.nodes.on("didUpdateConfig", (node) => {
+		this.store.nodes.on("didUpdateConfig", (node) => {
 			// TODO: Dropping a connection can in turn invalidate another one. Resolving that
 			// needs a repeated sweep, which the re-validation on `didRegister` below lacks too.
 			const invalidatedConnections = this.getMany().filter(
 				(connection) =>
 					connection.parentComponentId === node.parentComponentId &&
-					!this.#store.nodePins.hasCompatibleBitWidths(
+					!this.store.nodePins.hasCompatibleBitWidths(
 						connection.from,
 						connection.to,
 					),
@@ -81,13 +66,13 @@ export class CCConnectionStore extends EventEmitter<CCConnectionStoreEvents> {
 				);
 			}
 		});
-		this.#store.connections.on("didRegister", (connection) => {
+		this.store.connections.on("didRegister", (connection) => {
 			const component = nullthrows(
-				this.#store.components.get(connection.parentComponentId),
+				this.store.components.get(connection.parentComponentId),
 			);
-			const nodes = this.#store.nodes.getManyByComponentId(component.id);
+			const nodes = this.store.nodes.getManyByComponentId(component.id);
 			for (const node of nodes) {
-				const nodePins = this.#store.nodePins.getManyByNodeId(node.id);
+				const nodePins = this.store.nodePins.getManyByNodeId(node.id);
 				for (const nodePin of nodePins) {
 					const connections = this.getConnectionsByNodePinId(nodePin.id);
 					for (const connection of connections) {
@@ -95,7 +80,7 @@ export class CCConnectionStore extends EventEmitter<CCConnectionStoreEvents> {
 						const from = connection.from;
 						const to = connection.to;
 						this.unregister([connection.id]).then(() => {
-							if (this.#store.nodePins.isConnectable(from, to)) {
+							if (this.store.nodePins.isConnectable(from, to)) {
 								this.register(
 									CCConnectionStore.create({
 										from,
@@ -119,10 +104,10 @@ export class CCConnectionStore extends EventEmitter<CCConnectionStoreEvents> {
 	register(connection: CCConnection): void {
 		const fromNodePinId = connection.from;
 		const toNodePinId = connection.to;
-		if (!this.#store.nodePins.isConnectable(fromNodePinId, toNodePinId)) {
+		if (!this.store.nodePins.isConnectable(fromNodePinId, toNodePinId)) {
 			return;
 		}
-		this.#connections.set(connection.id, connection);
+		this.objects.set(connection.id, connection);
 		this.emit("didRegister", connection);
 	}
 
@@ -131,11 +116,11 @@ export class CCConnectionStore extends EventEmitter<CCConnectionStoreEvents> {
 	 * @param ids ids of connections to be unregistered
 	 */
 	async unregister(ids: CCConnectionId[]): Promise<void> {
-		const connections = ids.map((id) => nullthrows(this.#connections.get(id)));
-		await this.#store.transactionManager.runInTransaction(() => {
+		const connections = ids.map((id) => nullthrows(this.objects.get(id)));
+		await this.store.transactionManager.runInTransaction(() => {
 			for (const connection of connections) {
 				this.emit("willUnregister", connection);
-				this.#connections.delete(connection.id);
+				this.objects.delete(connection.id);
 			}
 			// Announced as soon as the connections are gone, not when the transaction ends.
 			// Otherwise a listener of a change announced in between, such as a renderer
@@ -149,22 +134,13 @@ export class CCConnectionStore extends EventEmitter<CCConnectionStoreEvents> {
 	}
 
 	/**
-	 * Get a connection by CCConnectionId
-	 * @param id id of connection
-	 * @returns connection of `id`
-	 */
-	get(id: CCConnectionId): CCConnection | undefined {
-		return this.#connections.get(id);
-	}
-
-	/**
 	 * Get all of connections
 	 * @returns map of id and connection (read only)
 	 */
 	getConnectionIdsByParentComponentId(
 		parentComponentId: CCComponentId,
 	): CCConnectionId[] {
-		return [...this.#connections.values()]
+		return [...this.objects.values()]
 			.filter(
 				(connection) => connection.parentComponentId === parentComponentId,
 			)
@@ -172,7 +148,7 @@ export class CCConnectionStore extends EventEmitter<CCConnectionStoreEvents> {
 	}
 
 	getManyByParentComponentId(parentComponentId: CCComponentId): CCConnection[] {
-		return [...this.#connections.values()].filter(
+		return [...this.objects.values()].filter(
 			(connection) => connection.parentComponentId === parentComponentId,
 		);
 	}
@@ -184,7 +160,7 @@ export class CCConnectionStore extends EventEmitter<CCConnectionStoreEvents> {
 	 * @returns connections connected to the pin of the node
 	 */
 	getConnectionsByNodePinId(nodePinId: CCNodePinId): CCConnection[] {
-		return [...this.#connections.values()].filter(
+		return [...this.objects.values()].filter(
 			(connection) =>
 				connection.from === nodePinId || connection.to === nodePinId,
 		);
@@ -200,13 +176,5 @@ export class CCConnectionStore extends EventEmitter<CCConnectionStoreEvents> {
 			id: crypto.randomUUID() as CCConnectionId,
 			...partialConnection,
 		};
-	}
-
-	/**
-	 * Get array of connections
-	 * @returns array of connections
-	 */
-	getMany(): CCConnection[] {
-		return [...this.#connections.values()];
 	}
 }

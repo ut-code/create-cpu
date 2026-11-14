@@ -1,8 +1,7 @@
-import EventEmitter from "eventemitter3";
 import nullthrows from "nullthrows";
 import invariant from "tiny-invariant";
 import type { Tagged } from "type-fest";
-import type CCStore from ".";
+import { CCBaseStore, type CCBaseStoreEvents } from "./base";
 import type { CCComponentPinId, CCNodePinBitWidthStatus } from "./componentPin";
 import { IntrinsicComponentDefinition } from "./intrinsics/base";
 import type { CCNodeId } from "./node";
@@ -17,10 +16,7 @@ export type CCNodePin = {
 	manualBitWidth: number | null;
 };
 
-export type CCNodePinStoreEvents = {
-	didRegister(pin: CCNodePin): void;
-	willUnregister(pin: CCNodePin): void;
-	didUnregister(pin: CCNodePin): void;
+export type CCNodePinStoreEvents = CCBaseStoreEvents<CCNodePin> & {
 	didUpdate(pin: CCNodePin): void;
 };
 export const ccNodePinStoreChangeEventTypes: (keyof CCNodePinStoreEvents)[] = [
@@ -29,27 +25,17 @@ export const ccNodePinStoreChangeEventTypes: (keyof CCNodePinStoreEvents)[] = [
 	"didUpdate",
 ];
 
-export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
-	#store: CCStore;
-
-	#nodePins: Map<CCNodePinId, CCNodePin> = new Map();
-
+export class CCNodePinStore extends CCBaseStore<
+	CCNodePinId,
+	CCNodePin,
+	CCNodePinStoreEvents
+> {
 	#markedAsDeleted: Set<CCNodePinId> = new Set();
 
 	#bitWidthCache: Map<CCNodePinId, CCNodePinBitWidthStatus> = new Map();
 
 	#clearBitWidthCache(): void {
 		this.#bitWidthCache.clear();
-	}
-
-	/**
-	 * Constructor of CCNodePinStore
-	 * @param store store
-	 * @param nodePins initial pins
-	 */
-	constructor(store: CCStore) {
-		super();
-		this.#store = store;
 	}
 
 	import(nodePins: CCNodePin[]) {
@@ -59,14 +45,14 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 	}
 
 	mount() {
-		this.#store.connections.on("didRegister", () => this.#clearBitWidthCache());
-		this.#store.connections.on("didUnregister", () =>
+		this.store.connections.on("didRegister", () => this.#clearBitWidthCache());
+		this.store.connections.on("didUnregister", () =>
 			this.#clearBitWidthCache(),
 		);
 		// A calculated bit width may be derived from the config of its node
-		this.#store.nodes.on("didUpdateConfig", () => this.#clearBitWidthCache());
-		this.#store.nodes.on("didRegister", (node) => {
-			const componentPins = this.#store.componentPins.getManyByComponentId(
+		this.store.nodes.on("didUpdateConfig", () => this.#clearBitWidthCache());
+		this.store.nodes.on("didRegister", (node) => {
+			const componentPins = this.store.componentPins.getManyByComponentId(
 				node.componentId,
 			);
 			for (const componentPin of componentPins) {
@@ -79,15 +65,15 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 				);
 			}
 		});
-		this.#store.nodes.on("willUnregister", (node) => {
-			for (const pin of this.#nodePins.values()) {
+		this.store.nodes.on("willUnregister", (node) => {
+			for (const pin of this.objects.values()) {
 				if (pin.nodeId === node.id) {
 					this.unregister(pin.id);
 				}
 			}
 		});
-		this.#store.componentPins.on("didRegister", (componentPin) => {
-			for (const node of this.#store.nodes.getManyByComponentId(
+		this.store.componentPins.on("didRegister", (componentPin) => {
+			for (const node of this.store.nodes.getManyByComponentId(
 				componentPin.componentId,
 			)) {
 				this.register(
@@ -99,8 +85,8 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 				);
 			}
 		});
-		this.#store.componentPins.on("willUnregister", (componentPin) => {
-			for (const pin of this.#nodePins.values()) {
+		this.store.componentPins.on("willUnregister", (componentPin) => {
+			for (const pin of this.objects.values()) {
 				if (pin.componentPinId === componentPin.id) {
 					this.unregister(pin.id);
 				}
@@ -113,9 +99,9 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 	 * @param nodePin pin to be registered
 	 */
 	register(nodePin: CCNodePin): void {
-		invariant(this.#store.componentPins.get(nodePin.componentPinId));
-		invariant(this.#store.nodes.get(nodePin.nodeId));
-		this.#nodePins.set(nodePin.id, nodePin);
+		invariant(this.store.componentPins.get(nodePin.componentPinId));
+		invariant(this.store.nodes.get(nodePin.nodeId));
+		this.objects.set(nodePin.id, nodePin);
 		this.#clearBitWidthCache();
 		this.emit("didRegister", nodePin);
 	}
@@ -125,11 +111,11 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 	 * @param id id of a pin to be unregistered
 	 */
 	async unregister(id: CCNodePinId): Promise<void> {
-		const nodePin = nullthrows(this.#nodePins.get(id));
+		const nodePin = nullthrows(this.objects.get(id));
 		this.#markedAsDeleted.add(id);
-		await this.#store.transactionManager.runInTransaction(() => {
+		await this.store.transactionManager.runInTransaction(() => {
 			this.emit("willUnregister", nodePin);
-			this.#nodePins.delete(nodePin.id);
+			this.objects.delete(nodePin.id);
 			// Its removal is announced only when the transaction ends, but the bit widths
 			// derived from it are stale from now on
 			this.#clearBitWidthCache();
@@ -139,20 +125,11 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 	}
 
 	update(id: CCNodePinId, value: Pick<CCNodePin, "manualBitWidth">) {
-		const existingNodePin = nullthrows(this.#nodePins.get(id));
+		const existingNodePin = nullthrows(this.objects.get(id));
 		const newNodePin = { ...existingNodePin, ...value };
-		this.#nodePins.set(id, newNodePin);
+		this.objects.set(id, newNodePin);
 		this.#clearBitWidthCache();
 		this.emit("didUpdate", newNodePin);
-	}
-
-	/**
-	 * Get a pin by id
-	 * @param id id of pin
-	 * @returns pin of `id`
-	 */
-	get(id: CCNodePinId): CCNodePin | undefined {
-		return this.#nodePins.get(id);
 	}
 
 	/**
@@ -163,7 +140,7 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 		nodeId: CCNodeId,
 		componentPinId: CCComponentPinId,
 	): CCNodePin {
-		const pin = [...this.#nodePins.values()].find(
+		const pin = [...this.objects.values()].find(
 			(candidate) =>
 				candidate.nodeId === nodeId &&
 				candidate.componentPinId === componentPinId,
@@ -178,14 +155,14 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 	 * @returns pins of component
 	 */
 	getManyByNodeId(nodeId: CCNodeId): CCNodePin[] {
-		return [...this.#nodePins.values()].filter((pin) => pin.nodeId === nodeId);
+		return [...this.objects.values()].filter((pin) => pin.nodeId === nodeId);
 	}
 
 	getManyByNodeIdAndComponentPinId(
 		nodeId: CCNodeId,
 		componentPinId: CCComponentPinId,
 	): CCNodePin[] {
-		return [...this.#nodePins.values()].filter(
+		return [...this.objects.values()].filter(
 			(pin) => pin.nodeId === nodeId && pin.componentPinId === componentPinId,
 		);
 	}
@@ -240,7 +217,7 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 				targetNodePin;
 
 			seen.add(targetNodeId);
-			const targetNode = nullthrows(this.#store.nodes.get(targetNodeId));
+			const targetNode = nullthrows(this.store.nodes.get(targetNodeId));
 			const targetNodePins = this.getManyByNodeId(targetNode.id);
 			const attributes =
 				IntrinsicComponentDefinition.getPinAttributesByPinId(
@@ -272,7 +249,7 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 			} else {
 				// A user defined component pin is fixed by the implementation of its component
 				const componentPinBitWidthStatus =
-					this.#store.componentPins.getComponentPinBitWidthStatus(
+					this.store.componentPins.getComponentPinBitWidthStatus(
 						targetComponentPinId,
 					);
 				if (componentPinBitWidthStatus.isFixed) {
@@ -283,7 +260,7 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 			// node, so any of them may be the one that is connected to a pin of a known width.
 			for (const siblingNodePin of targetNodePins) {
 				const siblingComponentPinBitWidthStatus =
-					this.#store.componentPins.getComponentPinBitWidthStatus(
+					this.store.componentPins.getComponentPinBitWidthStatus(
 						siblingNodePin.componentPinId,
 					);
 				if (siblingComponentPinBitWidthStatus.isFixed) {
@@ -297,11 +274,11 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 					);
 				}
 				const connections = nullthrows(
-					this.#store.connections.getConnectionsByNodePinId(siblingNodePin.id),
+					this.store.connections.getConnectionsByNodePinId(siblingNodePin.id),
 				);
 				for (const connection of connections) {
 					const componentPin = nullthrows(
-						this.#store.componentPins.get(siblingNodePin.componentPinId),
+						this.store.componentPins.get(siblingNodePin.componentPinId),
 					);
 					const connectedNodePinId =
 						componentPin.type === "input" ? connection.from : connection.to;
@@ -335,10 +312,10 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 		if (!aNodePin || !bNodePin) {
 			throw new Error(`Node pin ${a} or ${b} does not exist in the store`);
 		}
-		const aComponentPin = this.#store.componentPins.get(
+		const aComponentPin = this.store.componentPins.get(
 			aNodePin?.componentPinId ?? null,
 		);
-		const bComponentPin = this.#store.componentPins.get(
+		const bComponentPin = this.store.componentPins.get(
 			bNodePin?.componentPinId ?? null,
 		);
 		if (!aComponentPin || !bComponentPin) {
@@ -352,8 +329,8 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 			);
 			return false;
 		}
-		const aNode = this.#store.nodes.get(aNodePin.nodeId);
-		const bNode = this.#store.nodes.get(bNodePin.nodeId);
+		const aNode = this.store.nodes.get(aNodePin.nodeId);
+		const bNode = this.store.nodes.get(bNodePin.nodeId);
 		if (!aNode || !bNode) {
 			throw new Error(
 				`Node ${aNodePin.nodeId} or ${bNodePin.nodeId} does not exist in the store`,
@@ -371,10 +348,10 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 			);
 			return false;
 		}
-		const aConnections = this.#store.connections.getConnectionsByNodePinId(
+		const aConnections = this.store.connections.getConnectionsByNodePinId(
 			aNodePin.id,
 		);
-		const bConnections = this.#store.connections.getConnectionsByNodePinId(
+		const bConnections = this.store.connections.getConnectionsByNodePinId(
 			bNodePin.id,
 		);
 		if (aComponentPin.type === "input" && aConnections.length > 0) {
@@ -427,13 +404,5 @@ export class CCNodePinStore extends EventEmitter<CCNodePinStoreEvents> {
 				partialPin.manualBitWidth ??
 				(attributes?.bitWidthPolicy.type === "configurable" ? 1 : null),
 		};
-	}
-
-	/**
-	 * Get array of pins
-	 * @returns array of pins
-	 */
-	getMany(): CCNodePin[] {
-		return [...this.#nodePins.values()];
 	}
 }

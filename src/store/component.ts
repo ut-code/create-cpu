@@ -1,8 +1,8 @@
-import EventEmitter from "eventemitter3";
 import nullthrows from "nullthrows";
 import invariant from "tiny-invariant";
 import type { Tagged } from "type-fest";
 import type CCStore from ".";
+import { CCBaseStore, type CCBaseStoreEvents } from "./base";
 import type { CCIntrinsicComponentType } from "./intrinsics/types";
 
 export type CCComponentId = Tagged<string, "CCComponentId">;
@@ -14,10 +14,7 @@ export type CCComponent = {
 	name: string;
 };
 
-export type CCComponentStoreEvents = {
-	didRegister(component: CCComponent): void;
-	willUnregister(component: CCComponent): void;
-	didUnregister(component: CCComponent): void;
+export type CCComponentStoreEvents = CCBaseStoreEvents<CCComponent> & {
 	didUpdate(component: CCComponent): void;
 };
 export const ccComponentStoreChangeEventTypes: (keyof CCComponentStoreEvents)[] =
@@ -26,23 +23,11 @@ export const ccComponentStoreChangeEventTypes: (keyof CCComponentStoreEvents)[] 
 /**
  * Store of components
  */
-export class CCComponentStore extends EventEmitter<CCComponentStoreEvents> {
-	#store: CCStore;
-
-	#components: Map<CCComponentId, CCComponent> = new Map();
-
-	/**
-	 * Constructor of CCComponentStore
-	 * @param store store
-	 * @param rootComponent root component
-	 * @param rootComponentId id of root component
-	 * @param components initial components
-	 */
-	constructor(store: CCStore) {
-		super();
-		this.#store = store;
-	}
-
+export class CCComponentStore extends CCBaseStore<
+	CCComponentId,
+	CCComponent,
+	CCComponentStoreEvents
+> {
 	import(components: CCComponent[]) {
 		for (const component of components) {
 			this.register(component);
@@ -56,8 +41,8 @@ export class CCComponentStore extends EventEmitter<CCComponentStoreEvents> {
 	 * @param component component to be registered
 	 */
 	register(component: CCComponent): void {
-		invariant(!this.#components.has(component.id));
-		this.#components.set(component.id, component);
+		invariant(!this.objects.has(component.id));
+		this.objects.set(component.id, component);
 		this.emit("didRegister", component);
 	}
 
@@ -66,22 +51,13 @@ export class CCComponentStore extends EventEmitter<CCComponentStoreEvents> {
 	 * @param id id of a component to be unregistered
 	 */
 	async unregister(id: CCComponentId): Promise<void> {
-		const component = this.#components.get(id);
+		const component = this.objects.get(id);
 		if (!component) throw new Error(`Component ${id} not found`);
-		await this.#store.transactionManager.runInTransaction(() => {
+		await this.store.transactionManager.runInTransaction(() => {
 			this.emit("willUnregister", component);
-			this.#components.delete(id);
+			this.objects.delete(id);
 		});
 		this.emit("didUnregister", component);
-	}
-
-	/**
-	 * Get a component by CCComponentId
-	 * @param id id of component
-	 * @returns component of `id`
-	 */
-	get(id: CCComponentId): CCComponent | undefined {
-		return this.#components.get(id);
 	}
 
 	/**
@@ -90,9 +66,9 @@ export class CCComponentStore extends EventEmitter<CCComponentStoreEvents> {
 	 * @param value new name
 	 */
 	update(id: CCComponentId, value: Pick<CCComponent, "name">): void {
-		const component = this.#components.get(id);
+		const component = this.objects.get(id);
 		invariant(component);
-		this.#components.set(id, { ...component, ...value });
+		this.objects.set(id, { ...component, ...value });
 		this.emit("didUpdate", component);
 	}
 
@@ -109,14 +85,6 @@ export class CCComponentStore extends EventEmitter<CCComponentStoreEvents> {
 			intrinsicType: null,
 			...partialComponent,
 		};
-	}
-
-	/**
-	 * Get array of components
-	 * @returns array of components
-	 */
-	getMany(): CCComponent[] {
-		return [...this.#components.values()];
 	}
 }
 

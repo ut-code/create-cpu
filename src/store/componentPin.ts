@@ -1,8 +1,7 @@
-import EventEmitter from "eventemitter3";
 import nullthrows from "nullthrows";
 import invariant from "tiny-invariant";
 import type { Tagged } from "type-fest";
-import type CCStore from ".";
+import { CCBaseStore, type CCBaseStoreEvents } from "./base";
 import type { CCComponentId } from "./component";
 import { IntrinsicComponentDefinition } from "./intrinsics/base";
 import { input, output } from "./intrinsics/definitions";
@@ -45,10 +44,7 @@ export type CCComponentPinBitWidthStatus =
 	| { isFixed: false; fixMode: "automatic" | "nodeDependent" }
 	| { isFixed: true; bitWidth: number };
 
-export type CCComponentPinStoreEvents = {
-	didRegister(pin: CCComponentPin): void;
-	willUnregister(pin: CCComponentPin): void;
-	didUnregister(pin: CCComponentPin): void;
+export type CCComponentPinStoreEvents = CCBaseStoreEvents<CCComponentPin> & {
 	didUpdate(pin: CCComponentPin): void;
 };
 export const ccComponentPinStoreChangeEventTypes: (keyof CCComponentPinStoreEvents)[] =
@@ -57,32 +53,20 @@ export const ccComponentPinStoreChangeEventTypes: (keyof CCComponentPinStoreEven
 /**
  * Store of pins
  */
-export class CCComponentPinStore extends EventEmitter<CCComponentPinStoreEvents> {
-	#store: CCStore;
-
-	#pins: Map<CCComponentPinId, CCComponentPin> = new Map();
-
-	/**
-	 * Constructor of CCComponentPinStore
-	 * @param store store
-	 * @param pins initial pins
-	 */
-	constructor(store: CCStore) {
-		super();
-		this.#store = store;
-	}
-
+export class CCComponentPinStore extends CCBaseStore<
+	CCComponentPinId,
+	CCComponentPin,
+	CCComponentPinStoreEvents
+> {
 	import(componentPins: CCComponentPin[]): void {
 		for (const pin of componentPins) {
-			this.#pins.set(pin.id, pin);
+			this.objects.set(pin.id, pin);
 		}
 	}
 
 	mount() {
-		this.#store.nodePins.on("didRegister", (nodePin) => {
-			const componentPin = this.#store.componentPins.get(
-				nodePin.componentPinId,
-			);
+		this.store.nodePins.on("didRegister", (nodePin) => {
+			const componentPin = this.store.componentPins.get(nodePin.componentPinId);
 			if (
 				componentPin?.id === input.outputPin.Out.id ||
 				componentPin?.id === output.inputPin.In.id
@@ -90,7 +74,7 @@ export class CCComponentPinStore extends EventEmitter<CCComponentPinStoreEvents>
 				this.register(this.createForNodePin(nodePin.id));
 			}
 		});
-		this.#store.nodePins.on("willUnregister", (nodePin) => {
+		this.store.nodePins.on("willUnregister", (nodePin) => {
 			const pin = this.getByImplementation(nodePin.id);
 			if (pin) this.unregister(pin.id);
 		});
@@ -101,17 +85,17 @@ export class CCComponentPinStore extends EventEmitter<CCComponentPinStoreEvents>
 	 * @param pin pin to be registered
 	 */
 	register(pin: CCComponentPin): void {
-		invariant(this.#store.components.get(pin.componentId));
-		this.#pins.set(pin.id, pin);
+		invariant(this.store.components.get(pin.componentId));
+		this.objects.set(pin.id, pin);
 		this.emit("didRegister", pin);
 	}
 
 	createForNodePin(nodePinId: CCNodePinId): CCComponentPin {
-		const targetNodePin = nullthrows(this.#store.nodePins.get(nodePinId));
+		const targetNodePin = nullthrows(this.store.nodePins.get(nodePinId));
 		const targetComponentPin = nullthrows(
-			this.#store.componentPins.get(targetNodePin.componentPinId),
+			this.store.componentPins.get(targetNodePin.componentPinId),
 		);
-		const targetNode = nullthrows(this.#store.nodes.get(targetNodePin.nodeId));
+		const targetNode = nullthrows(this.store.nodes.get(targetNodePin.nodeId));
 		const existingComponentPins = this.getManyByComponentId(
 			targetNode.parentComponentId,
 		);
@@ -133,21 +117,12 @@ export class CCComponentPinStore extends EventEmitter<CCComponentPinStoreEvents>
 	 * @param id id of a pin to be unregistered
 	 */
 	async unregister(id: CCComponentPinId): Promise<void> {
-		const pin = nullthrows(this.#pins.get(id));
-		await this.#store.transactionManager.runInTransaction(() => {
+		const pin = nullthrows(this.objects.get(id));
+		await this.store.transactionManager.runInTransaction(() => {
 			this.emit("willUnregister", pin);
-			this.#pins.delete(id);
+			this.objects.delete(id);
 		});
 		this.emit("didUnregister", pin);
-	}
-
-	/**
-	 * Get a pin by id
-	 * @param id id of pin
-	 * @returns pin of `id`
-	 */
-	get(id: CCComponentPinId): CCComponentPin | undefined {
-		return this.#pins.get(id);
 	}
 
 	/**
@@ -155,7 +130,7 @@ export class CCComponentPinStore extends EventEmitter<CCComponentPinStoreEvents>
 	 * @returns all pins
 	 */
 	getByNodePinId(nodePinId: CCNodePinId): CCComponentPin {
-		const pin = [...this.#pins.values()].find(
+		const pin = [...this.objects.values()].find(
 			({ implementation }) => implementation && implementation === nodePinId,
 		);
 		invariant(pin);
@@ -168,14 +143,14 @@ export class CCComponentPinStore extends EventEmitter<CCComponentPinStoreEvents>
 	 * @returns pins of component
 	 */
 	getManyByComponentId(componentId: CCComponentId): CCComponentPin[] {
-		return [...this.#pins.values()].filter(
+		return [...this.objects.values()].filter(
 			(pin) => pin.componentId === componentId,
 		);
 	}
 
 	getByImplementation(implementation: CCNodePinId): CCComponentPin | null {
 		return (
-			[...this.#pins.values()].find(
+			[...this.objects.values()].find(
 				(pin) => pin.implementation === implementation,
 			) ?? null
 		);
@@ -190,9 +165,9 @@ export class CCComponentPinStore extends EventEmitter<CCComponentPinStoreEvents>
 		id: CCComponentPinId,
 		value: Partial<Pick<CCComponentPin, "name">>,
 	): void {
-		const pin = this.#pins.get(id);
+		const pin = this.objects.get(id);
 		invariant(pin);
-		this.#pins.set(id, { ...pin, ...value });
+		this.objects.set(id, { ...pin, ...value });
 		this.emit("didUpdate", pin);
 	}
 
@@ -206,7 +181,7 @@ export class CCComponentPinStore extends EventEmitter<CCComponentPinStoreEvents>
 	getComponentPinBitWidthStatus(
 		pinId: CCComponentPinId,
 	): CCComponentPinBitWidthStatus {
-		const pin = this.#pins.get(pinId);
+		const pin = this.objects.get(pinId);
 		invariant(pin);
 
 		// Intrinsic components
@@ -233,7 +208,7 @@ export class CCComponentPinStore extends EventEmitter<CCComponentPinStoreEvents>
 			pin.implementation,
 			"Pin implementation must be defined for user-defined components",
 		);
-		const bitWidthStatus = this.#store.nodePins.getNodePinBitWidthStatus(
+		const bitWidthStatus = this.store.nodePins.getNodePinBitWidthStatus(
 			pin.implementation,
 		);
 		if (bitWidthStatus.isFixed) {
@@ -253,13 +228,5 @@ export class CCComponentPinStore extends EventEmitter<CCComponentPinStoreEvents>
 			id: crypto.randomUUID() as CCComponentPinId,
 			...partialPin,
 		};
-	}
-
-	/**
-	 * Get array of pins
-	 * @returns array of pins
-	 */
-	getMany(): CCComponentPin[] {
-		return [...this.#pins.values()];
 	}
 }

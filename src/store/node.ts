@@ -1,9 +1,8 @@
-import EventEmitter from "eventemitter3";
 import nullthrows from "nullthrows";
 import invariant from "tiny-invariant";
 import type { Tagged } from "type-fest";
 import type { Vector2 } from "../common/vector2";
-import type CCStore from ".";
+import { CCBaseStore, type CCBaseStoreEvents } from "./base";
 import type { CCComponentId } from "./component";
 import { definitionByComponentId } from "./intrinsics/definitions";
 import type { CCIntrinsicComponentSpec } from "./intrinsics/types";
@@ -20,10 +19,7 @@ export type CCNode<
 	config: Spec["config"];
 };
 
-export type CCNodeStoreEvents = {
-	didRegister(node: CCNode): void;
-	willUnregister(node: CCNode): void;
-	didUnregister(node: CCNode): void;
+export type CCNodeStoreEvents = CCBaseStoreEvents<CCNode> & {
 	didUpdate(node: CCNode): void;
 	/**
 	 * Emitted in addition to `didUpdate` when the config of a node changed, so that
@@ -40,21 +36,11 @@ export const ccNodeStoreChangeEventTypes: (keyof CCNodeStoreEvents)[] = [
 /**
  * Store of nodes
  */
-export class CCNodeStore extends EventEmitter<CCNodeStoreEvents> {
-	#store: CCStore;
-
-	#nodes: Map<CCNodeId, CCNode> = new Map();
-
-	/**
-	 * Constructor of CCNodeStore
-	 * @param store store
-	 * @param nodes initial nodes
-	 */
-	constructor(store: CCStore) {
-		super();
-		this.#store = store;
-	}
-
+export class CCNodeStore extends CCBaseStore<
+	CCNodeId,
+	CCNode,
+	CCNodeStoreEvents
+> {
 	import(nodes: CCNode[]): void {
 		for (const node of nodes) {
 			node.position = { x: node.position.x, y: node.position.y };
@@ -63,8 +49,8 @@ export class CCNodeStore extends EventEmitter<CCNodeStoreEvents> {
 	}
 
 	mount() {
-		this.#store.components.on("willUnregister", (component) => {
-			const ids = [...this.#nodes.values()]
+		this.store.components.on("willUnregister", (component) => {
+			const ids = [...this.objects.values()]
 				.filter(
 					(node) =>
 						node.parentComponentId === component.id ||
@@ -82,9 +68,9 @@ export class CCNodeStore extends EventEmitter<CCNodeStoreEvents> {
 	 * @param node node to be registered
 	 */
 	register(node: CCNode): void {
-		invariant(this.#store.components.get(node.componentId));
-		invariant(this.#store.components.get(node.parentComponentId));
-		this.#nodes.set(node.id, node);
+		invariant(this.store.components.get(node.componentId));
+		invariant(this.store.components.get(node.parentComponentId));
+		this.objects.set(node.id, node);
 		this.emit("didRegister", node);
 	}
 
@@ -93,11 +79,11 @@ export class CCNodeStore extends EventEmitter<CCNodeStoreEvents> {
 	 * @param ids ids of nodes to be unregistered
 	 */
 	async unregister(ids: CCNodeId[]): Promise<void> {
-		const nodes = ids.map((id) => nullthrows(this.#nodes.get(id)));
-		await this.#store.transactionManager.runInTransaction(() => {
+		const nodes = ids.map((id) => nullthrows(this.objects.get(id)));
+		await this.store.transactionManager.runInTransaction(() => {
 			for (const node of nodes) {
 				this.emit("willUnregister", node);
-				this.#nodes.delete(node.id);
+				this.objects.delete(node.id);
 			}
 		});
 		for (const node of nodes) {
@@ -105,23 +91,14 @@ export class CCNodeStore extends EventEmitter<CCNodeStoreEvents> {
 		}
 	}
 
-	/**
-	 * Get a node by id
-	 * @param id id of node
-	 * @returns node of `id`
-	 */
-	get(id: CCNodeId): CCNode | undefined {
-		return this.#nodes.get(id);
-	}
-
 	getManyByParentComponentId(parentComponentId: CCComponentId): CCNode[] {
-		return [...this.#nodes.values()].filter(
+		return [...this.objects.values()].filter(
 			(node) => node.parentComponentId === parentComponentId,
 		);
 	}
 
 	getManyByComponentId(componentId: CCComponentId): CCNode[] {
-		return [...this.#nodes.values()].filter(
+		return [...this.objects.values()].filter(
 			(node) => node.componentId === componentId,
 		);
 	}
@@ -135,9 +112,9 @@ export class CCNodeStore extends EventEmitter<CCNodeStoreEvents> {
 		id: CCNodeId,
 		value: Partial<Pick<CCNode, "position" | "config">>,
 	): void {
-		const existingNode = nullthrows(this.#nodes.get(id));
+		const existingNode = nullthrows(this.objects.get(id));
 		const newNode = { ...existingNode, ...value };
-		this.#nodes.set(id, newNode);
+		this.objects.set(id, newNode);
 		if ("config" in value && value.config !== existingNode.config) {
 			this.emit("didUpdateConfig", newNode);
 		}
@@ -156,13 +133,5 @@ export class CCNodeStore extends EventEmitter<CCNodeStoreEvents> {
 			config: definition ? definition.initialConfig : null,
 			...partialNode,
 		};
-	}
-
-	/**
-	 * Get array of nodes
-	 * @returns array of nodes
-	 */
-	getMany(): CCNode[] {
-		return [...this.#nodes.values()];
 	}
 }
