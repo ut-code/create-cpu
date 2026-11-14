@@ -60,7 +60,7 @@ export class CCComponentPinStore extends CCBaseStore<
 > {
 	import(componentPins: CCComponentPin[]): void {
 		for (const pin of componentPins) {
-			this.objects.set(pin.id, pin);
+			this.setObject(pin);
 		}
 	}
 
@@ -86,7 +86,7 @@ export class CCComponentPinStore extends CCBaseStore<
 	 */
 	register(pin: CCComponentPin): void {
 		invariant(this.store.components.get(pin.componentId));
-		this.objects.set(pin.id, pin);
+		this.setObject(pin);
 		this.emit("didRegister", pin);
 	}
 
@@ -120,7 +120,7 @@ export class CCComponentPinStore extends CCBaseStore<
 		const pin = nullthrows(this.objects.get(id));
 		await this.store.transactionManager.runInTransaction(() => {
 			this.emit("willUnregister", pin);
-			this.objects.delete(id);
+			this.deleteObject(id);
 		});
 		this.emit("didUnregister", pin);
 	}
@@ -167,8 +167,9 @@ export class CCComponentPinStore extends CCBaseStore<
 	): void {
 		const pin = this.objects.get(id);
 		invariant(pin);
-		this.objects.set(id, { ...pin, ...value });
-		this.emit("didUpdate", pin);
+		const newPin = { ...pin, ...value };
+		this.setObject(newPin);
+		this.emit("didUpdate", newPin);
 	}
 
 	/**

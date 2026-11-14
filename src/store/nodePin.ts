@@ -32,21 +32,12 @@ export class CCNodePinStore extends CCBaseStore<
 	CCNodePin,
 	CCNodePinStoreEvents
 > {
-	#markedAsDeleted: Set<CCNodePinId> = new Set();
-
 	#bitWidthsByComponent: Map<CCComponentId, ComponentBitWidths> = new Map();
+
+	#bitWidthsRevision = -1;
 
 	/** components whose bit widths are being analyzed, to catch one containing itself */
 	#componentsBeingAnalyzed: Set<CCComponentId> = new Set();
-
-	/**
-	 * Drop the cached bit widths. A store removing an object announces it only when its
-	 * transaction ends, but the bit widths derived from the object are stale as soon as
-	 * it is gone, so such a store calls this right after the removal.
-	 */
-	clearBitWidthCache(): void {
-		this.#bitWidthsByComponent.clear();
-	}
 
 	import(nodePins: CCNodePin[]) {
 		for (const nodePin of nodePins) {
@@ -55,10 +46,6 @@ export class CCNodePinStore extends CCBaseStore<
 	}
 
 	mount() {
-		// A removed connection clears the cache itself, before its removal is announced
-		this.store.connections.on("didRegister", () => this.clearBitWidthCache());
-		// A calculated bit width may be derived from the config of its node
-		this.store.nodes.on("didUpdateConfig", () => this.clearBitWidthCache());
 		this.store.nodes.on("didRegister", (node) => {
 			const componentPins = this.store.componentPins.getManyByComponentId(
 				node.componentId,
@@ -109,8 +96,7 @@ export class CCNodePinStore extends CCBaseStore<
 	register(nodePin: CCNodePin): void {
 		invariant(this.store.componentPins.get(nodePin.componentPinId));
 		invariant(this.store.nodes.get(nodePin.nodeId));
-		this.objects.set(nodePin.id, nodePin);
-		this.clearBitWidthCache();
+		this.setObject(nodePin);
 		this.emit("didRegister", nodePin);
 	}
 
@@ -120,23 +106,17 @@ export class CCNodePinStore extends CCBaseStore<
 	 */
 	async unregister(id: CCNodePinId): Promise<void> {
 		const nodePin = nullthrows(this.objects.get(id));
-		this.#markedAsDeleted.add(id);
 		await this.store.transactionManager.runInTransaction(() => {
 			this.emit("willUnregister", nodePin);
-			this.objects.delete(nodePin.id);
-			// Its removal is announced only when the transaction ends, but the bit widths
-			// derived from it are stale from now on
-			this.clearBitWidthCache();
+			this.deleteObject(nodePin.id);
 		});
 		this.emit("didUnregister", nodePin);
-		this.#markedAsDeleted.delete(id);
 	}
 
 	update(id: CCNodePinId, value: Pick<CCNodePin, "manualBitWidth">) {
 		const existingNodePin = nullthrows(this.objects.get(id));
 		const newNodePin = { ...existingNodePin, ...value };
-		this.objects.set(id, newNodePin);
-		this.clearBitWidthCache();
+		this.setObject(newNodePin);
 		this.emit("didUpdate", newNodePin);
 	}
 
@@ -177,10 +157,14 @@ export class CCNodePinStore extends CCBaseStore<
 
 	/**
 	 * The bit width groups of the pins of the nodes inside a user-defined component.
-	 * They are cached until the circuit changes.
+	 * They are cached until the revision of the store changes.
 	 * @param componentId a user-defined component
 	 */
 	getComponentBitWidths(componentId: CCComponentId): ComponentBitWidths {
+		if (this.#bitWidthsRevision !== this.store.revision) {
+			this.#bitWidthsByComponent.clear();
+			this.#bitWidthsRevision = this.store.revision;
+		}
 		const cached = this.#bitWidthsByComponent.get(componentId);
 		if (cached) return cached;
 		invariant(
@@ -223,10 +207,6 @@ export class CCNodePinStore extends CCBaseStore<
 	 */
 	isInBitWidthConflict(nodePinId: CCNodePinId): boolean {
 		return this.#getBitWidthsAround(nodePinId).isInConflict(nodePinId);
-	}
-
-	isMarkedAsDeleted(id: CCNodePinId) {
-		return this.#markedAsDeleted.has(id);
 	}
 
 	/**

@@ -35,7 +35,7 @@ export class CCConnectionStore extends CCBaseStore<
 > {
 	import(connections: CCConnection[]): void {
 		for (const connection of connections) {
-			this.objects.set(connection.id, connection);
+			this.setObject(connection);
 		}
 	}
 
@@ -67,7 +67,7 @@ export class CCConnectionStore extends CCBaseStore<
 		) {
 			return;
 		}
-		this.objects.set(connection.id, connection);
+		this.setObject(connection);
 		this.emit("didRegister", connection);
 	}
 
@@ -80,9 +80,8 @@ export class CCConnectionStore extends CCBaseStore<
 		await this.store.transactionManager.runInTransaction(() => {
 			for (const connection of connections) {
 				this.emit("willUnregister", connection);
-				this.objects.delete(connection.id);
+				this.deleteObject(connection.id);
 			}
-			this.store.nodePins.clearBitWidthCache();
 		});
 		for (const connection of connections) {
 			this.emit("didUnregister", connection);

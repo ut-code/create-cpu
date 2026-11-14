@@ -40,9 +40,16 @@ export default class CCStore {
 	 * How many circuit changes the store has seen. Anything derived from the circuit, such
 	 * as a simulation netlist, can be cached against this number and rebuilt once it
 	 * changes. Moving a node does not change the circuit, so it does not count.
+	 *
+	 * A change is counted when it is made, not when it is announced, since a removal is
+	 * announced only when its transaction ends.
 	 */
 	get revision(): number {
 		return this.#revision;
+	}
+
+	countCircuitChange(): void {
+		this.#revision += 1;
 	}
 
 	/**
@@ -65,10 +72,6 @@ export default class CCStore {
 				this.componentPins.register(pin);
 			}
 		}
-
-		this.subscribeToCircuitChanges(() => {
-			this.#revision += 1;
-		});
 	}
 
 	/**

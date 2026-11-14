@@ -16,7 +16,24 @@ export abstract class CCBaseStore<
 > extends EventEmitter<Events> {
 	protected readonly store: CCStore;
 
-	protected readonly objects: Map<Id, T> = new Map();
+	readonly #objects: Map<Id, T> = new Map();
+
+	protected get objects(): ReadonlyMap<Id, T> {
+		return this.#objects;
+	}
+
+	protected setObject(
+		object: T,
+		{ changesCircuit = true }: { changesCircuit?: boolean } = {},
+	): void {
+		this.#objects.set(object.id, object);
+		if (changesCircuit) this.store.countCircuitChange();
+	}
+
+	protected deleteObject(id: Id): void {
+		this.#objects.delete(id);
+		this.store.countCircuitChange();
+	}
 
 	constructor(store: CCStore) {
 		super();
