@@ -39,7 +39,12 @@ export class CCNodePinStore extends CCBaseStore<
 	/** components whose bit widths are being analyzed, to catch one containing itself */
 	#componentsBeingAnalyzed: Set<CCComponentId> = new Set();
 
-	#clearBitWidthCache(): void {
+	/**
+	 * Drop the cached bit widths. A store removing an object announces it only when its
+	 * transaction ends, but the bit widths derived from the object are stale as soon as
+	 * it is gone, so such a store calls this right after the removal.
+	 */
+	clearBitWidthCache(): void {
 		this.#bitWidthsByComponent.clear();
 	}
 
@@ -50,12 +55,10 @@ export class CCNodePinStore extends CCBaseStore<
 	}
 
 	mount() {
-		this.store.connections.on("didRegister", () => this.#clearBitWidthCache());
-		this.store.connections.on("didUnregister", () =>
-			this.#clearBitWidthCache(),
-		);
+		// A removed connection clears the cache itself, before its removal is announced
+		this.store.connections.on("didRegister", () => this.clearBitWidthCache());
 		// A calculated bit width may be derived from the config of its node
-		this.store.nodes.on("didUpdateConfig", () => this.#clearBitWidthCache());
+		this.store.nodes.on("didUpdateConfig", () => this.clearBitWidthCache());
 		this.store.nodes.on("didRegister", (node) => {
 			const componentPins = this.store.componentPins.getManyByComponentId(
 				node.componentId,
@@ -107,7 +110,7 @@ export class CCNodePinStore extends CCBaseStore<
 		invariant(this.store.componentPins.get(nodePin.componentPinId));
 		invariant(this.store.nodes.get(nodePin.nodeId));
 		this.objects.set(nodePin.id, nodePin);
-		this.#clearBitWidthCache();
+		this.clearBitWidthCache();
 		this.emit("didRegister", nodePin);
 	}
 
@@ -123,7 +126,7 @@ export class CCNodePinStore extends CCBaseStore<
 			this.objects.delete(nodePin.id);
 			// Its removal is announced only when the transaction ends, but the bit widths
 			// derived from it are stale from now on
-			this.#clearBitWidthCache();
+			this.clearBitWidthCache();
 		});
 		this.emit("didUnregister", nodePin);
 		this.#markedAsDeleted.delete(id);
@@ -133,7 +136,7 @@ export class CCNodePinStore extends CCBaseStore<
 		const existingNodePin = nullthrows(this.objects.get(id));
 		const newNodePin = { ...existingNodePin, ...value };
 		this.objects.set(id, newNodePin);
-		this.#clearBitWidthCache();
+		this.clearBitWidthCache();
 		this.emit("didUpdate", newNodePin);
 	}
 

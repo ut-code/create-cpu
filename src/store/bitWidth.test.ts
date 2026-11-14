@@ -331,6 +331,43 @@ describe("bit width groups", () => {
 		expect(conflictingConnectionCount(store)).toBe(0);
 	});
 
+	it("drops a removed connection from the bit widths before announcing its removal", () => {
+		const store = createTestStore();
+		const root = registerTestComponent(store, "Root");
+		const constant = registerConst(store, root.id, 8);
+		const notNode = registerTestNode(store, root.id, not.component.id);
+		const screen = registerDisplay(store, root.id, 4, 2);
+		connectTestNodePins(
+			store,
+			root.id,
+			constant.out,
+			testNodePin(store, notNode, not.inputPin.In),
+		);
+		connectTestNodePins(
+			store,
+			root.id,
+			testNodePin(store, notNode, not.outputPin.Out),
+			screen.pixels,
+		);
+		store.nodes.update(screen.node.id, {
+			config: { resolution: { x: 2, y: 2 }, pixelOrder: "row-major" },
+		});
+		expect(conflictingConnectionCount(store)).toBe(2);
+
+		const [toScreen] = store.connections.getConnectionsByNodePinId(
+			screen.pixels,
+		);
+		// Not awaited: renderers query the bit widths before the removal is announced
+		void store.connections.unregister([nullthrows(toScreen).id]);
+
+		expect(conflictingConnectionCount(store)).toBe(0);
+		expect(
+			store.nodePins.getNodePinBitWidthStatus(
+				testNodePin(store, notNode, not.outputPin.Out),
+			),
+		).toEqual({ isFixed: true, bitWidth: 8 });
+	});
+
 	it("refuses a new connection that would tie conflicting widths together", () => {
 		const store = createTestStore();
 		const inverter = registerInverterComponent(store);
