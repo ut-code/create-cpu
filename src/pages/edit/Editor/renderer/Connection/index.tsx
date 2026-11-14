@@ -84,7 +84,11 @@ export function CCComponentEditorRendererConnectionCore({
 				}
 				e.preventDefault();
 				e.stopPropagation();
-				componentEditorState.selectConnection([connectionId], true);
+				// Keep a selection containing it, so that the menu acts on all of them, like
+				// the context menu of a node does
+				if (!componentEditorState.selectedConnectionIds.has(connectionId)) {
+					componentEditorState.selectConnection([connectionId], true);
+				}
 				componentEditorState.openContextMenu(e);
 			}}
 			id={connectionId}
