@@ -32,6 +32,7 @@ import nullthrows from "nullthrows";
 import invariant from "tiny-invariant";
 import type { Tagged } from "type-fest";
 import type CCStore from ".";
+import type { BitWidthGroupId } from "./bitWidth";
 import type { CCComponentId } from "./component";
 import type { CCComponentPinId } from "./componentPin";
 import type {
@@ -145,39 +146,33 @@ export class SimulationUnconnectedPinError extends Error {
 }
 
 /**
- * The bit width the pins of a node instance fall back to when their own width is not
- * fixed. It is inherited from the pin of the node whose width the surrounding circuit
- * has already fixed, which is how a component written for one bit width can be reused
- * for another.
+ * Thrown when the pins tied together in a component fix different bit widths. The
+ * editor highlights the connections between them.
  */
-function resolveInstanceDefaultBitWidth(
-	store: CCStore,
-	node: CCNode,
-	parentDefaultBitWidth: number,
-): number {
-	for (const nodePin of store.nodePins.getManyByNodeId(node.id)) {
-		const componentPinBitWidthStatus =
-			store.componentPins.getComponentPinBitWidthStatus(nodePin.componentPinId);
-		if (
-			!componentPinBitWidthStatus.isFixed &&
-			componentPinBitWidthStatus.fixMode === "automatic"
-		) {
-			const nodePinBitWidthStatus = store.nodePins.getNodePinBitWidthStatus(
-				nodePin.id,
-			);
-			if (nodePinBitWidthStatus.isFixed) {
-				return nodePinBitWidthStatus.bitWidth;
-			}
-		}
+export class SimulationBitWidthConflictError extends Error {
+	constructor(
+		readonly componentId: CCComponentId,
+		componentName: string,
+	) {
+		super(
+			`The bit widths of some connected pins in ${componentName} do not match. Fix the highlighted connections.`,
+		);
+		this.name = "SimulationBitWidthConflictError";
 	}
-	return parentDefaultBitWidth;
 }
+
+/**
+ * The bit widths that the surroundings of a node instance give to the groups inside its
+ * component that do not fix a width by themselves.
+ */
+type BitWidthByGroup = ReadonlyMap<BitWidthGroupId, number>;
 
 /**
  * Flatten `componentId` into intrinsic node instances and the nets between them.
  * @param store store to read the circuit from
  * @param componentId component to flatten
- * @param defaultBitWidth bit width of the pins of the component whose width is not fixed
+ * @param defaultBitWidth bit width of the pins whose width neither the circuit nor the
+ *   pins of the component around them fix
  * @returns the flattened netlist, ready to be evaluated time step by time step
  */
 export function buildSimulationNetlist(
@@ -285,25 +280,18 @@ export function buildSimulationNetlist(
 		path: readonly CCNodeId[],
 		nodeId: CCNodeId,
 		pinByKey: Record<string, { readonly id: CCComponentPinId }>,
-		instanceDefaultBitWidth: number,
+		getBitWidth: (nodePinId: CCNodePinId) => number,
 	): Record<string, SimulationPinInstance[]> => {
 		const shape: Record<string, SimulationPinInstance[]> = {};
 		for (const [key, componentPin] of Object.entries(pinByKey)) {
 			shape[key] = store.nodePins
 				.getManyByNodeIdAndComponentPinId(nodeId, componentPin.id)
 				.toSorted((a, b) => a.order - b.order)
-				.map((nodePin) => {
-					const bitWidthStatus = store.nodePins.getNodePinBitWidthStatus(
-						nodePin.id,
-					);
-					return {
-						nodePinId: nodePin.id,
-						netId: resolveNet(path, nodePin.id),
-						bitWidth: bitWidthStatus.isFixed
-							? bitWidthStatus.bitWidth
-							: instanceDefaultBitWidth,
-					};
-				});
+				.map((nodePin) => ({
+					nodePinId: nodePin.id,
+					netId: resolveNet(path, nodePin.id),
+					bitWidth: getBitWidth(nodePin.id),
+				}));
 		}
 		return shape;
 	};
@@ -311,13 +299,29 @@ export function buildSimulationNetlist(
 	const visit = (
 		path: readonly CCNodeId[],
 		ownerComponentId: CCComponentId,
-		instanceDefaultBitWidth: number,
+		bitWidthByGroup: BitWidthByGroup,
 		componentStack: readonly CCComponentId[],
 	) => {
 		invariant(
 			!componentStack.includes(ownerComponentId),
 			`Component ${ownerComponentId} contains itself`,
 		);
+		const bitWidths = store.nodePins.getComponentBitWidths(ownerComponentId);
+		if (bitWidths.hasConflict()) {
+			const ownerComponent = nullthrows(store.components.get(ownerComponentId));
+			throw new SimulationBitWidthConflictError(
+				ownerComponentId,
+				ownerComponent.name,
+			);
+		}
+		/** a group fixing no width takes it from the surroundings, or else the default */
+		const getBitWidth = (nodePinId: CCNodePinId): number => {
+			const status = bitWidths.getStatus(nodePinId);
+			if (status.isFixed) return status.bitWidth;
+			return (
+				bitWidthByGroup.get(bitWidths.getGroup(nodePinId)) ?? defaultBitWidth
+			);
+		};
 		for (const node of store.nodes.getManyByParentComponentId(
 			ownerComponentId,
 		)) {
@@ -336,12 +340,26 @@ export function buildSimulationNetlist(
 
 			const component = nullthrows(store.components.get(node.componentId));
 			if (!component.intrinsicType) {
-				visit(
-					nodePath,
+				// Each pin of the node hands its width to the group of its implementation
+				const childBitWidths = store.nodePins.getComponentBitWidths(
 					node.componentId,
-					resolveInstanceDefaultBitWidth(store, node, instanceDefaultBitWidth),
-					[...componentStack, ownerComponentId],
 				);
+				const childBitWidthByGroup = new Map<BitWidthGroupId, number>();
+				for (const nodePin of store.nodePins.getManyByNodeId(node.id)) {
+					const implementation = nullthrows(
+						nullthrows(store.componentPins.get(nodePin.componentPinId))
+							.implementation,
+						`Pin ${nodePin.componentPinId} of a user-defined component has no implementation`,
+					);
+					childBitWidthByGroup.set(
+						childBitWidths.getGroup(implementation),
+						getBitWidth(nodePin.id),
+					);
+				}
+				visit(nodePath, node.componentId, childBitWidthByGroup, [
+					...componentStack,
+					ownerComponentId,
+				]);
 				continue;
 			}
 			if (
@@ -368,19 +386,19 @@ export function buildSimulationNetlist(
 					nodePath,
 					node.id,
 					definition.inputPin,
-					instanceDefaultBitWidth,
+					getBitWidth,
 				),
 				outputShape: resolveShape(
 					nodePath,
 					node.id,
 					definition.outputPin,
-					instanceDefaultBitWidth,
+					getBitWidth,
 				),
 				behavior,
 			});
 		}
 	};
-	visit([], componentId, defaultBitWidth, []);
+	visit([], componentId, new Map(), []);
 
 	// Nets of the pins the editor renders, and of the values supplied from the outside
 	const netByNodePin = new Map<CCNodePinId, SimulationNetId>();

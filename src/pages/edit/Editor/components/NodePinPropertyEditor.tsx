@@ -4,7 +4,6 @@ import nullthrows from "nullthrows";
 import { useState } from "react";
 import invariant from "tiny-invariant";
 import { rect } from "../../../../common/rect";
-import { CCConnectionStore } from "../../../../store/connection";
 import { IntrinsicComponentDefinition } from "../../../../store/intrinsics/base";
 import { CCNodePinStore } from "../../../../store/nodePin";
 import { useStore } from "../../../../store/react";
@@ -116,30 +115,10 @@ export function CCComponentEditorNodePinPropertyEditor() {
 						if (nodePin && bitWidth) {
 							maxOrder = nodePin.order; // nodePins are sorted by order
 							if (nodePin.manualBitWidth !== bitWidth) {
+								// A connection the new width conflicts with is kept and highlighted
 								store.nodePins.update(nodePin.id, {
 									manualBitWidth: bitWidth,
 								});
-								const connections = store.connections.getConnectionsByNodePinId(
-									nodePin.id,
-								);
-								for (const connection of connections) {
-									const from = connection.from;
-									const to = connection.to;
-									const parentComponentId = connection.parentComponentId;
-									store.connections.unregister([connection.id]).then(() => {
-										if (store.nodePins.isConnectable(from, to)) {
-											// reconnect if still connectable after bit width change
-											store.connections.register(
-												CCConnectionStore.create({
-													parentComponentId,
-													from,
-													to,
-													bentPortion: 0.5,
-												}),
-											);
-										}
-									});
-								}
 							}
 							continue;
 						}
