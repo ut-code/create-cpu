@@ -110,8 +110,12 @@ export default function CCComponentEditorContextMenu({
 									});
 								},
 							);
+							// A connection in a bit width conflict is moved as it is, since the
+							// original is removed below
 							for (const connection of newConnections)
-								store.connections.register(connection);
+								store.connections.register(connection, {
+									allowBitWidthConflict: true,
+								});
 							store.connections.unregister([
 								...componentEditorState.selectedConnectionIds,
 							]);

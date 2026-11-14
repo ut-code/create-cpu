@@ -16,6 +16,7 @@ import {
 	type SimulationInstance,
 	type SimulationNetId,
 	type SimulationNetlist,
+	type SimulationPinInstance,
 	simulationTerminalKey,
 } from "./netlist";
 import type { CCNodeId } from "./node";
@@ -89,20 +90,43 @@ function getSimulationNetlist(
 	return netlist;
 }
 
+/**
+ * Make sure a value is as wide as the pin it passes through. The netlist refuses a
+ * circuit whose connected pins disagree on their bit width, so a mismatch here means an
+ * intrinsic node or the caller supplying the input values got the width wrong.
+ */
+function assertValueFitsPin(
+	value: SimulationValue,
+	pin: SimulationPinInstance,
+	describePin: () => string,
+): void {
+	if (value.length !== pin.bitWidth) {
+		throw new Error(
+			`${describePin()} carries ${value.length} bits, but the pin is ${pin.bitWidth} bits wide`,
+		);
+	}
+}
+
 /** The values arriving at the input pins of an instance, read from the nets. */
 function collectInputs(
 	instance: SimulationInstance,
 	netValues: ReadonlyMap<SimulationNetId, SimulationValue>,
 ): IntrinsicPinValues<string> {
-	return mapValues(instance.inputShape, (pins) =>
-		pins.map((pin) =>
+	return mapValues(instance.inputShape, (pins, key) =>
+		pins.map((pin) => {
 			// The order guarantees that every driver ran first, so a value can only be
 			// missing when it was never supplied to an input pin of the component.
-			nullthrows(
+			const value = nullthrows(
 				netValues.get(pin.netId),
 				`No value reaches pin ${pin.nodePinId}`,
-			),
-		),
+			);
+			assertValueFitsPin(
+				value,
+				pin,
+				() => `Input ${key} of ${describeInstance(instance)}`,
+			);
+			return value;
+		}),
 	);
 }
 
@@ -120,14 +144,16 @@ function evaluateInstance(
 			),
 			config: instance.config,
 		};
+	// Collected outside the `try`, since a missing or misfit input already names its pin
+	const inputs =
+		behavior.kind === "sequential"
+			? previousFrame && collectInputs(instance, previousFrame.netValues)
+			: collectInputs(instance, netValues);
 	try {
 		if (behavior.kind === "sequential") {
-			return behavior.evaluate(
-				previousFrame && collectInputs(instance, previousFrame.netValues),
-				environment,
-			);
+			return behavior.evaluate(inputs, environment);
 		}
-		return behavior.evaluate(collectInputs(instance, netValues), environment);
+		return behavior.evaluate(nullthrows(inputs), environment);
 	} catch (error) {
 		// The evaluation functions only see values, so tell which node they belong to
 		throw new Error(
@@ -147,7 +173,8 @@ function evaluateInstance(
  * @param componentId component to simulate
  * @param inputValues values supplied to the input pins of the component
  * @param previousFrame the previous time step, or null for the first one
- * @param defaultBitWidth bit width of the pins of the component whose width is not fixed
+ * @param defaultBitWidth bit width of the pins whose width neither the circuit nor the
+ *   pins of the component around them fix
  * @returns the values of this time step
  */
 export default function simulateComponent(
@@ -181,7 +208,13 @@ export default function simulateComponent(
 				`${describeInstance(instance)} output ${values.length} values for the ${pins.length} pins of ${key}`,
 			);
 			for (const [index, pin] of pins.entries()) {
-				netValues.set(pin.netId, nullthrows(values[index]));
+				const value = nullthrows(values[index]);
+				assertValueFitsPin(
+					value,
+					pin,
+					() => `Output ${key} of ${describeInstance(instance)}`,
+				);
+				netValues.set(pin.netId, value);
 			}
 		}
 	}

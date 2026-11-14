@@ -2,6 +2,8 @@ import nullthrows from "nullthrows";
 import invariant from "tiny-invariant";
 import type { Tagged } from "type-fest";
 import { CCBaseStore, type CCBaseStoreEvents } from "./base";
+import { analyzeComponentBitWidths, type ComponentBitWidths } from "./bitWidth";
+import type { CCComponentId } from "./component";
 import type { CCComponentPinId, CCNodePinBitWidthStatus } from "./componentPin";
 import { IntrinsicComponentDefinition } from "./intrinsics/base";
 import type { CCNodeId } from "./node";
@@ -32,10 +34,13 @@ export class CCNodePinStore extends CCBaseStore<
 > {
 	#markedAsDeleted: Set<CCNodePinId> = new Set();
 
-	#bitWidthCache: Map<CCNodePinId, CCNodePinBitWidthStatus> = new Map();
+	#bitWidthsByComponent: Map<CCComponentId, ComponentBitWidths> = new Map();
+
+	/** components whose bit widths are being analyzed, to catch one containing itself */
+	#componentsBeingAnalyzed: Set<CCComponentId> = new Set();
 
 	#clearBitWidthCache(): void {
-		this.#bitWidthCache.clear();
+		this.#bitWidthsByComponent.clear();
 	}
 
 	import(nodePins: CCNodePin[]) {
@@ -167,146 +172,79 @@ export class CCNodePinStore extends CCBaseStore<
 		);
 	}
 
-	static #requireManualBitWidth(nodePin: CCNodePin): number {
+	/**
+	 * The bit width groups of the pins of the nodes inside a user-defined component.
+	 * They are cached until the circuit changes.
+	 * @param componentId a user-defined component
+	 */
+	getComponentBitWidths(componentId: CCComponentId): ComponentBitWidths {
+		const cached = this.#bitWidthsByComponent.get(componentId);
+		if (cached) return cached;
 		invariant(
-			nodePin.manualBitWidth !== null && nodePin.manualBitWidth > 0,
-			`Node pin ${nodePin.id} of a configurable component pin must have a positive manual bit width, but got ${nodePin.manualBitWidth}`,
+			!this.#componentsBeingAnalyzed.has(componentId),
+			`Component ${componentId} contains itself`,
 		);
-		return nodePin.manualBitWidth;
+		this.#componentsBeingAnalyzed.add(componentId);
+		try {
+			const bitWidths = analyzeComponentBitWidths(
+				this.store,
+				componentId,
+				(childComponentId) => this.getComponentBitWidths(childComponentId),
+			);
+			this.#bitWidthsByComponent.set(componentId, bitWidths);
+			return bitWidths;
+		} finally {
+			this.#componentsBeingAnalyzed.delete(componentId);
+		}
 	}
 
-	/**
-	 * Collect the manually specified bit widths of the pins of a single node, grouped by
-	 * the pin key of its intrinsic component definition (e.g. `In`, `Out`) and ordered by
-	 * the order of the node pins.
-	 * @param nodePins all pins of one node
-	 * @returns the bit widths of the pins of configurable component pins
-	 */
-	static #collectManualBitWidths(
-		nodePins: CCNodePin[],
-	): Partial<Record<string, number[]>> {
-		const manualBitWidths: Partial<Record<string, number[]>> = {};
-		for (const nodePin of nodePins.toSorted((a, b) => a.order - b.order)) {
-			const attributes = IntrinsicComponentDefinition.getPinAttributesByPinId(
-				nodePin.componentPinId,
-			);
-			// Only a configurable pin carries a manual bit width; the others are null
-			if (attributes?.bitWidthPolicy.type !== "configurable") continue;
-			const bitWidths = manualBitWidths[attributes.key] ?? [];
-			bitWidths.push(CCNodePinStore.#requireManualBitWidth(nodePin));
-			manualBitWidths[attributes.key] = bitWidths;
-		}
-		return manualBitWidths;
+	#getBitWidthsAround(nodePinId: CCNodePinId): ComponentBitWidths {
+		const nodePin = nullthrows(this.get(nodePinId));
+		const node = nullthrows(this.store.nodes.get(nodePin.nodeId));
+		return this.getComponentBitWidths(node.parentComponentId);
 	}
 
 	/**
 	 * Get the bit width status of a node pin
-	 * @param pinId id of pin
-	 * @param nodeId id of node
+	 * @param nodePinId id of the node pin
 	 * @returns bit width status of the pin
 	 */
 	getNodePinBitWidthStatus(nodePinId: CCNodePinId): CCNodePinBitWidthStatus {
-		const cached = this.#bitWidthCache.get(nodePinId);
-		if (cached) return cached;
-		const traverseNodePinBitWidthStatus = (
-			targetNodePinId: CCNodePinId,
-			seen: Set<CCNodeId>,
-		): CCNodePinBitWidthStatus => {
-			const targetNodePin = nullthrows(this.get(targetNodePinId));
-			const { nodeId: targetNodeId, componentPinId: targetComponentPinId } =
-				targetNodePin;
+		return this.#getBitWidthsAround(nodePinId).getStatus(nodePinId);
+	}
 
-			seen.add(targetNodeId);
-			const targetNode = nullthrows(this.store.nodes.get(targetNodeId));
-			const targetNodePins = this.getManyByNodeId(targetNode.id);
-			const attributes =
-				IntrinsicComponentDefinition.getPinAttributesByPinId(
-					targetComponentPinId,
-				);
-			if (attributes) {
-				switch (attributes.bitWidthPolicy.type) {
-					case "configurable":
-						return {
-							isFixed: true,
-							bitWidth: CCNodePinStore.#requireManualBitWidth(targetNodePin),
-						};
-					case "calculated":
-						return {
-							isFixed: true,
-							bitWidth: attributes.bitWidthPolicy.calculateBitWidth(
-								targetNode.config,
-								CCNodePinStore.#collectManualBitWidths(targetNodePins),
-							),
-						};
-					case "inferred":
-						// Resolved from the pins it is connected to, below
-						break;
-					default:
-						throw new Error(
-							`Unknown bit width policy: ${attributes.bitWidthPolicy satisfies never}`,
-						);
-				}
-			} else {
-				// A user defined component pin is fixed by the implementation of its component
-				const componentPinBitWidthStatus =
-					this.store.componentPins.getComponentPinBitWidthStatus(
-						targetComponentPinId,
-					);
-				if (componentPinBitWidthStatus.isFixed) {
-					return componentPinBitWidthStatus;
-				}
-			}
-			// The bit width of an inferred pin is shared with the other inferred pins of its
-			// node, so any of them may be the one that is connected to a pin of a known width.
-			for (const siblingNodePin of targetNodePins) {
-				const siblingComponentPinBitWidthStatus =
-					this.store.componentPins.getComponentPinBitWidthStatus(
-						siblingNodePin.componentPinId,
-					);
-				if (siblingComponentPinBitWidthStatus.isFixed) {
-					continue;
-				}
-				if (siblingComponentPinBitWidthStatus.fixMode === "nodeDependent") {
-					// The bit width of a node dependent pin never propagates to its sibling
-					// pins, so no intrinsic component mixes it with inferred pins.
-					throw new Error(
-						`Component pin ${siblingNodePin.componentPinId} must not mix a node dependent bit width with inferred sibling pins`,
-					);
-				}
-				const connections = nullthrows(
-					this.store.connections.getConnectionsByNodePinId(siblingNodePin.id),
-				);
-				for (const connection of connections) {
-					const componentPin = nullthrows(
-						this.store.componentPins.get(siblingNodePin.componentPinId),
-					);
-					const connectedNodePinId =
-						componentPin.type === "input" ? connection.from : connection.to;
-					const connectedNodePin = nullthrows(this.get(connectedNodePinId));
-					if (seen.has(connectedNodePin.nodeId)) {
-						continue;
-					}
-					const connectedPinBitWidthStatus = traverseNodePinBitWidthStatus(
-						connectedNodePinId,
-						seen,
-					);
-					if (connectedPinBitWidthStatus.isFixed) {
-						return connectedPinBitWidthStatus;
-					}
-				}
-			}
-			return { isFixed: false };
-		};
-		const result = traverseNodePinBitWidthStatus(nodePinId, new Set());
-		this.#bitWidthCache.set(nodePinId, result);
-		return result;
+	/**
+	 * Whether the pins tied to a node pin fix different bit widths, which leaves its
+	 * connections unable to carry a value.
+	 * @param nodePinId id of the node pin
+	 */
+	isInBitWidthConflict(nodePinId: CCNodePinId): boolean {
+		return this.#getBitWidthsAround(nodePinId).isInConflict(nodePinId);
 	}
 
 	isMarkedAsDeleted(id: CCNodePinId) {
 		return this.#markedAsDeleted.has(id);
 	}
 
-	isConnectable(a: CCNodePinId, b: CCNodePinId) {
+	/**
+	 * Check whether two node pins can be connected.
+	 *
+	 * Only the component the connection is drawn in is checked for a bit width
+	 * conflict. A connection inside a component can still cause one in the components
+	 * using it, e.g. by tying an input to an output whose widths differ outside. That is
+	 * accepted, just like a config change inside a component that does the same: the
+	 * conflicting connections are highlighted where they are, and the simulation refuses
+	 * to run until they are fixed.
+	 * @param a id of a pin
+	 * @param b id of the other pin
+	 * @param options.allowBitWidthConflict skip the bit width check, to copy a connection
+	 *   as it is even when it is in conflict
+	 */
+	isConnectable(
+		a: CCNodePinId,
+		b: CCNodePinId,
+		{ allowBitWidthConflict = false }: { allowBitWidthConflict?: boolean } = {},
+	) {
 		const aNodePin = this.get(a);
 		const bNodePin = this.get(b);
 		if (!aNodePin || !bNodePin) {
@@ -362,7 +300,7 @@ export class CCNodePinStore extends CCBaseStore<
 			console.warn(`Input pin already has a connection: ${bNodePin.id}`);
 			return false;
 		}
-		if (!this.hasCompatibleBitWidths(a, b)) {
+		if (!allowBitWidthConflict && !this.hasCompatibleBitWidths(a, b)) {
 			console.warn(
 				`Cannot connect pins with conflicting bit widths: ${aNodePin.id} and ${bNodePin.id}`,
 			);
@@ -372,17 +310,16 @@ export class CCNodePinStore extends CCBaseStore<
 	}
 
 	/**
-	 * Check whether two node pins can carry the same value. A pin whose bit width is not
-	 * fixed yet adapts to the pin it is connected to, so it is compatible with any pin.
+	 * Check whether two node pins of the same component can be connected without
+	 * causing a bit width conflict. A pin whose bit width is not fixed yet adapts to the
+	 * pin it is connected to, and so do the pins tied to it.
 	 * @param a id of a pin
 	 * @param b id of the other pin
-	 * @returns whether the bit widths of the two pins do not conflict
+	 * @returns whether the connection brings no new width into a conflict
+	 * @see ComponentBitWidths.canTie
 	 */
 	hasCompatibleBitWidths(a: CCNodePinId, b: CCNodePinId): boolean {
-		const aBitWidthStatus = this.getNodePinBitWidthStatus(a);
-		const bBitWidthStatus = this.getNodePinBitWidthStatus(b);
-		if (!aBitWidthStatus.isFixed || !bBitWidthStatus.isFixed) return true;
-		return aBitWidthStatus.bitWidth === bBitWidthStatus.bitWidth;
+		return this.#getBitWidthsAround(a).canTie(a, b);
 	}
 
 	/**

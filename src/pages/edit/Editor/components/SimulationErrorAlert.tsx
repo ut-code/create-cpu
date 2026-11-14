@@ -3,7 +3,8 @@ import { useComponentEditorStore } from "../store";
 
 /**
  * Shows why the circuit could not be simulated, e.g. because a loop needs a flip-flop
- * to break it or because an input pin is left unconnected.
+ * to break it, because an input pin is left unconnected, or because connected pins
+ * disagree on their bit width.
  */
 export default function CCComponentEditorSimulationErrorAlert() {
 	const componentEditorState = useComponentEditorStore()();
