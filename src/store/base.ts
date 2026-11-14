@@ -1,22 +1,37 @@
 import EventEmitter from "eventemitter3";
 import type CCStore from ".";
+import type {
+	CCObjectByType,
+	CCObjectId,
+	CCObjectStore,
+	CCObjectType,
+	CCReferences,
+} from "./types";
 
 /** Events emitted by every object-specific store */
-export type CCBaseStoreEvents<T> = {
+export type CCObjectStoreEvents<T> = {
 	didRegister(object: T): void;
 	willUnregister(object: T): void;
 	didUnregister(object: T): void;
 };
 
 /** Base class of the object-specific stores (components, nodes, pins, and connections) */
-export abstract class CCBaseStore<
-	Id extends string,
-	T extends { readonly id: Id },
-	Events extends CCBaseStoreEvents<T>,
-> extends EventEmitter<Events> {
+export abstract class CCObjectStoreBase<
+		K extends CCObjectType,
+		Events extends CCObjectStoreEvents<CCObjectByType[K]>,
+	>
+	extends EventEmitter<Events>
+	implements CCObjectStore<K>
+{
 	protected readonly store: CCStore;
 
-	protected readonly objects: Map<Id, T> = new Map();
+	protected readonly objects: Map<CCObjectId<K>, CCObjectByType[K]> = new Map();
+
+	/**
+	 * Fields of the objects holding the id of another object, mapped to the object type of that id.
+	 * Every such field must be listed with its correct object type.
+	 */
+	abstract readonly references: CCReferences<CCObjectByType[K]>;
 
 	constructor(store: CCStore) {
 		super();
@@ -31,7 +46,7 @@ export abstract class CCBaseStore<
 	 * @param id id of object
 	 * @returns object of `id`
 	 */
-	get(id: Id): T | undefined {
+	get(id: CCObjectId<K>): CCObjectByType[K] | undefined {
 		return this.objects.get(id);
 	}
 
@@ -39,7 +54,7 @@ export abstract class CCBaseStore<
 	 * Get array of objects
 	 * @returns array of objects
 	 */
-	getMany(): T[] {
+	getMany(): CCObjectByType[K][] {
 		return [...this.objects.values()];
 	}
 }

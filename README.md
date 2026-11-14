@@ -17,7 +17,9 @@ Every object in the store has a globally unique UUID stored in the id property, 
 
 The store is divided into a root store and separate stores defined for each type of object, with actual data stored in these individual object stores.
 
-Each object-specific store extends [`CCBaseStore`](/src/store/base.ts), which implements [EventEmitter](https://nodejs.org/docs/latest/api/events.html#class-eventemitter), allowing the renderer to monitor changes to the store through events.
+Each object-specific store lists in `references` every field of its objects that holds the id of another object, along with the type of that object. Keep it complete and correct when adding such a field, since the type checker does not enforce it.
+
+Each object-specific store extends [`CCObjectStoreBase`](/src/store/base.ts), which implements [EventEmitter](https://nodejs.org/docs/latest/api/events.html#class-eventemitter), allowing the renderer to monitor changes to the store through events.
 Each object-specific store must implement the following four events, with the event object passing the object that triggered the event:
 
 - `didRegister`: Triggered when an object is registered in the store.

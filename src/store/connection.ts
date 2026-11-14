@@ -1,12 +1,12 @@
 import nullthrows from "nullthrows";
-import type { Tagged } from "type-fest";
-import { CCBaseStore, type CCBaseStoreEvents } from "./base";
+import { CCObjectStoreBase, type CCObjectStoreEvents } from "./base";
 import type { CCComponentId } from "./component";
 import type { CCComponentPinId } from "./componentPin";
 import type { CCNodeId } from "./node";
 import type { CCNodePinId } from "./nodePin";
+import type { CCObjectId } from "./types";
 
-export type CCConnectionId = Tagged<string, "CCConnectionId">;
+export type CCConnectionId = CCObjectId<"connections">;
 
 export type CCConnectionEndpoint = {
 	readonly nodeId: CCNodeId;
@@ -21,18 +21,23 @@ export type CCConnection = {
 	bentPortion: number;
 };
 
-export type CCConnectionStoreEvents = CCBaseStoreEvents<CCConnection>;
+export type CCConnectionStoreEvents = CCObjectStoreEvents<CCConnection>;
 export const ccConnectionStoreChangeEventTypes: (keyof CCConnectionStoreEvents)[] =
 	["didRegister", "didUnregister"];
 
 /**
  * Store of connections
  */
-export class CCConnectionStore extends CCBaseStore<
-	CCConnectionId,
-	CCConnection,
+export class CCConnectionStore extends CCObjectStoreBase<
+	"connections",
 	CCConnectionStoreEvents
 > {
+	readonly references = {
+		from: "nodePins",
+		to: "nodePins",
+		parentComponentId: "components",
+	} as const;
+
 	import(connections: CCConnection[]): void {
 		for (const connection of connections) {
 			this.objects.set(connection.id, connection);
