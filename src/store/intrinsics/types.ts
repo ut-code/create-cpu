@@ -61,7 +61,10 @@ export type CCIntrinsicComponentNullaryOperatorSpec = {
 export type CCIntrinsicComponentDisplaySpec = {
 	in: "Pixels";
 	out: never;
-	config: { resolution: Vector2 };
+	config: {
+		resolution: Vector2;
+		pixelOrder?: "row-major" | "column-major";
+	};
 };
 
 export type CCIntrinsicComponentConstSpecConfigViewMode =

@@ -414,7 +414,10 @@ export const display =
 			},
 		},
 		out: {},
-		initialConfig: { resolution: { x: 20, y: 15 } },
+		initialConfig: {
+			resolution: { x: 20, y: 15 },
+			pixelOrder: "row-major",
+		},
 		evaluate: () => true,
 	});
 
