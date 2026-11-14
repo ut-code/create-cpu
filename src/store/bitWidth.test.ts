@@ -3,7 +3,13 @@ import { describe, expect, it } from "vitest";
 import type CCStore from ".";
 import type { CCComponentId } from "./component";
 import { CCConnectionStore } from "./connection";
-import { aggregate, const_, display, not } from "./intrinsics/definitions";
+import {
+	aggregate,
+	broadcast,
+	const_,
+	display,
+	not,
+} from "./intrinsics/definitions";
 import { SimulationBitWidthConflictError } from "./netlist";
 import type { CCNodePinId } from "./nodePin";
 import simulateComponent from "./simulation";
@@ -392,5 +398,30 @@ describe("simulation of bit width groups", () => {
 		expect(
 			frame.getNodePinValue(testNodePin(store, dualNode, dual.out2)),
 		).toEqual(testBits(0b11, 2));
+	});
+
+	it("rejects an input value that does not fit its pin", () => {
+		const store = createTestStore();
+		const root = registerTestComponent(store, "Root");
+		const into = registerTestInputNode(store, root.id, "In");
+		const broadcastNode = registerTestNode(
+			store,
+			root.id,
+			broadcast.component.id,
+		);
+		connectTestNodePins(
+			store,
+			root.id,
+			into.out,
+			testNodePin(store, broadcastNode, broadcast.inputPin.In),
+		);
+
+		expect(() =>
+			simulateComponent(
+				store,
+				root.id,
+				new Map([[into.componentPinId, testBits(0b101, 3)]]),
+			),
+		).toThrow(/carries 3 bits, but the pin is 1 bits wide/);
 	});
 });

@@ -16,6 +16,7 @@ import {
 	type SimulationInstance,
 	type SimulationNetId,
 	type SimulationNetlist,
+	type SimulationPinInstance,
 	simulationTerminalKey,
 } from "./netlist";
 import type { CCNodeId } from "./node";
@@ -89,20 +90,43 @@ function getSimulationNetlist(
 	return netlist;
 }
 
+/**
+ * Make sure a value is as wide as the pin it passes through. The netlist refuses a
+ * circuit whose connected pins disagree on their bit width, so a mismatch here means an
+ * intrinsic node or the caller supplying the input values got the width wrong.
+ */
+function assertValueFitsPin(
+	value: SimulationValue,
+	pin: SimulationPinInstance,
+	describePin: () => string,
+): void {
+	if (value.length !== pin.bitWidth) {
+		throw new Error(
+			`${describePin()} carries ${value.length} bits, but the pin is ${pin.bitWidth} bits wide`,
+		);
+	}
+}
+
 /** The values arriving at the input pins of an instance, read from the nets. */
 function collectInputs(
 	instance: SimulationInstance,
 	netValues: ReadonlyMap<SimulationNetId, SimulationValue>,
 ): IntrinsicPinValues<string> {
-	return mapValues(instance.inputShape, (pins) =>
-		pins.map((pin) =>
+	return mapValues(instance.inputShape, (pins, key) =>
+		pins.map((pin) => {
 			// The order guarantees that every driver ran first, so a value can only be
 			// missing when it was never supplied to an input pin of the component.
-			nullthrows(
+			const value = nullthrows(
 				netValues.get(pin.netId),
 				`No value reaches pin ${pin.nodePinId}`,
-			),
-		),
+			);
+			assertValueFitsPin(
+				value,
+				pin,
+				() => `Input ${key} of ${describeInstance(instance)}`,
+			);
+			return value;
+		}),
 	);
 }
 
@@ -181,7 +205,13 @@ export default function simulateComponent(
 				`${describeInstance(instance)} output ${values.length} values for the ${pins.length} pins of ${key}`,
 			);
 			for (const [index, pin] of pins.entries()) {
-				netValues.set(pin.netId, nullthrows(values[index]));
+				const value = nullthrows(values[index]);
+				assertValueFitsPin(
+					value,
+					pin,
+					() => `Output ${key} of ${describeInstance(instance)}`,
+				);
+				netValues.set(pin.netId, value);
 			}
 		}
 	}
