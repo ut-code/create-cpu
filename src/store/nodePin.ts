@@ -1,14 +1,14 @@
 import nullthrows from "nullthrows";
 import invariant from "tiny-invariant";
-import type { Tagged } from "type-fest";
-import { CCBaseStore, type CCBaseStoreEvents } from "./base";
+import { CCObjectStoreBase, type CCObjectStoreEvents } from "./base";
 import { analyzeComponentBitWidths, type ComponentBitWidths } from "./bitWidth";
 import type { CCComponentId } from "./component";
 import type { CCComponentPinId, CCNodePinBitWidthStatus } from "./componentPin";
 import { IntrinsicComponentDefinition } from "./intrinsics/base";
 import type { CCNodeId } from "./node";
+import type { CCObjectId } from "./types";
 
-export type CCNodePinId = Tagged<string, "CCNodePinId">;
+export type CCNodePinId = CCObjectId<"nodePins">;
 
 export type CCNodePin = {
 	id: CCNodePinId;
@@ -18,7 +18,7 @@ export type CCNodePin = {
 	manualBitWidth: number | null;
 };
 
-export type CCNodePinStoreEvents = CCBaseStoreEvents<CCNodePin> & {
+export type CCNodePinStoreEvents = CCObjectStoreEvents<CCNodePin> & {
 	didUpdate(pin: CCNodePin): void;
 };
 export const ccNodePinStoreChangeEventTypes: (keyof CCNodePinStoreEvents)[] = [
@@ -27,11 +27,15 @@ export const ccNodePinStoreChangeEventTypes: (keyof CCNodePinStoreEvents)[] = [
 	"didUpdate",
 ];
 
-export class CCNodePinStore extends CCBaseStore<
-	CCNodePinId,
-	CCNodePin,
+export class CCNodePinStore extends CCObjectStoreBase<
+	"nodePins",
 	CCNodePinStoreEvents
 > {
+	readonly references = {
+		nodeId: "nodes",
+		componentPinId: "componentPins",
+	} as const;
+
 	#bitWidthsByComponent: Map<CCComponentId, ComponentBitWidths> = new Map();
 
 	#bitWidthsRevision = -1;

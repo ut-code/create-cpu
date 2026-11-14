@@ -1,11 +1,11 @@
 import nullthrows from "nullthrows";
 import invariant from "tiny-invariant";
-import type { Tagged } from "type-fest";
 import type CCStore from ".";
-import { CCBaseStore, type CCBaseStoreEvents } from "./base";
+import { CCObjectStoreBase, type CCObjectStoreEvents } from "./base";
 import type { CCIntrinsicComponentType } from "./intrinsics/types";
+import type { CCObjectId } from "./types";
 
-export type CCComponentId = Tagged<string, "CCComponentId">;
+export type CCComponentId = CCObjectId<"components">;
 
 export type CCComponent = {
 	readonly id: CCComponentId;
@@ -14,7 +14,7 @@ export type CCComponent = {
 	name: string;
 };
 
-export type CCComponentStoreEvents = CCBaseStoreEvents<CCComponent> & {
+export type CCComponentStoreEvents = CCObjectStoreEvents<CCComponent> & {
 	didUpdate(component: CCComponent): void;
 };
 export const ccComponentStoreChangeEventTypes: (keyof CCComponentStoreEvents)[] =
@@ -23,11 +23,12 @@ export const ccComponentStoreChangeEventTypes: (keyof CCComponentStoreEvents)[] 
 /**
  * Store of components
  */
-export class CCComponentStore extends CCBaseStore<
-	CCComponentId,
-	CCComponent,
+export class CCComponentStore extends CCObjectStoreBase<
+	"components",
 	CCComponentStoreEvents
 > {
+	readonly references = {} as const;
+
 	import(components: CCComponent[]) {
 		for (const component of components) {
 			this.register(component);

@@ -1,13 +1,13 @@
 import nullthrows from "nullthrows";
 import invariant from "tiny-invariant";
-import type { Tagged } from "type-fest";
 import type { Vector2 } from "../common/vector2";
-import { CCBaseStore, type CCBaseStoreEvents } from "./base";
+import { CCObjectStoreBase, type CCObjectStoreEvents } from "./base";
 import type { CCComponentId } from "./component";
 import { definitionByComponentId } from "./intrinsics/definitions";
 import type { CCIntrinsicComponentSpec } from "./intrinsics/types";
+import type { CCObjectId } from "./types";
 
-export type CCNodeId = Tagged<string, "CCNodeId">;
+export type CCNodeId = CCObjectId<"nodes">;
 
 export type CCNode<
 	Spec extends CCIntrinsicComponentSpec = CCIntrinsicComponentSpec,
@@ -19,7 +19,7 @@ export type CCNode<
 	config: Spec["config"];
 };
 
-export type CCNodeStoreEvents = CCBaseStoreEvents<CCNode> & {
+export type CCNodeStoreEvents = CCObjectStoreEvents<CCNode> & {
 	didUpdate(node: CCNode): void;
 	/**
 	 * Emitted in addition to `didUpdate` when the config of a node changed, so that
@@ -36,11 +36,12 @@ export const ccNodeStoreChangeEventTypes: (keyof CCNodeStoreEvents)[] = [
 /**
  * Store of nodes
  */
-export class CCNodeStore extends CCBaseStore<
-	CCNodeId,
-	CCNode,
-	CCNodeStoreEvents
-> {
+export class CCNodeStore extends CCObjectStoreBase<"nodes", CCNodeStoreEvents> {
+	readonly references = {
+		parentComponentId: "components",
+		componentId: "components",
+	} as const;
+
 	import(nodes: CCNode[]): void {
 		for (const node of nodes) {
 			node.position = { x: node.position.x, y: node.position.y };

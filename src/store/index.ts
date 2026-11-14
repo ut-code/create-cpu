@@ -15,11 +15,14 @@ import * as intrinsics from "./intrinsics/definitions";
 import { CCNodeStore } from "./node";
 import { CCNodePinStore, ccNodePinStoreChangeEventTypes } from "./nodePin";
 import TransactionManager from "./transaction";
+import type { CCObjectStore, CCObjectType } from "./types";
+
+type CCObjectStores = { [K in CCObjectType]: CCObjectStore<K> };
 
 /**
  * Store of components, nodes, pins, and connections
  */
-export default class CCStore {
+export default class CCStore implements CCObjectStores {
 	components: CCComponentStore;
 
 	nodes: CCNodeStore;
@@ -109,6 +112,13 @@ export default class CCStore {
 		return () => {
 			for (const unsubscribe of subscriptions) unsubscribe();
 		};
+	}
+
+	getObjectStore<K extends CCObjectType>(
+		this: CCObjectStores,
+		type: K,
+	): CCObjectStore<K> {
+		return this[type];
 	}
 
 	mount() {
