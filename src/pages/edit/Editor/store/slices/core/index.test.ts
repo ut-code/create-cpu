@@ -1,5 +1,5 @@
-import { beforeAll, describe, expect, it, vi } from "vitest";
-import { display } from "../../../../../../store/intrinsics/definitions";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { and, const_ } from "../../../../../../store/intrinsics/definitions";
 import {
 	connectTestNodePins,
 	createTestStore,
@@ -22,6 +22,9 @@ beforeAll(() => {
 		},
 	);
 });
+afterAll(() => {
+	vi.unstubAllGlobals();
+});
 
 /** A root component with an input whose bit width is not fixed yet. */
 function setUp() {
@@ -29,20 +32,31 @@ function setUp() {
 	const root = registerTestComponent(store, "Root");
 	const input = registerTestInputNode(store, root.id, "In");
 	const editorStore = createEditorStore(root.id, store);
-	/** Fix the bit width of the input by feeding it to a display of `x` × 1 pixels. */
-	const fixInputBitWidth = (x: number) => {
-		const displayNode = registerTestNode(store, root.id, display.component.id, {
-			resolution: { x, y: 1 },
-			pixelOrder: "row-major",
+	const andNode = registerTestNode(store, root.id, and.component.id);
+	const andOut = testNodePin(store, andNode, and.outputPin.Out);
+	/**
+	 * Fix the bit width of the input by ANDing it with a constant of `bitWidth` ones. And
+	 * requires both operands to be equally wide, so a stale input value fails it.
+	 */
+	const fixInputBitWidth = (bitWidth: number) => {
+		const constant = registerTestNode(store, root.id, const_.component.id, {
+			mode: "binary",
+			data: new Array(bitWidth).fill(true),
 		});
 		connectTestNodePins(
 			store,
 			root.id,
+			testNodePin(store, constant, const_.outputPin.Out),
+			testNodePin(store, andNode, and.inputPin.A),
+		);
+		connectTestNodePins(
+			store,
+			root.id,
 			input.out,
-			testNodePin(store, displayNode, display.inputPin.Pixels),
+			testNodePin(store, andNode, and.inputPin.B),
 		);
 	};
-	return { editorStore, input, fixInputBitWidth };
+	return { editorStore, input, andOut, fixInputBitWidth };
 }
 
 describe("input values", () => {
@@ -71,7 +85,7 @@ describe("input values", () => {
 	});
 
 	it("simulates a circuit whose input got wider after its value was set", () => {
-		const { editorStore, input, fixInputBitWidth } = setUp();
+		const { editorStore, input, andOut, fixInputBitWidth } = setUp();
 		const key = { componentPinId: input.componentPinId, timeStep: 0 };
 		editorStore.getState().setInputValue(key, [true]);
 		fixInputBitWidth(8);
@@ -81,6 +95,6 @@ describe("input values", () => {
 		const state = editorStore.getState();
 		expect(state.simulationError).toBeNull();
 		expect(state.editorMode).toBe("play");
-		expect(state.getNodePinValue(input.out)).toEqual(testBits(1, 8));
+		expect(state.getNodePinValue(andOut)).toEqual(testBits(1, 8));
 	});
 });
