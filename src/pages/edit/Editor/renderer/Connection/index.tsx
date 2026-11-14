@@ -5,7 +5,10 @@ import type { CCComponentPinType } from "../../../../../store/componentPin";
 import type { CCConnectionId } from "../../../../../store/connection";
 import { useStore } from "../../../../../store/react";
 import ensureStoreItem from "../../../../../store/react/error";
-import { useNode } from "../../../../../store/react/selectors";
+import {
+	useIsConnectionInBitWidthConflict,
+	useNode,
+} from "../../../../../store/react/selectors";
 import { theme } from "../../../../../style";
 import { useComponentEditorStore } from "../../store";
 import { stringifySimulationValue } from "../../store/slices/core/index";
@@ -20,6 +23,8 @@ export type CCComponentEditorRendererConnectionCoreProps = {
 	from: CCComponentEditorRendererConnectionEndpoint;
 	to: CCComponentEditorRendererConnectionEndpoint;
 	connectionId?: CCConnectionId;
+	/** whether the bit widths of the pins it ties together conflict */
+	isInBitWidthConflict?: boolean;
 	onMouseEnter?: React.MouseEventHandler<SVGPathElement>;
 	onMouseLeave?: React.MouseEventHandler<SVGPathElement>;
 };
@@ -33,6 +38,7 @@ export function CCComponentEditorRendererConnectionCore({
 	from,
 	to,
 	connectionId,
+	isInBitWidthConflict = false,
 	onMouseEnter,
 	onMouseLeave,
 }: CCComponentEditorRendererConnectionCoreProps) {
@@ -65,9 +71,12 @@ export function CCComponentEditorRendererConnectionCore({
 				connectionId &&
 				componentEditorState.selectedConnectionIds.has(connectionId)
 					? theme.colors.primary
-					: theme.colors.textPrimary
+					: isInBitWidthConflict
+						? theme.colors.error
+						: theme.colors.textPrimary
 			}
 			strokeWidth="2"
+			strokeDasharray={isInBitWidthConflict ? "6 4" : undefined}
 			fill="none"
 			onClick={handleClick}
 			onContextMenu={(e) => {
@@ -121,6 +130,8 @@ const CCComponentEditorRendererConnection = ensureStoreItem(
 		);
 
 		const [isHovered, setIsHovered] = useState(false);
+		const isInBitWidthConflict =
+			useIsConnectionInBitWidthConflict(connectionId);
 
 		return (
 			<>
@@ -131,6 +142,7 @@ const CCComponentEditorRendererConnection = ensureStoreItem(
 					}}
 					to={{ direction: toComponentPin.type, position: toNodePinPosition }}
 					connectionId={connectionId}
+					isInBitWidthConflict={isInBitWidthConflict}
 					onMouseEnter={() => {
 						setIsHovered(true);
 					}}

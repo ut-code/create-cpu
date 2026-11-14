@@ -7,6 +7,7 @@ import {
 	isEachInputPinConnected,
 } from "../component";
 import type { CCComponentPin, CCComponentPinId } from "../componentPin";
+import type { CCConnectionId } from "../connection";
 import type { CCNode, CCNodeId } from "../node";
 import type { CCNodePin } from "../nodePin";
 import { useStore } from ".";
@@ -222,6 +223,30 @@ export function useCanSimulate(componentId: CCComponentId) {
 	const getSnapshot = useCallback(
 		() => isEachInputPinConnected(store, componentId),
 		[store, componentId],
+	);
+	const subscribe = useCallback(
+		(onStoreChange: () => void) =>
+			store.subscribeToCircuitChanges(onStoreChange),
+		[store],
+	);
+	return useSyncExternalStore(subscribe, getSnapshot);
+}
+
+/**
+ * Whether the pins a connection ties together fix different bit widths. A change
+ * anywhere in the circuit can cause or resolve a conflict, e.g. inside a component used
+ * by a node at one end, so this is recomputed on every change of the circuit.
+ */
+export function useIsConnectionInBitWidthConflict(
+	connectionId: CCConnectionId,
+) {
+	const { store } = useStore();
+	const getSnapshot = useCallback(
+		() =>
+			// The connection can be gone before its renderer is unmounted
+			store.connections.get(connectionId) !== undefined &&
+			store.connections.isInBitWidthConflict(connectionId),
+		[store, connectionId],
 	);
 	const subscribe = useCallback(
 		(onStoreChange: () => void) =>
