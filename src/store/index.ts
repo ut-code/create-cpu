@@ -131,6 +131,11 @@ export default class CCStore {
 		});
 	}
 
+	/**
+	 * Restore the objects of a store saved with {@link toJSON}. Some stores add them
+	 * without announcing them, so this must run before {@link mount}, while nothing
+	 * derived from them (such as the bit widths cached by the node pin store) exists yet.
+	 */
 	importJson(json: string) {
 		const { components, nodes, componentPins, nodePins, connections } =
 			JSON.parse(json);

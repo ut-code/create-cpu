@@ -144,14 +144,16 @@ function evaluateInstance(
 			),
 			config: instance.config,
 		};
+	// Collected outside the `try`, since a missing or misfit input already names its pin
+	const inputs =
+		behavior.kind === "sequential"
+			? previousFrame && collectInputs(instance, previousFrame.netValues)
+			: collectInputs(instance, netValues);
 	try {
 		if (behavior.kind === "sequential") {
-			return behavior.evaluate(
-				previousFrame && collectInputs(instance, previousFrame.netValues),
-				environment,
-			);
+			return behavior.evaluate(inputs, environment);
 		}
-		return behavior.evaluate(collectInputs(instance, netValues), environment);
+		return behavior.evaluate(nullthrows(inputs), environment);
 	} catch (error) {
 		// The evaluation functions only see values, so tell which node they belong to
 		throw new Error(
@@ -171,7 +173,8 @@ function evaluateInstance(
  * @param componentId component to simulate
  * @param inputValues values supplied to the input pins of the component
  * @param previousFrame the previous time step, or null for the first one
- * @param defaultBitWidth bit width of the pins of the component whose width is not fixed
+ * @param defaultBitWidth bit width of the pins whose width neither the circuit nor the
+ *   pins of the component around them fix
  * @returns the values of this time step
  */
 export default function simulateComponent(

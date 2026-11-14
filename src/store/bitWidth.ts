@@ -31,7 +31,7 @@ import type { CCNodePin, CCNodePinId } from "./nodePin";
 export type BitWidthGroupId = Tagged<string, "BitWidthGroupId">;
 
 /** The bit width of a node pin of a configurable component pin. */
-export function requireManualBitWidth(nodePin: CCNodePin): number {
+function requireManualBitWidth(nodePin: CCNodePin): number {
 	invariant(
 		nodePin.manualBitWidth !== null && nodePin.manualBitWidth > 0,
 		`Node pin ${nodePin.id} of a configurable component pin must have a positive manual bit width, but got ${nodePin.manualBitWidth}`,
