@@ -9,7 +9,7 @@ import { createComponentEditorStoreCoreSlice } from "./slices/core";
 import createComponentEditorStorePerspectiveSlice from "./slices/perspective";
 import type { ComponentEditorStoreValue } from "./types";
 
-function createEditorStore(componentId: CCComponentId, store: CCStore) {
+export function createEditorStore(componentId: CCComponentId, store: CCStore) {
 	const props = { store, componentId };
 	const coreSlice = createComponentEditorStoreCoreSlice(props);
 	const perspectiveSlice = createComponentEditorStorePerspectiveSlice(props);
