@@ -148,6 +148,44 @@ describe("Node pin store", () => {
 			).toEqual({ isFixed: true, bitWidth: 8 });
 		});
 
+		it("should drop a removed input pin of an aggregate node from its output right away", () => {
+			const { store, rootComponent } = createRootStore();
+			const node = registerNode(store, rootComponent, intrinsics.aggregate);
+			const firstInputNodePin = nullthrows(
+				store.nodePins
+					.getManyByNodeId(node.id)
+					.find(
+						(pin) => pin.componentPinId === intrinsics.aggregate.inputPin.In.id,
+					),
+			);
+			store.nodePins.update(firstInputNodePin.id, { manualBitWidth: 5 });
+			const secondInputNodePin = CCNodePinStore.create({
+				nodeId: node.id,
+				componentPinId: intrinsics.aggregate.inputPin.In.id,
+				order: firstInputNodePin.order + 1,
+				manualBitWidth: 3,
+			});
+			store.nodePins.register(secondInputNodePin);
+			expect(
+				getNodePinBitWidth(
+					store,
+					node.id,
+					intrinsics.aggregate.outputPin.Out.id,
+				),
+			).toEqual({ isFixed: true, bitWidth: 8 });
+
+			// The removal is announced only when the transaction ends, but the pin is gone now
+			store.nodePins.unregister(secondInputNodePin.id);
+
+			expect(
+				getNodePinBitWidth(
+					store,
+					node.id,
+					intrinsics.aggregate.outputPin.Out.id,
+				),
+			).toEqual({ isFixed: true, bitWidth: 5 });
+		});
+
 		it("should sum up the manual bit widths of the output pins of a decompose node", () => {
 			const { store, rootComponent } = createRootStore();
 			const node = registerNode(store, rootComponent, intrinsics.decompose);
@@ -269,6 +307,23 @@ describe("Node pin store", () => {
 			});
 
 			expect(store.connections.getMany()).toHaveLength(0);
+		});
+
+		it("should announce a dropped connection before the config change that drops it", () => {
+			const { store, displayNode } = connectBroadcastToDisplay(20 * 15);
+			const events: string[] = [];
+			store.connections.on("didUnregister", () =>
+				events.push("connection removed"),
+			);
+			store.nodes.on("didUpdate", () => events.push("node updated"));
+
+			// A renderer of the connection subscribed to the display re-renders on "node
+			// updated", so by then the list of connections must no longer contain it
+			store.nodes.update(displayNode.id, {
+				config: { resolution: { x: 4, y: 3 } },
+			});
+
+			expect(events).toEqual(["connection removed", "node updated"]);
 		});
 
 		it("should keep the connections that stay consistent across a display config change", () => {
