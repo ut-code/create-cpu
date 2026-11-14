@@ -5,9 +5,11 @@ import type { CCComponentId } from "./component";
 import { CCConnectionStore } from "./connection";
 import {
 	aggregate,
+	and,
 	broadcast,
 	const_,
 	display,
+	input,
 	not,
 } from "./intrinsics/definitions";
 import { SimulationBitWidthConflictError } from "./netlist";
@@ -337,6 +339,119 @@ describe("bit width groups", () => {
 		}
 		expect(conflictingConnectionCount(store)).toBe(0);
 	});
+
+	it("accepts a connection inside a component that causes a conflict where it is used", () => {
+		// Only the component the connection is drawn in is checked, like a config change
+		const store = createTestStore();
+		const component = registerTestComponent(store, "Open");
+		const into = registerTestInputNode(store, component.id, "A");
+		const out = registerTestOutputNode(store, component.id, "B");
+		const root = registerTestComponent(store, "Root");
+		const constant = registerConst(store, root.id, 8);
+		const node = registerTestNode(store, root.id, component.id);
+		const screen = registerDisplay(store, root.id, 2, 2);
+		connectTestNodePins(
+			store,
+			root.id,
+			constant.out,
+			testNodePin(store, node, testComponentPin(store, component, "A")),
+		);
+		connectTestNodePins(
+			store,
+			root.id,
+			testNodePin(store, node, testComponentPin(store, component, "B")),
+			screen.pixels,
+		);
+
+		expect(tryConnect(store, component.id, into.out, out.in)).toBe(true);
+
+		expect(conflictingConnectionCount(store)).toBe(2);
+		expect(store.nodePins.getComponentBitWidths(root.id).hasConflict()).toBe(
+			true,
+		);
+	});
+
+	it("copies a connection in conflict only when asked to keep it as it is", () => {
+		const store = createTestStore();
+		const original = registerTestComponent(store, "Original");
+		const constant = registerConst(store, original.id, 4);
+		const screen = registerDisplay(store, original.id, 2, 2);
+		connectTestNodePins(store, original.id, constant.out, screen.pixels);
+		setConstBitWidth(store, constant, 8);
+		const copy = registerTestComponent(store, "Copy");
+		const copiedConstant = registerConst(store, copy.id, 8);
+		const copiedScreen = registerDisplay(store, copy.id, 2, 2);
+		const copied = CCConnectionStore.create({
+			from: copiedConstant.out,
+			to: copiedScreen.pixels,
+			parentComponentId: copy.id,
+			bentPortion: 0.5,
+		});
+
+		store.connections.register(copied);
+		expect(store.connections.get(copied.id)).toBeUndefined();
+
+		store.connections.register(copied, { allowBitWidthConflict: true });
+		expect(store.connections.isInBitWidthConflict(copied.id)).toBe(true);
+	});
+
+	it("answers bit width queries in the middle of a change", async () => {
+		// The editor queries on every change event, while a removal is half done
+		const store = createTestStore();
+		const inverter = registerInverterComponent(store);
+		const root = registerTestComponent(store, "Root");
+		const constant = registerConst(store, root.id, 8);
+		const inverterNode = registerTestNode(
+			store,
+			root.id,
+			inverter.component.id,
+		);
+		const aggregateNode = registerTestNode(
+			store,
+			root.id,
+			aggregate.component.id,
+		);
+		splitTestNodePin(store, aggregateNode, aggregate.inputPin.In, [8, 4]);
+		connectTestNodePins(
+			store,
+			root.id,
+			constant.out,
+			testNodePin(store, inverterNode, inverter.into),
+		);
+		connectTestNodePins(
+			store,
+			root.id,
+			testNodePin(store, inverterNode, inverter.out),
+			testNodePin(store, aggregateNode, aggregate.inputPin.In, 0),
+		);
+		const errors: unknown[] = [];
+		store.subscribeToCircuitChanges(() => {
+			try {
+				for (const connection of store.connections.getMany()) {
+					store.connections.isInBitWidthConflict(connection.id);
+				}
+				for (const nodePin of store.nodePins.getMany()) {
+					store.nodePins.getNodePinBitWidthStatus(nodePin.id);
+				}
+			} catch (error) {
+				errors.push(error);
+			}
+		});
+
+		await store.nodePins.unregister(
+			testNodePin(store, aggregateNode, aggregate.inputPin.In, 1),
+		);
+		const innerInput = nullthrows(
+			store.nodes
+				.getManyByParentComponentId(inverter.component.id)
+				.find((node) => node.componentId === input.component.id),
+		);
+		await store.nodes.unregister([innerInput.id]);
+		await store.components.unregister(inverter.component.id);
+
+		expect(errors).toEqual([]);
+		expect(store.connections.getMany()).toHaveLength(0);
+	});
 });
 
 describe("simulation of bit width groups", () => {
@@ -398,6 +513,80 @@ describe("simulation of bit width groups", () => {
 		expect(
 			frame.getNodePinValue(testNodePin(store, dualNode, dual.out2)),
 		).toEqual(testBits(0b11, 2));
+	});
+
+	it("gives each use of a component the width it is used with", () => {
+		// Root -> Wrapper -> Inverter, with the wrapper used once for 8 and once for 3 bits
+		const store = createTestStore();
+		const inverter = registerInverterComponent(store);
+		const wrapper = registerTestComponent(store, "Wrapper");
+		const wrapperIn = registerTestInputNode(store, wrapper.id, "In");
+		const wrapperOut = registerTestOutputNode(store, wrapper.id, "Out");
+		const inner = registerTestNode(store, wrapper.id, inverter.component.id);
+		connectTestNodePins(
+			store,
+			wrapper.id,
+			wrapperIn.out,
+			testNodePin(store, inner, inverter.into),
+		);
+		connectTestNodePins(
+			store,
+			wrapper.id,
+			testNodePin(store, inner, inverter.out),
+			wrapperOut.in,
+		);
+		const root = registerTestComponent(store, "Root");
+		const outs = [8, 3].map((bitWidth) => {
+			const constant = registerConst(store, root.id, bitWidth);
+			const node = registerTestNode(store, root.id, wrapper.id);
+			connectTestNodePins(
+				store,
+				root.id,
+				constant.out,
+				testNodePin(store, node, testComponentPin(store, wrapper, "In")),
+			);
+			return testNodePin(store, node, testComponentPin(store, wrapper, "Out"));
+		});
+
+		const frame = simulateComponent(store, root.id, new Map());
+
+		expect(outs.map((out) => frame.getNodePinValue(out))).toEqual([
+			testBits(0b11111111, 8),
+			testBits(0b111, 3),
+		]);
+	});
+
+	it("expects an input value as wide as the pins tied to its input pin", () => {
+		const store = createTestStore();
+		const root = registerTestComponent(store, "Root");
+		const into = registerTestInputNode(store, root.id, "In");
+		const constant = registerConst(store, root.id, 4);
+		const andNode = registerTestNode(store, root.id, and.component.id);
+		connectTestNodePins(
+			store,
+			root.id,
+			into.out,
+			testNodePin(store, andNode, and.inputPin.A),
+		);
+		connectTestNodePins(
+			store,
+			root.id,
+			constant.out,
+			testNodePin(store, andNode, and.inputPin.B),
+		);
+
+		// The editor sizes the input value by this status, so it must match the netlist
+		expect(store.nodePins.getNodePinBitWidthStatus(into.out)).toEqual({
+			isFixed: true,
+			bitWidth: 4,
+		});
+		expect(() =>
+			simulateComponent(
+				store,
+				root.id,
+				new Map([[into.componentPinId, testBits(0b1010, 4)]]),
+			),
+		).not.toThrow();
 	});
 
 	it("rejects an input value that does not fit its pin", () => {
