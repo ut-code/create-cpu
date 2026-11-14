@@ -11,6 +11,7 @@ import type {
 import type { CCIntrinsicComponentSpec } from "./intrinsics/types";
 import {
 	buildSimulationNetlist,
+	DEFAULT_SIMULATION_BIT_WIDTH,
 	describeInstance,
 	type SimulationInstance,
 	type SimulationNetId,
@@ -154,7 +155,7 @@ export default function simulateComponent(
 	componentId: CCComponentId,
 	inputValues: Map<CCComponentPinId, SimulationValue>,
 	previousFrame: SimulationFrame | null = null,
-	defaultBitWidth = 1,
+	defaultBitWidth = DEFAULT_SIMULATION_BIT_WIDTH,
 ): SimulationFrame {
 	const netlist = getSimulationNetlist(store, componentId, defaultBitWidth);
 	invariant(

@@ -2,6 +2,7 @@ import nullthrows from "nullthrows";
 import invariant from "tiny-invariant";
 import type { CCComponentPinId } from "../../../../../../store/componentPin";
 import type { CCConnectionId } from "../../../../../../store/connection";
+import { DEFAULT_SIMULATION_BIT_WIDTH } from "../../../../../../store/netlist";
 import type { CCNodeId } from "../../../../../../store/node";
 import type { CCNodePinId } from "../../../../../../store/nodePin";
 import type {
@@ -63,8 +64,9 @@ export const createComponentEditorStoreCoreSlice: ComponentEditorSliceCreator<
 							"Cannot get input value for intrinsic component pin",
 						),
 					);
-					// A pin whose bit width is not fixed takes a single bit, as in the simulation
-					const bitWidth = bitWidthStatus.isFixed ? bitWidthStatus.bitWidth : 1;
+					const bitWidth = bitWidthStatus.isFixed
+						? bitWidthStatus.bitWidth
+						: DEFAULT_SIMULATION_BIT_WIDTH;
 
 					// The value set for the current time step, or else the latest earlier one,
 					// inherited without updating the store during simulation
