@@ -35,6 +35,14 @@ export default function CCComponentEditorContextMenu({
 
 	if (!componentEditorState.contextMenuState) return null;
 
+	// The selection can still hold objects removed since, e.g. along with a node pin
+	const selectedNodeIds = [...componentEditorState.selectedNodeIds].filter(
+		(nodeId) => store.nodes.get(nodeId),
+	);
+	const selectedConnectionIds = [
+		...componentEditorState.selectedConnectionIds,
+	].filter((connectionId) => store.connections.get(connectionId));
+
 	return (
 		<ClickAwayListener onClickAway={componentEditorState.closeContextMenu}>
 			<MenuList
@@ -50,23 +58,15 @@ export default function CCComponentEditorContextMenu({
 				{/* <MenuItem onClick={componentEditorState.closeContextMenu}>
 					Create a node
 				</MenuItem> */}
-				{componentEditorState.selectedNodeIds.size > 0 && (
+				{selectedNodeIds.length > 0 && (
 					<MenuItem
 						onClick={() => {
-							const oldNodes = [...componentEditorState.selectedNodeIds].map(
-								(nodeId) => {
-									const node = store.nodes.get(nodeId);
-									invariant(node);
-									return node;
-								},
+							const oldNodes = selectedNodeIds.map((nodeId) =>
+								nullthrows(store.nodes.get(nodeId)),
 							);
-							const oldConnections = [
-								...componentEditorState.selectedConnectionIds,
-							].map((connectionId) => {
-								const connection = store.connections.get(connectionId);
-								invariant(connection);
-								return connection;
-							});
+							const oldConnections = selectedConnectionIds.map((connectionId) =>
+								nullthrows(store.connections.get(connectionId)),
+							);
 							const newComponent = CCComponentStore.create({
 								name: "New Component",
 							});
@@ -116,10 +116,8 @@ export default function CCComponentEditorContextMenu({
 								store.connections.register(connection, {
 									allowBitWidthConflict: true,
 								});
-							store.connections.unregister([
-								...componentEditorState.selectedConnectionIds,
-							]);
-							store.nodes.unregister([...componentEditorState.selectedNodeIds]);
+							store.connections.unregister(selectedConnectionIds);
+							store.nodes.unregister(selectedNodeIds);
 							componentEditorState.closeContextMenu();
 							onEditComponent(newComponent.id);
 						}}
@@ -127,20 +125,14 @@ export default function CCComponentEditorContextMenu({
 						Create a new component...
 					</MenuItem>
 				)}
-				{(componentEditorState.selectedNodeIds.size > 0 ||
-					componentEditorState.selectedConnectionIds.size > 0) && (
+				{(selectedNodeIds.length > 0 || selectedConnectionIds.length > 0) && (
 					<MenuItem
 						onClick={() => {
-							if (componentEditorState.selectedNodeIds.size > 0)
-								store.nodes.unregister([
-									...componentEditorState.selectedNodeIds,
-								]);
-							if (componentEditorState.selectedConnectionIds.size > 0)
-								store.connections.unregister([
-									...componentEditorState.selectedConnectionIds,
-								]);
-							// componentEditorState.selectNode([], true);
-							componentEditorState.selectConnection([], false);
+							if (selectedNodeIds.length > 0)
+								store.nodes.unregister(selectedNodeIds);
+							if (selectedConnectionIds.length > 0)
+								store.connections.unregister(selectedConnectionIds);
+							componentEditorState.selectConnection([], true);
 							componentEditorState.closeContextMenu();
 						}}
 					>
@@ -148,13 +140,9 @@ export default function CCComponentEditorContextMenu({
 					</MenuItem>
 				)}
 				{(() => {
-					if (componentEditorState.selectedNodeIds.size !== 1) return undefined;
-					const iteratorResult = componentEditorState.selectedNodeIds
-						.values()
-						.next();
-					invariant(!iteratorResult.done);
-					const targetNode = store.nodes.get(iteratorResult.value);
-					invariant(targetNode);
+					const [targetNodeId] = selectedNodeIds;
+					if (selectedNodeIds.length !== 1 || !targetNodeId) return undefined;
+					const targetNode = nullthrows(store.nodes.get(targetNodeId));
 					const targetComponent = store.components.get(targetNode.componentId);
 					invariant(targetComponent);
 					if (targetComponent.intrinsicType) return undefined;
