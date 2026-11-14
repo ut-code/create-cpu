@@ -1,6 +1,5 @@
-import memoizeOne from "memoize-one";
 import nullthrows from "nullthrows";
-import { useCallback, useMemo, useSyncExternalStore } from "react";
+import { useCallback, useRef, useSyncExternalStore } from "react";
 import {
 	type CCComponent,
 	type CCComponentId,
@@ -9,33 +8,96 @@ import {
 import type { CCComponentPin, CCComponentPinId } from "../componentPin";
 import type { CCConnectionId } from "../connection";
 import type { CCNode, CCNodeId } from "../node";
-import type { CCNodePin } from "../nodePin";
 import { useStore } from ".";
+import { reuseIfSameItems } from "./snapshot";
+
+/**
+ * A list read from the store, kept in step with it.
+ *
+ * The list is read again on every render instead of being cached until the event
+ * announcing a change arrives. Some removals are announced only when their transaction
+ * ends, and a list cached until then would still hand out an object that is gone to a
+ * component rendered in the meantime. The previous array is handed out again while its
+ * items are the same, so that React does not re-render for nothing.
+ * @param read reads the list from the store; must be stable across renders
+ * @param subscribe subscribes to the events that can change the list
+ */
+function useStoreList<T>(
+	read: () => readonly T[],
+	subscribe: (onStoreChange: () => void) => () => void,
+): readonly T[] {
+	const previousRef = useRef<readonly T[] | null>(null);
+	const getSnapshot = useCallback(() => {
+		const list = reuseIfSameItems(previousRef.current, read());
+		previousRef.current = list;
+		return list;
+	}, [read]);
+	return useSyncExternalStore(subscribe, getSnapshot);
+}
 
 export function useComponents() {
 	const { store } = useStore();
-	const getSnapshot = useMemo(
-		() => memoizeOne(() => store.components.getMany()),
+	const read = useCallback(() => store.components.getMany(), [store]);
+	const subscribe = useCallback(
+		(onStoreChange: () => void) => {
+			store.components.on("didRegister", onStoreChange);
+			store.components.on("didUpdate", onStoreChange);
+			store.components.on("didUnregister", onStoreChange);
+			return () => {
+				store.components.off("didRegister", onStoreChange);
+				store.components.off("didUpdate", onStoreChange);
+				store.components.off("didUnregister", onStoreChange);
+			};
+		},
 		[store],
+	);
+	return useStoreList(read, subscribe);
+}
+
+export function useNodeIds(parentComponentId: CCComponentId) {
+	const { store } = useStore();
+	const read = useCallback(
+		() =>
+			store.nodes
+				.getManyByParentComponentId(parentComponentId)
+				.map((node) => node.id),
+		[store, parentComponentId],
 	);
 	const subscribe = useCallback(
 		(onStoreChange: () => void) => {
-			const handler = () => {
-				getSnapshot.clear();
-				onStoreChange();
-			};
-			store.components.on("didRegister", handler);
-			store.components.on("didUpdate", handler);
-			store.components.on("didUnregister", handler);
+			store.nodes.on("didRegister", onStoreChange);
+			store.nodes.on("didUnregister", onStoreChange);
 			return () => {
-				store.components.off("didRegister", handler);
-				store.components.off("didUpdate", handler);
-				store.components.off("didUnregister", handler);
+				store.nodes.off("didRegister", onStoreChange);
+				store.nodes.off("didUnregister", onStoreChange);
 			};
 		},
-		[getSnapshot, store.components],
+		[store],
 	);
-	return useSyncExternalStore(subscribe, getSnapshot);
+	return useStoreList(read, subscribe);
+}
+
+export function useConnectionIds(parentComponentId: CCComponentId) {
+	const { store } = useStore();
+	const read = useCallback(
+		() =>
+			store.connections
+				.getManyByParentComponentId(parentComponentId)
+				.map((connection) => connection.id),
+		[store, parentComponentId],
+	);
+	const subscribe = useCallback(
+		(onStoreChange: () => void) => {
+			store.connections.on("didRegister", onStoreChange);
+			store.connections.on("didUnregister", onStoreChange);
+			return () => {
+				store.connections.off("didRegister", onStoreChange);
+				store.connections.off("didUnregister", onStoreChange);
+			};
+		},
+		[store],
+	);
+	return useStoreList(read, subscribe);
 }
 
 export function useComponent(componentId: CCComponentId) {
@@ -55,68 +117,6 @@ export function useComponent(componentId: CCComponentId) {
 			};
 		},
 		[store, componentId],
-	);
-	return useSyncExternalStore(subscribe, getSnapshot);
-}
-
-export function useNodeIds(parentComponentId: CCComponentId) {
-	const { store } = useStore();
-	const getSnapshot = useMemo(
-		() =>
-			memoizeOne(() =>
-				store.nodes
-					.getMany()
-					.filter((node) => node.parentComponentId === parentComponentId)
-					.map((node) => node.id),
-			),
-		[store, parentComponentId],
-	);
-	const subscribe = useCallback(
-		(onStoreChange: () => void) => {
-			const handler = () => {
-				getSnapshot.clear();
-				onStoreChange();
-			};
-			store.nodes.on("didRegister", handler);
-			store.nodes.on("didUnregister", handler);
-			return () => {
-				store.nodes.off("didRegister", handler);
-				store.nodes.off("didUnregister", handler);
-			};
-		},
-		[getSnapshot, store.nodes],
-	);
-	return useSyncExternalStore(subscribe, getSnapshot);
-}
-
-export function useConnectionIds(parentComponentId: CCComponentId) {
-	const { store } = useStore();
-	const getSnapshot = useMemo(
-		() =>
-			memoizeOne(() =>
-				store.connections
-					.getMany()
-					.filter(
-						(connection) => connection.parentComponentId === parentComponentId,
-					)
-					.map((connection) => connection.id),
-			),
-		[store, parentComponentId],
-	);
-	const subscribe = useCallback(
-		(onStoreChange: () => void) => {
-			const handler = () => {
-				getSnapshot.clear();
-				onStoreChange();
-			};
-			store.connections.on("didRegister", handler);
-			store.connections.on("didUnregister", handler);
-			return () => {
-				store.connections.off("didRegister", handler);
-				store.connections.off("didUnregister", handler);
-			};
-		},
-		[getSnapshot, store.connections],
 	);
 	return useSyncExternalStore(subscribe, getSnapshot);
 }
@@ -159,61 +159,6 @@ export function useComponentPin(componentPinId: CCComponentPinId) {
 			};
 		},
 		[store, componentPinId],
-	);
-	return useSyncExternalStore(subscribe, getSnapshot);
-}
-
-export function useComponentPins(componentId: CCComponentId) {
-	const { store } = useStore();
-	const getSnapshot = useMemo(
-		() =>
-			memoizeOne(() => store.componentPins.getManyByComponentId(componentId)),
-		[store, componentId],
-	);
-	const subscribe = useCallback(
-		(onStoreChange: () => void) => {
-			const handler = (componentPin: CCComponentPin) => {
-				if (componentPin.componentId === componentId) {
-					getSnapshot.clear();
-					onStoreChange();
-				}
-			};
-			store.componentPins.on("didRegister", handler);
-			store.componentPins.on("didUpdate", handler);
-			store.componentPins.on("didUnregister", handler);
-			return () => {
-				store.componentPins.off("didRegister", handler);
-				store.componentPins.off("didUpdate", handler);
-				store.componentPins.off("didUnregister", handler);
-			};
-		},
-		[getSnapshot, store, componentId],
-	);
-	return useSyncExternalStore(subscribe, getSnapshot);
-}
-
-export function useNodePins(nodeId: CCNodeId) {
-	const { store } = useStore();
-	const getSnapshot = useMemo(
-		() => memoizeOne(() => store.nodePins.getManyByNodeId(nodeId)),
-		[store, nodeId],
-	);
-	const subscribe = useCallback(
-		(onStoreChange: () => void) => {
-			const handler = (nodePin: CCNodePin) => {
-				if (nodePin.nodeId === nodeId) {
-					getSnapshot.clear();
-					onStoreChange();
-				}
-			};
-			store.nodePins.on("didRegister", handler);
-			store.nodePins.on("didUnregister", handler);
-			return () => {
-				store.nodePins.off("didRegister", handler);
-				store.nodePins.off("didUnregister", handler);
-			};
-		},
-		[getSnapshot, store, nodeId],
 	);
 	return useSyncExternalStore(subscribe, getSnapshot);
 }

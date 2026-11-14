@@ -22,7 +22,6 @@
 		"debounce": "^2.2.0",
 		"es-toolkit": "^1.52.0",
 		"eventemitter3": "^5.0.4",
-		"memoize-one": "^6.0.0",
 		"mnemonist": "^0.40.3",
 		"nullthrows": "^1.1.1",
 		"react": "^19.1.1",
