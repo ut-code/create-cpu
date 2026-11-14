@@ -10,17 +10,7 @@ import type { CCNode, CCNodeId } from "../node";
 import { useStore } from ".";
 import { reuseIfSameItems } from "./snapshot";
 
-/**
- * A list read from the store, kept in step with it.
- *
- * The list is read again on every render instead of being cached until the event
- * announcing a change arrives. Some removals are announced only when their transaction
- * ends, and a list cached until then would still hand out an object that is gone to a
- * component rendered in the meantime. The previous array is handed out again while its
- * items are the same, so that React does not re-render for nothing.
- * @param read reads the list from the store; must be stable across renders
- * @param subscribe subscribes to the events that can change the list
- */
+/** Read on every render, since a removal is announced only after its transaction. */
 function useStoreList<T>(
 	read: () => readonly T[],
 	subscribe: (onStoreChange: () => void) => () => void,
@@ -98,12 +88,6 @@ export function useConnectionIds(parentComponentId: CCComponentId) {
 	);
 	return useStoreList(read, subscribe);
 }
-
-/*
- * The hooks reading a single object return undefined once it is gone. A component can
- * be re-rendered by its own subscription before the list it comes from drops it, so it
- * renders nothing instead of failing.
- */
 
 export function useComponent(componentId: CCComponentId | undefined) {
 	const { store } = useStore();

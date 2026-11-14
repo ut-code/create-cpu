@@ -17,7 +17,6 @@ describe("reuseIfSameItems", () => {
 	});
 
 	it("tells an updated object from the one it replaced", () => {
-		// The stores replace an object on update, so a new object means a change
 		const previous = [{ id: "a", name: "old" }];
 		const next = [{ id: "a", name: "old" }];
 

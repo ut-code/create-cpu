@@ -357,7 +357,6 @@ describe("bit width groups", () => {
 		const [toScreen] = store.connections.getConnectionsByNodePinId(
 			screen.pixels,
 		);
-		// Not awaited: renderers query the bit widths before the removal is announced
 		void store.connections.unregister([nullthrows(toScreen).id]);
 
 		expect(conflictingConnectionCount(store)).toBe(0);

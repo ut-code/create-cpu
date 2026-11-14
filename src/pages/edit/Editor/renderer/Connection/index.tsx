@@ -84,8 +84,6 @@ export function CCComponentEditorRendererConnectionCore({
 				}
 				e.preventDefault();
 				e.stopPropagation();
-				// Keep a selection containing it, so that the menu acts on all of them, like
-				// the context menu of a node does
 				if (!componentEditorState.selectedConnectionIds.has(connectionId)) {
 					componentEditorState.selectConnection([connectionId], true);
 				}
@@ -109,14 +107,11 @@ export default function CCComponentEditorRendererConnection({
 	const connection = store.connections.get(connectionId);
 	const fromNodePin = connection && store.nodePins.get(connection.from);
 	const toNodePin = connection && store.nodePins.get(connection.to);
-	// Subscribed to follow the nodes at both ends when they move
 	const fromNode = useNode(fromNodePin?.nodeId);
 	const toNode = useNode(toNodePin?.nodeId);
 	const isInBitWidthConflict = useIsConnectionInBitWidthConflict(connectionId);
 	const [isHovered, setIsHovered] = useState(false);
 
-	// Moving a node re-renders this alone, which can happen after the connection is
-	// removed but before the list of connections drops it
 	if (!connection || !fromNodePin || !toNodePin || !fromNode || !toNode) {
 		return null;
 	}

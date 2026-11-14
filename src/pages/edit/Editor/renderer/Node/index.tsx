@@ -51,8 +51,6 @@ export default function CCComponentEditorRendererNode({
 		vector2.zero,
 	);
 
-	// Re-rendered alone by its own subscriptions, this can run after the node is
-	// removed but before the list of nodes drops it
 	if (!node || !component) return null;
 
 	const layout = getCCComponentEditorRendererNodeLayout(store, nodeId);

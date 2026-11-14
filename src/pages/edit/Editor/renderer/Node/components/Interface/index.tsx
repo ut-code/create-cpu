@@ -21,7 +21,6 @@ export function CCComponentEditorRendererNodeInterfaceRenderer(
 	const componentPin = useComponentPin(
 		nodePin && store.componentPins.getByImplementation(nodePin.id)?.id,
 	);
-	// Renaming the pin re-renders this alone, which can happen after the node is removed
 	if (!nodePin || !componentPin) return null;
 	const isEditMode = editorState.editorMode === "edit";
 
