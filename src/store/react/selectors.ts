@@ -224,28 +224,8 @@ export function useCanSimulate(componentId: CCComponentId) {
 		[store, componentId],
 	);
 	const subscribe = useCallback(
-		(onStoreChange: () => void) => {
-			store.nodes.on("didRegister", onStoreChange);
-			store.nodes.on("didUnregister", onStoreChange);
-			store.nodePins.on("didRegister", onStoreChange);
-			store.nodePins.on("didUnregister", onStoreChange);
-			store.componentPins.on("didRegister", onStoreChange);
-			store.componentPins.on("didUpdate", onStoreChange);
-			store.componentPins.on("didUnregister", onStoreChange);
-			store.connections.on("didRegister", onStoreChange);
-			store.connections.on("didUnregister", onStoreChange);
-			return () => {
-				store.nodes.off("didRegister", onStoreChange);
-				store.nodes.off("didUnregister", onStoreChange);
-				store.nodePins.off("didRegister", onStoreChange);
-				store.nodePins.off("didUnregister", onStoreChange);
-				store.componentPins.off("didRegister", onStoreChange);
-				store.componentPins.off("didUpdate", onStoreChange);
-				store.componentPins.off("didUnregister", onStoreChange);
-				store.connections.off("didRegister", onStoreChange);
-				store.connections.off("didUnregister", onStoreChange);
-			};
-		},
+		(onStoreChange: () => void) =>
+			store.subscribeToCircuitChanges(onStoreChange),
 		[store],
 	);
 	return useSyncExternalStore(subscribe, getSnapshot);

@@ -66,30 +66,46 @@ export default class CCStore {
 			}
 		}
 
-		const countRevision = () => {
+		this.subscribeToCircuitChanges(() => {
 			this.#revision += 1;
+		});
+	}
+
+	/**
+	 * Listen to every change of the circuit, i.e. of what the store {@link revision}
+	 * counts. Anything derived from more than one object, such as a bit width that a
+	 * change in another component can alter, has to be recomputed on any of them.
+	 * @param listener called synchronously on each change
+	 * @returns a function to stop listening
+	 */
+	subscribeToCircuitChanges(listener: () => void): () => void {
+		const subscriptions: (() => void)[] = [];
+		const subscribe = <Events extends object>(
+			emitter: {
+				on(event: keyof Events, listener: () => void): unknown;
+				off(event: keyof Events, listener: () => void): unknown;
+			},
+			eventTypes: readonly (keyof Events)[],
+		) => {
+			for (const eventType of eventTypes) {
+				emitter.on(eventType, listener);
+				subscriptions.push(() => emitter.off(eventType, listener));
+			}
 		};
-		for (const eventType of ccComponentStoreChangeEventTypes) {
-			this.components.on(eventType, countRevision);
-		}
-		for (const eventType of ccComponentPinStoreChangeEventTypes) {
-			this.componentPins.on(eventType, countRevision);
-		}
+		subscribe(this.components, ccComponentStoreChangeEventTypes);
+		subscribe(this.componentPins, ccComponentPinStoreChangeEventTypes);
 		// `didUpdate` of the node store also fires for position changes, which the circuit
 		// does not depend on, so only the config is watched here.
-		for (const eventType of [
+		subscribe(this.nodes, [
 			"didRegister",
 			"didUnregister",
 			"didUpdateConfig",
-		] as const) {
-			this.nodes.on(eventType, countRevision);
-		}
-		for (const eventType of ccNodePinStoreChangeEventTypes) {
-			this.nodePins.on(eventType, countRevision);
-		}
-		for (const eventType of ccConnectionStoreChangeEventTypes) {
-			this.connections.on(eventType, countRevision);
-		}
+		] as const);
+		subscribe(this.nodePins, ccNodePinStoreChangeEventTypes);
+		subscribe(this.connections, ccConnectionStoreChangeEventTypes);
+		return () => {
+			for (const unsubscribe of subscriptions) unsubscribe();
+		};
 	}
 
 	mount() {
