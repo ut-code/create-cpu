@@ -7,19 +7,8 @@ import {
 } from "@mui/material";
 import nullthrows from "nullthrows";
 import invariant from "tiny-invariant";
-import {
-	type CCComponentId,
-	CCComponentStore,
-} from "../../../../store/component";
-import {
-	type CCConnection,
-	CCConnectionStore,
-} from "../../../../store/connection";
-import {
-	type CCNode,
-	type CCNodeId,
-	CCNodeStore,
-} from "../../../../store/node";
+import type { CCComponentId } from "../../../../store/component";
+import { extractNodesIntoNewComponent } from "../../../../store/extractComponent";
 import { useStore } from "../../../../store/react";
 import { useComponentEditorStore } from "../store";
 
@@ -60,65 +49,13 @@ export default function CCComponentEditorContextMenu({
 				</MenuItem> */}
 				{selectedNodeIds.length > 0 && (
 					<MenuItem
-						onClick={() => {
-							const oldNodes = selectedNodeIds.map((nodeId) =>
-								nullthrows(store.nodes.get(nodeId)),
-							);
-							const oldConnections = selectedConnectionIds.map((connectionId) =>
-								nullthrows(store.connections.get(connectionId)),
-							);
-							const newComponent = CCComponentStore.create({
-								name: "New Component",
-							});
-							store.components.register(newComponent);
-							const oldToNewNodeIdMap = new Map<CCNodeId, CCNodeId>();
-							const newNodes = oldNodes.map<CCNode>((oldNode) => {
-								const newNode = CCNodeStore.create({
-									parentComponentId: newComponent.id,
-									position: oldNode.position,
-									componentId: oldNode.componentId,
-								});
-								oldToNewNodeIdMap.set(oldNode.id, newNode.id);
-								return newNode;
-							});
-							for (const node of newNodes) store.nodes.register(node);
-							const newConnections = oldConnections.flatMap<CCConnection>(
-								(oldConnection) => {
-									const oldFromNodePin = nullthrows(
-										store.nodePins.get(oldConnection.from),
-									);
-									const oldToNodePin = nullthrows(
-										store.nodePins.get(oldConnection.to),
-									);
-									const newFromNodeId = nullthrows(
-										oldToNewNodeIdMap.get(oldFromNodePin.nodeId),
-									);
-									const newToNodeId = nullthrows(
-										oldToNewNodeIdMap.get(oldToNodePin.nodeId),
-									);
-									return CCConnectionStore.create({
-										parentComponentId: newComponent.id,
-										from: store.nodePins.getByImplementationNodeIdAndPinId(
-											newFromNodeId,
-											oldFromNodePin.componentPinId,
-										).id,
-										to: store.nodePins.getByImplementationNodeIdAndPinId(
-											newToNodeId,
-											oldToNodePin.componentPinId,
-										).id,
-										bentPortion: oldConnection.bentPortion,
-									});
-								},
-							);
-							// A connection in a bit width conflict is moved as it is, since the
-							// original is removed below
-							for (const connection of newConnections)
-								store.connections.register(connection, {
-									allowBitWidthConflict: true,
-								});
-							store.connections.unregister(selectedConnectionIds);
-							store.nodes.unregister(selectedNodeIds);
+						onClick={async () => {
 							componentEditorState.closeContextMenu();
+							const newComponent = await extractNodesIntoNewComponent(
+								store,
+								selectedNodeIds,
+								"New Component",
+							);
 							onEditComponent(newComponent.id);
 						}}
 					>
