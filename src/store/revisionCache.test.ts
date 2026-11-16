@@ -17,4 +17,13 @@ describe("CCRevisionCache", () => {
 
 		expect(cache.get("a", compute)).toEqual({ count: 3 });
 	});
+
+	it("refuses a computation that changes the store", () => {
+		const store = createTestStore();
+		const cache = new CCRevisionCache<string, object>(store);
+
+		expect(() =>
+			cache.get("a", () => registerTestComponent(store, "Changed")),
+		).toThrow(/must not change the store/);
+	});
 });

@@ -1,4 +1,3 @@
-/** The previous list if it holds the same items in the same order, else the next. */
 export function reuseIfSameItems<T>(
 	previous: readonly T[] | null,
 	next: readonly T[],

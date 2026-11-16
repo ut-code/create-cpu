@@ -1,3 +1,4 @@
+import invariant from "tiny-invariant";
 import type CCStore from ".";
 
 /** Values derived from the circuit, kept until the revision of the store changes. */
@@ -20,6 +21,10 @@ export class CCRevisionCache<Key, Value extends object> {
 		const cached = this.#values.get(key);
 		if (cached) return cached;
 		const value = compute();
+		invariant(
+			this.#revision === this.#store.revision,
+			"A value cached on the revision must not change the store",
+		);
 		this.#values.set(key, value);
 		return value;
 	}
