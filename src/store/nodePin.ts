@@ -6,6 +6,7 @@ import type { CCComponentId } from "./component";
 import type { CCComponentPinId, CCNodePinBitWidthStatus } from "./componentPin";
 import { IntrinsicComponentDefinition } from "./intrinsics/base";
 import type { CCNodeId } from "./node";
+import { CCRevisionCache } from "./revisionCache";
 import type { CCObjectId } from "./types";
 
 export type CCNodePinId = CCObjectId<"nodePins">;
@@ -36,9 +37,10 @@ export class CCNodePinStore extends CCObjectStoreBase<
 		componentPinId: "componentPins",
 	} as const;
 
-	#bitWidthsByComponent: Map<CCComponentId, ComponentBitWidths> = new Map();
-
-	#bitWidthsRevision = -1;
+	readonly #bitWidthsByComponent = new CCRevisionCache<
+		CCComponentId,
+		ComponentBitWidths
+	>(this.store);
 
 	/** components whose bit widths are being analyzed, to catch one containing itself */
 	#componentsBeingAnalyzed: Set<CCComponentId> = new Set();
@@ -165,28 +167,22 @@ export class CCNodePinStore extends CCObjectStoreBase<
 	 * @param componentId a user-defined component
 	 */
 	getComponentBitWidths(componentId: CCComponentId): ComponentBitWidths {
-		if (this.#bitWidthsRevision !== this.store.revision) {
-			this.#bitWidthsByComponent.clear();
-			this.#bitWidthsRevision = this.store.revision;
-		}
-		const cached = this.#bitWidthsByComponent.get(componentId);
-		if (cached) return cached;
-		invariant(
-			!this.#componentsBeingAnalyzed.has(componentId),
-			`Component ${componentId} contains itself`,
-		);
-		this.#componentsBeingAnalyzed.add(componentId);
-		try {
-			const bitWidths = analyzeComponentBitWidths(
-				this.store,
-				componentId,
-				(childComponentId) => this.getComponentBitWidths(childComponentId),
+		return this.#bitWidthsByComponent.get(componentId, () => {
+			invariant(
+				!this.#componentsBeingAnalyzed.has(componentId),
+				`Component ${componentId} contains itself`,
 			);
-			this.#bitWidthsByComponent.set(componentId, bitWidths);
-			return bitWidths;
-		} finally {
-			this.#componentsBeingAnalyzed.delete(componentId);
-		}
+			this.#componentsBeingAnalyzed.add(componentId);
+			try {
+				return analyzeComponentBitWidths(
+					this.store,
+					componentId,
+					(childComponentId) => this.getComponentBitWidths(childComponentId),
+				);
+			} finally {
+				this.#componentsBeingAnalyzed.delete(componentId);
+			}
+		});
 	}
 
 	#getBitWidthsAround(nodePinId: CCNodePinId): ComponentBitWidths {

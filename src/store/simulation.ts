@@ -21,6 +21,7 @@ import {
 } from "./netlist";
 import type { CCNodeId } from "./node";
 import type { CCNodePinId } from "./nodePin";
+import { CCRevisionCache } from "./revisionCache";
 
 export type SimulationValue = boolean[];
 
@@ -66,28 +67,23 @@ export class SimulationFrame {
 
 const netlistCacheByStore = new WeakMap<
 	CCStore,
-	Map<string, SimulationNetlist>
+	CCRevisionCache<string, SimulationNetlist>
 >();
 
-/**
- * The netlist of a component, rebuilt whenever the store changed since it was built.
- */
+/** The netlist of a component, rebuilt whenever the circuit changed since it was built. */
 function getSimulationNetlist(
 	store: CCStore,
 	componentId: CCComponentId,
 	defaultBitWidth: number,
 ): SimulationNetlist {
-	let cacheByComponent = netlistCacheByStore.get(store);
-	if (!cacheByComponent) {
-		cacheByComponent = new Map();
-		netlistCacheByStore.set(store, cacheByComponent);
+	let cache = netlistCacheByStore.get(store);
+	if (!cache) {
+		cache = new CCRevisionCache(store);
+		netlistCacheByStore.set(store, cache);
 	}
-	const cacheKey = `${componentId}:${defaultBitWidth}`;
-	const cached = cacheByComponent.get(cacheKey);
-	if (cached && cached.revision === store.revision) return cached;
-	const netlist = buildSimulationNetlist(store, componentId, defaultBitWidth);
-	cacheByComponent.set(cacheKey, netlist);
-	return netlist;
+	return cache.get(`${componentId}:${defaultBitWidth}`, () =>
+		buildSimulationNetlist(store, componentId, defaultBitWidth),
+	);
 }
 
 /**
