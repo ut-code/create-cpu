@@ -43,9 +43,16 @@ export default class CCStore implements CCObjectStores {
 	 * How many circuit changes the store has seen. Anything derived from the circuit, such
 	 * as a simulation netlist, can be cached against this number and rebuilt once it
 	 * changes. Moving a node does not change the circuit, so it does not count.
+	 *
+	 * A change is counted when it is made, not when it is announced, since a removal is
+	 * announced only when its transaction ends.
 	 */
 	get revision(): number {
 		return this.#revision;
+	}
+
+	countCircuitChange(): void {
+		this.#revision += 1;
 	}
 
 	/**
@@ -68,16 +75,12 @@ export default class CCStore implements CCObjectStores {
 				this.componentPins.register(pin);
 			}
 		}
-
-		this.subscribeToCircuitChanges(() => {
-			this.#revision += 1;
-		});
 	}
 
 	/**
-	 * Listen to every change of the circuit, i.e. of what the store {@link revision}
-	 * counts. Anything derived from more than one object, such as a bit width that a
-	 * change in another component can alter, has to be recomputed on any of them.
+	 * Listen to the announcements of the changes of the circuit. Anything derived from
+	 * more than one object, such as a bit width that a change in another component can
+	 * alter, has to be recomputed on any of them.
 	 * @param listener called synchronously on each change
 	 * @returns a function to stop listening
 	 */
@@ -143,8 +146,7 @@ export default class CCStore implements CCObjectStores {
 
 	/**
 	 * Restore the objects of a store saved with {@link toJSON}. Some stores add them
-	 * without announcing them, so this must run before {@link mount}, while nothing
-	 * derived from them (such as the bit widths cached by the node pin store) exists yet.
+	 * without announcing them, so this must run before {@link mount}.
 	 */
 	importJson(json: string) {
 		const { components, nodes, componentPins, nodePins, connections } =

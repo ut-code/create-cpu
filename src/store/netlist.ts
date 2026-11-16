@@ -102,8 +102,6 @@ export type SimulationInstance = {
  */
 export type SimulationNetlist = {
 	readonly componentId: CCComponentId;
-	/** revision of the store this netlist was built from */
-	readonly revision: number;
 	readonly instances: readonly SimulationInstance[];
 	/** net driven by each input pin of the simulated component */
 	readonly netByInputComponentPin: ReadonlyMap<
@@ -425,7 +423,6 @@ export function buildSimulationNetlist(
 
 	return {
 		componentId,
-		revision: store.revision,
 		instances: sortInstancesByDependency(instances),
 		netByInputComponentPin,
 		netByNodePin,

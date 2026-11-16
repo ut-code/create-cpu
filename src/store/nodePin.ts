@@ -6,6 +6,7 @@ import type { CCComponentId } from "./component";
 import type { CCComponentPinId, CCNodePinBitWidthStatus } from "./componentPin";
 import { IntrinsicComponentDefinition } from "./intrinsics/base";
 import type { CCNodeId } from "./node";
+import { CCRevisionCache } from "./revisionCache";
 import type { CCObjectId } from "./types";
 
 export type CCNodePinId = CCObjectId<"nodePins">;
@@ -36,16 +37,13 @@ export class CCNodePinStore extends CCObjectStoreBase<
 		componentPinId: "componentPins",
 	} as const;
 
-	#markedAsDeleted: Set<CCNodePinId> = new Set();
-
-	#bitWidthsByComponent: Map<CCComponentId, ComponentBitWidths> = new Map();
+	readonly #bitWidthsByComponent = new CCRevisionCache<
+		CCComponentId,
+		ComponentBitWidths
+	>(this.store);
 
 	/** components whose bit widths are being analyzed, to catch one containing itself */
 	#componentsBeingAnalyzed: Set<CCComponentId> = new Set();
-
-	#clearBitWidthCache(): void {
-		this.#bitWidthsByComponent.clear();
-	}
 
 	import(nodePins: CCNodePin[]) {
 		for (const nodePin of nodePins) {
@@ -54,12 +52,6 @@ export class CCNodePinStore extends CCObjectStoreBase<
 	}
 
 	mount() {
-		this.store.connections.on("didRegister", () => this.#clearBitWidthCache());
-		this.store.connections.on("didUnregister", () =>
-			this.#clearBitWidthCache(),
-		);
-		// A calculated bit width may be derived from the config of its node
-		this.store.nodes.on("didUpdateConfig", () => this.#clearBitWidthCache());
 		this.store.nodes.on("didRegister", (node) => {
 			const componentPins = this.store.componentPins.getManyByComponentId(
 				node.componentId,
@@ -110,8 +102,7 @@ export class CCNodePinStore extends CCObjectStoreBase<
 	register(nodePin: CCNodePin): void {
 		invariant(this.store.componentPins.get(nodePin.componentPinId));
 		invariant(this.store.nodes.get(nodePin.nodeId));
-		this.objects.set(nodePin.id, nodePin);
-		this.#clearBitWidthCache();
+		this.setObject(nodePin);
 		this.emit("didRegister", nodePin);
 	}
 
@@ -121,23 +112,17 @@ export class CCNodePinStore extends CCObjectStoreBase<
 	 */
 	async unregister(id: CCNodePinId): Promise<void> {
 		const nodePin = nullthrows(this.objects.get(id));
-		this.#markedAsDeleted.add(id);
 		await this.store.transactionManager.runInTransaction(() => {
 			this.emit("willUnregister", nodePin);
-			this.objects.delete(nodePin.id);
-			// Its removal is announced only when the transaction ends, but the bit widths
-			// derived from it are stale from now on
-			this.#clearBitWidthCache();
+			this.deleteObject(nodePin.id);
 		});
 		this.emit("didUnregister", nodePin);
-		this.#markedAsDeleted.delete(id);
 	}
 
 	update(id: CCNodePinId, value: Pick<CCNodePin, "manualBitWidth">) {
 		const existingNodePin = nullthrows(this.objects.get(id));
 		const newNodePin = { ...existingNodePin, ...value };
-		this.objects.set(id, newNodePin);
-		this.#clearBitWidthCache();
+		this.setObject(newNodePin);
 		this.emit("didUpdate", newNodePin);
 	}
 
@@ -178,28 +163,26 @@ export class CCNodePinStore extends CCObjectStoreBase<
 
 	/**
 	 * The bit width groups of the pins of the nodes inside a user-defined component.
-	 * They are cached until the circuit changes.
+	 * They are cached until the revision of the store changes.
 	 * @param componentId a user-defined component
 	 */
 	getComponentBitWidths(componentId: CCComponentId): ComponentBitWidths {
-		const cached = this.#bitWidthsByComponent.get(componentId);
-		if (cached) return cached;
-		invariant(
-			!this.#componentsBeingAnalyzed.has(componentId),
-			`Component ${componentId} contains itself`,
-		);
-		this.#componentsBeingAnalyzed.add(componentId);
-		try {
-			const bitWidths = analyzeComponentBitWidths(
-				this.store,
-				componentId,
-				(childComponentId) => this.getComponentBitWidths(childComponentId),
+		return this.#bitWidthsByComponent.get(componentId, () => {
+			invariant(
+				!this.#componentsBeingAnalyzed.has(componentId),
+				`Component ${componentId} contains itself`,
 			);
-			this.#bitWidthsByComponent.set(componentId, bitWidths);
-			return bitWidths;
-		} finally {
-			this.#componentsBeingAnalyzed.delete(componentId);
-		}
+			this.#componentsBeingAnalyzed.add(componentId);
+			try {
+				return analyzeComponentBitWidths(
+					this.store,
+					componentId,
+					(childComponentId) => this.getComponentBitWidths(childComponentId),
+				);
+			} finally {
+				this.#componentsBeingAnalyzed.delete(componentId);
+			}
+		});
 	}
 
 	#getBitWidthsAround(nodePinId: CCNodePinId): ComponentBitWidths {
@@ -224,10 +207,6 @@ export class CCNodePinStore extends CCObjectStoreBase<
 	 */
 	isInBitWidthConflict(nodePinId: CCNodePinId): boolean {
 		return this.#getBitWidthsAround(nodePinId).isInConflict(nodePinId);
-	}
-
-	isMarkedAsDeleted(id: CCNodePinId) {
-		return this.#markedAsDeleted.has(id);
 	}
 
 	/**

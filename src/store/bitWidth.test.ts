@@ -331,6 +331,60 @@ describe("bit width groups", () => {
 		expect(conflictingConnectionCount(store)).toBe(0);
 	});
 
+	it("drops a removed connection from the bit widths before announcing its removal", async () => {
+		const store = createTestStore();
+		const root = registerTestComponent(store, "Root");
+		const constant = registerConst(store, root.id, 8);
+		const notNode = registerTestNode(store, root.id, not.component.id);
+		const screen = registerDisplay(store, root.id, 4, 2);
+		connectTestNodePins(
+			store,
+			root.id,
+			constant.out,
+			testNodePin(store, notNode, not.inputPin.In),
+		);
+		connectTestNodePins(
+			store,
+			root.id,
+			testNodePin(store, notNode, not.outputPin.Out),
+			screen.pixels,
+		);
+		store.nodes.update(screen.node.id, {
+			config: { resolution: { x: 2, y: 2 }, pixelOrder: "row-major" },
+		});
+		expect(conflictingConnectionCount(store)).toBe(2);
+
+		const [toScreen] = store.connections.getConnectionsByNodePinId(
+			screen.pixels,
+		);
+		const removal = store.connections.unregister([nullthrows(toScreen).id]);
+
+		expect(conflictingConnectionCount(store)).toBe(0);
+		expect(
+			store.nodePins.getNodePinBitWidthStatus(
+				testNodePin(store, notNode, not.outputPin.Out),
+			),
+		).toEqual({ isFixed: true, bitWidth: 8 });
+		await removal;
+	});
+
+	it("refuses to analyze a component that contains itself", async () => {
+		const store = createTestStore();
+		const outer = registerTestComponent(store, "Outer");
+		const inner = registerTestComponent(store, "Inner");
+		registerTestNode(store, outer.id, inner.id);
+		const loop = registerTestNode(store, inner.id, outer.id);
+
+		for (const component of [outer, inner]) {
+			expect(() => store.nodePins.getComponentBitWidths(component.id)).toThrow(
+				/contains itself/,
+			);
+		}
+
+		await store.nodes.unregister([loop.id]);
+		expect(() => store.nodePins.getComponentBitWidths(outer.id)).not.toThrow();
+	});
+
 	it("refuses a new connection that would tie conflicting widths together", () => {
 		const store = createTestStore();
 		const inverter = registerInverterComponent(store);

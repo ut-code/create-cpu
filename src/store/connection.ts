@@ -40,7 +40,7 @@ export class CCConnectionStore extends CCObjectStoreBase<
 
 	import(connections: CCConnection[]): void {
 		for (const connection of connections) {
-			this.objects.set(connection.id, connection);
+			this.setObject(connection);
 		}
 	}
 
@@ -72,7 +72,7 @@ export class CCConnectionStore extends CCObjectStoreBase<
 		) {
 			return;
 		}
-		this.objects.set(connection.id, connection);
+		this.setObject(connection);
 		this.emit("didRegister", connection);
 	}
 
@@ -85,17 +85,12 @@ export class CCConnectionStore extends CCObjectStoreBase<
 		await this.store.transactionManager.runInTransaction(() => {
 			for (const connection of connections) {
 				this.emit("willUnregister", connection);
-				this.objects.delete(connection.id);
-			}
-			// Announced as soon as the connections are gone, not when the transaction ends.
-			// Otherwise a listener of a change announced in between, such as a renderer
-			// subscribed to the node at one end, would look up a connection that is gone
-			// while the list of connections still has it. Removing a connection cascades
-			// to nothing, so its listeners see no half-removed state.
-			for (const connection of connections) {
-				this.emit("didUnregister", connection);
+				this.deleteObject(connection.id);
 			}
 		});
+		for (const connection of connections) {
+			this.emit("didUnregister", connection);
+		}
 	}
 
 	/**

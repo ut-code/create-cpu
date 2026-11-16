@@ -17,13 +17,11 @@ export function CCComponentEditorRendererNodeInterfaceRenderer(
 	const { store } = useStore();
 	const editorState = useComponentEditorStore()();
 
-	const nodePin = nullthrows(
-		store.nodePins.getManyByNodeId(props.node.id)[0],
-		`Interface node ${props.node.id} is missing its pin`,
-	);
+	const nodePin = store.nodePins.getManyByNodeId(props.node.id)[0];
 	const componentPin = useComponentPin(
-		nullthrows(store.componentPins.getByImplementation(nodePin.id)).id,
+		nodePin && store.componentPins.getByImplementation(nodePin.id)?.id,
 	);
+	if (!nodePin || !componentPin) return null;
 	const isEditMode = editorState.editorMode === "edit";
 
 	const simulation = isEditMode

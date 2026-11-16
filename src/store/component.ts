@@ -43,7 +43,7 @@ export class CCComponentStore extends CCObjectStoreBase<
 	 */
 	register(component: CCComponent): void {
 		invariant(!this.objects.has(component.id));
-		this.objects.set(component.id, component);
+		this.setObject(component);
 		this.emit("didRegister", component);
 	}
 
@@ -56,7 +56,7 @@ export class CCComponentStore extends CCObjectStoreBase<
 		if (!component) throw new Error(`Component ${id} not found`);
 		await this.store.transactionManager.runInTransaction(() => {
 			this.emit("willUnregister", component);
-			this.objects.delete(id);
+			this.deleteObject(id);
 		});
 		this.emit("didUnregister", component);
 	}
@@ -69,8 +69,9 @@ export class CCComponentStore extends CCObjectStoreBase<
 	update(id: CCComponentId, value: Pick<CCComponent, "name">): void {
 		const component = this.objects.get(id);
 		invariant(component);
-		this.objects.set(id, { ...component, ...value });
-		this.emit("didUpdate", component);
+		const newComponent = { ...component, ...value };
+		this.setObject(newComponent);
+		this.emit("didUpdate", newComponent);
 	}
 
 	/**

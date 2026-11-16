@@ -1,6 +1,7 @@
 import EventEmitter from "eventemitter3";
 import type CCStore from ".";
 import type {
+	CCObject,
 	CCObjectByType,
 	CCObjectId,
 	CCObjectStore,
@@ -25,13 +26,30 @@ export abstract class CCObjectStoreBase<
 {
 	protected readonly store: CCStore;
 
-	protected readonly objects: Map<CCObjectId<K>, CCObjectByType[K]> = new Map();
+	readonly #objects: Map<CCObjectId<K>, CCObjectByType[K]> = new Map();
+
+	protected get objects(): ReadonlyMap<CCObjectId<K>, CCObjectByType[K]> {
+		return this.#objects;
+	}
 
 	/**
 	 * Fields of the objects holding the id of another object, mapped to the object type of that id.
 	 * Every such field must be listed with its correct object type.
 	 */
 	abstract readonly references: CCReferences<CCObjectByType[K]>;
+
+	protected setObject(
+		object: CCObjectByType[K] & CCObject<K>,
+		{ changesCircuit = true }: { changesCircuit?: boolean } = {},
+	): void {
+		this.#objects.set(object.id, object);
+		if (changesCircuit) this.store.countCircuitChange();
+	}
+
+	protected deleteObject(id: CCObjectId<K>): void {
+		this.#objects.delete(id);
+		this.store.countCircuitChange();
+	}
 
 	constructor(store: CCStore) {
 		super();

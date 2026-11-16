@@ -71,7 +71,7 @@ export class CCNodeStore extends CCObjectStoreBase<"nodes", CCNodeStoreEvents> {
 	register(node: CCNode): void {
 		invariant(this.store.components.get(node.componentId));
 		invariant(this.store.components.get(node.parentComponentId));
-		this.objects.set(node.id, node);
+		this.setObject(node);
 		this.emit("didRegister", node);
 	}
 
@@ -84,7 +84,7 @@ export class CCNodeStore extends CCObjectStoreBase<"nodes", CCNodeStoreEvents> {
 		await this.store.transactionManager.runInTransaction(() => {
 			for (const node of nodes) {
 				this.emit("willUnregister", node);
-				this.objects.delete(node.id);
+				this.deleteObject(node.id);
 			}
 		});
 		for (const node of nodes) {
@@ -115,8 +115,10 @@ export class CCNodeStore extends CCObjectStoreBase<"nodes", CCNodeStoreEvents> {
 	): void {
 		const existingNode = nullthrows(this.objects.get(id));
 		const newNode = { ...existingNode, ...value };
-		this.objects.set(id, newNode);
-		if ("config" in value && value.config !== existingNode.config) {
+		const changesConfig =
+			"config" in value && value.config !== existingNode.config;
+		this.setObject(newNode, { changesCircuit: changesConfig });
+		if (changesConfig) {
 			this.emit("didUpdateConfig", newNode);
 		}
 		this.emit("didUpdate", newNode);
