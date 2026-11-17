@@ -1,9 +1,7 @@
 import { Box } from "@mui/material";
-import nullthrows from "nullthrows";
 import { useState } from "react";
 import { ComponentPropertyDialog } from "../../../components/ComponentPropertyDialog";
 import type { CCComponentId } from "../../../store/component";
-import { useStore } from "../../../store/react";
 import { theme } from "../../../style";
 import CCComponentEditorContextMenu from "./components/ContextMenu";
 import CCComponentEditorFrameControl from "./components/FrameControl";
@@ -26,10 +24,8 @@ function CCComponentEditorContent({
 	onEditComponent,
 	onClose,
 }: CCComponentEditorProps) {
-	const { store } = useStore();
-	const component = nullthrows(store.components.get(componentId));
-	const [isComponentPropertyDialogOpen, setIsComponentPropertyDialogOpen] =
-		useState(false);
+	const [propertyDialogComponentId, setPropertyDialogComponentId] =
+		useState<CCComponentId | null>(null);
 
 	return (
 		<Box
@@ -43,25 +39,22 @@ function CCComponentEditorContent({
 			<CCComponentEditorRenderer />
 			<CCComponentEditorTitleBar
 				onComponentPropertyDialogOpen={() =>
-					setIsComponentPropertyDialogOpen(true)
+					setPropertyDialogComponentId(componentId)
 				}
 				onEditorClose={onClose}
 			/>
 			<CCComponentEditorViewModeSwitcher />
 			<CCComponentEditorFrameControl />
-			<CCComponentEditorContextMenu onEditComponent={onEditComponent} />
+			<CCComponentEditorContextMenu
+				onEditComponent={onEditComponent}
+				onComponentCreated={setPropertyDialogComponentId}
+			/>
 			<CCComponentEditorNodePinPropertyEditor />
 			<CCComponentEditorSimulationErrorAlert />
-			{isComponentPropertyDialogOpen && (
+			{propertyDialogComponentId && (
 				<ComponentPropertyDialog
-					componentId={componentId}
-					defaultName={component.name}
-					onClose={() => {
-						setIsComponentPropertyDialogOpen(false);
-					}}
-					onCancel={() => {
-						setIsComponentPropertyDialogOpen(false);
-					}}
+					componentId={propertyDialogComponentId}
+					onClose={() => setPropertyDialogComponentId(null)}
 				/>
 			)}
 		</Box>

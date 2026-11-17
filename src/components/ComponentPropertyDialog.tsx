@@ -19,9 +19,7 @@ import { useStore } from "../store/react";
 
 export type ComponentPropertyDialogProps = {
 	componentId: CCComponentId;
-	defaultName: string;
 	onClose(): void;
-	onCancel(): void;
 };
 
 const stateSchema = z.object({
