@@ -14,10 +14,12 @@ import { useComponentEditorStore } from "../store";
 
 export type CCComponentEditorContextMenuProps = {
 	onEditComponent: (componentId: CCComponentId) => void;
+	onComponentCreated: (componentId: CCComponentId) => void;
 };
 
 export default function CCComponentEditorContextMenu({
 	onEditComponent,
+	onComponentCreated,
 }: CCComponentEditorContextMenuProps) {
 	const { store } = useStore();
 	const componentEditorState = useComponentEditorStore()();
@@ -56,7 +58,7 @@ export default function CCComponentEditorContextMenu({
 								selectedNodeIds,
 								"New Component",
 							);
-							onEditComponent(newComponent.id);
+							onComponentCreated(newComponent.id);
 						}}
 					>
 						Create a new component...
