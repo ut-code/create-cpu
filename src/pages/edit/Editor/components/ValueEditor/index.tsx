@@ -42,9 +42,15 @@ type Props = {
 };
 
 export function CCComponentEditorValueEditor(props: Props) {
-	const [text, setText] = useState(() =>
+	const [readOnlyMode, setReadOnlyMode] = useState(props.mode);
+	const mode = props.readOnly ? readOnlyMode : props.mode;
+	const [draft, setDraft] = useState(() =>
 		formatSimulationValue(props.value, props.mode),
 	);
+	// Formatted text does not always parse back to the same value, so format a read-only one anew
+	const text = props.readOnly
+		? formatSimulationValue(props.value, mode)
+		: draft;
 
 	const parse = (text: string, mode: Mode) => {
 		const value = parseSimulationValue(text, mode);
@@ -52,18 +58,22 @@ export function CCComponentEditorValueEditor(props: Props) {
 			? fitSimulationValue(value, props.bitWidth)
 			: value;
 	};
-	const newValue = parse(text, props.mode);
+	const newValue = parse(text, mode);
 
-	const changeMode = (mode: Mode) => {
-		props.onModeChange(mode);
-		setText(formatSimulationValue(newValue ?? props.value, mode));
+	const changeMode = (newMode: Mode) => {
+		if (props.readOnly) {
+			setReadOnlyMode(newMode);
+			return;
+		}
+		props.onModeChange(newMode);
+		setDraft(formatSimulationValue(newValue ?? props.value, newMode));
 	};
 
 	return (
 		<Stack sx={{ height: "100%", gap: 0.5 }}>
 			<Stack direction="row" sx={{ gap: 0.5 }}>
 				<ToggleButtonGroup
-					value={props.mode}
+					value={mode}
 					onChange={(_, value) => {
 						if (!Object.hasOwn(modes, value)) return;
 						changeMode(value as Mode);
@@ -92,7 +102,7 @@ export function CCComponentEditorValueEditor(props: Props) {
 			</Stack>
 			<Editor
 				value={text}
-				onChange={(e) => setText(e.target.value)}
+				onChange={(e) => setDraft(e.target.value)}
 				spellCheck={false}
 				sx={{ borderColor: newValue ? "divider" : "error.main" }}
 				readOnly={props.readOnly ?? false}
