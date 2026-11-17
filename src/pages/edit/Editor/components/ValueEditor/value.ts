@@ -81,3 +81,39 @@ export function fitSimulationValue(
 	if (value.slice(0, overflow).some((bit) => bit)) return null;
 	return value.slice(overflow);
 }
+
+export type SimulationValueDraft = {
+	text: string;
+	/** `null` if the text is invalid or wider than the bit width */
+	value: SimulationValue | null;
+};
+
+export function formatSimulationValueDraft(
+	value: SimulationValue,
+	mode: Mode,
+): SimulationValueDraft {
+	return { text: formatSimulationValue(value, mode), value };
+}
+
+export function parseSimulationValueDraft(
+	text: string,
+	mode: Mode,
+	bitWidth?: number,
+): SimulationValueDraft {
+	const value = parseSimulationValue(text, mode);
+	return {
+		text,
+		value:
+			value && bitWidth !== undefined
+				? fitSimulationValue(value, bitWidth)
+				: value,
+	};
+}
+
+export function changeSimulationValueDraftMode(
+	draft: SimulationValueDraft,
+	fallback: SimulationValue,
+	mode: Mode,
+): SimulationValueDraft {
+	return formatSimulationValueDraft(draft.value ?? fallback, mode);
+}
