@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import type CCStore from ".";
 import type { CCComponentId } from "./component";
 import { extractNodesIntoNewComponent } from "./extractComponent";
-import { aggregate, and, const_, or } from "./intrinsics/definitions";
+import { aggregate, and, const_, not, or } from "./intrinsics/definitions";
 import type { CCNodePinId } from "./nodePin";
 import simulateComponent from "./simulation";
 import {
@@ -16,6 +16,7 @@ import {
 	registerTestOutputNode,
 	splitTestNodePin,
 	testBits,
+	testComponentPin,
 	testNodePin,
 } from "./testUtils";
 
@@ -98,7 +99,7 @@ describe("extractNodesIntoNewComponent", () => {
 		expectConsistentStore(store);
 	});
 
-	it("keeps the configs, the split pins and the names of the exposed pins", async () => {
+	it("keeps the configs and the split pins", async () => {
 		const store = createTestStore();
 		const root = registerTestComponent(store, "Root");
 		const high = registerTestNode(store, root.id, const_.component.id, {
@@ -150,11 +151,72 @@ describe("extractNodesIntoNewComponent", () => {
 				.map((node) => node.config),
 		).toEqual([high.config, low.config]);
 		expect(
+			simulateComponent(store, root.id, new Map()).getNodePinValue(result.in),
+		).toEqual(testBits(0b10100101, 8));
+		expectConsistentStore(store);
+	});
+
+	it("leaves the Input and Output nodes in place, so the pins of the parent keep working", async () => {
+		const store = createTestStore();
+		const inverter = registerTestComponent(store, "Inverter");
+		const a = registerTestInputNode(store, inverter.id, "A");
+		const notNode = registerTestNode(store, inverter.id, not.component.id);
+		const x = registerTestOutputNode(store, inverter.id, "X");
+		connectTestNodePins(
+			store,
+			inverter.id,
+			a.out,
+			testNodePin(store, notNode, not.inputPin.In),
+		);
+		connectTestNodePins(
+			store,
+			inverter.id,
+			testNodePin(store, notNode, not.outputPin.Out),
+			x.in,
+		);
+		const root = registerTestComponent(store, "Root");
+		const rootIn = registerTestInputNode(store, root.id, "In");
+		const inverterNode = registerTestNode(store, root.id, inverter.id);
+		const rootOut = registerTestOutputNode(store, root.id, "Out");
+		connectTestNodePins(
+			store,
+			root.id,
+			rootIn.out,
+			testNodePin(store, inverterNode, testComponentPin(store, inverter, "A")),
+		);
+		connectTestNodePins(
+			store,
+			root.id,
+			testNodePin(store, inverterNode, testComponentPin(store, inverter, "X")),
+			rootOut.in,
+		);
+
+		const extracted = await extractNodesIntoNewComponent(
+			store,
+			[a.node.id, notNode.id, x.node.id],
+			"Extracted",
+		);
+
+		expect(
+			store.componentPins
+				.getManyByComponentId(inverter.id)
+				.map((pin) => pin.name),
+		).toEqual(["A", "X"]);
+		expect(
 			store.componentPins
 				.getManyByComponentId(extracted.id)
-				.map((pin) => pin.name),
-		).toEqual(["Y"]);
-		expect(store.componentPins.getManyByComponentId(root.id)).toEqual([]);
+				.map((pin) => pin.type)
+				.toSorted(),
+		).toEqual(["input", "output"]);
+		for (const value of [false, true]) {
+			expect(
+				simulateComponent(
+					store,
+					root.id,
+					new Map([[rootIn.componentPinId, [value]]]),
+				).getNodePinValue(rootOut.in),
+			).toEqual([!value]);
+		}
 		expectConsistentStore(store);
 	});
 });

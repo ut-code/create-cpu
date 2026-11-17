@@ -8,7 +8,10 @@ import {
 import nullthrows from "nullthrows";
 import invariant from "tiny-invariant";
 import type { CCComponentId } from "../../../../store/component";
-import { extractNodesIntoNewComponent } from "../../../../store/extractComponent";
+import {
+	extractNodesIntoNewComponent,
+	getExtractableNodeIds,
+} from "../../../../store/extractComponent";
 import { useStore } from "../../../../store/react";
 import { useComponentEditorStore } from "../store";
 
@@ -49,7 +52,7 @@ export default function CCComponentEditorContextMenu({
 				{/* <MenuItem onClick={componentEditorState.closeContextMenu}>
 					Create a node
 				</MenuItem> */}
-				{selectedNodeIds.length > 0 && (
+				{getExtractableNodeIds(store, selectedNodeIds).length > 0 && (
 					<MenuItem
 						onClick={async () => {
 							componentEditorState.closeContextMenu();

@@ -16,12 +16,28 @@ import { type CCNodePinId, CCNodePinStore } from "./nodePin";
 const interfaceNodeOffsetX = 200;
 const interfaceNodeGapY = 50;
 
+// Moving an Input or Output node would take its pin away from the parent and every use of it
+export function getExtractableNodeIds(
+	store: CCStore,
+	nodeIds: CCNodeId[],
+): CCNodeId[] {
+	return nodeIds.filter((nodeId) => {
+		const { componentId } = nullthrows(store.nodes.get(nodeId));
+		return (
+			componentId !== input.component.id && componentId !== output.component.id
+		);
+	});
+}
+
 export async function extractNodesIntoNewComponent(
 	store: CCStore,
 	nodeIds: CCNodeId[],
 	name: string,
 ): Promise<CCComponent> {
-	const oldNodes = nodeIds.map((nodeId) => nullthrows(store.nodes.get(nodeId)));
+	const movedNodeIds = getExtractableNodeIds(store, nodeIds);
+	const oldNodes = movedNodeIds.map((nodeId) =>
+		nullthrows(store.nodes.get(nodeId)),
+	);
 	const [firstNode] = oldNodes;
 	invariant(firstNode, "no nodes to extract");
 	const parentComponentId = firstNode.parentComponentId;
@@ -92,7 +108,7 @@ export async function extractNodesIntoNewComponent(
 	});
 
 	// An outside input pin takes a new connection only once its old one is removed
-	await store.nodes.unregister(nodeIds);
+	await store.nodes.unregister(movedNodeIds);
 
 	const replacement = CCNodeStore.create({
 		parentComponentId,
@@ -171,16 +187,6 @@ function copyNodes(
 				newNodePinId = newNodePin.id;
 			}
 			oldToNewNodePinIds.set(oldNodePin.id, newNodePinId);
-
-			const oldExposedPin = store.componentPins.getByImplementation(
-				oldNodePin.id,
-			);
-			const newExposedPin =
-				store.componentPins.getByImplementation(newNodePinId);
-			if (oldExposedPin && newExposedPin)
-				store.componentPins.update(newExposedPin.id, {
-					name: oldExposedPin.name,
-				});
 		}
 	}
 	return oldToNewNodePinIds;
