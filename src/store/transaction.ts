@@ -12,7 +12,7 @@ export default class TransactionManager {
 	 * @returns promise that resolves when the transaction ends, or rejects with the error
 	 *   `fn` threw once it ends
 	 */
-	runInTransaction(fn: () => void | Promise<void>): Promise<void> {
+	async runInTransaction(fn: () => void | Promise<void>): Promise<void> {
 		return new Promise((resolve, reject) => {
 			let failure: { error: unknown } | null = null;
 			this.#runningTaskCount += 1;

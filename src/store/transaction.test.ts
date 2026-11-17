@@ -48,15 +48,23 @@ describe("TransactionManager", () => {
 		expect(announced).toEqual([nullthrows(second).id]);
 	});
 
-	it("rejects only the transaction whose function threw", async () => {
+	it("rejects only the transaction whose function threw, once the whole transaction ends", async () => {
 		const transactionManager = new TransactionManager();
 		const failure = new Error("inner failed");
 		let inner: Promise<void> | undefined;
+		let innerSettledEarly = false;
 
-		const outer = transactionManager.runInTransaction(() => {
+		const outer = transactionManager.runInTransaction(async () => {
 			inner = transactionManager.runInTransaction(() => {
 				throw failure;
 			});
+			const markSettled = () => {
+				innerSettledEarly = true;
+			};
+			inner.then(markSettled, markSettled);
+			await new Promise((resolve) => setTimeout(resolve, 0));
+			if (innerSettledEarly)
+				throw new Error("settled before the outer one ended");
 		});
 
 		await expect(outer).resolves.toBeUndefined();
