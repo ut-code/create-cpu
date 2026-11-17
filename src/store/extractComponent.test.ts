@@ -3,13 +3,15 @@ import { describe, expect, it } from "vitest";
 import type CCStore from ".";
 import type { CCComponentId } from "./component";
 import { extractNodesIntoNewComponent } from "./extractComponent";
-import { aggregate, const_, not, true_ } from "./intrinsics/definitions";
+import { aggregate, and, const_, or } from "./intrinsics/definitions";
 import type { CCNodePinId } from "./nodePin";
+import simulateComponent from "./simulation";
 import {
 	connectTestNodePins,
 	createTestStore,
 	expectConsistentStore,
 	registerTestComponent,
+	registerTestInputNode,
 	registerTestNode,
 	registerTestOutputNode,
 	splitTestNodePin,
@@ -37,41 +39,62 @@ function describeConnections(store: CCStore, componentId: CCComponentId) {
 }
 
 describe("extractNodesIntoNewComponent", () => {
-	it("moves the connections between the nodes and drops the ones to the rest of the circuit", async () => {
+	it("puts a node of the new component in place of the moved nodes, wired to the rest of the circuit", async () => {
 		const store = createTestStore();
 		const root = registerTestComponent(store, "Root");
-		const source = registerTestNode(store, root.id, true_.component.id);
-		const inverter = registerTestNode(store, root.id, not.component.id);
-		const outsider = registerTestNode(store, root.id, not.component.id);
-		connectTestNodePins(
-			store,
-			root.id,
-			testNodePin(store, source, true_.outputPin.Out),
-			testNodePin(store, inverter, not.inputPin.In),
-		);
-		connectTestNodePins(
-			store,
-			root.id,
-			testNodePin(store, inverter, not.outputPin.Out),
-			testNodePin(store, outsider, not.inputPin.In),
-		);
+		const a = registerTestInputNode(store, root.id, "A");
+		const b = registerTestInputNode(store, root.id, "B");
+		const andNode = registerTestNode(store, root.id, and.component.id);
+		const orNode = registerTestNode(store, root.id, or.component.id);
+		const x = registerTestOutputNode(store, root.id, "X");
+		const y = registerTestOutputNode(store, root.id, "Y");
+		const z = registerTestOutputNode(store, root.id, "Z");
+		for (const [from, to] of [
+			[a.out, testNodePin(store, andNode, and.inputPin.A)],
+			[a.out, testNodePin(store, orNode, or.inputPin.A)],
+			[b.out, testNodePin(store, andNode, and.inputPin.B)],
+			[b.out, testNodePin(store, orNode, or.inputPin.B)],
+			[testNodePin(store, andNode, and.outputPin.Out), x.in],
+			[testNodePin(store, orNode, or.outputPin.Out), y.in],
+			[testNodePin(store, orNode, or.outputPin.Out), z.in],
+		] as const)
+			connectTestNodePins(store, root.id, from, to);
 
 		const extracted = await extractNodesIntoNewComponent(
 			store,
-			[source.id, inverter.id],
+			[andNode.id, orNode.id],
 			"Extracted",
 		);
 
-		expect(store.nodes.getManyByParentComponentId(extracted.id)).toHaveLength(
-			2,
-		);
-		expect(describeConnections(store, extracted.id)).toEqual([
-			"True.Out#0:null -> Not.In#0:null",
-		]);
 		expect(
-			store.nodes.getManyByParentComponentId(root.id).map((node) => node.id),
-		).toEqual([outsider.id]);
-		expect(store.connections.getManyByParentComponentId(root.id)).toEqual([]);
+			store.componentPins
+				.getManyByComponentId(extracted.id)
+				.map((pin) => pin.type)
+				.toSorted(),
+		).toEqual(["input", "input", "output", "output"]);
+		expect(
+			store.nodes
+				.getManyByParentComponentId(root.id)
+				.filter((node) => node.componentId === extracted.id),
+		).toHaveLength(1);
+		for (const [left, right] of [
+			[false, false],
+			[false, true],
+			[true, false],
+			[true, true],
+		] as const) {
+			const frame = simulateComponent(
+				store,
+				root.id,
+				new Map([
+					[a.componentPinId, [left]],
+					[b.componentPinId, [right]],
+				]),
+			);
+			expect(
+				[x.in, y.in, z.in].map((pin) => frame.getNodePinValue(pin)),
+			).toEqual([[left && right], [left || right], [left || right]]);
+		}
 		expectConsistentStore(store);
 	});
 
