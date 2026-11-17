@@ -9,8 +9,9 @@ export default class TransactionManager {
 	/**
 	 * Run a function in a transaction
 	 * @param fn function to be run in a transaction
-	 * @returns promise that resolves when the transaction ends, or rejects with the error
-	 *   `fn` threw once it ends
+	 * @returns promise that resolves when the transaction ends, or, once it ends, rejects
+	 *   with the error `fn` threw. Being `async` delays settling by a step, so that a
+	 *   removal is announced after the ones it cascades to.
 	 */
 	async runInTransaction(fn: () => void | Promise<void>): Promise<void> {
 		return new Promise((resolve, reject) => {

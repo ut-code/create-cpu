@@ -52,22 +52,23 @@ describe("TransactionManager", () => {
 		const transactionManager = new TransactionManager();
 		const failure = new Error("inner failed");
 		let inner: Promise<void> | undefined;
-		let innerSettledEarly = false;
+		let innerSettled = false;
+		let innerSettledBeforeOuterEnded: boolean | undefined;
 
 		const outer = transactionManager.runInTransaction(async () => {
 			inner = transactionManager.runInTransaction(() => {
 				throw failure;
 			});
 			const markSettled = () => {
-				innerSettledEarly = true;
+				innerSettled = true;
 			};
 			inner.then(markSettled, markSettled);
 			await new Promise((resolve) => setTimeout(resolve, 0));
-			if (innerSettledEarly)
-				throw new Error("settled before the outer one ended");
+			innerSettledBeforeOuterEnded = innerSettled;
 		});
 
 		await expect(outer).resolves.toBeUndefined();
 		await expect(inner).rejects.toBe(failure);
+		expect(innerSettledBeforeOuterEnded).toBe(false);
 	});
 });
