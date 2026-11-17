@@ -45,12 +45,14 @@ export function CCComponentEditorRendererNodeDisplayRenderer(
 			>
 				{config.resolution.x}x{config.resolution.y}
 			</text>
-			<foreignObject x={padding / 2} y={padding + 16} width={32} height={32}>
-				<CCComponentEditorRendererNodeDisplayRendererConfigSettingButton
-					config={config}
-					onConfigChange={updateConfig}
-				/>
-			</foreignObject>
+			{editorState.editorMode === "edit" && (
+				<foreignObject x={padding / 2} y={padding + 16} width={32} height={32}>
+					<CCComponentEditorRendererNodeDisplayRendererConfigSettingButton
+						config={config}
+						onConfigChange={updateConfig}
+					/>
+				</foreignObject>
+			)}
 			{Array(config.resolution.y)
 				.keys()
 				.map((y) =>

@@ -5,15 +5,14 @@ import {
 	MenuList,
 	Paper,
 } from "@mui/material";
-import nullthrows from "nullthrows";
-import invariant from "tiny-invariant";
 import type { CCComponentId } from "../../../../store/component";
-import {
-	extractNodesIntoNewComponent,
-	getExtractableNodeIds,
-} from "../../../../store/extractComponent";
+import { extractNodesIntoNewComponent } from "../../../../store/extractComponent";
 import { useStore } from "../../../../store/react";
 import { useComponentEditorStore } from "../store";
+import {
+	getContextMenuItems,
+	hasContextMenuItems,
+} from "../store/slices/contextMenu/items";
 
 export type CCComponentEditorContextMenuProps = {
 	onEditComponent: (componentId: CCComponentId) => void;
@@ -28,14 +27,15 @@ export default function CCComponentEditorContextMenu({
 	const componentEditorState = useComponentEditorStore()();
 
 	if (!componentEditorState.contextMenuState) return null;
-
-	// The selection can still hold objects removed since, e.g. along with a node pin
-	const selectedNodeIds = [...componentEditorState.selectedNodeIds].filter(
-		(nodeId) => store.nodes.get(nodeId),
-	);
-	const selectedConnectionIds = [
-		...componentEditorState.selectedConnectionIds,
-	].filter((connectionId) => store.connections.get(connectionId));
+	const items = getContextMenuItems(store, componentEditorState);
+	if (!hasContextMenuItems(items)) return null;
+	const {
+		selectedNodeIds,
+		selectedConnectionIds,
+		canExtract,
+		canDelete,
+		componentToEdit,
+	} = items;
 
 	return (
 		<ClickAwayListener onClickAway={componentEditorState.closeContextMenu}>
@@ -52,7 +52,7 @@ export default function CCComponentEditorContextMenu({
 				{/* <MenuItem onClick={componentEditorState.closeContextMenu}>
 					Create a node
 				</MenuItem> */}
-				{getExtractableNodeIds(store, selectedNodeIds).length > 0 && (
+				{canExtract && (
 					<MenuItem
 						onClick={async () => {
 							componentEditorState.closeContextMenu();
@@ -67,7 +67,7 @@ export default function CCComponentEditorContextMenu({
 						Create a new component...
 					</MenuItem>
 				)}
-				{(selectedNodeIds.length > 0 || selectedConnectionIds.length > 0) && (
+				{canDelete && (
 					<MenuItem
 						onClick={() => {
 							if (selectedNodeIds.length > 0)
@@ -81,28 +81,17 @@ export default function CCComponentEditorContextMenu({
 						Delete
 					</MenuItem>
 				)}
-				{(() => {
-					const [targetNodeId] = selectedNodeIds;
-					if (selectedNodeIds.length !== 1 || !targetNodeId) return undefined;
-					const targetNode = nullthrows(store.nodes.get(targetNodeId));
-					const targetComponent = store.components.get(targetNode.componentId);
-					invariant(targetComponent);
-					if (targetComponent.intrinsicType) return undefined;
-					return (
-						<>
-							<Divider />
-							<MenuItem
-								onClick={() => {
-									invariant(targetNode);
-									componentEditorState.closeContextMenu();
-									onEditComponent(targetNode.componentId);
-								}}
-							>
-								Edit...
-							</MenuItem>
-						</>
-					);
-				})()}
+				{componentToEdit && (canExtract || canDelete) && <Divider />}
+				{componentToEdit && (
+					<MenuItem
+						onClick={() => {
+							componentEditorState.closeContextMenu();
+							onEditComponent(componentToEdit.id);
+						}}
+					>
+						Edit...
+					</MenuItem>
+				)}
 			</MenuList>
 		</ClickAwayListener>
 	);

@@ -172,7 +172,7 @@ export class CCComponentPinStore extends CCObjectStoreBase<
 		const pin = this.objects.get(id);
 		invariant(pin);
 		const newPin = { ...pin, ...value };
-		this.setObject(newPin);
+		this.setObject(newPin, { changesCircuit: false });
 		this.emit("didUpdate", newPin);
 	}
 

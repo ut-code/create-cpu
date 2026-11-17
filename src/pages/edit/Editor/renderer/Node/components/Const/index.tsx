@@ -27,6 +27,8 @@ export function CCComponentEditorRendererNodeConstRenderer(
 				onPointerDown={(e) => e.stopPropagation()}
 			>
 				<CCComponentEditorValueEditor
+					// Remounting drops a value typed but not applied, which the simulation never uses
+					key={editorMode}
 					value={config.data}
 					onChange={(data) => updateConfig({ ...config, data })}
 					mode={config.mode}

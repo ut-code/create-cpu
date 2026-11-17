@@ -39,7 +39,7 @@ export function formatSimulationValue(
 				chunk(padBits(data, bitsPerByte), bitsPerByte),
 				fromBits,
 			);
-			return new TextDecoder().decode(bytes);
+			return new TextDecoder("utf-8", { ignoreBOM: true }).decode(bytes);
 		}
 	}
 }
