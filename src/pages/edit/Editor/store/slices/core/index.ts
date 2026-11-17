@@ -122,6 +122,7 @@ export const createComponentEditorStoreCoreSlice: ComponentEditorSliceCreator<
 						editorMode: mode,
 						playbackMode: "manual",
 						simulationError: null,
+						nodePinPropertyEditorTarget: null,
 					}));
 				},
 				setTimeStep(timeStep: number) {

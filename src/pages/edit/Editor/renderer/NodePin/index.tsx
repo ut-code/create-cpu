@@ -28,6 +28,7 @@ export default function CCComponentEditorRendererNodePin({
 }: CCComponentEditorRendererNodePinProps) {
 	const { store } = useStore();
 	const componentEditorState = useComponentEditorStore()();
+	const isEditMode = componentEditorState.editorMode === "edit";
 	const nodePin = nullthrows(store.nodePins.get(nodePinId));
 	const node = nullthrows(store.nodes.get(nodePin.nodeId));
 	const componentPin = nullthrows(
@@ -147,7 +148,10 @@ export default function CCComponentEditorRendererNodePin({
 
 	return (
 		<>
-			<g {...draggableProps} style={{ cursor: "pointer" }}>
+			<g
+				{...(isEditMode ? draggableProps : {})}
+				style={{ cursor: isEditMode ? "pointer" : undefined }}
+			>
 				<rect
 					x={position.x - CCComponentEditorRendererNodePinConstants.SIZE / 2}
 					y={position.y - CCComponentEditorRendererNodePinConstants.SIZE / 2}

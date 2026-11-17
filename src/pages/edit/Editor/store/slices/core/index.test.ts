@@ -1,5 +1,10 @@
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-import { and, const_ } from "../../../../../../store/intrinsics/definitions";
+import { describe, expect, it } from "vitest";
+import {
+	aggregate,
+	and,
+	const_,
+	true_,
+} from "../../../../../../store/intrinsics/definitions";
 import {
 	connectTestNodePins,
 	createTestStore,
@@ -10,21 +15,9 @@ import {
 	testNodePin,
 } from "../../../../../../store/testUtils";
 import { createEditorStore } from "../..";
+import { stubResizeObserver } from "../../testUtils";
 
-beforeAll(() => {
-	// The perspective slice observes the size of the renderer, which there is none of here
-	vi.stubGlobal(
-		"ResizeObserver",
-		class {
-			observe() {}
-			unobserve() {}
-			disconnect() {}
-		},
-	);
-});
-afterAll(() => {
-	vi.unstubAllGlobals();
-});
+stubResizeObserver();
 
 /** A root component with an input whose bit width is not fixed yet. */
 function setUp() {
@@ -96,5 +89,34 @@ describe("input values", () => {
 		expect(state.simulationError).toBeNull();
 		expect(state.editorMode).toBe("play");
 		expect(state.getNodePinValue(andOut)).toEqual(testBits(1, 8));
+	});
+});
+
+describe("editor mode", () => {
+	it("closes the node pin property editor when the editor mode changes", () => {
+		const store = createTestStore();
+		const root = registerTestComponent(store, "Root");
+		const source = registerTestNode(store, root.id, true_.component.id);
+		const aggregateNode = registerTestNode(
+			store,
+			root.id,
+			aggregate.component.id,
+		);
+		connectTestNodePins(
+			store,
+			root.id,
+			testNodePin(store, source, true_.outputPin.Out),
+			testNodePin(store, aggregateNode, aggregate.inputPin.In),
+		);
+		const editorStore = createEditorStore(root.id, store);
+		editorStore.getState().setNodePinPropertyEditorTarget({
+			componentPinId: aggregate.inputPin.In.id,
+			nodeId: aggregateNode.id,
+		});
+
+		editorStore.getState().setEditorMode("play");
+
+		expect(editorStore.getState().editorMode).toBe("play");
+		expect(editorStore.getState().nodePinPropertyEditorTarget).toBeNull();
 	});
 });
