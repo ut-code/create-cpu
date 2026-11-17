@@ -127,23 +127,6 @@ export class CCNodePinStore extends CCObjectStoreBase<
 	}
 
 	/**
-	 * Get all of pins
-	 * @returns all pins
-	 */
-	getByImplementationNodeIdAndPinId(
-		nodeId: CCNodeId,
-		componentPinId: CCComponentPinId,
-	): CCNodePin {
-		const pin = [...this.objects.values()].find(
-			(candidate) =>
-				candidate.nodeId === nodeId &&
-				candidate.componentPinId === componentPinId,
-		);
-		invariant(pin);
-		return pin;
-	}
-
-	/**
 	 * Get all of pins by component id
 	 * @param componentId id of component
 	 * @returns pins of component
