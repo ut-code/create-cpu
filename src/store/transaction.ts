@@ -7,11 +7,12 @@ export default class TransactionManager {
 	#onTransactionEnd: (() => void)[] = [];
 
 	/**
-	 * Run a function in a transaction
+	 * Run a function in a transaction. It stays `async`, which delays settling by a step, so
+	 * that with a synchronous `fn` the removal starting a transaction is announced after
+	 * the ones it cascades to.
 	 * @param fn function to be run in a transaction
 	 * @returns promise that resolves when the transaction ends, or, once it ends, rejects
-	 *   with the error `fn` threw. Being `async` delays settling by a step, so that a
-	 *   removal is announced after the ones it cascades to.
+	 *   with the error `fn` threw
 	 */
 	async runInTransaction(fn: () => void | Promise<void>): Promise<void> {
 		return new Promise((resolve, reject) => {
