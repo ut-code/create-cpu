@@ -1,12 +1,6 @@
 import { CCStoreAutoSaver } from "./autoSaver";
-import {
-	CCComponentStore,
-	ccComponentStoreChangeEventTypes,
-} from "./component";
-import {
-	CCComponentPinStore,
-	ccComponentPinStoreChangeEventTypes,
-} from "./componentPin";
+import { CCComponentStore } from "./component";
+import { CCComponentPinStore } from "./componentPin";
 import {
 	CCConnectionStore,
 	ccConnectionStoreChangeEventTypes,
@@ -42,7 +36,7 @@ export default class CCStore implements CCObjectStores {
 	/**
 	 * How many circuit changes the store has seen. Anything derived from the circuit, such
 	 * as a simulation netlist, can be cached against this number and rebuilt once it
-	 * changes. Moving a node does not change the circuit, so it does not count.
+	 * changes. Moving a node or renaming does not change the circuit, so it does not count.
 	 *
 	 * A change is counted when it is made, not when it is announced, since a removal is
 	 * announced only when its transaction ends.
@@ -98,10 +92,10 @@ export default class CCStore implements CCObjectStores {
 				subscriptions.push(() => emitter.off(eventType, listener));
 			}
 		};
-		subscribe(this.components, ccComponentStoreChangeEventTypes);
-		subscribe(this.componentPins, ccComponentPinStoreChangeEventTypes);
-		// `didUpdate` of the node store also fires for position changes, which the circuit
-		// does not depend on, so only the config is watched here.
+		// Renames and moves emit only `didUpdate`, which is left out here since they do not
+		// change the circuit
+		subscribe(this.components, ["didRegister", "didUnregister"] as const);
+		subscribe(this.componentPins, ["didRegister", "didUnregister"] as const);
 		subscribe(this.nodes, [
 			"didRegister",
 			"didUnregister",

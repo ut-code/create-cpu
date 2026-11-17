@@ -51,6 +51,24 @@ describe("Store revision", () => {
 		expect(store.revision).toBeGreaterThan(before);
 	});
 
+	it("does not count a rename of a component or a pin", () => {
+		const store = createTestStore();
+		const root = registerTestComponent(store, "Root");
+		const input = registerTestInputNode(store, root.id, "In");
+		const before = store.revision;
+
+		let notified = false;
+		store.subscribeToCircuitChanges(() => {
+			notified = true;
+		});
+
+		store.components.update(root.id, { name: "Renamed" });
+		store.componentPins.update(input.componentPinId, { name: "Renamed In" });
+
+		expect(store.revision).toBe(before);
+		expect(notified).toBe(false);
+	});
+
 	it("announces an update with the updated object", () => {
 		const store = createTestStore();
 		const root = registerTestComponent(store, "Root");

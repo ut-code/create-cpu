@@ -70,7 +70,7 @@ export class CCComponentStore extends CCObjectStoreBase<
 		const component = this.objects.get(id);
 		invariant(component);
 		const newComponent = { ...component, ...value };
-		this.setObject(newComponent);
+		this.setObject(newComponent, { changesCircuit: false });
 		this.emit("didUpdate", newComponent);
 	}
 
