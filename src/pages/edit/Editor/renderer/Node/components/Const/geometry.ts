@@ -8,8 +8,6 @@ import type {
 
 export const ccComponentEditorRendererNodeConstLayoutConstants = {
 	padding: 8,
-	gridSize: 12,
-	gridSizeDisplayWidth: 60,
 };
 
 export function ccComponentRendererNodeConstLayoutCalculator(
