@@ -1,19 +1,31 @@
+import type { Ref } from "react";
 import styles from "../../style.module.css";
 import type { CCComponentEditorRendererNodeRendererProps } from "../../types";
 
-export function CCComponentEditorRendererNodeDefaultRenderer(
-	props: CCComponentEditorRendererNodeRendererProps,
-) {
+export const CC_COMPONENT_EDITOR_RENDERER_NODE_TITLE = {
+	baselineY: -5,
+	fontSize: 12,
+};
+
+export function CCComponentEditorRendererNodeDefaultRenderer({
+	title,
+	titleRef,
+	...props
+}: CCComponentEditorRendererNodeRendererProps & {
+	title?: string;
+	titleRef?: Ref<SVGTextElement>;
+}) {
 	return (
 		<>
 			<text
+				ref={titleRef}
 				className={styles.text}
 				x={0}
-				y={-5}
+				y={CC_COMPONENT_EDITOR_RENDERER_NODE_TITLE.baselineY}
 				textAnchor="start"
-				fontSize={12}
+				fontSize={CC_COMPONENT_EDITOR_RENDERER_NODE_TITLE.fontSize}
 			>
-				{props.component.name}
+				{title ?? props.component.name}
 			</text>
 			<rect
 				x={0}

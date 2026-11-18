@@ -12,6 +12,8 @@ import {
 import { useState } from "react";
 import type { CCIntrinsicComponentDisplaySpec } from "../../../../../../../store/intrinsics/types";
 
+export const DISPLAY_CONFIG_SETTING_BUTTON_SIZE = 16;
+
 type Props = {
 	config: CCIntrinsicComponentDisplaySpec["config"];
 	onConfigChange: (config: CCIntrinsicComponentDisplaySpec["config"]) => void;
@@ -26,7 +28,12 @@ export function CCComponentEditorRendererNodeDisplayRendererConfigSettingButton(
 	return (
 		<>
 			<IconButton
-				sx={{ width: "20px", height: "20px" }}
+				sx={{
+					display: "flex",
+					width: DISPLAY_CONFIG_SETTING_BUTTON_SIZE,
+					height: DISPLAY_CONFIG_SETTING_BUTTON_SIZE,
+					p: 0,
+				}}
 				// Prevent the drag behavior of the parent node when clicking the button
 				onPointerDown={(e) => e.stopPropagation()}
 				onClick={(e) => {

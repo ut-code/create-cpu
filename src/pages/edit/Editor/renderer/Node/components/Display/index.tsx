@@ -1,13 +1,23 @@
 import nullthrows from "nullthrows";
+import { useLayoutEffect, useRef, useState } from "react";
 import { display } from "../../../../../../../store/intrinsics/definitions";
 import type { CCIntrinsicComponentDisplaySpec } from "../../../../../../../store/intrinsics/types";
 import { useStore } from "../../../../../../../store/react";
 import { theme } from "../../../../../../../style";
 import { useComponentEditorStore } from "../../../../store";
 import type { CCComponentEditorRendererNodeRendererProps } from "../../types";
-import { CCComponentEditorRendererNodeDefaultRenderer } from "../Default";
-import { CCComponentEditorRendererNodeDisplayRendererConfigSettingButton } from "./ConfigSettingButton";
+import {
+	CC_COMPONENT_EDITOR_RENDERER_NODE_TITLE,
+	CCComponentEditorRendererNodeDefaultRenderer,
+} from "../Default";
+import {
+	CCComponentEditorRendererNodeDisplayRendererConfigSettingButton,
+	DISPLAY_CONFIG_SETTING_BUTTON_SIZE,
+} from "./ConfigSettingButton";
 import { ccComponentEditorRendererNodeDisplayLayoutConstants } from "./geometry";
+
+const SETTING_BUTTON_GAP = 2;
+const HALF_CAP_HEIGHT_RATIO = 0.35;
 
 export function CCComponentEditorRendererNodeDisplayRenderer(
 	props: CCComponentEditorRendererNodeRendererProps,
@@ -30,23 +40,35 @@ export function CCComponentEditorRendererNodeDisplayRenderer(
 			? editorState.getNodePinValue(inputNodePin.id)
 			: undefined;
 
-	const { padding, gridSize, gridSizeDisplayWidth } =
+	const { padding, gridSize, pinLabelWidth } =
 		ccComponentEditorRendererNodeDisplayLayoutConstants;
+
+	const title = `${props.component.name} ${config.resolution.x}x${config.resolution.y}`;
+	const titleRef = useRef<SVGTextElement>(null);
+	const [titleWidth, setTitleWidth] = useState<number | null>(null);
+	useLayoutEffect(() => {
+		setTitleWidth(nullthrows(titleRef.current).getComputedTextLength());
+	});
 
 	return (
 		<>
-			<CCComponentEditorRendererNodeDefaultRenderer {...props} />
-			<text
-				x={padding}
-				y={padding}
-				fontSize={16}
-				fill={theme.colors.textPrimary}
-				dominantBaseline="hanging"
-			>
-				{config.resolution.x}x{config.resolution.y}
-			</text>
-			{editorState.editorMode === "edit" && (
-				<foreignObject x={padding / 2} y={padding + 16} width={32} height={32}>
+			<CCComponentEditorRendererNodeDefaultRenderer
+				{...props}
+				title={title}
+				titleRef={titleRef}
+			/>
+			{editorState.editorMode === "edit" && titleWidth !== null && (
+				<foreignObject
+					x={titleWidth + SETTING_BUTTON_GAP}
+					y={
+						CC_COMPONENT_EDITOR_RENDERER_NODE_TITLE.baselineY -
+						CC_COMPONENT_EDITOR_RENDERER_NODE_TITLE.fontSize *
+							HALF_CAP_HEIGHT_RATIO -
+						DISPLAY_CONFIG_SETTING_BUTTON_SIZE / 2
+					}
+					width={DISPLAY_CONFIG_SETTING_BUTTON_SIZE}
+					height={DISPLAY_CONFIG_SETTING_BUTTON_SIZE}
+				>
 					<CCComponentEditorRendererNodeDisplayRendererConfigSettingButton
 						config={config}
 						onConfigChange={updateConfig}
@@ -61,7 +83,7 @@ export function CCComponentEditorRendererNodeDisplayRenderer(
 						.map((x) => (
 							<rect
 								key={`${x}-${y}`}
-								x={padding + gridSizeDisplayWidth + x * gridSize}
+								x={padding + pinLabelWidth + x * gridSize}
 								y={padding + y * gridSize}
 								width={gridSize}
 								height={gridSize}
