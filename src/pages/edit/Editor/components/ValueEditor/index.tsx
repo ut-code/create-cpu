@@ -4,14 +4,16 @@ import {
 	styled,
 	ToggleButton,
 	ToggleButtonGroup,
+	Typography,
 } from "@mui/material";
-import { useState } from "react";
+import { useId, useState } from "react";
 import type { CCIntrinsicComponentConstSpecConfigViewMode as Mode } from "../../../../../store/intrinsics/types";
 import type { SimulationValue } from "../../../../../store/simulation";
 import {
-	fitSimulationValue,
+	changeSimulationValueDraftMode,
 	formatSimulationValue,
-	parseSimulationValue,
+	formatSimulationValueDraft,
+	parseSimulationValueDraft,
 } from "./value";
 
 const modes: Record<Mode, string> = {
@@ -42,23 +44,18 @@ type Props = {
 };
 
 export function CCComponentEditorValueEditor(props: Props) {
+	const bitWidthId = useId();
 	const [readOnlyMode, setReadOnlyMode] = useState(props.mode);
 	const mode = props.readOnly ? readOnlyMode : props.mode;
+	// Formatted text does not always parse back to the same value, so a mode change formats
+	// the kept value instead
 	const [draft, setDraft] = useState(() =>
-		formatSimulationValue(props.value, props.mode),
+		formatSimulationValueDraft(props.value, props.mode),
 	);
-	// Formatted text does not always parse back to the same value, so format a read-only one anew
 	const text = props.readOnly
 		? formatSimulationValue(props.value, mode)
-		: draft;
-
-	const parse = (text: string, mode: Mode) => {
-		const value = parseSimulationValue(text, mode);
-		return value && props.bitWidth !== undefined
-			? fitSimulationValue(value, props.bitWidth)
-			: value;
-	};
-	const newValue = parse(text, mode);
+		: draft.text;
+	const newValue = props.readOnly ? props.value : draft.value;
 
 	const changeMode = (newMode: Mode) => {
 		if (props.readOnly) {
@@ -66,7 +63,7 @@ export function CCComponentEditorValueEditor(props: Props) {
 			return;
 		}
 		props.onModeChange(newMode);
-		setDraft(formatSimulationValue(newValue ?? props.value, newMode));
+		setDraft(changeSimulationValueDraftMode(draft, props.value, newMode));
 	};
 
 	return (
@@ -102,11 +99,27 @@ export function CCComponentEditorValueEditor(props: Props) {
 			</Stack>
 			<Editor
 				value={text}
-				onChange={(e) => setDraft(e.target.value)}
+				onChange={(e) =>
+					setDraft(
+						parseSimulationValueDraft(e.target.value, mode, props.bitWidth),
+					)
+				}
 				spellCheck={false}
 				sx={{ borderColor: newValue ? "divider" : "error.main" }}
 				readOnly={props.readOnly ?? false}
+				aria-invalid={!newValue}
+				aria-describedby={bitWidthId}
 			/>
+			{/* The text may not tell the width, e.g. 3 bits shown as 5 in hex */}
+			<Typography
+				id={bitWidthId}
+				variant="caption"
+				color="text.secondary"
+				sx={{ alignSelf: "flex-end", minHeight: "1.66em" }}
+			>
+				{newValue &&
+					`${newValue.length} ${newValue.length === 1 ? "bit" : "bits"}`}
+			</Typography>
 		</Stack>
 	);
 }
