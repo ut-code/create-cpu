@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { describeConnectionRejection } from "./message";
+import { describeConnectionRejection } from "./connectionRejection";
 
 describe("describeConnectionRejection", () => {
 	it("names the bit widths fixed on each side", () => {
