@@ -2,6 +2,7 @@ import { Alert, Grow, Stack } from "@mui/material";
 import { useEffect } from "react";
 import { useComponentEditorStore } from "../../store";
 import { describeConnectionRejection } from "./connectionRejection";
+import { describeInputValueReset } from "./inputValueReset";
 
 const CONNECTION_REJECTION_DURATION_MS = 4000;
 
@@ -12,6 +13,8 @@ export default function CCComponentEditorNotifications() {
 	const {
 		connectionRejectionNotice,
 		dismissConnectionRejectionNotice,
+		inputValueResetNotice,
+		dismissInputValueResetNotice,
 		simulationError,
 		dismissSimulationError,
 	} = componentEditorState;
@@ -26,18 +29,15 @@ export default function CCComponentEditorNotifications() {
 		return () => clearTimeout(timeoutId);
 	}, [connectionRejectionNoticeId, dismissConnectionRejectionNotice]);
 
+	if (
+		!connectionRejectionNotice &&
+		!inputValueResetNotice &&
+		simulationError === null
+	)
+		return null;
+
 	return (
-		<Stack
-			spacing={1}
-			sx={{
-				position: "absolute",
-				bottom: "24px",
-				left: "16px",
-				right: "112px",
-				alignItems: "center",
-				pointerEvents: "none",
-			}}
-		>
+		<Stack spacing={1} sx={{ alignItems: "center", pointerEvents: "none" }}>
 			{connectionRejectionNotice && (
 				// Remounted for each rejection, so that a repeated one shows up again
 				<Grow key={connectionRejectionNotice.id} in>
@@ -50,6 +50,16 @@ export default function CCComponentEditorNotifications() {
 						{describeConnectionRejection(connectionRejectionNotice.rejection)}
 					</Alert>
 				</Grow>
+			)}
+			{inputValueResetNotice && (
+				<Alert
+					severity="warning"
+					variant="filled"
+					sx={{ maxWidth: "600px", pointerEvents: "auto" }}
+					onClose={dismissInputValueResetNotice}
+				>
+					{describeInputValueReset(inputValueResetNotice)}
+				</Alert>
 			)}
 			{simulationError !== null && (
 				<Alert

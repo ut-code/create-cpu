@@ -35,10 +35,6 @@ export default function CCComponentEditorFrameControl() {
 	return (
 		<Box
 			sx={{
-				position: "absolute",
-				bottom: "40px",
-				left: "16px",
-				right: "112px",
 				display: "flex",
 				justifyContent: "center",
 				pointerEvents: "none",

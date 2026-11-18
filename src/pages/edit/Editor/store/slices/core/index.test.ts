@@ -49,8 +49,9 @@ function setUp() {
 			input.out,
 			testNodePin(store, andNode, and.inputPin.B),
 		);
+		return constant;
 	};
-	return { editorStore, input, andOut, fixInputBitWidth };
+	return { store, editorStore, input, andOut, fixInputBitWidth };
 }
 
 describe("input values", () => {
@@ -90,6 +91,73 @@ describe("input values", () => {
 		expect(state.simulationError).toBeNull();
 		expect(state.editorMode).toBe("play");
 		expect(state.getNodePinValue(andOut)).toEqual(testBits(1, 8));
+	});
+});
+
+describe("input values on entering play mode", () => {
+	it("resets the values that no longer fit and tells which inputs they were", () => {
+		const { store, editorStore, input, fixInputBitWidth } = setUp();
+		const constant = fixInputBitWidth(3);
+		const key = (timeStep: number) => ({
+			componentPinId: input.componentPinId,
+			timeStep,
+		});
+		editorStore.getState().setInputValue(key(0), testBits(0b101, 3));
+		editorStore.getState().setInputValue(key(2), testBits(0b001, 3));
+		store.nodes.update(constant.id, {
+			config: { mode: "binary", data: [true, true] },
+		});
+
+		editorStore.getState().setEditorMode("play");
+
+		const state = editorStore.getState();
+		expect(state.inputValueResetNotice).toEqual({
+			inputs: [{ name: "In", bitWidth: 2 }],
+		});
+		expect(state.getInputValue(key(1))).toEqual(testBits(0, 2));
+		expect(state.getInputValue(key(2))).toEqual(testBits(1, 2));
+	});
+
+	it("resets a value to zero rather than to an earlier value that fits", () => {
+		const { store, editorStore, input, fixInputBitWidth } = setUp();
+		const constant = fixInputBitWidth(3);
+		const key = (timeStep: number) => ({
+			componentPinId: input.componentPinId,
+			timeStep,
+		});
+		editorStore.getState().setInputValue(key(0), testBits(0b001, 3));
+		editorStore.getState().setInputValue(key(1), testBits(0b101, 3));
+		store.nodes.update(constant.id, {
+			config: { mode: "binary", data: [true, true] },
+		});
+
+		editorStore.getState().setEditorMode("play");
+
+		const state = editorStore.getState();
+		expect(state.getInputValue(key(0))).toEqual(testBits(1, 2));
+		expect(state.getInputValue(key(1))).toEqual(testBits(0, 2));
+		expect(state.getInputValue(key(2))).toEqual(testBits(0, 2));
+	});
+
+	it("does not bring a reset value back when the bit width is restored", () => {
+		const { store, editorStore, input, fixInputBitWidth } = setUp();
+		const constant = fixInputBitWidth(3);
+		const key = { componentPinId: input.componentPinId, timeStep: 0 };
+		editorStore.getState().setInputValue(key, testBits(0b101, 3));
+		store.nodes.update(constant.id, {
+			config: { mode: "binary", data: [true, true] },
+		});
+		editorStore.getState().setEditorMode("play");
+		editorStore.getState().setEditorMode("edit");
+		expect(editorStore.getState().inputValueResetNotice).toBeNull();
+		store.nodes.update(constant.id, {
+			config: { mode: "binary", data: [true, true, true] },
+		});
+
+		editorStore.getState().setEditorMode("play");
+
+		expect(editorStore.getState().inputValueResetNotice).toBeNull();
+		expect(editorStore.getState().getInputValue(key)).toEqual(testBits(0, 3));
 	});
 });
 

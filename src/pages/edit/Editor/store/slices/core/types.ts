@@ -36,6 +36,13 @@ export type InputValueKey = {
 export function serializeInputValueKey(key: InputValueKey): string {
 	return `${key.componentPinId}:${key.timeStep}`;
 }
+export function parseInputValueKey(key: string): InputValueKey {
+	const separatorIndex = key.lastIndexOf(":");
+	return {
+		componentPinId: key.slice(0, separatorIndex) as CCComponentPinId,
+		timeStep: Number(key.slice(separatorIndex + 1)),
+	};
+}
 
 export type NodePinPropertyEditorTarget = {
 	nodeId: CCNodeId;
@@ -46,6 +53,10 @@ export type ConnectionRejectionNotice = {
 	/** tells a repeated rejection apart from the one shown before */
 	id: number;
 	rejection: CCConnectionRejection;
+};
+
+export type InputValueResetNotice = {
+	inputs: { name: string; bitWidth: number }[];
 };
 
 export type EditorStoreCoreSlice = {
@@ -79,6 +90,9 @@ export type EditorStoreCoreSlice = {
 	/** why the last attempt to connect pins was refused, until it is dismissed */
 	connectionRejectionNotice: ConnectionRejectionNotice | null;
 	dismissConnectionRejectionNotice(): void;
+	/** inputs whose values were reset on entering play mode, as they no longer fit */
+	inputValueResetNotice: InputValueResetNotice | null;
+	dismissInputValueResetNotice(): void;
 	getNodePinValue(nodePinId: CCNodePinId): SimulationValue | undefined;
 	getComponentPinValue(
 		componentPinId: CCComponentPinId,
