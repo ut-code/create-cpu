@@ -44,11 +44,6 @@ function CCComponentEditorContent({
 				onEditorClose={onClose}
 			/>
 			<CCComponentEditorViewModeSwitcher />
-			<CCComponentEditorContextMenu
-				onEditComponent={onEditComponent}
-				onComponentCreated={setPropertyDialogComponentId}
-			/>
-			<CCComponentEditorNodePinPropertyEditor />
 			<Stack
 				spacing={1}
 				sx={{
@@ -62,6 +57,11 @@ function CCComponentEditorContent({
 				<CCComponentEditorNotifications />
 				<CCComponentEditorFrameControl />
 			</Stack>
+			<CCComponentEditorContextMenu
+				onEditComponent={onEditComponent}
+				onComponentCreated={setPropertyDialogComponentId}
+			/>
+			<CCComponentEditorNodePinPropertyEditor />
 			{propertyDialogComponentId && (
 				<ComponentPropertyDialog
 					componentId={propertyDialogComponentId}
