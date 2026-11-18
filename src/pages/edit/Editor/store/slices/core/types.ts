@@ -1,4 +1,5 @@
 import type { Vector2 } from "../../../../../../common/vector2";
+import type { Language } from "../../../../../../i18n/messages";
 import type { CCComponentPinId } from "../../../../../../store/componentPin";
 import type { CCConnectionId } from "../../../../../../store/connection";
 import type { CCNodeId } from "../../../../../../store/node";
@@ -56,7 +57,8 @@ export type ConnectionRejectionNotice = {
 };
 
 export type SimulationErrorNotice = {
-	message: string;
+	/** worded at once, as the nodes it names can be removed before it is shown */
+	messageByLanguage: Record<Language, string>;
 	/** nodes of the edited component that are, or contain, the nodes involved */
 	nodeIds: ReadonlySet<CCNodeId>;
 };

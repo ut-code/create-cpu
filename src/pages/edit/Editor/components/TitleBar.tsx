@@ -1,6 +1,7 @@
 import { Close, Edit, KeyboardDoubleArrowRight } from "@mui/icons-material";
 import { Box, IconButton, Paper } from "@mui/material";
 import nullthrows from "nullthrows";
+import { useMessages } from "../../../../i18n";
 import { useStore } from "../../../../store/react";
 import { useComponentEditorStore } from "../store";
 
@@ -16,6 +17,7 @@ export default function CCComponentEditorTitleBar({
 	const componentEditorStore = useComponentEditorStore();
 	const componentEditorState = componentEditorStore();
 	const { store } = useStore();
+	const messages = useMessages();
 	const component = nullthrows(
 		store.components.get(componentEditorState.componentId),
 	);
@@ -33,14 +35,22 @@ export default function CCComponentEditorTitleBar({
 				p: 1,
 			}}
 		>
-			<Box sx={{ color: "text.secondary" }}>Components</Box>
+			<Box sx={{ color: "text.secondary" }}>{messages.common.components}</Box>
 			<KeyboardDoubleArrowRight />
 			<span>{component.name}</span>
-			<IconButton size="small" onClick={onComponentPropertyDialogOpen}>
+			<IconButton
+				size="small"
+				aria-label={messages.editor.editProperties}
+				onClick={onComponentPropertyDialogOpen}
+			>
 				<Edit fontSize="small" />
 			</IconButton>
 			<div aria-hidden style={{ flexGrow: 1 }} />
-			<IconButton size="small" onClick={onEditorClose}>
+			<IconButton
+				size="small"
+				aria-label={messages.editor.close}
+				onClick={onEditorClose}
+			>
 				<Close fontSize="small" />
 			</IconButton>
 		</Paper>

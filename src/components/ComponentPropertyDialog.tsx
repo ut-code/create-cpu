@@ -12,6 +12,7 @@ import {
 import nullthrows from "nullthrows";
 import { useState } from "react";
 import { z } from "zod";
+import { useMessages } from "../i18n";
 import type CCStore from "../store";
 import type { CCComponentId } from "../store/component";
 import type { CCComponentPinId } from "../store/componentPin";
@@ -56,6 +57,7 @@ export function ComponentPropertyDialog({
 	onClose,
 }: ComponentPropertyDialogProps) {
 	const { store } = useStore();
+	const messages = useMessages();
 	const component = nullthrows(store.components.get(componentId));
 	const [state, setState] = useState(() =>
 		extractStateFromStore(store, componentId),
@@ -72,15 +74,19 @@ export function ComponentPropertyDialog({
 					onClose();
 				}}
 			>
-				<DialogTitle>{component.name} Properties</DialogTitle>
+				<DialogTitle>
+					{messages.componentProperties.title(component.name)}
+				</DialogTitle>
 				<DialogContent>
-					<FormLabel component="div">Name</FormLabel>
+					<FormLabel component="div">
+						{messages.componentProperties.name}
+					</FormLabel>
 					<TextField
 						size="small"
 						value={state.name}
 						fullWidth
 						onChange={(e) => setState({ ...state, name: e.target.value })}
-						placeholder="Name"
+						placeholder={messages.componentProperties.name}
 						sx={{ mt: 0.5 }}
 					/>
 					<Box
@@ -92,7 +98,9 @@ export function ComponentPropertyDialog({
 						}}
 					>
 						<Stack sx={{ gap: 0.5 }}>
-							<FormLabel component="div">Input Pins</FormLabel>
+							<FormLabel component="div">
+								{messages.componentProperties.inputPins}
+							</FormLabel>
 							{store.componentPins
 								.getManyByComponentId(componentId)
 								.filter((pin) => pin.type === "input")
@@ -115,7 +123,9 @@ export function ComponentPropertyDialog({
 								))}
 						</Stack>
 						<Stack sx={{ gap: 0.5 }}>
-							<FormLabel component="div">Output Pins</FormLabel>
+							<FormLabel component="div">
+								{messages.componentProperties.outputPins}
+							</FormLabel>
 							{store.componentPins
 								.getManyByComponentId(componentId)
 								.filter((pin) => pin.type === "output")
@@ -141,7 +151,7 @@ export function ComponentPropertyDialog({
 				</DialogContent>
 				<DialogActions>
 					<Button onClick={onClose} color="inherit">
-						Cancel
+						{messages.common.cancel}
 					</Button>
 					<Button
 						variant="outlined"
@@ -149,7 +159,7 @@ export function ComponentPropertyDialog({
 						type="submit"
 						disabled={!result.success}
 					>
-						Apply
+						{messages.common.apply}
 					</Button>
 				</DialogActions>
 			</form>

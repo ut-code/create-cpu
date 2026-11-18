@@ -20,6 +20,7 @@ import {
 import { type ChangeEvent, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
+import { useMessages } from "../../i18n";
 import {
 	type CCComponent,
 	type CCComponentId,
@@ -29,6 +30,7 @@ import { useStore } from "../../store/react";
 import { useComponents } from "../../store/react/selectors";
 import { importStoreJson } from "../../store/savedStore";
 import { describeComponentDeletion } from "./componentDeletion";
+import { describeHomeError, type HomeError } from "./homeError";
 
 type PendingAction =
 	| { type: "reset" }
@@ -37,6 +39,7 @@ type PendingAction =
 
 export default function HomePage() {
 	const { store, resetStore } = useStore();
+	const messages = useMessages();
 	const navigate = useNavigate();
 	const components = useComponents().filter(
 		(component) => !component.intrinsicType,
@@ -57,9 +60,13 @@ export default function HomePage() {
 	const [pendingAction, setPendingAction] = useState<PendingAction | null>(
 		null,
 	);
-	// The message stays while the snackbar slides out
-	const [error, setError] = useState({ message: "", isShown: false });
-	const showError = (message: string) => setError({ message, isShown: true });
+	// The error stays while the snackbar slides out
+	const [errorNotice, setErrorNotice] = useState<{
+		error: HomeError | null;
+		isShown: boolean;
+	}>({ error: null, isShown: false });
+	const showError = (error: HomeError) =>
+		setErrorNotice({ error, isShown: true });
 
 	const chooseFileToImport = async (e: ChangeEvent<HTMLInputElement>) => {
 		const input = e.currentTarget;
@@ -72,16 +79,14 @@ export default function HomePage() {
 			json = await file.text();
 		} catch (readError) {
 			console.error(readError);
-			showError(`Could not read ${file.name}.`);
+			showError({ type: "read", fileName: file.name });
 			return;
 		}
 		try {
 			importStoreJson(json);
 		} catch (importError) {
 			console.error(importError);
-			showError(
-				`Could not import ${file.name}: it is not a file exported from this app, or it is damaged.`,
-			);
+			showError({ type: "notImportable", fileName: file.name });
 			return;
 		}
 		setPendingAction({ type: "import", fileName: file.name, json });
@@ -95,8 +100,10 @@ export default function HomePage() {
 			showError(
 				replaceError instanceof DOMException &&
 					replaceError.name === "QuotaExceededError"
-					? "The storage of this browser is full, so nothing was replaced."
-					: `Could not ${file ? `import ${file.name}` : "reset the components"}.`,
+					? { type: "storageFull" }
+					: file
+						? { type: "importFailed", fileName: file.name }
+						: { type: "resetFailed" },
 			);
 		}
 	};
@@ -104,7 +111,7 @@ export default function HomePage() {
 	const deleteComponent = (component: CCComponent) => {
 		store.components.unregister(component.id).catch((deleteError) => {
 			console.error(deleteError);
-			showError(`Could not delete ${component.name}.`);
+			showError({ type: "deleteFailed", componentName: component.name });
 		});
 	};
 
@@ -117,7 +124,7 @@ export default function HomePage() {
 
 	const onCreateComponent = () => {
 		const component = CCComponentStore.create({
-			name: "New Component",
+			name: messages.common.newComponentName,
 		});
 		store.components.register(component);
 		navigate(`/components/${component.id}`);
@@ -132,7 +139,7 @@ export default function HomePage() {
 		<div style={{ overflowY: "auto" }}>
 			<Container sx={{ px: 2, py: 6 }} maxWidth="md">
 				<Typography variant="h2" typography="h4" gutterBottom>
-					File
+					{messages.home.file}
 				</Typography>
 				<Box sx={{ display: "flex", gap: 1 }}>
 					<Button
@@ -141,7 +148,7 @@ export default function HomePage() {
 						onClick={downloadStore}
 						startIcon={<DownloadIcon />}
 					>
-						Export
+						{messages.home.export}
 					</Button>
 					<input
 						ref={inputRef}
@@ -155,7 +162,7 @@ export default function HomePage() {
 						onClick={() => inputRef.current?.click()}
 						startIcon={<UploadIcon />}
 					>
-						Import
+						{messages.home.import}
 					</Button>
 					<div style={{ flexGrow: 1 }} />
 					<Button
@@ -163,16 +170,16 @@ export default function HomePage() {
 						color="error"
 						onClick={() => setPendingAction({ type: "reset" })}
 					>
-						Reset
+						{messages.home.reset}
 					</Button>
 				</Box>
 				<Box sx={{ display: "flex", alignItems: "center", mt: 4 }}>
 					<div style={{ flexGrow: 1 }}>
 						<Typography variant="h2" typography="h4">
-							Components
+							{messages.common.components}
 						</Typography>
 						<Typography color="textSecondary">
-							Select a component to start editing.
+							{messages.home.selectToEdit}
 						</Typography>
 					</div>
 					<div>
@@ -181,7 +188,7 @@ export default function HomePage() {
 							variant="contained"
 							startIcon={<AddIcon />}
 						>
-							Create
+							{messages.home.create}
 						</Button>
 					</div>
 				</Box>
@@ -213,11 +220,13 @@ export default function HomePage() {
 							>
 								<Typography variant="h6">{component.name}</Typography>
 								<Typography variant="body2" color="text.secondary">
-									{store.nodes.getManyByParentComponentId(component.id).length}{" "}
-									nodes
+									{messages.home.nodeCount(
+										store.nodes.getManyByParentComponentId(component.id).length,
+									)}
 								</Typography>
 							</CardActionArea>
 							<IconButton
+								aria-label={messages.home.componentMenu}
 								sx={{
 									position: "absolute",
 									top: (theme) => theme.spacing(1),
@@ -254,28 +263,27 @@ export default function HomePage() {
 								setComponentMenuState(null);
 							}}
 						>
-							Delete
+							{messages.common.delete}
 						</MenuItem>
 					</Menu>
 				)}
 				{pendingAction?.type === "reset" && (
 					<ConfirmDialog
-						title="Reset all components?"
-						confirmLabel="Reset"
+						title={messages.home.resetDialog.title}
+						confirmLabel={messages.home.reset}
 						onCancel={() => setPendingAction(null)}
 						onConfirm={() => {
 							setPendingAction(null);
 							replaceStore();
 						}}
 					>
-						Every component is replaced with the sample. This cannot be undone,
-						so export first to keep a copy.
+						{messages.home.resetDialog.body}
 					</ConfirmDialog>
 				)}
 				{pendingAction?.type === "import" && (
 					<ConfirmDialog
-						title={`Import ${pendingAction.fileName}?`}
-						confirmLabel="Import"
+						title={messages.home.importDialog.title(pendingAction.fileName)}
+						confirmLabel={messages.home.import}
 						onCancel={() => setPendingAction(null)}
 						onConfirm={() => {
 							setPendingAction(null);
@@ -285,34 +293,36 @@ export default function HomePage() {
 							});
 						}}
 					>
-						Every current component is replaced with the ones in the file. This
-						cannot be undone, so export first to keep a copy.
+						{messages.home.importDialog.body}
 					</ConfirmDialog>
 				)}
 				{componentToDelete && (
 					<ConfirmDialog
-						title={`Delete ${componentToDelete.name}?`}
-						confirmLabel="Delete"
+						title={messages.home.deleteDialog.title(componentToDelete.name)}
+						confirmLabel={messages.common.delete}
 						onCancel={() => setPendingAction(null)}
 						onConfirm={() => {
 							setPendingAction(null);
 							deleteComponent(componentToDelete);
 						}}
 					>
-						{describeComponentDeletion(store, componentToDelete.id)}
+						{describeComponentDeletion(store, componentToDelete.id, messages)}
 					</ConfirmDialog>
 				)}
 				<Snackbar
-					open={error.isShown}
+					open={errorNotice.isShown}
 					anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
 				>
 					<Alert
 						severity="error"
 						variant="filled"
 						sx={{ maxWidth: "600px" }}
-						onClose={() => setError((shown) => ({ ...shown, isShown: false }))}
+						onClose={() =>
+							setErrorNotice((notice) => ({ ...notice, isShown: false }))
+						}
 					>
-						{error.message}
+						{errorNotice.error &&
+							describeHomeError(errorNotice.error, messages)}
 					</Alert>
 				</Snackbar>
 			</Container>

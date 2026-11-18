@@ -1,27 +1,22 @@
+import type { Messages } from "../../../../../i18n/messages";
 import type { CCConnectionRejection } from "../../../../../store/nodePin";
 
 export function describeConnectionRejection(
 	rejection: CCConnectionRejection,
+	messages: Messages,
 ): string {
+	const texts = messages.editor.connectionRejection;
 	switch (rejection.type) {
 		case "sameDirection":
-			return "Cannot connect two input pins or two output pins";
 		case "sameNode":
-			return "Cannot connect pins of the same node";
 		case "differentParentComponent":
-			return "Cannot connect pins placed in different components";
 		case "inputAlreadyConnected":
-			return "This input pin is already connected";
+			return texts[rejection.type];
 		case "bitWidthConflict": {
-			const [a, b] = rejection.bitWidths.map(
-				(bitWidths) => `${bitWidths.join("/")} bit`,
-			);
-			const isInConflictAlready = rejection.bitWidths.some(
-				(bitWidths) => bitWidths.length > 1,
-			);
-			return isInConflictAlready
-				? `Cannot connect to a wire whose bit widths already disagree (${a} and ${b})`
-				: `Bit widths do not match (${a} and ${b})`;
+			const [a, b] = rejection.bitWidths;
+			return rejection.bitWidths.some((bitWidths) => bitWidths.length > 1)
+				? texts.bitWidthConflictAlready(a, b)
+				: texts.bitWidthConflict(a, b);
 		}
 	}
 }

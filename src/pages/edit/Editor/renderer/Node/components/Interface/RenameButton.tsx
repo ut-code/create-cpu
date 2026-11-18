@@ -8,6 +8,7 @@ import {
 	Typography,
 } from "@mui/material";
 import { useState } from "react";
+import { useMessages } from "../../../../../../../i18n";
 
 type Props = {
 	name: string;
@@ -17,6 +18,7 @@ type Props = {
 export function CCComponentEditorRendererNodeInterfaceRendererRenameButton(
 	props: Props,
 ) {
+	const messages = useMessages();
 	const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
 	const [newName, setNewName] = useState(props.name);
 	const trimmedNewName = newName.trim();
@@ -24,6 +26,7 @@ export function CCComponentEditorRendererNodeInterfaceRendererRenameButton(
 	return (
 		<>
 			<IconButton
+				aria-label={messages.editor.renamePin}
 				sx={{ width: "14px", height: "14px" }}
 				// Prevent the drag behavior of the parent node when clicking the button
 				onPointerDown={(e) => e.stopPropagation()}
@@ -53,7 +56,7 @@ export function CCComponentEditorRendererNodeInterfaceRendererRenameButton(
 					}}
 				>
 					<Typography variant="h6" gutterBottom>
-						Rename Pin
+						{messages.editor.renamePin}
 					</Typography>
 					<TextField
 						value={newName}
@@ -69,7 +72,7 @@ export function CCComponentEditorRendererNodeInterfaceRendererRenameButton(
 							size="small"
 							onClick={() => setAnchorEl(null)}
 						>
-							Cancel
+							{messages.common.cancel}
 						</Button>
 						<Button
 							type="submit"
@@ -77,7 +80,7 @@ export function CCComponentEditorRendererNodeInterfaceRendererRenameButton(
 							size="small"
 							disabled={!trimmedNewName}
 						>
-							Apply
+							{messages.common.apply}
 						</Button>
 					</Stack>
 				</form>

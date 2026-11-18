@@ -9,6 +9,7 @@ import {
 	Typography,
 } from "@mui/material";
 import { useState } from "react";
+import { useMessages } from "../../../../../../../i18n";
 import type { CCIntrinsicComponentSevenSegmentSpec } from "../../../../../../../store/intrinsics/types";
 
 type Props = {
@@ -21,13 +22,14 @@ type Props = {
 export function CCComponentEditorRendererNodeSevenSegmentRendererConfigSettingButton(
 	props: Props,
 ) {
+	const messages = useMessages();
 	const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
 	const [newConfig, setNewConfig] = useState(props.config);
 
 	return (
 		<>
 			<IconButton
-				aria-label="7seg settings"
+				aria-label={messages.editor.sevenSegmentSettings}
 				sx={{ width: "20px", height: "20px" }}
 				onPointerDown={(e) => e.stopPropagation()}
 				onClick={(e) => {
@@ -55,11 +57,11 @@ export function CCComponentEditorRendererNodeSevenSegmentRendererConfigSettingBu
 					}}
 				>
 					<Typography variant="h6" gutterBottom>
-						7seg Settings
+						{messages.editor.sevenSegmentSettings}
 					</Typography>
 					<TextField
 						select
-						label="Pixel order"
+						label={messages.editor.pixelOrder}
 						value={newConfig.pixelOrder ?? "row-major"}
 						onChange={(e) => {
 							const pixelOrder = e.target.value;
@@ -71,8 +73,10 @@ export function CCComponentEditorRendererNodeSevenSegmentRendererConfigSettingBu
 						fullWidth
 						sx={{ mt: 1 }}
 					>
-						<MenuItem value="row-major">Row-major</MenuItem>
-						<MenuItem value="column-major">Column-major</MenuItem>
+						<MenuItem value="row-major">{messages.editor.rowMajor}</MenuItem>
+						<MenuItem value="column-major">
+							{messages.editor.columnMajor}
+						</MenuItem>
 					</TextField>
 					<Stack direction="row" justifyContent="flex-end" mt={2} gap={1}>
 						<Button
@@ -81,10 +85,10 @@ export function CCComponentEditorRendererNodeSevenSegmentRendererConfigSettingBu
 							size="small"
 							onClick={() => setAnchorEl(null)}
 						>
-							Cancel
+							{messages.common.cancel}
 						</Button>
 						<Button type="submit" variant="contained" size="small">
-							Apply
+							{messages.common.apply}
 						</Button>
 					</Stack>
 				</form>

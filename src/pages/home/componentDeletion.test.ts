@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { en } from "../../i18n/en";
+import { ja } from "../../i18n/ja";
 import {
 	createTestStore,
 	registerTestComponent,
@@ -11,7 +13,7 @@ describe("describeComponentDeletion", () => {
 		const store = createTestStore();
 		const adder = registerTestComponent(store, "Adder");
 
-		expect(describeComponentDeletion(store, adder.id)).toBe(
+		expect(describeComponentDeletion(store, adder.id, en)).toBe(
 			"This cannot be undone.",
 		);
 	});
@@ -25,7 +27,7 @@ describe("describeComponentDeletion", () => {
 		registerTestNode(store, alu.id, adder.id);
 		registerTestNode(store, cpu.id, adder.id);
 
-		expect(describeComponentDeletion(store, adder.id)).toBe(
+		expect(describeComponentDeletion(store, adder.id, en)).toBe(
 			"It is used 3 times in ALU, CPU. Deleting it also removes those nodes and their connections. This cannot be undone.",
 		);
 	});
@@ -38,8 +40,19 @@ describe("describeComponentDeletion", () => {
 		registerTestNode(store, first.id, adder.id);
 		registerTestNode(store, second.id, adder.id);
 
-		expect(describeComponentDeletion(store, adder.id)).toMatch(
+		expect(describeComponentDeletion(store, adder.id, en)).toMatch(
 			/^It is used 2 times in ALU, ALU\./,
+		);
+	});
+
+	it("tells in Japanese where the component is used", () => {
+		const store = createTestStore();
+		const adder = registerTestComponent(store, "Adder");
+		const alu = registerTestComponent(store, "ALU");
+		registerTestNode(store, alu.id, adder.id);
+
+		expect(describeComponentDeletion(store, adder.id, ja)).toBe(
+			"ALU で 1 か所使われています。削除すると、それらのノードと、つながっている線も消えます。元に戻せません。",
 		);
 	});
 
@@ -51,8 +64,11 @@ describe("describeComponentDeletion", () => {
 			registerTestNode(store, place.id, adder.id);
 		}
 
-		expect(describeComponentDeletion(store, adder.id)).toBe(
+		expect(describeComponentDeletion(store, adder.id, en)).toBe(
 			"It is used 5 times in A, B, C and 2 other components. Deleting it also removes those nodes and their connections. This cannot be undone.",
+		);
+		expect(describeComponentDeletion(store, adder.id, ja)).toMatch(
+			/^A、B、C ほか 2 個のコンポーネントで 5 か所使われています。/,
 		);
 	});
 });

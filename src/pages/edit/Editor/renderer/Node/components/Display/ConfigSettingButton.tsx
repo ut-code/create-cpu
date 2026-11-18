@@ -10,6 +10,7 @@ import {
 	Typography,
 } from "@mui/material";
 import { useState } from "react";
+import { useMessages } from "../../../../../../../i18n";
 import type { CCIntrinsicComponentDisplaySpec } from "../../../../../../../store/intrinsics/types";
 
 export const DISPLAY_CONFIG_SETTING_BUTTON_SIZE = 16;
@@ -22,12 +23,14 @@ type Props = {
 export function CCComponentEditorRendererNodeDisplayRendererConfigSettingButton(
 	props: Props,
 ) {
+	const messages = useMessages();
 	const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
 	const [newConfig, setNewConfig] = useState(props.config);
 
 	return (
 		<>
 			<IconButton
+				aria-label={messages.editor.displaySettings}
 				sx={{
 					display: "flex",
 					width: DISPLAY_CONFIG_SETTING_BUTTON_SIZE,
@@ -61,10 +64,10 @@ export function CCComponentEditorRendererNodeDisplayRendererConfigSettingButton(
 					}}
 				>
 					<Typography variant="h6" gutterBottom>
-						Display Settings
+						{messages.editor.displaySettings}
 					</Typography>
 					<FormLabel component="div" sx={{ mb: 0.5 }}>
-						Resolution
+						{messages.editor.resolution}
 					</FormLabel>
 					<Stack direction="row" alignItems="center" gap={1}>
 						<TextField
@@ -107,7 +110,7 @@ export function CCComponentEditorRendererNodeDisplayRendererConfigSettingButton(
 					</Stack>
 					<TextField
 						select
-						label="Pixel order"
+						label={messages.editor.pixelOrder}
 						value={newConfig.pixelOrder ?? "row-major"}
 						onChange={(e) => {
 							const pixelOrder = e.target.value;
@@ -119,8 +122,10 @@ export function CCComponentEditorRendererNodeDisplayRendererConfigSettingButton(
 						fullWidth
 						sx={{ mt: 2 }}
 					>
-						<MenuItem value="row-major">Row-major</MenuItem>
-						<MenuItem value="column-major">Column-major</MenuItem>
+						<MenuItem value="row-major">{messages.editor.rowMajor}</MenuItem>
+						<MenuItem value="column-major">
+							{messages.editor.columnMajor}
+						</MenuItem>
 					</TextField>
 					<Stack direction="row" justifyContent="flex-end" mt={2} gap={1}>
 						<Button
@@ -129,10 +134,10 @@ export function CCComponentEditorRendererNodeDisplayRendererConfigSettingButton(
 							size="small"
 							onClick={() => setAnchorEl(null)}
 						>
-							Cancel
+							{messages.common.cancel}
 						</Button>
 						<Button type="submit" variant="contained" size="small">
-							Apply
+							{messages.common.apply}
 						</Button>
 					</Stack>
 				</form>
