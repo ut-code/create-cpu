@@ -412,30 +412,28 @@ export const seven_segment =
 		initialConfig: {
 			pixelOrder: "row-major",
 		},
-		evaluate: (context, nodeId, shape, config) => {
-			const inputShape = shape.inputShape.In;
-			invariant(inputShape[0] && !inputShape[1]);
-			const outputShape = shape.outputShape.Out;
-			invariant(outputShape[0] && !outputShape[1]);
-			const nodePinIdToValue = context.currentFrame.nodes.get(nodeId)?.pins;
-			const inputValue = nodePinIdToValue?.get(inputShape[0].nodePinId);
-			if (!inputValue || !nodePinIdToValue) return false;
-			invariant(inputValue.length === 4);
-			// Simulation values store the most significant bit first.
-			const digit = inputValue.reduce(
-				(value, bit) => value * 2 + Number(bit),
-				0,
-			);
-			const segments = nullthrows(sevenSegmentDigits[digit]);
-			const outputValue = Array.from({ length: 28 }, (_, index) => {
-				const rowMajorIndex =
-					config.pixelOrder === "column-major"
-						? (index % 7) * 4 + Math.floor(index / 7)
-						: index;
-				return segments.includes(nullthrows(sevenSegmentPixels[rowMajorIndex]));
-			});
-			nodePinIdToValue.set(outputShape[0].nodePinId, outputValue);
-			return true;
+		behavior: {
+			kind: "combinational",
+			evaluate: ({ In }, { config }) => {
+				const inputValue = single(In);
+				invariant(inputValue.length === 4);
+				// Simulation values store the most significant bit first.
+				const digit = inputValue.reduce(
+					(value, bit) => value * 2 + Number(bit),
+					0,
+				);
+				const segments = nullthrows(sevenSegmentDigits[digit]);
+				const outputValue = Array.from({ length: 28 }, (_, index) => {
+					const rowMajorIndex =
+						config.pixelOrder === "column-major"
+							? (index % 7) * 4 + Math.floor(index / 7)
+							: index;
+					return segments.includes(
+						nullthrows(sevenSegmentPixels[rowMajorIndex]),
+					);
+				});
+				return { Out: [outputValue] };
+			},
 		},
 	});
 
