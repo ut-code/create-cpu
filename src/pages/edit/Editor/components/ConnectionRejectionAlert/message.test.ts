@@ -15,8 +15,10 @@ describe("describeConnectionRejection", () => {
 		expect(
 			describeConnectionRejection({
 				type: "bitWidthConflict",
-				bitWidths: [[2, 4], [8]],
+				bitWidths: [[2, 4], [2]],
 			}),
-		).toBe("ビット幅が合いません（2/4 bit と 8 bit）");
+		).toBe(
+			"ビット幅がすでに食い違っている線にはつなげません（2/4 bit と 2 bit）",
+		);
 	});
 });

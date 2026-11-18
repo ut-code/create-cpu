@@ -16,7 +16,12 @@ export function describeConnectionRejection(
 			const [a, b] = rejection.bitWidths.map(
 				(bitWidths) => `${bitWidths.join("/")} bit`,
 			);
-			return `ビット幅が合いません（${a} と ${b}）`;
+			const isInConflictAlready = rejection.bitWidths.some(
+				(bitWidths) => bitWidths.length > 1,
+			);
+			return isInConflictAlready
+				? `ビット幅がすでに食い違っている線にはつなげません（${a} と ${b}）`
+				: `ビット幅が合いません（${a} と ${b}）`;
 		}
 	}
 }
