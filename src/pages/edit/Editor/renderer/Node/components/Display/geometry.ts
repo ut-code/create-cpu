@@ -10,18 +10,18 @@ import type {
 export const ccComponentEditorRendererNodeDisplayLayoutConstants = {
 	padding: 8,
 	gridSize: 12,
-	gridSizeDisplayWidth: 60,
+	pinLabelWidth: 60,
 };
 
 export function ccComponentRendererNodeDisplayLayoutCalculator(
 	source: CCComponentEditorRendererNodeLayoutSource,
 ): CCComponentEditorRendererNodeLayout {
-	const { padding, gridSize, gridSizeDisplayWidth } =
+	const { padding, gridSize, pinLabelWidth } =
 		ccComponentEditorRendererNodeDisplayLayoutConstants;
 	const config = source.config as CCIntrinsicComponentDisplaySpec["config"];
 
 	const size = {
-		x: gridSizeDisplayWidth + gridSize * config.resolution.x + padding * 2,
+		x: pinLabelWidth + gridSize * config.resolution.x + padding * 2,
 		y: gridSize * config.resolution.y + padding * 2,
 	};
 

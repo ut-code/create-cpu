@@ -17,6 +17,7 @@ import {
 import { ccComponentEditorRendererNodeDisplayLayoutConstants } from "./geometry";
 
 const SETTING_BUTTON_GAP = 2;
+const HALF_CAP_HEIGHT_RATIO = 0.35;
 
 export function CCComponentEditorRendererNodeDisplayRenderer(
 	props: CCComponentEditorRendererNodeRendererProps,
@@ -39,16 +40,15 @@ export function CCComponentEditorRendererNodeDisplayRenderer(
 			? editorState.getNodePinValue(inputNodePin.id)
 			: undefined;
 
-	const { padding, gridSize, gridSizeDisplayWidth } =
+	const { padding, gridSize, pinLabelWidth } =
 		ccComponentEditorRendererNodeDisplayLayoutConstants;
 
 	const title = `${props.component.name} ${config.resolution.x}x${config.resolution.y}`;
 	const titleRef = useRef<SVGTextElement>(null);
-	const [measuredTitle, setMeasuredTitle] = useState({ title: "", width: 0 });
+	const [titleWidth, setTitleWidth] = useState<number | null>(null);
 	useLayoutEffect(() => {
-		const width = nullthrows(titleRef.current).getComputedTextLength();
-		setMeasuredTitle({ title, width });
-	}, [title]);
+		setTitleWidth(nullthrows(titleRef.current).getComputedTextLength());
+	});
 
 	return (
 		<>
@@ -57,12 +57,13 @@ export function CCComponentEditorRendererNodeDisplayRenderer(
 				title={title}
 				titleRef={titleRef}
 			/>
-			{editorState.editorMode === "edit" && measuredTitle.title === title && (
+			{editorState.editorMode === "edit" && titleWidth !== null && (
 				<foreignObject
-					x={measuredTitle.width + SETTING_BUTTON_GAP}
+					x={titleWidth + SETTING_BUTTON_GAP}
 					y={
 						CC_COMPONENT_EDITOR_RENDERER_NODE_TITLE.baselineY -
-						CC_COMPONENT_EDITOR_RENDERER_NODE_TITLE.fontSize * 0.35 -
+						CC_COMPONENT_EDITOR_RENDERER_NODE_TITLE.fontSize *
+							HALF_CAP_HEIGHT_RATIO -
 						DISPLAY_CONFIG_SETTING_BUTTON_SIZE / 2
 					}
 					width={DISPLAY_CONFIG_SETTING_BUTTON_SIZE}
@@ -82,7 +83,7 @@ export function CCComponentEditorRendererNodeDisplayRenderer(
 						.map((x) => (
 							<rect
 								key={`${x}-${y}`}
-								x={padding + gridSizeDisplayWidth + x * gridSize}
+								x={padding + pinLabelWidth + x * gridSize}
 								y={padding + y * gridSize}
 								width={gridSize}
 								height={gridSize}
