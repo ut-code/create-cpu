@@ -237,3 +237,16 @@ export function testNumber(value: SimulationValue | undefined): number | null {
 	if (!value) return null;
 	return Number.parseInt(value.map((bit) => (bit ? "1" : "0")).join(""), 2);
 }
+
+export function thrownBy<E extends Error>(
+	run: () => unknown,
+	errorClass: abstract new (...args: never[]) => E,
+): E {
+	try {
+		run();
+	} catch (error) {
+		expect(error).toBeInstanceOf(errorClass);
+		return error as E;
+	}
+	throw new Error("Expected the function to throw");
+}

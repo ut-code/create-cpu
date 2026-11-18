@@ -12,10 +12,10 @@ import type { CCIntrinsicComponentSpec } from "./intrinsics/types";
 import {
 	buildSimulationNetlist,
 	DEFAULT_SIMULATION_BIT_WIDTH,
-	describeInstance,
 	type SimulationInstance,
 	type SimulationNetId,
 	type SimulationNetlist,
+	SimulationNodeError,
 	type SimulationPinInstance,
 	simulationTerminalKey,
 } from "./netlist";
@@ -94,11 +94,13 @@ function getSimulationNetlist(
 function assertValueFitsPin(
 	value: SimulationValue,
 	pin: SimulationPinInstance,
+	instance: SimulationInstance,
 	describePin: () => string,
 ): void {
 	if (value.length !== pin.bitWidth) {
-		throw new Error(
+		throw new SimulationNodeError(
 			`${describePin()} carries ${value.length} bits, but the pin is ${pin.bitWidth} bits wide`,
+			[instance.path],
 		);
 	}
 }
@@ -119,7 +121,8 @@ function collectInputs(
 			assertValueFitsPin(
 				value,
 				pin,
-				() => `Input ${key} of ${describeInstance(instance)}`,
+				instance,
+				() => `Input ${key} of ${instance.description}`,
 			);
 			return value;
 		}),
@@ -152,10 +155,11 @@ function evaluateInstance(
 		return behavior.evaluate(nullthrows(inputs), environment);
 	} catch (error) {
 		// The evaluation functions only see values, so tell which node they belong to
-		throw new Error(
-			`${describeInstance(instance)} could not be evaluated: ${
+		throw new SimulationNodeError(
+			`${instance.description} could not be evaluated: ${
 				error instanceof Error ? error.message : String(error)
 			}`,
+			[instance.path],
 			{ cause: error },
 		);
 	}
@@ -197,18 +201,19 @@ export default function simulateComponent(
 		for (const [key, pins] of Object.entries(instance.outputShape)) {
 			const values = nullthrows(
 				outputs[key],
-				`${describeInstance(instance)} did not output ${key}`,
+				`${instance.description} did not output ${key}`,
 			);
 			invariant(
 				values.length === pins.length,
-				`${describeInstance(instance)} output ${values.length} values for the ${pins.length} pins of ${key}`,
+				`${instance.description} output ${values.length} values for the ${pins.length} pins of ${key}`,
 			);
 			for (const [index, pin] of pins.entries()) {
 				const value = nullthrows(values[index]);
 				assertValueFitsPin(
 					value,
 					pin,
-					() => `Output ${key} of ${describeInstance(instance)}`,
+					instance,
+					() => `Output ${key} of ${instance.description}`,
 				);
 				netValues.set(pin.netId, value);
 			}

@@ -1,6 +1,7 @@
 import nullthrows from "nullthrows";
 import { describe, expect, it } from "vitest";
 import type CCStore from ".";
+import type { CCComponentId } from "./component";
 import { and, const_, flipflop, not } from "./intrinsics/definitions";
 import {
 	SimulationCombinationalLoopError,
@@ -18,6 +19,7 @@ import {
 	testComponentPin,
 	testNodePin,
 	testNumber,
+	thrownBy,
 } from "./testUtils";
 
 /** `D` -> flip-flop -> `Q`: a component that holds its input for one time step. */
@@ -280,11 +282,15 @@ describe("simulateComponent", () => {
 			testNodePin(store, first, not.inputPin.In),
 		);
 
-		expect(() => simulateComponent(store, root.id, new Map())).toThrow(
+		const error = thrownBy(
+			() => simulateComponent(store, root.id, new Map()),
 			SimulationCombinationalLoopError,
 		);
-		expect(() => simulateComponent(store, root.id, new Map())).toThrow(
-			/Insert a FlipFlop/,
+		expect(error.message).toBe(
+			"The outlined nodes form a loop, so their values cannot be determined. Fix the connections in the loop, or add a FlipFlop to it if the value should feed back.",
+		);
+		expect(new Set(error.nodePaths.map((path) => path[0]))).toEqual(
+			new Set([first.id, second.id]),
 		);
 	});
 
@@ -306,9 +312,205 @@ describe("simulateComponent", () => {
 			testNodePin(store, second, buffer.out),
 			testNodePin(store, first, buffer.into),
 		);
+		const outside = registerTestNode(store, root.id, not.component.id);
+		connectTestNodePins(
+			store,
+			root.id,
+			testNodePin(store, first, buffer.out),
+			testNodePin(store, outside, not.inputPin.In),
+		);
 
-		expect(() => simulateComponent(store, root.id, new Map())).toThrow(
+		const error = thrownBy(
+			() => simulateComponent(store, root.id, new Map()),
 			SimulationCombinationalLoopError,
+		);
+		expect(error.message).toBe(
+			"The outlined nodes form a loop, so their values cannot be determined. Fix the connections in the loop, or add a FlipFlop to it if the value should feed back.",
+		);
+		expect(new Set(error.nodePaths.map((path) => path[0]))).toEqual(
+			new Set([first.id, second.id]),
+		);
+	});
+
+	it("tells which component to open for a loop closed inside it", () => {
+		const store = createTestStore();
+		const ring = registerTestComponent(store, "Ring");
+		const first = registerTestNode(store, ring.id, not.component.id);
+		const second = registerTestNode(store, ring.id, not.component.id);
+		connectTestNodePins(
+			store,
+			ring.id,
+			testNodePin(store, first, not.outputPin.Out),
+			testNodePin(store, second, not.inputPin.In),
+		);
+		connectTestNodePins(
+			store,
+			ring.id,
+			testNodePin(store, second, not.outputPin.Out),
+			testNodePin(store, first, not.inputPin.In),
+		);
+		const root = registerTestComponent(store, "Root");
+		const ringNode = registerTestNode(store, root.id, ring.id);
+
+		const error = thrownBy(
+			() => simulateComponent(store, root.id, new Map()),
+			SimulationCombinationalLoopError,
+		);
+		expect(error.message).toBe(
+			"There is a loop inside Ring, so the values in it cannot be determined. Open Ring to fix the connections, or add a FlipFlop to the loop if the value should feed back.",
+		);
+		expect(new Set(error.nodePaths.map((path) => path[0]))).toEqual(
+			new Set([ringNode.id]),
+		);
+	});
+
+	describe("a loop closed by the wiring around a component", () => {
+		/** `In` -> Not -> Not -> `Out`, which holds no loop by itself */
+		function registerChainComponent(store: CCStore) {
+			const component = registerTestComponent(store, "Chain");
+			const into = registerTestInputNode(store, component.id, "In");
+			const first = registerTestNode(store, component.id, not.component.id);
+			const second = registerTestNode(store, component.id, not.component.id);
+			const out = registerTestOutputNode(store, component.id, "Out");
+			connectTestNodePins(
+				store,
+				component.id,
+				into.out,
+				testNodePin(store, first, not.inputPin.In),
+			);
+			connectTestNodePins(
+				store,
+				component.id,
+				testNodePin(store, first, not.outputPin.Out),
+				testNodePin(store, second, not.inputPin.In),
+			);
+			connectTestNodePins(
+				store,
+				component.id,
+				testNodePin(store, second, not.outputPin.Out),
+				out.in,
+			);
+			return {
+				component,
+				into: testComponentPin(store, component, "In"),
+				out: testComponentPin(store, component, "Out"),
+			};
+		}
+
+		function registerLoop(store: CCStore, parentComponentId: CCComponentId) {
+			const chain = registerChainComponent(store);
+			const buffer = registerBufferComponent(store);
+			const chainNode = registerTestNode(
+				store,
+				parentComponentId,
+				chain.component.id,
+			);
+			const bufferNode = registerTestNode(
+				store,
+				parentComponentId,
+				buffer.component.id,
+			);
+			connectTestNodePins(
+				store,
+				parentComponentId,
+				testNodePin(store, chainNode, chain.out),
+				testNodePin(store, bufferNode, buffer.into),
+			);
+			connectTestNodePins(
+				store,
+				parentComponentId,
+				testNodePin(store, bufferNode, buffer.out),
+				testNodePin(store, chainNode, chain.into),
+			);
+			return { chainNode, bufferNode };
+		}
+
+		it("outlines every node the loop runs through", () => {
+			const store = createTestStore();
+			const root = registerTestComponent(store, "Root");
+			const { chainNode, bufferNode } = registerLoop(store, root.id);
+
+			const error = thrownBy(
+				() => simulateComponent(store, root.id, new Map()),
+				SimulationCombinationalLoopError,
+			);
+			expect(error.message).toMatch(/^The outlined nodes form a loop/);
+			expect(new Set(error.nodePaths.map((path) => path[0]))).toEqual(
+				new Set([chainNode.id, bufferNode.id]),
+			);
+		});
+
+		it("tells to open the component the wiring is in", () => {
+			const store = createTestStore();
+			const outer = registerTestComponent(store, "Outer");
+			registerLoop(store, outer.id);
+			const root = registerTestComponent(store, "Root");
+			const outerNode = registerTestNode(store, root.id, outer.id);
+
+			const error = thrownBy(
+				() => simulateComponent(store, root.id, new Map()),
+				SimulationCombinationalLoopError,
+			);
+			expect(error.message).toMatch(
+				/^There is a loop inside Outer, .* Open Outer to fix/,
+			);
+			expect(new Set(error.nodePaths.map((path) => path[0]))).toEqual(
+				new Set([outerNode.id]),
+			);
+		});
+	});
+
+	it("tells which component to open for a loop of wires inside it", () => {
+		const store = createTestStore();
+		const buffer = registerBufferComponent(store);
+		const ring = registerTestComponent(store, "Ring");
+		const first = registerTestNode(store, ring.id, buffer.component.id);
+		const second = registerTestNode(store, ring.id, buffer.component.id);
+		const out = registerTestOutputNode(store, ring.id, "Out");
+		connectTestNodePins(
+			store,
+			ring.id,
+			testNodePin(store, first, buffer.out),
+			testNodePin(store, second, buffer.into),
+		);
+		connectTestNodePins(
+			store,
+			ring.id,
+			testNodePin(store, second, buffer.out),
+			testNodePin(store, first, buffer.into),
+		);
+		connectTestNodePins(
+			store,
+			ring.id,
+			testNodePin(store, first, buffer.out),
+			out.in,
+		);
+		const root = registerTestComponent(store, "Root");
+		const ringNode = registerTestNode(store, root.id, ring.id);
+
+		const error = thrownBy(
+			() => simulateComponent(store, root.id, new Map()),
+			SimulationCombinationalLoopError,
+		);
+		expect(error.message).toMatch(/^There is a loop inside Ring, .* Open Ring/);
+		expect(new Set(error.nodePaths.map((path) => path[0]))).toEqual(
+			new Set([ringNode.id]),
+		);
+	});
+
+	it("names an unconnected Output node by its pin", () => {
+		const store = createTestStore();
+		const half = registerTestComponent(store, "Half");
+		registerTestOutputNode(store, half.id, "Sum");
+		const root = registerTestComponent(store, "Root");
+		registerTestNode(store, root.id, half.id);
+
+		const error = thrownBy(
+			() => simulateComponent(store, root.id, new Map()),
+			SimulationUnconnectedPinError,
+		);
+		expect(error.message).toBe(
+			"Output Sum in Half is not connected. Open Half to connect it.",
 		);
 	});
 
@@ -324,9 +526,50 @@ describe("simulateComponent", () => {
 			out.in,
 		);
 
-		expect(() => simulateComponent(store, root.id, new Map())).toThrow(
+		const error = thrownBy(
+			() => simulateComponent(store, root.id, new Map()),
 			SimulationUnconnectedPinError,
 		);
+		expect(error.message).toMatch(/^Input pin [AB] of And is not connected\.$/);
+		expect(error.nodePaths).toEqual([[andNode.id]]);
+	});
+
+	it("names an unconnected input pin inside a component by the components around it", () => {
+		const store = createTestStore();
+		const half = registerTestComponent(store, "Half");
+		const into = registerTestInputNode(store, half.id, "In");
+		const andNode = registerTestNode(store, half.id, and.component.id);
+		const out = registerTestOutputNode(store, half.id, "Out");
+		connectTestNodePins(
+			store,
+			half.id,
+			into.out,
+			testNodePin(store, andNode, and.inputPin.A),
+		);
+		connectTestNodePins(
+			store,
+			half.id,
+			testNodePin(store, andNode, and.outputPin.Out),
+			out.in,
+		);
+		const root = registerTestComponent(store, "Root");
+		const rootIn = registerTestInputNode(store, root.id, "In");
+		const halfNode = registerTestNode(store, root.id, half.id);
+		connectTestNodePins(
+			store,
+			root.id,
+			rootIn.out,
+			testNodePin(store, halfNode, testComponentPin(store, half, "In")),
+		);
+
+		const error = thrownBy(
+			() => simulateComponent(store, root.id, new Map()),
+			SimulationUnconnectedPinError,
+		);
+		expect(error.message).toBe(
+			"Input pin B of And in Half is not connected. Open Half to connect it.",
+		);
+		expect(error.nodePaths).toEqual([[halfNode.id, andNode.id]]);
 	});
 
 	it("picks up a change of the circuit", () => {

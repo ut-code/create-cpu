@@ -86,6 +86,7 @@ export type SimulationInstance = {
 	/** node ids from the simulated component down to this node */
 	readonly path: readonly CCNodeId[];
 	readonly nodeId: CCNodeId;
+	readonly description: string;
 	readonly definition: IntrinsicComponentDefinition;
 	readonly config: CCNode["config"];
 	/** pins grouped by the pin key of the definition (e.g. `A`, `In`), ordered by pin order */
@@ -118,27 +119,107 @@ export type SimulationNetlist = {
 	readonly netByTerminal: ReadonlyMap<SimulationTerminalKey, SimulationNetId>;
 };
 
+function componentNameOfNode(store: CCStore, nodeId: CCNodeId): string {
+	const node = nullthrows(store.nodes.get(nodeId));
+	return nullthrows(store.components.get(node.componentId)).name;
+}
+
+function isInterfaceNode(store: CCStore, nodeId: CCNodeId): boolean {
+	const node = nullthrows(store.nodes.get(nodeId));
+	const { intrinsicType } = nullthrows(store.components.get(node.componentId));
+	return (
+		intrinsicType === ccIntrinsicComponentTypes.INPUT ||
+		intrinsicType === ccIntrinsicComponentTypes.OUTPUT
+	);
+}
+
+function nameOfNode(store: CCStore, nodeId: CCNodeId): string {
+	const componentName = componentNameOfNode(store, nodeId);
+	if (!isInterfaceNode(store, nodeId)) return componentName;
+	const exposedPin = store.nodePins
+		.getManyByNodeId(nodeId)
+		.map((nodePin) => store.componentPins.getByImplementation(nodePin.id))
+		.find((componentPin) => componentPin !== undefined);
+	return exposedPin ? `${componentName} ${exposedPin.name}` : componentName;
+}
+
+/** From the inside out, e.g. `Xor in HalfAdder` for a Xor inside a HalfAdder node */
+export function describeNodePath(
+	store: CCStore,
+	path: readonly CCNodeId[],
+): string {
+	return path
+		.map((nodeId) => nameOfNode(store, nodeId))
+		.reverse()
+		.join(" in ");
+}
+
+function commonPrefixOf(
+	paths: readonly (readonly CCNodeId[])[],
+): readonly CCNodeId[] {
+	const [first = [], ...rest] = paths;
+	let length = 0;
+	while (
+		length < first.length &&
+		rest.every((path) => path[length] === first[length])
+	)
+		length += 1;
+	return first.slice(0, length);
+}
+
+export class SimulationNodeError extends Error {
+	constructor(
+		message: string,
+		readonly nodePaths: readonly (readonly CCNodeId[])[],
+		options?: ErrorOptions,
+	) {
+		super(message, options);
+		this.name = "SimulationNodeError";
+	}
+}
+
 /**
- * Thrown when a value would have to be known before it can be computed. Such a loop
- * can only be resolved by a node that holds its value for one time step, so the fix is
- * to insert a `FlipFlop` somewhere along the reported path.
+ * Thrown when the nodes of a loop wait for each other's values. The nodes are not
+ * listed, as a loop can be long, but outlined by the editor.
  */
-export class SimulationCombinationalLoopError extends Error {
-	constructor(readonly loop: readonly string[]) {
+export class SimulationCombinationalLoopError extends SimulationNodeError {
+	constructor(store: CCStore, loop: readonly (readonly CCNodeId[])[]) {
+		const owner = commonPrefixOf(loop);
+		const ownerNodeId = owner.at(-1);
+		const isInsideOwner = loop.every((path) => path.length > owner.length);
 		super(
-			`Combinational loop detected: ${loop.join(" -> ")}. Insert a FlipFlop to break it.`,
+			ownerNodeId !== undefined && isInsideOwner
+				? `There is a loop inside ${describeNodePath(store, owner)}, so the values in it cannot be determined. Open ${componentNameOfNode(store, ownerNodeId)} to fix the connections, or add a FlipFlop to the loop if the value should feed back.`
+				: "The outlined nodes form a loop, so their values cannot be determined. Fix the connections in the loop, or add a FlipFlop to it if the value should feed back.",
+			loop,
 		);
 		this.name = "SimulationCombinationalLoopError";
 	}
 }
 
 /** Thrown when an input pin has nothing connected to it. */
-export class SimulationUnconnectedPinError extends Error {
+export class SimulationUnconnectedPinError extends SimulationNodeError {
 	constructor(
-		readonly nodeId: CCNodeId,
-		readonly nodePinId: CCNodePinId,
+		store: CCStore,
+		nodePath: readonly CCNodeId[],
+		nodePinId: CCNodePinId,
 	) {
-		super(`Input pin ${nodePinId} of node ${nodeId} is not connected.`);
+		const nodeName = describeNodePath(store, nodePath);
+		const nodePin = nullthrows(store.nodePins.get(nodePinId));
+		const pinName = nullthrows(
+			store.componentPins.get(nodePin.componentPinId),
+		).name;
+		const ownerNodeId = nodePath.at(-2);
+		const hint =
+			ownerNodeId === undefined
+				? ""
+				: ` Open ${componentNameOfNode(store, ownerNodeId)} to connect it.`;
+		super(
+			isInterfaceNode(store, nullthrows(nodePath.at(-1)))
+				? `${nodeName} is not connected.${hint}`
+				: `Input pin ${pinName} of ${nodeName} is not connected.${hint}`,
+			[nodePath],
+		);
 		this.name = "SimulationUnconnectedPinError";
 	}
 }
@@ -147,13 +228,20 @@ export class SimulationUnconnectedPinError extends Error {
  * Thrown when the pins tied together in a component fix different bit widths. The
  * editor highlights the connections between them.
  */
-export class SimulationBitWidthConflictError extends Error {
+export class SimulationBitWidthConflictError extends SimulationNodeError {
+	/** @param nodePath empty for the simulated component itself */
 	constructor(
 		readonly componentId: CCComponentId,
 		componentName: string,
+		nodePath: readonly CCNodeId[],
 	) {
+		const fix =
+			nodePath.length === 0
+				? "Fix the highlighted connections."
+				: `Open ${componentName} to fix the highlighted connections.`;
 		super(
-			`The bit widths of some connected pins in ${componentName} do not match. Fix the highlighted connections.`,
+			`The bit widths of some connected pins in ${componentName} do not match. ${fix}`,
+			nodePath.length === 0 ? [] : [nodePath],
 		);
 		this.name = "SimulationBitWidthConflictError";
 	}
@@ -182,95 +270,121 @@ export function buildSimulationNetlist(
 	const instances: SimulationInstance[] = [];
 
 	/**
-	 * Walk from a pin to the pin driving it, hopping over the `Input` and `Output` nodes
-	 * and the component nodes in between, and remember the net for every pin on the way.
+	 * The next pin towards the one driving a pin, hopping over the `Input` and `Output`
+	 * nodes and the component nodes in between, or `null` if the pin drives its net.
 	 */
+	const stepToDriver = (
+		path: readonly CCNodeId[],
+		nodePinId: CCNodePinId,
+	): { path: readonly CCNodeId[]; nodePinId: CCNodePinId } | null => {
+		const nodePin = nullthrows(store.nodePins.get(nodePinId));
+		const node = nullthrows(store.nodes.get(nodePin.nodeId));
+		const componentPin = nullthrows(
+			store.componentPins.get(nodePin.componentPinId),
+		);
+		const component = nullthrows(store.components.get(node.componentId));
+
+		if (componentPin.type === "input") {
+			// An input pin is driven by a connection inside the component it sits in
+			const connection = store.connections
+				.getConnectionsByNodePinId(nodePinId)
+				.find((candidate) => candidate.to === nodePinId);
+			if (!connection) {
+				throw new SimulationUnconnectedPinError(store, path, nodePinId);
+			}
+			const sourceNodePin = nullthrows(store.nodePins.get(connection.from));
+			return {
+				path: [...path.slice(0, -1), sourceNodePin.nodeId],
+				nodePinId: sourceNodePin.id,
+			};
+		}
+
+		if (
+			component.intrinsicType === ccIntrinsicComponentTypes.INPUT &&
+			path.length > 1
+		) {
+			// Fed from the pin of the node that uses the component this node sits in
+			const boundaryPin = nullthrows(
+				store.componentPins.getByImplementation(nodePinId),
+				`Input node ${node.id} does not expose a component pin`,
+			);
+			const outerNodeId = nullthrows(path[path.length - 2]);
+			const outerNodePin = nullthrows(
+				store.nodePins
+					.getManyByNodeId(outerNodeId)
+					.find((candidate) => candidate.componentPinId === boundaryPin.id),
+				`Node ${outerNodeId} is missing the pin of ${boundaryPin.id}`,
+			);
+			return { path: path.slice(0, -1), nodePinId: outerNodePin.id };
+		}
+
+		if (!component.intrinsicType) {
+			// Driven from inside the component, by the node implementing the pin
+			const implementation = nullthrows(
+				componentPin.implementation,
+				`Pin ${componentPin.id} of a user-defined component has no implementation`,
+			);
+			const innerNodePin = nullthrows(store.nodePins.get(implementation));
+			return {
+				path: [...path, innerNodePin.nodeId],
+				nodePinId: innerNodePin.id,
+			};
+		}
+
+		// An output pin of an intrinsic node, or of an `Input` node of the simulated
+		// component itself
+		return null;
+	};
+
+	/** Find the net of a pin, and remember it for every pin walked on the way. */
 	const resolveNet = (
 		startPath: readonly CCNodeId[],
 		startNodePinId: CCNodePinId,
 	): SimulationNetId => {
 		const visited: SimulationTerminalKey[] = [];
 		const visitedKeys = new Set<SimulationTerminalKey>();
-		/** the nodes walked through so far, for the error message of a loop */
-		const visitedNodes: string[] = [];
-		let path = startPath;
-		let nodePinId = startNodePinId;
+		const visitedPaths: (readonly CCNodeId[])[] = [];
+		let at: ReturnType<typeof stepToDriver> = {
+			path: startPath,
+			nodePinId: startNodePinId,
+		};
 		let netId: SimulationNetId | null = null;
-		while (netId === null) {
-			const terminal = simulationTerminalKey(path, nodePinId);
+		while (at) {
+			const terminal = simulationTerminalKey(at.path, at.nodePinId);
 			const known = netByTerminal.get(terminal);
 			if (known) {
 				netId = known;
 				break;
 			}
 			if (visitedKeys.has(terminal)) {
-				throw new SimulationCombinationalLoopError(visitedNodes);
+				throw new SimulationCombinationalLoopError(
+					store,
+					visitedPaths.slice(visited.indexOf(terminal)),
+				);
 			}
 			visited.push(terminal);
 			visitedKeys.add(terminal);
-
-			const nodePin = nullthrows(store.nodePins.get(nodePinId));
-			const node = nullthrows(store.nodes.get(nodePin.nodeId));
-			const componentPin = nullthrows(
-				store.componentPins.get(nodePin.componentPinId),
-			);
-			const component = nullthrows(store.components.get(node.componentId));
-			const walkedNode = `${component.name}(${path.join("/")})`;
-			if (visitedNodes.at(-1) !== walkedNode) visitedNodes.push(walkedNode);
-
-			if (componentPin.type === "input") {
-				// An input pin is driven by a connection inside the component it sits in
-				const connection = store.connections
-					.getConnectionsByNodePinId(nodePinId)
-					.find((candidate) => candidate.to === nodePinId);
-				if (!connection) {
-					throw new SimulationUnconnectedPinError(node.id, nodePinId);
-				}
-				const sourceNodePin = nullthrows(store.nodePins.get(connection.from));
-				path = [...path.slice(0, -1), sourceNodePin.nodeId];
-				nodePinId = sourceNodePin.id;
-				continue;
-			}
-
-			if (
-				component.intrinsicType === ccIntrinsicComponentTypes.INPUT &&
-				path.length > 1
-			) {
-				// Fed from the pin of the node that uses the component this node sits in
-				const boundaryPin = nullthrows(
-					store.componentPins.getByImplementation(nodePinId),
-					`Input node ${node.id} does not expose a component pin`,
-				);
-				const outerNodeId = nullthrows(path[path.length - 2]);
-				const outerNodePin = nullthrows(
-					store.nodePins
-						.getManyByNodeId(outerNodeId)
-						.find((candidate) => candidate.componentPinId === boundaryPin.id),
-					`Node ${outerNodeId} is missing the pin of ${boundaryPin.id}`,
-				);
-				path = path.slice(0, -1);
-				nodePinId = outerNodePin.id;
-				continue;
-			}
-
-			if (!component.intrinsicType) {
-				// Driven from inside the component, by the node implementing the pin
-				const implementation = nullthrows(
-					componentPin.implementation,
-					`Pin ${componentPin.id} of a user-defined component has no implementation`,
-				);
-				const innerNodePin = nullthrows(store.nodePins.get(implementation));
-				path = [...path, innerNodePin.nodeId];
-				nodePinId = innerNodePin.id;
-				continue;
-			}
-
-			// An output pin of an intrinsic node, or of an `Input` node of the simulated
-			// component itself: the value originates here, so this pin drives the net.
-			netId = terminal as string as SimulationNetId;
+			visitedPaths.push(at.path);
+			at = stepToDriver(at.path, at.nodePinId);
 		}
+		netId ??= nullthrows(visited.at(-1)) as string as SimulationNetId;
 		for (const terminal of visited) netByTerminal.set(terminal, netId);
 		return netId;
+	};
+
+	/** Only for pins already resolved, whose walk is known to end at a driver */
+	const walkToDriver = (
+		path: readonly CCNodeId[],
+		nodePinId: CCNodePinId,
+	): (readonly CCNodeId[])[] => {
+		const paths: (readonly CCNodeId[])[] = [];
+		for (
+			let at: ReturnType<typeof stepToDriver> = { path, nodePinId };
+			at;
+			at = stepToDriver(at.path, at.nodePinId)
+		)
+			paths.push(at.path);
+		return paths;
 	};
 
 	/** Resolve the pins of one intrinsic node instance, grouped by definition pin key. */
@@ -310,6 +424,7 @@ export function buildSimulationNetlist(
 			throw new SimulationBitWidthConflictError(
 				ownerComponentId,
 				ownerComponent.name,
+				path,
 			);
 		}
 		/** a group fixing no width takes it from the surroundings, or else the default */
@@ -332,7 +447,7 @@ export function buildSimulationNetlist(
 					componentPin.type === "input" &&
 					store.connections.getConnectionsByNodePinId(nodePin.id).length === 0
 				) {
-					throw new SimulationUnconnectedPinError(node.id, nodePin.id);
+					throw new SimulationUnconnectedPinError(store, nodePath, nodePin.id);
 				}
 			}
 
@@ -378,6 +493,7 @@ export function buildSimulationNetlist(
 			instances.push({
 				path: nodePath,
 				nodeId: node.id,
+				description: describeNodePath(store, nodePath),
 				definition,
 				config: node.config,
 				inputShape: resolveShape(
@@ -421,9 +537,25 @@ export function buildSimulationNetlist(
 		);
 	}
 
+	const ordering = sortInstancesByDependency(instances);
+	if ("loop" in ordering) {
+		// The wires between the instances tell the levels the loop runs through
+		const { loop } = ordering;
+		const wirePaths = loop.slice(1).flatMap((consumer, index) => {
+			const driver = nullthrows(loop[index]);
+			const driverNetIds = new Set(
+				simulationPinsOfShape(driver.outputShape).map((pin) => pin.netId),
+			);
+			return simulationPinsOfShape(consumer.inputShape)
+				.filter((pin) => driverNetIds.has(pin.netId))
+				.flatMap((pin) => walkToDriver(consumer.path, pin.nodePinId));
+		});
+		throw new SimulationCombinationalLoopError(store, wirePaths);
+	}
+
 	return {
 		componentId,
-		instances: sortInstancesByDependency(instances),
+		instances: ordering.sorted,
 		netByInputComponentPin,
 		netByNodePin,
 		netByTerminal,
@@ -437,20 +569,15 @@ export function simulationPinsOfShape(
 	return Object.values(shape).flat();
 }
 
-/** Name of an instance for error messages, e.g. `Not(nodeA/nodeB)`. */
-export function describeInstance(instance: SimulationInstance): string {
-	return `${instance.definition.name}(${instance.path.join("/")})`;
-}
-
 /**
  * Order the instances so that each one comes after the instances driving its inputs.
  * A sequential instance derives its outputs from the previous time step, so it does not
  * wait for its own inputs and is what allows a circuit to contain a loop at all.
- * @throws {SimulationCombinationalLoopError} if a loop contains no sequential instance
+ * @returns the order, or a loop of instances containing no sequential one
  */
 function sortInstancesByDependency(
 	instances: readonly SimulationInstance[],
-): SimulationInstance[] {
+): { sorted: SimulationInstance[] } | { loop: SimulationInstance[] } {
 	const driverByNet = new Map<SimulationNetId, number>();
 	for (const [index, instance] of instances.entries()) {
 		for (const pin of simulationPinsOfShape(instance.outputShape)) {
@@ -507,16 +634,16 @@ function sortInstancesByDependency(
 		const stuck = new Set(
 			instances.map((_, index) => index).filter((index) => !settled.has(index)),
 		);
-		throw new SimulationCombinationalLoopError(
-			findLoop(successors, stuck).map((index) =>
-				describeInstance(nullthrows(instances[index])),
+		return {
+			loop: findLoop(successors, stuck).map((index) =>
+				nullthrows(instances[index]),
 			),
-		);
+		};
 	}
-	return sorted;
+	return { sorted };
 }
 
-/** Find one loop among the instances that could not be ordered, for the error message. */
+/** One loop among the instances that could not be ordered, closed by its first one */
 function findLoop(
 	successors: ReadonlyMap<number, number[]>,
 	stuck: ReadonlySet<number>,
@@ -545,5 +672,5 @@ function findLoop(
 		const found = visit(index);
 		if (found) return found;
 	}
-	return [...stuck].slice(0, 1);
+	invariant(false, "Every instance left unordered waits for another one");
 }
