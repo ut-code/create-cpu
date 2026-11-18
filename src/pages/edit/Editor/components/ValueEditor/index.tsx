@@ -4,8 +4,9 @@ import {
 	styled,
 	ToggleButton,
 	ToggleButtonGroup,
+	Typography,
 } from "@mui/material";
-import { useState } from "react";
+import { useId, useState } from "react";
 import type { CCIntrinsicComponentConstSpecConfigViewMode as Mode } from "../../../../../store/intrinsics/types";
 import type { SimulationValue } from "../../../../../store/simulation";
 import {
@@ -43,6 +44,7 @@ type Props = {
 };
 
 export function CCComponentEditorValueEditor(props: Props) {
+	const bitWidthId = useId();
 	const [readOnlyMode, setReadOnlyMode] = useState(props.mode);
 	const mode = props.readOnly ? readOnlyMode : props.mode;
 	// Formatted text does not always parse back to the same value, so a mode change formats
@@ -105,7 +107,19 @@ export function CCComponentEditorValueEditor(props: Props) {
 				spellCheck={false}
 				sx={{ borderColor: newValue ? "divider" : "error.main" }}
 				readOnly={props.readOnly ?? false}
+				aria-invalid={!newValue}
+				aria-describedby={bitWidthId}
 			/>
+			{/* The text may not tell the width, e.g. 3 bits shown as 5 in hex */}
+			<Typography
+				id={bitWidthId}
+				variant="caption"
+				color="text.secondary"
+				sx={{ alignSelf: "flex-end", minHeight: "1.66em" }}
+			>
+				{newValue &&
+					`${newValue.length} ${newValue.length === 1 ? "bit" : "bits"}`}
+			</Typography>
 		</Stack>
 	);
 }
