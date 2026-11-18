@@ -19,6 +19,7 @@ export const ccIntrinsicComponentTypes = {
 	CONST: "CONST",
 	TRUE: "TRUE",
 	FALSE: "FALSE",
+	SEVEN_SEGMENT: "SEVEN_SEGMENT",
 } as const;
 export type CCIntrinsicComponentType = keyof typeof ccIntrinsicComponentTypes;
 
@@ -81,6 +82,14 @@ export type CCIntrinsicComponentConstSpec = {
 	};
 };
 
+export type CCIntrinsicComponentSevenSegmentSpec = {
+	in: "In";
+	out: "Out";
+	config: {
+		pixelOrder?: "row-major" | "column-major";
+	};
+};
+
 export type CCIntrinsicComponentSpecByType = {
 	[ccIntrinsicComponentTypes.AND]: CCIntrinsicComponentBinaryOperatorSpec;
 	[ccIntrinsicComponentTypes.OR]: CCIntrinsicComponentBinaryOperatorSpec;
@@ -98,4 +107,5 @@ export type CCIntrinsicComponentSpecByType = {
 	[ccIntrinsicComponentTypes.CONST]: CCIntrinsicComponentConstSpec;
 	[ccIntrinsicComponentTypes.TRUE]: CCIntrinsicComponentNullaryOperatorSpec;
 	[ccIntrinsicComponentTypes.FALSE]: CCIntrinsicComponentNullaryOperatorSpec;
+	[ccIntrinsicComponentTypes.SEVEN_SEGMENT]: CCIntrinsicComponentSevenSegmentSpec;
 };

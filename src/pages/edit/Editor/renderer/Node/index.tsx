@@ -13,6 +13,7 @@ import { CCComponentEditorRendererNodeConstRenderer } from "./components/Const";
 import { CCComponentEditorRendererNodeDefaultRenderer } from "./components/Default";
 import { CCComponentEditorRendererNodeDisplayRenderer } from "./components/Display";
 import { CCComponentEditorRendererNodeInterfaceRenderer } from "./components/Interface";
+import { CCComponentEditorRendererNodeSevenSegmentRenderer } from "./components/SevenSegment";
 import {
 	ccComponentEditorRendererLayoutToGeometry,
 	getCCComponentEditorRendererNodeLayout,
@@ -29,6 +30,8 @@ const specialRenderers: Partial<
 	[ccIntrinsicComponentTypes.DISPLAY]:
 		CCComponentEditorRendererNodeDisplayRenderer,
 	[ccIntrinsicComponentTypes.CONST]: CCComponentEditorRendererNodeConstRenderer,
+	[ccIntrinsicComponentTypes.SEVEN_SEGMENT]:
+		CCComponentEditorRendererNodeSevenSegmentRenderer,
 	[ccIntrinsicComponentTypes.INPUT]:
 		CCComponentEditorRendererNodeInterfaceRenderer,
 	[ccIntrinsicComponentTypes.OUTPUT]:
