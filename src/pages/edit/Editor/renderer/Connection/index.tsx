@@ -31,6 +31,7 @@ export type CCComponentEditorRendererConnectionCoreProps = {
 
 const straightGap = 10;
 const HIT_AREA_STROKE_WIDTH = 12;
+const VALUE_LABEL_SIZE = { x: 200, y: 20 };
 const polarity: Record<CCComponentPinType, number> = {
 	input: -1,
 	output: 1,
@@ -82,7 +83,6 @@ export function CCComponentEditorRendererConnectionCore({
 				strokeDasharray={isInBitWidthConflict ? "6 4" : undefined}
 				fill="none"
 				pointerEvents="none"
-				id={connectionId}
 			/>
 			{connectionId && (
 				// biome-ignore lint/a11y/noStaticElementInteractions: SVG
@@ -165,17 +165,28 @@ export default function CCComponentEditorRendererConnection({
 				}}
 			/>
 			{isHovered && componentEditorState.editorMode === "play" && (
-				<text fontSize={10} fill={theme.colors.textPrimary}>
-					<textPath
-						href={`#${connectionId}`}
-						startOffset="50%"
-						textAnchor="middle"
-					>
-						{stringifySimulationValue(
-							nullthrows(componentEditorState.getNodePinValue(toNodePin.id)),
-						)}
-					</textPath>
-				</text>
+				// The path is symmetric about the midpoint of its ends
+				<foreignObject
+					x={
+						(fromNodePinPosition.x + toNodePinPosition.x - VALUE_LABEL_SIZE.x) /
+						2
+					}
+					y={
+						(fromNodePinPosition.y + toNodePinPosition.y - VALUE_LABEL_SIZE.y) /
+						2
+					}
+					width={VALUE_LABEL_SIZE.x}
+					height={VALUE_LABEL_SIZE.y}
+					pointerEvents="none"
+				>
+					<div className={styles.valueLabel}>
+						<span>
+							{stringifySimulationValue(
+								nullthrows(componentEditorState.getNodePinValue(toNodePin.id)),
+							)}
+						</span>
+					</div>
+				</foreignObject>
 			)}
 		</>
 	);
