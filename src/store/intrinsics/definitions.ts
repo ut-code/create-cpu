@@ -10,6 +10,7 @@ import {
 	type CCIntrinsicComponentInputSpec,
 	type CCIntrinsicComponentNullaryOperatorSpec,
 	type CCIntrinsicComponentOutputSpec,
+	type CCIntrinsicComponentSevenSegmentSpec,
 	type CCIntrinsicComponentSpecByType,
 	type CCIntrinsicComponentType,
 	type CCIntrinsicComponentUnaryOperatorSpec,
@@ -356,6 +357,86 @@ export const const_ =
 		},
 	});
 
+// Segments a–g: top, upper-right, lower-right, bottom, lower-left,
+// upper-left, middle. The 4×7 grid is flattened in row-major order.
+const sevenSegmentPixels = [
+	" aa ",
+	"f  b",
+	"f  b",
+	" gg ",
+	"e  c",
+	"e  c",
+	" dd ",
+].join("");
+const sevenSegmentDigits = [
+	"abcdef", // 0
+	"bc", // 1
+	"abdeg", // 2
+	"abcdg", // 3
+	"bcfg", // 4
+	"acdfg", // 5
+	"acdefg", // 6
+	"abc", // 7
+	"abcdefg", // 8
+	"abcdfg", // 9
+	"abcefg", // A
+	"cdefg", // b
+	"adef", // C
+	"bcdeg", // d
+	"adefg", // E
+	"aefg", // F
+];
+
+export const seven_segment =
+	new IntrinsicComponentDefinition<CCIntrinsicComponentSevenSegmentSpec>({
+		type: ccIntrinsicComponentTypes.SEVEN_SEGMENT,
+		name: "7seg",
+		in: {
+			In: {
+				name: "In",
+				bitWidthPolicy: {
+					type: "calculated",
+					calculateBitWidth: () => 4,
+				},
+			},
+		},
+		out: {
+			Out: {
+				name: "Out",
+				bitWidthPolicy: {
+					type: "calculated",
+					calculateBitWidth: () => 28,
+				},
+			},
+		},
+		initialConfig: {
+			pixelOrder: "row-major",
+		},
+		behavior: {
+			kind: "combinational",
+			evaluate: ({ In }, { config }) => {
+				const inputValue = single(In);
+				invariant(inputValue.length === 4);
+				// Simulation values store the most significant bit first.
+				const digit = inputValue.reduce(
+					(value, bit) => value * 2 + Number(bit),
+					0,
+				);
+				const segments = nullthrows(sevenSegmentDigits[digit]);
+				const outputValue = Array.from({ length: 28 }, (_, index) => {
+					const rowMajorIndex =
+						config.pixelOrder === "column-major"
+							? (index % 7) * 4 + Math.floor(index / 7)
+							: index;
+					return segments.includes(
+						nullthrows(sevenSegmentPixels[rowMajorIndex]),
+					);
+				});
+				return { Out: [outputValue] };
+			},
+		},
+	});
+
 export const definitions: {
 	[t in CCIntrinsicComponentType]: IntrinsicComponentDefinition<
 		CCIntrinsicComponentSpecByType[t]
@@ -377,6 +458,7 @@ export const definitions: {
 	[ccIntrinsicComponentTypes.FALSE]: false_,
 	[ccIntrinsicComponentTypes.ANDN]: and_n,
 	[ccIntrinsicComponentTypes.ORN]: or_n,
+	[ccIntrinsicComponentTypes.SEVEN_SEGMENT]: seven_segment,
 };
 
 export const definitionByComponentId = new Map<

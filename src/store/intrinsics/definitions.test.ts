@@ -22,6 +22,7 @@ import {
 	or,
 	or_n,
 	output,
+	seven_segment,
 	true_,
 	xor,
 } from "./definitions";
@@ -220,6 +221,59 @@ describe("FlipFlop", () => {
 				{ outputBitWidths: { Out: [3] }, config: null },
 			),
 		).toEqual({ Out: [testBits(0b101, 3)] });
+	});
+});
+
+describe("7seg", () => {
+	it.each([
+		{
+			digit: 2,
+			rows: ["0110", "0001", "0001", "0110", "1000", "1000", "0110"],
+		},
+		{
+			digit: 10,
+			rows: ["0110", "1001", "1001", "0110", "1001", "1001", "0000"],
+		},
+		{
+			digit: 15,
+			rows: ["0110", "1000", "1000", "0110", "1000", "1000", "0000"],
+		},
+	])(
+		"renders hexadecimal digit $digit in either pixel order",
+		({ digit, rows }) => {
+			for (const pixelOrder of [
+				undefined,
+				"row-major",
+				"column-major",
+			] as const) {
+				const expected =
+					pixelOrder === "column-major"
+						? [0, 1, 2, 3]
+								.map((column) => rows.map((row) => row[column]).join(""))
+								.join("")
+						: rows.join("");
+				expect(
+					evaluateCombinational(
+						seven_segment,
+						{ In: [testBits(digit, 4)] },
+						{
+							outputBitWidths: { Out: [28] },
+							config: pixelOrder ? { pixelOrder } : {},
+						},
+					),
+				).toEqual({ Out: [Array.from(expected, (pixel) => pixel === "1")] });
+			}
+		},
+	);
+
+	it("rejects input that is not four bits wide", () => {
+		expect(() =>
+			evaluateCombinational(
+				seven_segment,
+				{ In: [testBits(0, 3)] },
+				{ outputBitWidths: { Out: [28] }, config: {} },
+			),
+		).toThrow();
 	});
 });
 
