@@ -1,3 +1,4 @@
+import clsx from "clsx";
 import { useState } from "react";
 import { vector2 } from "../../../../../common/vector2";
 import {
@@ -104,7 +105,7 @@ export default function CCComponentEditorRendererNode({
 				width={geometry.rect.size.x}
 				height={geometry.rect.size.y}
 				overflow="visible"
-				className={isSelected ? styles.selected : undefined}
+				className={clsx(styles.node, isSelected && styles.selected)}
 				onPointerDown={handlePointerDown}
 				onPointerMove={handlePointerMove}
 				onPointerUp={handlePointerUp}
