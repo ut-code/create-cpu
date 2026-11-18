@@ -127,7 +127,7 @@ export const createComponentEditorStoreCoreSlice: ComponentEditorSliceCreator<
 						}
 					}
 
-					// The bit width may have grown since the value was set, e.g. by connecting
+					// The bit width may have changed since the value was set, e.g. by connecting
 					// the pin to one of a fixed width. A value that no longer fits is reset on
 					// entering play mode.
 					return (
