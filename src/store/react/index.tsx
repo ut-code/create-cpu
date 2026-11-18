@@ -4,11 +4,13 @@ import {
 	useContext,
 	useEffect,
 	useMemo,
+	useRef,
 	useState,
 } from "react";
 import invariant from "tiny-invariant";
 import CCStore from "..";
 import { setupDefaultSample } from "../samples/default";
+import { replaceSavedStore } from "../savedStore";
 
 function useContextValue() {
 	const [store, setStore] = useState(() => {
@@ -30,13 +32,11 @@ function useContextValue() {
 		};
 	}, [store]);
 
+	const storeRef = useRef(store);
 	const resetStore = useCallback((json?: string) => {
-		const store = new CCStore();
-		if (json) store.importJson(json);
-		store.mount();
-		if (!json) setupDefaultSample(store);
-		store.autoSaver.watch();
-		setStore(store);
+		const newStore = replaceSavedStore(storeRef.current, json);
+		storeRef.current = newStore;
+		setStore(newStore);
 	}, []);
 	return useMemo(() => ({ store, resetStore }), [store, resetStore]);
 }

@@ -5,13 +5,52 @@ import {
 	CCConnectionStore,
 	ccConnectionStoreChangeEventTypes,
 } from "./connection";
+import { listenToEvents } from "./events";
 import * as intrinsics from "./intrinsics/definitions";
 import { CCNodeStore } from "./node";
 import { CCNodePinStore, ccNodePinStoreChangeEventTypes } from "./nodePin";
 import TransactionManager from "./transaction";
-import type { CCObjectStore, CCObjectType } from "./types";
+import {
+	type CCObjectByType,
+	type CCObjectId,
+	type CCObjectStore,
+	type CCObjectType,
+	ccObjectTypes,
+} from "./types";
 
 type CCObjectStores = { [K in CCObjectType]: CCObjectStore<K> };
+
+export type CCStoreJson = { [K in CCObjectType]: CCObjectByType[K][] };
+
+export class CCStoreJsonError extends Error {
+	constructor(message: string, options?: ErrorOptions) {
+		super(message, options);
+		this.name = "CCStoreJsonError";
+	}
+}
+
+/**
+ * Parse a store saved with {@link CCStore.toJSON}. Only its outline is checked, which
+ * tells a file exported from this app from any other.
+ * @throws {CCStoreJsonError} if the text is not such a store
+ */
+export function parseStoreJson(json: string): CCStoreJson {
+	let data: unknown;
+	try {
+		data = JSON.parse(json);
+	} catch (error) {
+		throw new CCStoreJsonError("The text is not JSON", { cause: error });
+	}
+	if (typeof data !== "object" || data === null) {
+		throw new CCStoreJsonError("The JSON is not an object");
+	}
+	for (const key of ccObjectTypes) {
+		if (!Array.isArray((data as Record<string, unknown>)[key])) {
+			throw new CCStoreJsonError(`The JSON has no list of ${key}`);
+		}
+	}
+	return data as CCStoreJson;
+}
 
 /**
  * Store of components, nodes, pins, and connections
@@ -79,32 +118,33 @@ export default class CCStore implements CCObjectStores {
 	 * @returns a function to stop listening
 	 */
 	subscribeToCircuitChanges(listener: () => void): () => void {
-		const subscriptions: (() => void)[] = [];
-		const subscribe = <Events extends object>(
-			emitter: {
-				on(event: keyof Events, listener: () => void): unknown;
-				off(event: keyof Events, listener: () => void): unknown;
-			},
-			eventTypes: readonly (keyof Events)[],
-		) => {
-			for (const eventType of eventTypes) {
-				emitter.on(eventType, listener);
-				subscriptions.push(() => emitter.off(eventType, listener));
-			}
-		};
 		// Renames and moves emit only `didUpdate`, which is left out here since they do not
 		// change the circuit
-		subscribe(this.components, ["didRegister", "didUnregister"] as const);
-		subscribe(this.componentPins, ["didRegister", "didUnregister"] as const);
-		subscribe(this.nodes, [
-			"didRegister",
-			"didUnregister",
-			"didUpdateConfig",
-		] as const);
-		subscribe(this.nodePins, ccNodePinStoreChangeEventTypes);
-		subscribe(this.connections, ccConnectionStoreChangeEventTypes);
+		const unsubscribes = [
+			listenToEvents(
+				this.components,
+				["didRegister", "didUnregister"] as const,
+				listener,
+			),
+			listenToEvents(
+				this.componentPins,
+				["didRegister", "didUnregister"] as const,
+				listener,
+			),
+			listenToEvents(
+				this.nodes,
+				["didRegister", "didUnregister", "didUpdateConfig"] as const,
+				listener,
+			),
+			listenToEvents(this.nodePins, ccNodePinStoreChangeEventTypes, listener),
+			listenToEvents(
+				this.connections,
+				ccConnectionStoreChangeEventTypes,
+				listener,
+			),
+		];
 		return () => {
-			for (const unsubscribe of subscriptions) unsubscribe();
+			for (const unsubscribe of unsubscribes) unsubscribe();
 		};
 	}
 
@@ -113,6 +153,52 @@ export default class CCStore implements CCObjectStores {
 		type: K,
 	): CCObjectStore<K> {
 		return this[type];
+	}
+
+	/**
+	 * Each way the objects contradict what the editor relies on, e.g. `nodes.componentId
+	 * of <id> refers to nothing`
+	 */
+	findInconsistencies(): string[] {
+		const inconsistencies = ccObjectTypes.flatMap((type) =>
+			this.#findBrokenReferencesOf(type).map(
+				(reference) => `${reference} refers to nothing`,
+			),
+		);
+		for (const pin of this.componentPins.getMany()) {
+			const component = this.components.get(pin.componentId);
+			if (component && !component.intrinsicType && pin.implementation === null)
+				inconsistencies.push(
+					`componentPins.implementation of ${pin.id} is missing`,
+				);
+		}
+		const connectedInputs = new Set<string>();
+		for (const connection of this.connections.getMany()) {
+			if (connectedInputs.has(connection.to))
+				inconsistencies.push(
+					`nodePins ${connection.to} is the input of more than one connection`,
+				);
+			connectedInputs.add(connection.to);
+		}
+		return inconsistencies;
+	}
+
+	#findBrokenReferencesOf<K extends CCObjectType>(type: K): string[] {
+		const objectStore = this.getObjectStore(type);
+		const references = Object.entries(objectStore.references) as [
+			keyof CCObjectByType[K],
+			CCObjectType,
+		][];
+		return objectStore.getMany().flatMap((object) =>
+			references
+				.filter(([field, targetType]) => {
+					const targetId = object[field] as CCObjectId | null;
+					return (
+						targetId !== null && !this.getObjectStore(targetType).get(targetId)
+					);
+				})
+				.map(([field]) => `${type}.${String(field)} of ${object.id}`),
+		);
 	}
 
 	mount() {
@@ -144,7 +230,7 @@ export default class CCStore implements CCObjectStores {
 	 */
 	importJson(json: string) {
 		const { components, nodes, componentPins, nodePins, connections } =
-			JSON.parse(json);
+			parseStoreJson(json);
 		this.components.import(components);
 		this.nodes.import(nodes);
 		this.componentPins.import(componentPins);
