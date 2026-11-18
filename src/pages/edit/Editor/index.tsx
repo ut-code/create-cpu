@@ -1,4 +1,4 @@
-import { Box } from "@mui/material";
+import { Box, Stack } from "@mui/material";
 import { useState } from "react";
 import { ComponentPropertyDialog } from "../../../components/ComponentPropertyDialog";
 import type { CCComponentId } from "../../../store/component";
@@ -44,13 +44,24 @@ function CCComponentEditorContent({
 				onEditorClose={onClose}
 			/>
 			<CCComponentEditorViewModeSwitcher />
-			<CCComponentEditorFrameControl />
 			<CCComponentEditorContextMenu
 				onEditComponent={onEditComponent}
 				onComponentCreated={setPropertyDialogComponentId}
 			/>
 			<CCComponentEditorNodePinPropertyEditor />
-			<CCComponentEditorNotifications />
+			<Stack
+				spacing={1}
+				sx={{
+					position: "absolute",
+					bottom: "40px",
+					left: "16px",
+					right: "112px",
+					pointerEvents: "none",
+				}}
+			>
+				<CCComponentEditorNotifications />
+				<CCComponentEditorFrameControl />
+			</Stack>
 			{propertyDialogComponentId && (
 				<ComponentPropertyDialog
 					componentId={propertyDialogComponentId}

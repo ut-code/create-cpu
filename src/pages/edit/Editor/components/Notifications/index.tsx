@@ -26,18 +26,10 @@ export default function CCComponentEditorNotifications() {
 		return () => clearTimeout(timeoutId);
 	}, [connectionRejectionNoticeId, dismissConnectionRejectionNotice]);
 
+	if (!connectionRejectionNotice && simulationError === null) return null;
+
 	return (
-		<Stack
-			spacing={1}
-			sx={{
-				position: "absolute",
-				bottom: "24px",
-				left: "16px",
-				right: "112px",
-				alignItems: "center",
-				pointerEvents: "none",
-			}}
-		>
+		<Stack spacing={1} sx={{ alignItems: "center", pointerEvents: "none" }}>
 			{connectionRejectionNotice && (
 				// Remounted for each rejection, so that a repeated one shows up again
 				<Grow key={connectionRejectionNotice.id} in>
