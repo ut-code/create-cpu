@@ -5,8 +5,8 @@ import { describeConnectionRejection } from "./connectionRejection";
 
 const CONNECTION_REJECTION_DURATION_MS = 4000;
 
-// A refused connection only answers the last attempt, so unlike a simulation error,
-// which lasts as long as the circuit stays as it is, its notice hides itself
+// Unlike a simulation error, a refused connection only answers the last attempt, so
+// its notice hides itself
 export default function CCComponentEditorNotifications() {
 	const componentEditorState = useComponentEditorStore()();
 	const {

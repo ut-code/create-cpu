@@ -5,11 +5,11 @@ export function describeConnectionRejection(
 ): string {
 	switch (rejection.type) {
 		case "sameDirection":
-			return "An input pin must be connected to an output pin";
+			return "Cannot connect two input pins or two output pins";
 		case "sameNode":
 			return "Cannot connect pins of the same node";
 		case "differentParentComponent":
-			return "Cannot connect pins of different components";
+			return "Cannot connect pins placed in different components";
 		case "inputAlreadyConnected":
 			return "This input pin is already connected";
 		case "bitWidthConflict": {
