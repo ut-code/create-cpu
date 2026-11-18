@@ -52,6 +52,7 @@ function CCComponentEditorContent({
 					left: "16px",
 					right: "112px",
 					pointerEvents: "none",
+					isolation: "isolate",
 				}}
 			>
 				<CCComponentEditorNotifications />
