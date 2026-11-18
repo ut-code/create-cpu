@@ -12,7 +12,11 @@ import type { CCComponentPin } from "./componentPin";
 import { CCConnectionStore } from "./connection";
 import { input, output } from "./intrinsics/definitions";
 import { type CCNode, CCNodeStore } from "./node";
-import { type CCNodePinId, CCNodePinStore } from "./nodePin";
+import {
+	type CCConnectionRejection,
+	type CCNodePinId,
+	CCNodePinStore,
+} from "./nodePin";
 import type { SimulationValue } from "./simulation";
 import {
 	type CCObjectByType,
@@ -140,22 +144,41 @@ export function splitTestNodePin(
 	}
 }
 
-export function connectTestNodePins(
+export function tryConnectTestNodePins(
 	store: CCStore,
 	parentComponentId: CCComponentId,
 	from: CCNodePinId,
 	to: CCNodePinId,
-): void {
+	options: { allowBitWidthConflict?: boolean } = {},
+): { rejection: CCConnectionRejection | null; isRegistered: boolean } {
 	const connection = CCConnectionStore.create({
 		from,
 		to,
 		parentComponentId,
 		bentPortion: 0.5,
 	});
-	store.connections.register(connection);
+	const rejection = store.connections.register(connection, options);
+	return {
+		rejection,
+		isRegistered: store.connections.get(connection.id) !== undefined,
+	};
+}
+
+export function connectTestNodePins(
+	store: CCStore,
+	parentComponentId: CCComponentId,
+	from: CCNodePinId,
+	to: CCNodePinId,
+): void {
+	const { rejection } = tryConnectTestNodePins(
+		store,
+		parentComponentId,
+		from,
+		to,
+	);
 	invariant(
-		store.connections.get(connection.id),
-		"the store rejected the connection",
+		!rejection,
+		`the store rejected the connection: ${rejection?.type}`,
 	);
 }
 
