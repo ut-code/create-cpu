@@ -1,7 +1,9 @@
+import nullthrows from "nullthrows";
 import { describe, expect, it } from "vitest";
 import { testBits } from "../../../../../store/testUtils";
 import {
 	changeSimulationValueDraftMode,
+	describeSimulationValueDraftError,
 	formatSimulationValue,
 	formatSimulationValueDraft,
 	parseSimulationValue,
@@ -34,7 +36,11 @@ describe("SimulationValueDraft", () => {
 		draft = changeSimulationValueDraftMode(draft, stored, "utf-8");
 		draft = changeSimulationValueDraftMode(draft, stored, "binary");
 
-		expect(draft).toEqual({ text: "101", value: testBits(0b101, 3) });
+		expect(draft).toEqual({
+			text: "101",
+			value: testBits(0b101, 3),
+			error: null,
+		});
 	});
 
 	it("keeps a value that is not valid UTF-8 across view mode changes", () => {
@@ -44,7 +50,7 @@ describe("SimulationValueDraft", () => {
 		draft = changeSimulationValueDraftMode(draft, value, "utf-8");
 		draft = changeSimulationValueDraftMode(draft, value, "hex");
 
-		expect(draft).toEqual({ text: "ff", value });
+		expect(draft).toEqual({ text: "ff", value, error: null });
 	});
 
 	it("fits parsed text to the bit width, or has no value if it is too wide", () => {
@@ -52,6 +58,34 @@ describe("SimulationValueDraft", () => {
 			testBits(1, 4),
 		);
 		expect(parseSimulationValueDraft("11111", "binary", 4).value).toBeNull();
+	});
+
+	it("tells an invalid text apart from a value too wide for the bit width", () => {
+		const invalid = parseSimulationValueDraft("xyz", "hex", 3);
+		const tooWide = parseSimulationValueDraft("0x0f", "hex", 3);
+
+		expect(invalid.error).toEqual({ type: "invalid" });
+		expect(tooWide.error).toEqual({
+			type: "tooWide",
+			requiredBitWidth: 4,
+			bitWidth: 3,
+		});
+		expect(
+			describeSimulationValueDraftError(nullthrows(tooWide.error), "hex"),
+		).toBe("Needs 4 bits, but the width is 3");
+	});
+
+	it("names the view mode of an invalid text", () => {
+		const invalid = { type: "invalid" } as const;
+		expect(describeSimulationValueDraftError(invalid, "binary")).toBe(
+			"Not a valid binary value",
+		);
+		expect(describeSimulationValueDraftError(invalid, "hex")).toBe(
+			"Not a valid hex value",
+		);
+		expect(describeSimulationValueDraftError(invalid, "utf-8")).toBe(
+			"Enter some text",
+		);
 	});
 
 	it("falls back to the stored value when the text is invalid", () => {
@@ -62,6 +96,7 @@ describe("SimulationValueDraft", () => {
 		expect(changeSimulationValueDraftMode(draft, stored, "hex")).toEqual({
 			text: "ff",
 			value: stored,
+			error: null,
 		});
 	});
 });

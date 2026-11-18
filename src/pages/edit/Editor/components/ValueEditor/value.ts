@@ -70,6 +70,12 @@ export function parseSimulationValue(
 	}
 }
 
+const modeNames: Record<Mode, string> = {
+	binary: "binary",
+	hex: "hex",
+	"utf-8": "UTF-8",
+};
+
 export function fitSimulationValue(
 	value: SimulationValue,
 	bitWidth: number,
@@ -82,17 +88,19 @@ export function fitSimulationValue(
 	return value.slice(overflow);
 }
 
-export type SimulationValueDraft = {
-	text: string;
-	/** `null` if the text is invalid or wider than the bit width */
-	value: SimulationValue | null;
-};
+export type SimulationValueDraftError =
+	| { type: "invalid" }
+	| { type: "tooWide"; requiredBitWidth: number; bitWidth: number };
+
+export type SimulationValueDraft =
+	| { text: string; value: SimulationValue; error: null }
+	| { text: string; value: null; error: SimulationValueDraftError };
 
 export function formatSimulationValueDraft(
 	value: SimulationValue,
 	mode: Mode,
 ): SimulationValueDraft {
-	return { text: formatSimulationValue(value, mode), value };
+	return { text: formatSimulationValue(value, mode), value, error: null };
 }
 
 export function parseSimulationValueDraft(
@@ -101,13 +109,33 @@ export function parseSimulationValueDraft(
 	bitWidth?: number,
 ): SimulationValueDraft {
 	const value = parseSimulationValue(text, mode);
+	if (!value) return { text, value: null, error: { type: "invalid" } };
+	if (bitWidth === undefined) return { text, value, error: null };
+	const fitted = fitSimulationValue(value, bitWidth);
+	if (fitted) return { text, value: fitted, error: null };
 	return {
 		text,
-		value:
-			value && bitWidth !== undefined
-				? fitSimulationValue(value, bitWidth)
-				: value,
+		value: null,
+		error: {
+			type: "tooWide",
+			requiredBitWidth: value.length - value.indexOf(true),
+			bitWidth,
+		},
 	};
+}
+
+export function describeSimulationValueDraftError(
+	error: SimulationValueDraftError,
+	mode: Mode,
+): string {
+	switch (error.type) {
+		case "invalid":
+			return mode === "utf-8"
+				? "Enter some text"
+				: `Not a valid ${modeNames[mode]} value`;
+		case "tooWide":
+			return `Needs ${error.requiredBitWidth} bits, but the width is ${error.bitWidth}`;
+	}
 }
 
 export function changeSimulationValueDraftMode(

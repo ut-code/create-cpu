@@ -11,6 +11,7 @@ import type { CCIntrinsicComponentConstSpecConfigViewMode as Mode } from "../../
 import type { SimulationValue } from "../../../../../store/simulation";
 import {
 	changeSimulationValueDraftMode,
+	describeSimulationValueDraftError,
 	formatSimulationValue,
 	formatSimulationValueDraft,
 	parseSimulationValueDraft,
@@ -56,6 +57,7 @@ export function CCComponentEditorValueEditor(props: Props) {
 		? formatSimulationValue(props.value, mode)
 		: draft.text;
 	const newValue = props.readOnly ? props.value : draft.value;
+	const error = props.readOnly ? null : draft.error;
 
 	const changeMode = (newMode: Mode) => {
 		if (props.readOnly) {
@@ -114,11 +116,13 @@ export function CCComponentEditorValueEditor(props: Props) {
 			<Typography
 				id={bitWidthId}
 				variant="caption"
-				color="text.secondary"
+				color={error ? "error" : "text.secondary"}
 				sx={{ alignSelf: "flex-end", minHeight: "1.66em" }}
 			>
-				{newValue &&
-					`${newValue.length} ${newValue.length === 1 ? "bit" : "bits"}`}
+				{error
+					? describeSimulationValueDraftError(error, mode)
+					: newValue &&
+						`${newValue.length} ${newValue.length === 1 ? "bit" : "bits"}`}
 			</Typography>
 		</Stack>
 	);
