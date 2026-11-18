@@ -32,10 +32,13 @@ export default function CCComponentEditorRenderer() {
 			}}
 			viewBox={[viewBox.x, viewBox.y, viewBox.width, viewBox.height].join(" ")}
 			onWheel={(wheelEvent) => {
-				// HTML inside a node, such as the value of a Const node, scrolls by itself
+				// A popover opened from a node bubbles here through React, and the HTML
+				// inside a node, such as the value of a Const node, may scroll by itself
+				const { target, currentTarget } = wheelEvent;
 				if (
-					wheelEvent.target instanceof Element &&
-					wheelEvent.target.closest("foreignObject")
+					!(target instanceof Element) ||
+					!currentTarget.contains(target) ||
+					target.closest("foreignObject")
 				)
 					return;
 				const scaleDelta = Math.exp(wheelEvent.deltaY / 256);
