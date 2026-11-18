@@ -10,10 +10,12 @@ import {
 	CC_COMPONENT_EDITOR_RENDERER_NODE_TITLE,
 	CCComponentEditorRendererNodeDefaultRenderer,
 } from "../Default";
-import { CCComponentEditorRendererNodeDisplayRendererConfigSettingButton } from "./ConfigSettingButton";
+import {
+	CCComponentEditorRendererNodeDisplayRendererConfigSettingButton,
+	DISPLAY_CONFIG_SETTING_BUTTON_SIZE,
+} from "./ConfigSettingButton";
 import { ccComponentEditorRendererNodeDisplayLayoutConstants } from "./geometry";
 
-const SETTING_BUTTON_SIZE = 20;
 const SETTING_BUTTON_GAP = 2;
 
 export function CCComponentEditorRendererNodeDisplayRenderer(
@@ -61,10 +63,10 @@ export function CCComponentEditorRendererNodeDisplayRenderer(
 					y={
 						CC_COMPONENT_EDITOR_RENDERER_NODE_TITLE.baselineY -
 						CC_COMPONENT_EDITOR_RENDERER_NODE_TITLE.fontSize * 0.35 -
-						SETTING_BUTTON_SIZE / 2
+						DISPLAY_CONFIG_SETTING_BUTTON_SIZE / 2
 					}
-					width={SETTING_BUTTON_SIZE}
-					height={SETTING_BUTTON_SIZE}
+					width={DISPLAY_CONFIG_SETTING_BUTTON_SIZE}
+					height={DISPLAY_CONFIG_SETTING_BUTTON_SIZE}
 				>
 					<CCComponentEditorRendererNodeDisplayRendererConfigSettingButton
 						config={config}
