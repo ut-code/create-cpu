@@ -149,6 +149,7 @@ export const createComponentEditorStoreCoreSlice: ComponentEditorSliceCreator<
 						playbackMode: "manual",
 						simulationError: null,
 						nodePinPropertyEditorTarget: null,
+						connectionRejectionNotice: null,
 					}));
 				},
 				setTimeStep(timeStep: number) {

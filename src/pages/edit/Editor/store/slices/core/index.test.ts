@@ -138,20 +138,39 @@ describe("connecting node pins", () => {
 		};
 	}
 
-	it("tells why a connection is refused, as a new notice each time", () => {
+	it("tells why a connection is refused", () => {
 		const { store, editorStore, firstOut, secondOut, sinkIn } =
 			setUpTwoSources();
 		editorStore.getState().connectNodePins(firstOut, sinkIn);
 		expect(editorStore.getState().connectionRejectionNotice).toBeNull();
 
 		editorStore.getState().connectNodePins(secondOut, sinkIn);
-		const notice = editorStore.getState().connectionRejectionNotice;
-		expect(notice?.rejection).toEqual({ type: "inputAlreadyConnected" });
-		editorStore.getState().connectNodePins(secondOut, sinkIn);
-		expect(editorStore.getState().connectionRejectionNotice?.id).not.toBe(
-			notice?.id,
+
+		expect(editorStore.getState().connectionRejectionNotice?.rejection).toEqual(
+			{ type: "inputAlreadyConnected" },
 		);
 		expect(store.connections.getConnectionsByNodePinId(sinkIn)).toHaveLength(1);
+	});
+
+	it("gives a repeated rejection a new notice", () => {
+		const { editorStore, firstOut, secondOut } = setUpTwoSources();
+		editorStore.getState().connectNodePins(firstOut, secondOut);
+		const notice = editorStore.getState().connectionRejectionNotice;
+
+		editorStore.getState().connectNodePins(firstOut, secondOut);
+
+		const repeated = editorStore.getState().connectionRejectionNotice;
+		expect(repeated?.rejection).toEqual(notice?.rejection);
+		expect(repeated?.id).not.toBe(notice?.id);
+	});
+
+	it("drops the notice when the editor mode changes", () => {
+		const { editorStore, firstOut, secondOut } = setUpTwoSources();
+		editorStore.getState().connectNodePins(firstOut, secondOut);
+
+		editorStore.getState().setEditorMode("play");
+
+		expect(editorStore.getState().connectionRejectionNotice).toBeNull();
 	});
 
 	it("drops the notice once a connection succeeds or it is dismissed", () => {
