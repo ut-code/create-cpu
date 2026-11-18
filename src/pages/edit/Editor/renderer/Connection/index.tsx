@@ -29,6 +29,7 @@ export type CCComponentEditorRendererConnectionCoreProps = {
 };
 
 const straightGap = 10;
+const HIT_AREA_STROKE_WIDTH = 12;
 const polarity: Record<CCComponentPinType, number> = {
 	input: -1,
 	output: 1,
@@ -50,49 +51,61 @@ export function CCComponentEditorRendererConnectionCore({
 		componentEditorState.selectConnection([connectionId], !e.shiftKey);
 	};
 
+	const d = [
+		`M ${from.position.x} ${from.position.y}`,
+		`h ${straightGap * polarity[from.direction]}`,
+		`C ${[
+			from.position.x + 4 * straightGap * polarity[from.direction],
+			from.position.y,
+			to.position.x + 4 * straightGap * polarity[to.direction],
+			to.position.y,
+			to.position.x + straightGap * polarity[to.direction],
+			to.position.y,
+		].join(" ")}`,
+		`h ${straightGap * polarity[from.direction]}`,
+	].join(" ");
+
 	return (
-		// biome-ignore lint/a11y/noStaticElementInteractions: SVG
-		<path
-			d={[
-				`M ${from.position.x} ${from.position.y}`,
-				`h ${straightGap * polarity[from.direction]}`,
-				`C ${[
-					from.position.x + 4 * straightGap * polarity[from.direction],
-					from.position.y,
-					to.position.x + 4 * straightGap * polarity[to.direction],
-					to.position.y,
-					to.position.x + straightGap * polarity[to.direction],
-					to.position.y,
-				].join(" ")}`,
-				`h ${straightGap * polarity[from.direction]}`,
-			].join(" ")}
-			stroke={
-				connectionId &&
-				componentEditorState.selectedConnectionIds.has(connectionId)
-					? theme.colors.primary
-					: isInBitWidthConflict
-						? theme.colors.error
-						: theme.colors.textPrimary
-			}
-			strokeWidth="2"
-			strokeDasharray={isInBitWidthConflict ? "6 4" : undefined}
-			fill="none"
-			onClick={handleClick}
-			onContextMenu={(e) => {
-				if (!connectionId) {
-					return;
+		<>
+			<path
+				d={d}
+				stroke={
+					connectionId &&
+					componentEditorState.selectedConnectionIds.has(connectionId)
+						? theme.colors.primary
+						: isInBitWidthConflict
+							? theme.colors.error
+							: theme.colors.textPrimary
 				}
-				e.preventDefault();
-				e.stopPropagation();
-				if (!componentEditorState.selectedConnectionIds.has(connectionId)) {
-					componentEditorState.selectConnection([connectionId], true);
-				}
-				componentEditorState.openContextMenu(e);
-			}}
-			id={connectionId}
-			onMouseEnter={onMouseEnter}
-			onMouseLeave={onMouseLeave}
-		/>
+				strokeWidth="2"
+				strokeDasharray={isInBitWidthConflict ? "6 4" : undefined}
+				fill="none"
+				pointerEvents="none"
+				id={connectionId}
+			/>
+			{connectionId && (
+				// biome-ignore lint/a11y/noStaticElementInteractions: SVG
+				<path
+					d={d}
+					stroke="transparent"
+					strokeWidth={HIT_AREA_STROKE_WIDTH}
+					fill="none"
+					pointerEvents="stroke"
+					style={{ cursor: "pointer" }}
+					onClick={handleClick}
+					onContextMenu={(e) => {
+						e.preventDefault();
+						e.stopPropagation();
+						if (!componentEditorState.selectedConnectionIds.has(connectionId)) {
+							componentEditorState.selectConnection([connectionId], true);
+						}
+						componentEditorState.openContextMenu(e);
+					}}
+					onMouseEnter={onMouseEnter}
+					onMouseLeave={onMouseLeave}
+				/>
+			)}
+		</>
 	);
 }
 
