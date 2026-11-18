@@ -1,4 +1,5 @@
 import { chunk } from "es-toolkit";
+import invariant from "tiny-invariant";
 import type { CCIntrinsicComponentConstSpecConfigViewMode as Mode } from "../../../../../store/intrinsics/types";
 import type { SimulationValue } from "../../../../../store/simulation";
 
@@ -70,12 +71,6 @@ export function parseSimulationValue(
 	}
 }
 
-const modeNames: Record<Mode, string> = {
-	binary: "binary",
-	hex: "hex",
-	"utf-8": "UTF-8",
-};
-
 export function fitSimulationValue(
 	value: SimulationValue,
 	bitWidth: number,
@@ -89,7 +84,8 @@ export function fitSimulationValue(
 }
 
 export type SimulationValueDraftError =
-	| { type: "invalid" }
+	| { type: "empty" }
+	| { type: "invalid"; mode: Exclude<Mode, "utf-8"> }
 	| { type: "tooWide"; requiredBitWidth: number; bitWidth: number };
 
 export type SimulationValueDraft =
@@ -109,7 +105,12 @@ export function parseSimulationValueDraft(
 	bitWidth?: number,
 ): SimulationValueDraft {
 	const value = parseSimulationValue(text, mode);
-	if (!value) return { text, value: null, error: { type: "invalid" } };
+	if (!value) {
+		if (text.replace(/\s/g, "") === "")
+			return { text, value: null, error: { type: "empty" } };
+		invariant(mode !== "utf-8", "Any text but an empty one is valid UTF-8");
+		return { text, value: null, error: { type: "invalid", mode } };
+	}
 	if (bitWidth === undefined) return { text, value, error: null };
 	const fitted = fitSimulationValue(value, bitWidth);
 	if (fitted) return { text, value: fitted, error: null };
@@ -126,13 +127,12 @@ export function parseSimulationValueDraft(
 
 export function describeSimulationValueDraftError(
 	error: SimulationValueDraftError,
-	mode: Mode,
 ): string {
 	switch (error.type) {
+		case "empty":
+			return "Enter a value";
 		case "invalid":
-			return mode === "utf-8"
-				? "Enter some text"
-				: `Not a valid ${modeNames[mode]} value`;
+			return `Not a valid ${error.mode} value`;
 		case "tooWide":
 			return `Needs ${error.requiredBitWidth} bits, but the width is ${error.bitWidth}`;
 	}

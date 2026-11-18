@@ -120,7 +120,7 @@ export function CCComponentEditorValueEditor(props: Props) {
 				sx={{ alignSelf: "flex-end", minHeight: "1.66em" }}
 			>
 				{error
-					? describeSimulationValueDraftError(error, mode)
+					? describeSimulationValueDraftError(error)
 					: newValue &&
 						`${newValue.length} ${newValue.length === 1 ? "bit" : "bits"}`}
 			</Typography>

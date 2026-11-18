@@ -64,28 +64,29 @@ describe("SimulationValueDraft", () => {
 		const invalid = parseSimulationValueDraft("xyz", "hex", 3);
 		const tooWide = parseSimulationValueDraft("0x0f", "hex", 3);
 
-		expect(invalid.error).toEqual({ type: "invalid" });
+		expect(invalid.error).toEqual({ type: "invalid", mode: "hex" });
 		expect(tooWide.error).toEqual({
 			type: "tooWide",
 			requiredBitWidth: 4,
 			bitWidth: 3,
 		});
-		expect(
-			describeSimulationValueDraftError(nullthrows(tooWide.error), "hex"),
-		).toBe("Needs 4 bits, but the width is 3");
+		expect(describeSimulationValueDraftError(nullthrows(tooWide.error))).toBe(
+			"Needs 4 bits, but the width is 3",
+		);
 	});
 
-	it("names the view mode of an invalid text", () => {
-		const invalid = { type: "invalid" } as const;
-		expect(describeSimulationValueDraftError(invalid, "binary")).toBe(
-			"Not a valid binary value",
-		);
-		expect(describeSimulationValueDraftError(invalid, "hex")).toBe(
-			"Not a valid hex value",
-		);
-		expect(describeSimulationValueDraftError(invalid, "utf-8")).toBe(
-			"Enter some text",
-		);
+	it("names the view mode of an invalid text, and asks for a value if empty", () => {
+		for (const [text, mode, expected] of [
+			["2", "binary", "Not a valid binary value"],
+			["xyz", "hex", "Not a valid hex value"],
+			[" ", "hex", "Enter a value"],
+			["", "utf-8", "Enter a value"],
+		] as const) {
+			const { error } = parseSimulationValueDraft(text, mode);
+			expect(describeSimulationValueDraftError(nullthrows(error))).toBe(
+				expected,
+			);
+		}
 	});
 
 	it("falls back to the stored value when the text is invalid", () => {
