@@ -1,4 +1,4 @@
-import { Alert, Stack } from "@mui/material";
+import { Alert, Grow, Stack } from "@mui/material";
 import { useEffect } from "react";
 import { useComponentEditorStore } from "../../store";
 import { describeConnectionRejection } from "./connectionRejection";
@@ -39,15 +39,17 @@ export default function CCComponentEditorNotifications() {
 			}}
 		>
 			{connectionRejectionNotice && (
-				<Alert
-					key={connectionRejectionNotice.id}
-					severity="warning"
-					variant="filled"
-					sx={{ maxWidth: "600px", pointerEvents: "auto" }}
-					onClose={dismissConnectionRejectionNotice}
-				>
-					{describeConnectionRejection(connectionRejectionNotice.rejection)}
-				</Alert>
+				// Remounted for each rejection, so that a repeated one shows up again
+				<Grow key={connectionRejectionNotice.id} in>
+					<Alert
+						severity="warning"
+						variant="filled"
+						sx={{ maxWidth: "600px", pointerEvents: "auto" }}
+						onClose={dismissConnectionRejectionNotice}
+					>
+						{describeConnectionRejection(connectionRejectionNotice.rejection)}
+					</Alert>
+				</Grow>
 			)}
 			{simulationError !== null && (
 				<Alert
