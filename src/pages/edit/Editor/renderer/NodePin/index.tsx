@@ -3,7 +3,6 @@ import nullthrows from "nullthrows";
 import { type PointerEvent, type ReactNode, useState } from "react";
 import { type Vector2, vector2 } from "../../../../../common/vector2";
 import { useDraggable } from "../../../../../hooks/drag";
-import { CCConnectionStore } from "../../../../../store/connection";
 import { input, output } from "../../../../../store/intrinsics/definitions";
 import type { CCNodePinId } from "../../../../../store/nodePin";
 import { useStore } from "../../../../../store/react";
@@ -127,13 +126,7 @@ export default function CCComponentEditorRendererNodePin({
 					input: { from: nodePinIdToConnect, to: nodePin.id },
 					output: { from: nodePin.id, to: nodePinIdToConnect },
 				}[componentPin.type];
-				store.connections.register(
-					CCConnectionStore.create({
-						parentComponentId: node.parentComponentId,
-						...route,
-						bentPortion: 0.5,
-					}),
-				);
+				componentEditorState.connectNodePins(route.from, route.to);
 			}
 			setDraggingState(null);
 		},

@@ -13,7 +13,6 @@ import {
 	not,
 } from "./intrinsics/definitions";
 import { SimulationBitWidthConflictError } from "./netlist";
-import type { CCNodePinId } from "./nodePin";
 import simulateComponent from "./simulation";
 import {
 	connectTestNodePins,
@@ -27,6 +26,7 @@ import {
 	testComponentPin,
 	testNodePin,
 	testNumber,
+	tryConnectTestNodePins,
 } from "./testUtils";
 
 function registerConst(
@@ -122,22 +122,6 @@ function registerDualInverterComponent(store: CCStore) {
 		in2: testComponentPin(store, component, "In2"),
 		out2: testComponentPin(store, component, "Out2"),
 	};
-}
-
-function tryConnect(
-	store: CCStore,
-	parentComponentId: CCComponentId,
-	from: CCNodePinId,
-	to: CCNodePinId,
-): boolean {
-	const connection = CCConnectionStore.create({
-		from,
-		to,
-		parentComponentId,
-		bentPortion: 0.5,
-	});
-	store.connections.register(connection);
-	return store.connections.get(connection.id) !== undefined;
 }
 
 function conflictingConnectionCount(store: CCStore): number {
@@ -305,7 +289,9 @@ describe("bit width groups", () => {
 		const sameWidth = registerConst(store, root.id, 8);
 		const otherWidth = registerConst(store, root.id, 4);
 		// Allowed before the conflict, so what is refused below is due to it
-		expect(store.nodePins.isConnectable(sameWidth.out, andB)).toBe(true);
+		expect(
+			store.nodePins.getConnectionRejection(sameWidth.out, andB),
+		).toBeNull();
 		store.nodes.update(screen.node.id, {
 			config: { resolution: { x: 2, y: 2 }, pixelOrder: "row-major" },
 		});
@@ -313,17 +299,27 @@ describe("bit width groups", () => {
 
 		// A node fixing no width takes part in the conflict, and leaves it once fixed
 		expect(
-			tryConnect(
+			tryConnectTestNodePins(
 				store,
 				root.id,
 				andOut,
 				testNodePin(store, probe, not.inputPin.In),
-			),
+			).isRegistered,
 		).toBe(true);
 		expect(conflictingConnectionCount(store)).toBe(3);
 		// A pin fixing a width of its own is refused, even one the group has already
-		expect(tryConnect(store, root.id, sameWidth.out, andB)).toBe(false);
-		expect(tryConnect(store, root.id, otherWidth.out, andB)).toBe(false);
+		expect(tryConnectTestNodePins(store, root.id, sameWidth.out, andB)).toEqual(
+			{
+				rejection: { type: "bitWidthConflict", bitWidths: [[8], [4, 8]] },
+				isRegistered: false,
+			},
+		);
+		expect(
+			tryConnectTestNodePins(store, root.id, otherWidth.out, andB),
+		).toEqual({
+			rejection: { type: "bitWidthConflict", bitWidths: [[4], [4, 8]] },
+			isRegistered: false,
+		});
 
 		store.nodes.update(screen.node.id, {
 			config: { resolution: { x: 4, y: 2 }, pixelOrder: "row-major" },
@@ -410,13 +406,16 @@ describe("bit width groups", () => {
 			),
 		).toEqual({ isFixed: true, bitWidth: 8 });
 		expect(
-			tryConnect(
+			tryConnectTestNodePins(
 				store,
 				root.id,
 				testNodePin(store, inverterNode, inverter.out),
 				screen.pixels,
 			),
-		).toBe(false);
+		).toEqual({
+			rejection: { type: "bitWidthConflict", bitWidths: [[8], [4]] },
+			isRegistered: false,
+		});
 	});
 
 	it("keeps the independent paths of a component apart", () => {
@@ -435,7 +434,9 @@ describe("bit width groups", () => {
 			[testNodePin(store, dualNode, dual.out1), wideScreen.pixels],
 			[testNodePin(store, dualNode, dual.out2), narrowScreen.pixels],
 		] as const) {
-			expect(tryConnect(store, root.id, from, to)).toBe(true);
+			expect(
+				tryConnectTestNodePins(store, root.id, from, to).isRegistered,
+			).toBe(true);
 		}
 		expect(conflictingConnectionCount(store)).toBe(0);
 	});
@@ -463,7 +464,10 @@ describe("bit width groups", () => {
 			screen.pixels,
 		);
 
-		expect(tryConnect(store, component.id, into.out, out.in)).toBe(true);
+		expect(
+			tryConnectTestNodePins(store, component.id, into.out, out.in)
+				.isRegistered,
+		).toBe(true);
 
 		expect(conflictingConnectionCount(store)).toBe(2);
 		expect(store.nodePins.getComponentBitWidths(root.id).hasConflict()).toBe(
