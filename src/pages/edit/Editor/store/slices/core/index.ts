@@ -19,7 +19,9 @@ import type { ComponentEditorSliceCreator } from "../../types";
 import {
 	type EditorStoreCoreSlice,
 	type InputValueKey,
+	type InputValueResetNotice,
 	isValidPlaybackSpeed,
+	parseInputValueKey,
 	serializeInputValueKey,
 } from "./types";
 
@@ -38,6 +40,58 @@ export const createComponentEditorStoreCoreSlice: ComponentEditorSliceCreator<
 	/** set when the circuit cannot be simulated, to not retry on every change */
 	let hasSimulationFailed = false;
 	let lastConnectionRejectionNoticeId = 0;
+
+	const getInputBitWidth = (componentPinId: CCComponentPinId) => {
+		const componentPin = nullthrows(store.componentPins.get(componentPinId));
+		const bitWidthStatus = store.nodePins.getNodePinBitWidthStatus(
+			nullthrows(
+				componentPin.implementation,
+				"Cannot get input value for intrinsic component pin",
+			),
+		);
+		return bitWidthStatus.isFixed
+			? bitWidthStatus.bitWidth
+			: DEFAULT_SIMULATION_BIT_WIDTH;
+	};
+
+	// Bit widths change only in edit mode, so a value that stopped fitting is found on
+	// entering play mode, where it would silently start over from zero
+	const dropInputValuesNotFitting = (
+		inputValues: Map<string, SimulationValue>,
+	): {
+		inputValues: Map<string, SimulationValue>;
+		inputValueResetNotice: InputValueResetNotice | null;
+	} => {
+		const keptInputValues = new Map<string, SimulationValue>();
+		const resetInputs = new Map<
+			CCComponentPinId,
+			InputValueResetNotice["inputs"][number]
+		>();
+		for (const [key, value] of inputValues) {
+			const { componentPinId } = parseInputValueKey(key);
+			const componentPin = store.componentPins.get(componentPinId);
+			if (!componentPin) {
+				keptInputValues.set(key, value);
+				continue;
+			}
+			const bitWidth = getInputBitWidth(componentPinId);
+			if (fitSimulationValue(value, bitWidth)) {
+				keptInputValues.set(key, value);
+				continue;
+			}
+			resetInputs.set(componentPinId, {
+				componentPinId,
+				name: componentPin.name,
+				bitWidth,
+			});
+		}
+		return resetInputs.size === 0
+			? { inputValues, inputValueResetNotice: null }
+			: {
+					inputValues: keptInputValues,
+					inputValueResetNotice: { inputs: [...resetInputs.values()] },
+				};
+	};
 
 	return {
 		define: (set, get) => {
@@ -59,18 +113,7 @@ export const createComponentEditorStoreCoreSlice: ComponentEditorSliceCreator<
 				/** @private */
 				inputValues: new Map(),
 				getInputValue(inputValueKey: InputValueKey) {
-					const componentPin = nullthrows(
-						store.componentPins.get(inputValueKey.componentPinId),
-					);
-					const bitWidthStatus = store.nodePins.getNodePinBitWidthStatus(
-						nullthrows(
-							componentPin.implementation,
-							"Cannot get input value for intrinsic component pin",
-						),
-					);
-					const bitWidth = bitWidthStatus.isFixed
-						? bitWidthStatus.bitWidth
-						: DEFAULT_SIMULATION_BIT_WIDTH;
+					const bitWidth = getInputBitWidth(inputValueKey.componentPinId);
 
 					// The value set for the current time step, or else the latest earlier one,
 					// inherited without updating the store during simulation
@@ -78,11 +121,10 @@ export const createComponentEditorStoreCoreSlice: ComponentEditorSliceCreator<
 						serializeInputValueKey(inputValueKey),
 					);
 					if (!value) {
-						const prefix = `${inputValueKey.componentPinId}:`;
 						let latestTimeStep = -1;
 						for (const [key, previousValue] of get().inputValues) {
-							if (!key.startsWith(prefix)) continue;
-							const timeStep = Number(key.slice(prefix.length));
+							const { componentPinId, timeStep } = parseInputValueKey(key);
+							if (componentPinId !== inputValueKey.componentPinId) continue;
 							if (
 								timeStep < inputValueKey.timeStep &&
 								timeStep > latestTimeStep
@@ -137,14 +179,24 @@ export const createComponentEditorStoreCoreSlice: ComponentEditorSliceCreator<
 						},
 					}));
 				},
+				inputValueResetNotice: null,
+				dismissInputValueResetNotice() {
+					set((state) => ({ ...state, inputValueResetNotice: null }));
+				},
 				connectionRejectionNotice: null,
 				dismissConnectionRejectionNotice() {
 					set((state) => ({ ...state, connectionRejectionNotice: null }));
 				},
 				setEditorMode(mode) {
 					hasSimulationFailed = false;
+					const { inputValues, inputValueResetNotice } =
+						mode === "play"
+							? dropInputValuesNotFitting(get().inputValues)
+							: { inputValues: get().inputValues, inputValueResetNotice: null };
 					set((state) => ({
 						...state,
+						inputValues,
+						inputValueResetNotice,
 						editorMode: mode,
 						playbackMode: "manual",
 						simulationError: null,
