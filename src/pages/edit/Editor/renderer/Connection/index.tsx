@@ -12,6 +12,7 @@ import { theme } from "../../../../../style";
 import { useComponentEditorStore } from "../../store";
 import { stringifySimulationValue } from "../../store/slices/core/index";
 import { getCCComponentEditorRendererNodeGeometry } from "../Node/geometry";
+import styles from "./style.module.css";
 
 export type CCComponentEditorRendererConnectionEndpoint = {
 	direction: CCComponentPinType;
@@ -87,11 +88,10 @@ export function CCComponentEditorRendererConnectionCore({
 				// biome-ignore lint/a11y/noStaticElementInteractions: SVG
 				<path
 					d={d}
-					stroke="transparent"
+					className={styles.hitArea}
 					strokeWidth={HIT_AREA_STROKE_WIDTH}
 					fill="none"
 					pointerEvents="stroke"
-					style={{ cursor: "pointer" }}
 					onClick={handleClick}
 					onContextMenu={(e) => {
 						e.preventDefault();

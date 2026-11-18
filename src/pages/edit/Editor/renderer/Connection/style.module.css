@@ -1,0 +1,9 @@
+.hitArea {
+	stroke: transparent;
+	cursor: pointer;
+
+	&:hover {
+		stroke: var(--color-text-primary);
+		stroke-opacity: 0.15;
+	}
+}
