@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import type { CCComponentPinId } from "../../../../../store/componentPin";
 import { describeInputValueReset } from "./inputValueReset";
 
 describe("describeInputValueReset", () => {
@@ -7,8 +6,8 @@ describe("describeInputValueReset", () => {
 		expect(
 			describeInputValueReset({
 				inputs: [
-					{ componentPinId: "a" as CCComponentPinId, name: "A", bitWidth: 2 },
-					{ componentPinId: "b" as CCComponentPinId, name: "B", bitWidth: 1 },
+					{ name: "A", bitWidth: 2 },
+					{ name: "B", bitWidth: 1 },
 				],
 			}),
 		).toBe(

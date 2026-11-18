@@ -56,11 +56,7 @@ export type ConnectionRejectionNotice = {
 };
 
 export type InputValueResetNotice = {
-	inputs: {
-		componentPinId: CCComponentPinId;
-		name: string;
-		bitWidth: number;
-	}[];
+	inputs: { name: string; bitWidth: number }[];
 };
 
 export type EditorStoreCoreSlice = {
@@ -94,7 +90,7 @@ export type EditorStoreCoreSlice = {
 	/** why the last attempt to connect pins was refused, until it is dismissed */
 	connectionRejectionNotice: ConnectionRejectionNotice | null;
 	dismissConnectionRejectionNotice(): void;
-	/** inputs whose values were dropped on entering play mode, as they no longer fit */
+	/** inputs whose values were reset on entering play mode, as they no longer fit */
 	inputValueResetNotice: InputValueResetNotice | null;
 	dismissInputValueResetNotice(): void;
 	getNodePinValue(nodePinId: CCNodePinId): SimulationValue | undefined;

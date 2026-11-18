@@ -55,14 +55,15 @@ export const createComponentEditorStoreCoreSlice: ComponentEditorSliceCreator<
 	};
 
 	// Bit widths change only in edit mode, so a value that stopped fitting is found on
-	// entering play mode, where it would silently start over from zero
-	const dropInputValuesNotFitting = (
+	// entering play mode. It becomes zero rather than being dropped, so that the time
+	// steps after it do not inherit an earlier value instead.
+	const resetInputValuesNotFitting = (
 		inputValues: Map<string, SimulationValue>,
 	): {
 		inputValues: Map<string, SimulationValue>;
 		inputValueResetNotice: InputValueResetNotice | null;
 	} => {
-		const keptInputValues = new Map<string, SimulationValue>();
+		const newInputValues = new Map(inputValues);
 		const resetInputs = new Map<
 			CCComponentPinId,
 			InputValueResetNotice["inputs"][number]
@@ -70,25 +71,16 @@ export const createComponentEditorStoreCoreSlice: ComponentEditorSliceCreator<
 		for (const [key, value] of inputValues) {
 			const { componentPinId } = parseInputValueKey(key);
 			const componentPin = store.componentPins.get(componentPinId);
-			if (!componentPin) {
-				keptInputValues.set(key, value);
-				continue;
-			}
+			if (!componentPin) continue;
 			const bitWidth = getInputBitWidth(componentPinId);
-			if (fitSimulationValue(value, bitWidth)) {
-				keptInputValues.set(key, value);
-				continue;
-			}
-			resetInputs.set(componentPinId, {
-				componentPinId,
-				name: componentPin.name,
-				bitWidth,
-			});
+			if (fitSimulationValue(value, bitWidth)) continue;
+			newInputValues.set(key, new Array(bitWidth).fill(false));
+			resetInputs.set(componentPinId, { name: componentPin.name, bitWidth });
 		}
 		return resetInputs.size === 0
 			? { inputValues, inputValueResetNotice: null }
 			: {
-					inputValues: keptInputValues,
+					inputValues: newInputValues,
 					inputValueResetNotice: { inputs: [...resetInputs.values()] },
 				};
 	};
@@ -135,9 +127,9 @@ export const createComponentEditorStoreCoreSlice: ComponentEditorSliceCreator<
 						}
 					}
 
-					// The bit width may have changed since the value was set, e.g. by connecting
-					// the pin to one of a fixed width. Keep the value if it fits the new width,
-					// and start over from zero if it does not.
+					// The bit width may have grown since the value was set, e.g. by connecting
+					// the pin to one of a fixed width. A value that no longer fits is reset on
+					// entering play mode.
 					return (
 						(value && fitSimulationValue(value, bitWidth)) ??
 						new Array(bitWidth).fill(false)
@@ -191,7 +183,7 @@ export const createComponentEditorStoreCoreSlice: ComponentEditorSliceCreator<
 					hasSimulationFailed = false;
 					const { inputValues, inputValueResetNotice } =
 						mode === "play"
-							? dropInputValuesNotFitting(get().inputValues)
+							? resetInputValuesNotFitting(get().inputValues)
 							: { inputValues: get().inputValues, inputValueResetNotice: null };
 					set((state) => ({
 						...state,
