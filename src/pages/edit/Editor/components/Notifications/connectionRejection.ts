@@ -5,13 +5,13 @@ export function describeConnectionRejection(
 ): string {
 	switch (rejection.type) {
 		case "sameDirection":
-			return "入力ピン同士、出力ピン同士はつなげません";
+			return "An input pin must be connected to an output pin";
 		case "sameNode":
-			return "同じノードのピン同士はつなげません";
+			return "Cannot connect pins of the same node";
 		case "differentParentComponent":
-			return "別のコンポーネントのピンとはつなげません";
+			return "Cannot connect pins of different components";
 		case "inputAlreadyConnected":
-			return "この入力ピンにはすでに線がつながっています";
+			return "This input pin is already connected";
 		case "bitWidthConflict": {
 			const [a, b] = rejection.bitWidths.map(
 				(bitWidths) => `${bitWidths.join("/")} bit`,
@@ -20,8 +20,8 @@ export function describeConnectionRejection(
 				(bitWidths) => bitWidths.length > 1,
 			);
 			return isInConflictAlready
-				? `ビット幅がすでに食い違っている線にはつなげません（${a} と ${b}）`
-				: `ビット幅が合いません（${a} と ${b}）`;
+				? `Cannot connect to a wire whose bit widths already disagree (${a} and ${b})`
+				: `Bit widths do not match (${a} and ${b})`;
 		}
 	}
 }

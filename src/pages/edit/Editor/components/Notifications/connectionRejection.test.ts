@@ -8,17 +8,17 @@ describe("describeConnectionRejection", () => {
 				type: "bitWidthConflict",
 				bitWidths: [[8], [4]],
 			}),
-		).toBe("ビット幅が合いません（8 bit と 4 bit）");
+		).toBe("Bit widths do not match (8 bit and 4 bit)");
 	});
 
-	it("lists every width of a side already in conflict", () => {
+	it("tells when a side is already in conflict, even with a width in common", () => {
 		expect(
 			describeConnectionRejection({
 				type: "bitWidthConflict",
 				bitWidths: [[2, 4], [2]],
 			}),
 		).toBe(
-			"ビット幅がすでに食い違っている線にはつなげません（2/4 bit と 2 bit）",
+			"Cannot connect to a wire whose bit widths already disagree (2/4 bit and 2 bit)",
 		);
 	});
 });
