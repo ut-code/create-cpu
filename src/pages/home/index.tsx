@@ -5,6 +5,7 @@ import {
 	Upload as UploadIcon,
 } from "@mui/icons-material";
 import {
+	Alert,
 	Box,
 	Button,
 	Card,
@@ -13,13 +14,26 @@ import {
 	IconButton,
 	Menu,
 	MenuItem,
+	Snackbar,
 	Typography,
 } from "@mui/material";
-import { useRef, useState } from "react";
+import { type ChangeEvent, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router";
-import { type CCComponentId, CCComponentStore } from "../../store/component";
+import { ConfirmDialog } from "../../components/ConfirmDialog";
+import {
+	type CCComponent,
+	type CCComponentId,
+	CCComponentStore,
+} from "../../store/component";
 import { useStore } from "../../store/react";
 import { useComponents } from "../../store/react/selectors";
+import { importStoreJson } from "../../store/savedStore";
+import { describeComponentDeletion } from "./componentDeletion";
+
+type PendingAction =
+	| { type: "reset" }
+	| { type: "import"; fileName: string; json: string }
+	| { type: "delete"; componentId: CCComponentId };
 
 export default function HomePage() {
 	const { store, resetStore } = useStore();
@@ -40,16 +54,64 @@ export default function HomePage() {
 		URL.revokeObjectURL(url);
 	};
 
-	const uploadStore = (e: React.ChangeEvent<HTMLInputElement>) => {
-		const file = e.target.files?.[0];
+	const [pendingAction, setPendingAction] = useState<PendingAction | null>(
+		null,
+	);
+	// The message stays while the snackbar slides out
+	const [error, setError] = useState({ message: "", isShown: false });
+	const showError = (message: string) => setError({ message, isShown: true });
+
+	const chooseFileToImport = async (e: ChangeEvent<HTMLInputElement>) => {
+		const input = e.currentTarget;
+		const file = input.files?.[0];
+		// Cleared so that choosing the same file again is noticed
+		input.value = "";
 		if (!file) return;
-		const reader = new FileReader();
-		reader.onload = () => {
-			console.log("Loaded store:", reader.result);
-			resetStore(reader.result as string);
-		};
-		reader.readAsText(file);
+		let json: string;
+		try {
+			json = await file.text();
+		} catch (readError) {
+			console.error(readError);
+			showError(`Could not read ${file.name}.`);
+			return;
+		}
+		try {
+			importStoreJson(json);
+		} catch (importError) {
+			console.error(importError);
+			showError(
+				`Could not import ${file.name}: it is not a file exported from this app, or it is damaged.`,
+			);
+			return;
+		}
+		setPendingAction({ type: "import", fileName: file.name, json });
 	};
+
+	const replaceStore = (file?: { name: string; json: string }) => {
+		try {
+			resetStore(file?.json);
+		} catch (replaceError) {
+			console.error(replaceError);
+			showError(
+				replaceError instanceof DOMException &&
+					replaceError.name === "QuotaExceededError"
+					? "The storage of this browser is full, so nothing was replaced."
+					: `Could not ${file ? `import ${file.name}` : "reset the components"}.`,
+			);
+		}
+	};
+
+	const deleteComponent = (component: CCComponent) => {
+		store.components.unregister(component.id).catch((deleteError) => {
+			console.error(deleteError);
+			showError(`Could not delete ${component.name}.`);
+		});
+	};
+
+	const componentToDelete =
+		pendingAction?.type === "delete"
+			? store.components.get(pendingAction.componentId)
+			: undefined;
 
 	const inputRef = useRef<HTMLInputElement>(null);
 
@@ -85,7 +147,7 @@ export default function HomePage() {
 						ref={inputRef}
 						type="file"
 						style={{ display: "none" }}
-						onChange={(e) => uploadStore(e)}
+						onChange={chooseFileToImport}
 					/>
 					<Button
 						variant="outlined"
@@ -99,14 +161,7 @@ export default function HomePage() {
 					<Button
 						variant="text"
 						color="error"
-						onClick={() => {
-							if (
-								confirm(
-									"Are you sure you want to reset the store? This action cannot be undone.",
-								)
-							)
-								resetStore();
-						}}
+						onClick={() => setPendingAction({ type: "reset" })}
 					>
 						Reset
 					</Button>
@@ -192,7 +247,10 @@ export default function HomePage() {
 					>
 						<MenuItem
 							onClick={() => {
-								store.components.unregister(componentMenuState.componentId);
+								setPendingAction({
+									type: "delete",
+									componentId: componentMenuState.componentId,
+								});
 								setComponentMenuState(null);
 							}}
 						>
@@ -200,6 +258,63 @@ export default function HomePage() {
 						</MenuItem>
 					</Menu>
 				)}
+				{pendingAction?.type === "reset" && (
+					<ConfirmDialog
+						title="Reset all components?"
+						confirmLabel="Reset"
+						onCancel={() => setPendingAction(null)}
+						onConfirm={() => {
+							setPendingAction(null);
+							replaceStore();
+						}}
+					>
+						Every component is replaced with the sample. This cannot be undone,
+						so export first to keep a copy.
+					</ConfirmDialog>
+				)}
+				{pendingAction?.type === "import" && (
+					<ConfirmDialog
+						title={`Import ${pendingAction.fileName}?`}
+						confirmLabel="Import"
+						onCancel={() => setPendingAction(null)}
+						onConfirm={() => {
+							setPendingAction(null);
+							replaceStore({
+								name: pendingAction.fileName,
+								json: pendingAction.json,
+							});
+						}}
+					>
+						Every current component is replaced with the ones in the file. This
+						cannot be undone, so export first to keep a copy.
+					</ConfirmDialog>
+				)}
+				{componentToDelete && (
+					<ConfirmDialog
+						title={`Delete ${componentToDelete.name}?`}
+						confirmLabel="Delete"
+						onCancel={() => setPendingAction(null)}
+						onConfirm={() => {
+							setPendingAction(null);
+							deleteComponent(componentToDelete);
+						}}
+					>
+						{describeComponentDeletion(store, componentToDelete.id)}
+					</ConfirmDialog>
+				)}
+				<Snackbar
+					open={error.isShown}
+					anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+				>
+					<Alert
+						severity="error"
+						variant="filled"
+						sx={{ maxWidth: "600px" }}
+						onClose={() => setError((shown) => ({ ...shown, isShown: false }))}
+					>
+						{error.message}
+					</Alert>
+				</Snackbar>
 			</Container>
 		</div>
 	);
