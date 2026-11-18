@@ -105,7 +105,12 @@ export default function CCComponentEditorRendererNode({
 				width={geometry.rect.size.x}
 				height={geometry.rect.size.y}
 				overflow="visible"
-				className={clsx(styles.node, isSelected && styles.selected)}
+				className={clsx(
+					styles.node,
+					isSelected && styles.selected,
+					componentEditorState.simulationError?.nodeIds.has(nodeId) &&
+						styles.simulationError,
+				)}
 				onPointerDown={handlePointerDown}
 				onPointerMove={handlePointerMove}
 				onPointerUp={handlePointerUp}

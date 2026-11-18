@@ -161,6 +161,36 @@ describe("input values on entering play mode", () => {
 	});
 });
 
+describe("simulation errors", () => {
+	it("tells which nodes of the edited component are involved", () => {
+		const store = createTestStore();
+		const root = registerTestComponent(store, "Root");
+		const first = registerTestNode(store, root.id, not.component.id);
+		const second = registerTestNode(store, root.id, not.component.id);
+		registerTestNode(store, root.id, true_.component.id);
+		connectTestNodePins(
+			store,
+			root.id,
+			testNodePin(store, first, not.outputPin.Out),
+			testNodePin(store, second, not.inputPin.In),
+		);
+		connectTestNodePins(
+			store,
+			root.id,
+			testNodePin(store, second, not.outputPin.Out),
+			testNodePin(store, first, not.inputPin.In),
+		);
+		const editorStore = createEditorStore(root.id, store);
+
+		editorStore.getState().setEditorMode("play");
+
+		const { editorMode, simulationError } = editorStore.getState();
+		expect(editorMode).toBe("edit");
+		expect(simulationError?.message).toMatch(/^The outlined nodes form a loop/);
+		expect(simulationError?.nodeIds).toEqual(new Set([first.id, second.id]));
+	});
+});
+
 describe("editor mode", () => {
 	it("closes the node pin property editor when the editor mode changes", () => {
 		const store = createTestStore();

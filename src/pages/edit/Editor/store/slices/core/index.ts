@@ -5,7 +5,10 @@ import {
 	type CCConnectionId,
 	CCConnectionStore,
 } from "../../../../../../store/connection";
-import { DEFAULT_SIMULATION_BIT_WIDTH } from "../../../../../../store/netlist";
+import {
+	DEFAULT_SIMULATION_BIT_WIDTH,
+	SimulationNodeError,
+} from "../../../../../../store/netlist";
 import type { CCNodeId } from "../../../../../../store/node";
 import type { CCNodePinId } from "../../../../../../store/nodePin";
 import type {
@@ -151,6 +154,7 @@ export const createComponentEditorStoreCoreSlice: ComponentEditorSliceCreator<
 				},
 				simulationError: null,
 				dismissSimulationError() {
+					if (get().simulationError === null) return;
 					set((state) => ({ ...state, simulationError: null }));
 				},
 				connectNodePins(from, to) {
@@ -310,8 +314,14 @@ export const createComponentEditorStoreCoreSlice: ComponentEditorSliceCreator<
 						editorMode: "edit",
 						playbackMode: "manual",
 						timeStep: 0,
-						simulationError:
-							error instanceof Error ? error.message : String(error),
+						simulationError: {
+							message: error instanceof Error ? error.message : String(error),
+							nodeIds: new Set(
+								error instanceof SimulationNodeError
+									? error.nodePaths.flatMap((path) => path.slice(0, 1))
+									: [],
+							),
+						},
 					}));
 					return;
 				}

@@ -1,5 +1,6 @@
 import { Alert, Grow, Stack } from "@mui/material";
 import { useEffect } from "react";
+import { useStore } from "../../../../../store/react";
 import { useComponentEditorStore } from "../../store";
 import { describeConnectionRejection } from "./connectionRejection";
 import { describeInputValueReset } from "./inputValueReset";
@@ -9,6 +10,7 @@ const CONNECTION_REJECTION_DURATION_MS = 4000;
 // Unlike a simulation error, a refused connection only answers the last attempt, so
 // its notice hides itself
 export default function CCComponentEditorNotifications() {
+	const { store } = useStore();
 	const componentEditorState = useComponentEditorStore()();
 	const {
 		connectionRejectionNotice,
@@ -18,6 +20,12 @@ export default function CCComponentEditorNotifications() {
 		simulationError,
 		dismissSimulationError,
 	} = componentEditorState;
+
+	// Any change of the circuit may have fixed what the error was about
+	useEffect(
+		() => store.subscribeToCircuitChanges(dismissSimulationError),
+		[store, dismissSimulationError],
+	);
 
 	const connectionRejectionNoticeId = connectionRejectionNotice?.id;
 	useEffect(() => {
@@ -68,7 +76,7 @@ export default function CCComponentEditorNotifications() {
 					sx={{ maxWidth: "600px", pointerEvents: "auto" }}
 					onClose={dismissSimulationError}
 				>
-					{simulationError}
+					{simulationError.message}
 				</Alert>
 			)}
 		</Stack>

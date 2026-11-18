@@ -55,6 +55,12 @@ export type ConnectionRejectionNotice = {
 	rejection: CCConnectionRejection;
 };
 
+export type SimulationErrorNotice = {
+	message: string;
+	/** nodes of the edited component that are, or contain, the nodes involved */
+	nodeIds: ReadonlySet<CCNodeId>;
+};
+
 export type InputValueResetNotice = {
 	inputs: { name: string; bitWidth: number }[];
 };
@@ -83,8 +89,8 @@ export type EditorStoreCoreSlice = {
 	selectNode(ids: CCNodeId[], exclusive: boolean): void;
 	unselectNode(ids: CCNodeId[]): void;
 	selectConnection(ids: CCConnectionId[], exclusive: boolean): void;
-	/** message the last simulation attempt failed with, if it failed */
-	simulationError: string | null;
+	/** why the last simulation attempt failed, if it did */
+	simulationError: SimulationErrorNotice | null;
 	dismissSimulationError(): void;
 	connectNodePins(from: CCNodePinId, to: CCNodePinId): void;
 	/** why the last attempt to connect pins was refused, until it is dismissed */
