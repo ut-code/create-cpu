@@ -9,9 +9,10 @@
 	stroke: var(--color-primary);
 }
 
-.node:hover .shape {
+/* A button in the node shows its own hover instead */
+.node:hover:not(:has(button:hover)) .shape {
 	filter: drop-shadow(
-		0 0 6px color-mix(in srgb, var(--color-text-primary) 50%, transparent)
+		0 3px 6px color-mix(in srgb, var(--color-text-primary) 50%, transparent)
 	);
 }
 
