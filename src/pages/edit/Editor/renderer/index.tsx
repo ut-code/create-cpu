@@ -31,6 +31,31 @@ export default function CCComponentEditorRenderer() {
 				userSelect: "none",
 			}}
 			viewBox={[viewBox.x, viewBox.y, viewBox.width, viewBox.height].join(" ")}
+			onWheel={(wheelEvent) => {
+				// A popover opened from a node bubbles here through React, and the HTML
+				// inside a node, such as the value of a Const node, may scroll by itself
+				const { target, currentTarget } = wheelEvent;
+				if (
+					!(target instanceof Element) ||
+					!currentTarget.contains(target) ||
+					target.closest("foreignObject")
+				)
+					return;
+				const scaleDelta = Math.exp(wheelEvent.deltaY / 256);
+				const scaleCenter = componentEditorState.fromCanvasToStage(
+					vector2.fromDomEvent(wheelEvent.nativeEvent),
+				);
+				componentEditorState.setPerspective({
+					scale: componentEditorState.perspective.scale * scaleDelta,
+					center: vector2.add(
+						scaleCenter,
+						vector2.mul(
+							vector2.sub(componentEditorState.perspective.center, scaleCenter),
+							scaleDelta,
+						),
+					),
+				});
+			}}
 			onDragOver={(e) => {
 				e.preventDefault();
 			}}

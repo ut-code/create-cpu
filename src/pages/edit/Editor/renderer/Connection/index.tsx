@@ -12,6 +12,7 @@ import { theme } from "../../../../../style";
 import { useComponentEditorStore } from "../../store";
 import { stringifySimulationValue } from "../../store/slices/core/index";
 import { getCCComponentEditorRendererNodeGeometry } from "../Node/geometry";
+import styles from "./style.module.css";
 
 export type CCComponentEditorRendererConnectionEndpoint = {
 	direction: CCComponentPinType;
@@ -29,6 +30,8 @@ export type CCComponentEditorRendererConnectionCoreProps = {
 };
 
 const straightGap = 10;
+const HIT_AREA_STROKE_WIDTH = 12;
+const VALUE_LABEL_SIZE = { x: 200, y: 24 };
 const polarity: Record<CCComponentPinType, number> = {
 	input: -1,
 	output: 1,
@@ -43,56 +46,61 @@ export function CCComponentEditorRendererConnectionCore({
 }: CCComponentEditorRendererConnectionCoreProps) {
 	const componentEditorState = useComponentEditorStore()();
 
-	const handleClick = (e: React.MouseEvent) => {
-		if (!connectionId) {
-			return;
-		}
-		componentEditorState.selectConnection([connectionId], !e.shiftKey);
-	};
+	const d = [
+		`M ${from.position.x} ${from.position.y}`,
+		`h ${straightGap * polarity[from.direction]}`,
+		`C ${[
+			from.position.x + 4 * straightGap * polarity[from.direction],
+			from.position.y,
+			to.position.x + 4 * straightGap * polarity[to.direction],
+			to.position.y,
+			to.position.x + straightGap * polarity[to.direction],
+			to.position.y,
+		].join(" ")}`,
+		`h ${straightGap * polarity[from.direction]}`,
+	].join(" ");
 
 	return (
-		// biome-ignore lint/a11y/noStaticElementInteractions: SVG
-		<path
-			d={[
-				`M ${from.position.x} ${from.position.y}`,
-				`h ${straightGap * polarity[from.direction]}`,
-				`C ${[
-					from.position.x + 4 * straightGap * polarity[from.direction],
-					from.position.y,
-					to.position.x + 4 * straightGap * polarity[to.direction],
-					to.position.y,
-					to.position.x + straightGap * polarity[to.direction],
-					to.position.y,
-				].join(" ")}`,
-				`h ${straightGap * polarity[from.direction]}`,
-			].join(" ")}
-			stroke={
-				connectionId &&
-				componentEditorState.selectedConnectionIds.has(connectionId)
-					? theme.colors.primary
-					: isInBitWidthConflict
-						? theme.colors.error
-						: theme.colors.textPrimary
-			}
-			strokeWidth="2"
-			strokeDasharray={isInBitWidthConflict ? "6 4" : undefined}
-			fill="none"
-			onClick={handleClick}
-			onContextMenu={(e) => {
-				if (!connectionId) {
-					return;
+		<>
+			<path
+				d={d}
+				stroke={
+					connectionId &&
+					componentEditorState.selectedConnectionIds.has(connectionId)
+						? theme.colors.primary
+						: isInBitWidthConflict
+							? theme.colors.error
+							: theme.colors.textPrimary
 				}
-				e.preventDefault();
-				e.stopPropagation();
-				if (!componentEditorState.selectedConnectionIds.has(connectionId)) {
-					componentEditorState.selectConnection([connectionId], true);
-				}
-				componentEditorState.openContextMenu(e);
-			}}
-			id={connectionId}
-			onMouseEnter={onMouseEnter}
-			onMouseLeave={onMouseLeave}
-		/>
+				strokeWidth="2"
+				strokeDasharray={isInBitWidthConflict ? "6 4" : undefined}
+				fill="none"
+				pointerEvents="none"
+			/>
+			{connectionId && (
+				// biome-ignore lint/a11y/noStaticElementInteractions: SVG
+				<path
+					d={d}
+					className={styles.hitArea}
+					strokeWidth={HIT_AREA_STROKE_WIDTH}
+					fill="none"
+					pointerEvents="stroke"
+					onClick={(e) =>
+						componentEditorState.selectConnection([connectionId], !e.shiftKey)
+					}
+					onContextMenu={(e) => {
+						e.preventDefault();
+						e.stopPropagation();
+						if (!componentEditorState.selectedConnectionIds.has(connectionId)) {
+							componentEditorState.selectConnection([connectionId], true);
+						}
+						componentEditorState.openContextMenu(e);
+					}}
+					onMouseEnter={onMouseEnter}
+					onMouseLeave={onMouseLeave}
+				/>
+			)}
+		</>
 	);
 }
 
@@ -152,17 +160,28 @@ export default function CCComponentEditorRendererConnection({
 				}}
 			/>
 			{isHovered && componentEditorState.editorMode === "play" && (
-				<text fontSize={10} fill={theme.colors.textPrimary}>
-					<textPath
-						href={`#${connectionId}`}
-						startOffset="50%"
-						textAnchor="middle"
-					>
-						{stringifySimulationValue(
-							nullthrows(componentEditorState.getNodePinValue(toNodePin.id)),
-						)}
-					</textPath>
-				</text>
+				// The path is symmetric about the midpoint of its ends, so that point lies on it
+				<foreignObject
+					x={
+						(fromNodePinPosition.x + toNodePinPosition.x - VALUE_LABEL_SIZE.x) /
+						2
+					}
+					y={
+						(fromNodePinPosition.y + toNodePinPosition.y - VALUE_LABEL_SIZE.y) /
+						2
+					}
+					width={VALUE_LABEL_SIZE.x}
+					height={VALUE_LABEL_SIZE.y}
+					pointerEvents="none"
+				>
+					<div className={styles.valueLabel}>
+						<span>
+							{stringifySimulationValue(
+								nullthrows(componentEditorState.getNodePinValue(toNodePin.id)),
+							)}
+						</span>
+					</div>
+				</foreignObject>
 			)}
 		</>
 	);
