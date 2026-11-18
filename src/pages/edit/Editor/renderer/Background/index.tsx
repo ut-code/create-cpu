@@ -39,22 +39,6 @@ export default function CCComponentEditorRendererBackground() {
 				currentTarget.addEventListener("pointermove", onPointerMove);
 				currentTarget.addEventListener("pointerup", onPointerUp);
 			}}
-			onWheel={(wheelEvent) => {
-				const scaleDelta = Math.exp(wheelEvent.deltaY / 256);
-				const scaleCenter = componentEditorState.fromCanvasToStage(
-					vector2.fromDomEvent(wheelEvent.nativeEvent),
-				);
-				componentEditorState.setPerspective({
-					scale: componentEditorState.perspective.scale * scaleDelta,
-					center: vector2.add(
-						scaleCenter,
-						vector2.mul(
-							vector2.sub(componentEditorState.perspective.center, scaleCenter),
-							scaleDelta,
-						),
-					),
-				});
-			}}
 			fill="transparent"
 		/>
 	);

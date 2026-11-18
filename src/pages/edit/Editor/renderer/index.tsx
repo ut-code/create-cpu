@@ -31,6 +31,28 @@ export default function CCComponentEditorRenderer() {
 				userSelect: "none",
 			}}
 			viewBox={[viewBox.x, viewBox.y, viewBox.width, viewBox.height].join(" ")}
+			onWheel={(wheelEvent) => {
+				// HTML inside a node, such as the value of a Const node, scrolls by itself
+				if (
+					wheelEvent.target instanceof Element &&
+					wheelEvent.target.closest("foreignObject")
+				)
+					return;
+				const scaleDelta = Math.exp(wheelEvent.deltaY / 256);
+				const scaleCenter = componentEditorState.fromCanvasToStage(
+					vector2.fromDomEvent(wheelEvent.nativeEvent),
+				);
+				componentEditorState.setPerspective({
+					scale: componentEditorState.perspective.scale * scaleDelta,
+					center: vector2.add(
+						scaleCenter,
+						vector2.mul(
+							vector2.sub(componentEditorState.perspective.center, scaleCenter),
+							scaleDelta,
+						),
+					),
+				});
+			}}
 			onDragOver={(e) => {
 				e.preventDefault();
 			}}
