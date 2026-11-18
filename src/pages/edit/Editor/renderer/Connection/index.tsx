@@ -31,7 +31,7 @@ export type CCComponentEditorRendererConnectionCoreProps = {
 
 const straightGap = 10;
 const HIT_AREA_STROKE_WIDTH = 12;
-const VALUE_LABEL_SIZE = { x: 200, y: 20 };
+const VALUE_LABEL_SIZE = { x: 200, y: 24 };
 const polarity: Record<CCComponentPinType, number> = {
 	input: -1,
 	output: 1,
