@@ -1,7 +1,10 @@
 import nullthrows from "nullthrows";
 import invariant from "tiny-invariant";
 import type { CCComponentPinId } from "../../../../../../store/componentPin";
-import type { CCConnectionId } from "../../../../../../store/connection";
+import {
+	type CCConnectionId,
+	CCConnectionStore,
+} from "../../../../../../store/connection";
 import { DEFAULT_SIMULATION_BIT_WIDTH } from "../../../../../../store/netlist";
 import type { CCNodeId } from "../../../../../../store/node";
 import type { CCNodePinId } from "../../../../../../store/nodePin";
@@ -34,6 +37,7 @@ export const createComponentEditorStoreCoreSlice: ComponentEditorSliceCreator<
 	let simulationCachedFrames: SimulationFrame[] = [];
 	/** set when the circuit cannot be simulated, to not retry on every change */
 	let hasSimulationFailed = false;
+	let lastConnectionRejectionNoticeId = 0;
 
 	return {
 		define: (set, get) => {
@@ -114,6 +118,28 @@ export const createComponentEditorStoreCoreSlice: ComponentEditorSliceCreator<
 				simulationError: null,
 				dismissSimulationError() {
 					set((state) => ({ ...state, simulationError: null }));
+				},
+				connectNodePins(from, to) {
+					const rejection = store.connections.register(
+						CCConnectionStore.create({
+							parentComponentId: componentId,
+							from,
+							to,
+							bentPortion: 0.5,
+						}),
+					);
+					if (rejection) lastConnectionRejectionNoticeId += 1;
+					set((state) => ({
+						...state,
+						connectionRejectionNotice: rejection && {
+							id: lastConnectionRejectionNoticeId,
+							rejection,
+						},
+					}));
+				},
+				connectionRejectionNotice: null,
+				dismissConnectionRejectionNotice() {
+					set((state) => ({ ...state, connectionRejectionNotice: null }));
 				},
 				setEditorMode(mode) {
 					hasSimulationFailed = false;

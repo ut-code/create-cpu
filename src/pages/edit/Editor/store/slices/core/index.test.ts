@@ -3,6 +3,7 @@ import {
 	aggregate,
 	and,
 	const_,
+	not,
 	true_,
 } from "../../../../../../store/intrinsics/definitions";
 import {
@@ -118,5 +119,51 @@ describe("editor mode", () => {
 
 		expect(editorStore.getState().editorMode).toBe("play");
 		expect(editorStore.getState().nodePinPropertyEditorTarget).toBeNull();
+	});
+});
+
+describe("connecting node pins", () => {
+	function setUpTwoSources() {
+		const store = createTestStore();
+		const root = registerTestComponent(store, "Root");
+		const first = registerTestNode(store, root.id, true_.component.id);
+		const second = registerTestNode(store, root.id, true_.component.id);
+		const sink = registerTestNode(store, root.id, not.component.id);
+		return {
+			store,
+			editorStore: createEditorStore(root.id, store),
+			firstOut: testNodePin(store, first, true_.outputPin.Out),
+			secondOut: testNodePin(store, second, true_.outputPin.Out),
+			sinkIn: testNodePin(store, sink, not.inputPin.In),
+		};
+	}
+
+	it("tells why a connection is refused, as a new notice each time", () => {
+		const { store, editorStore, firstOut, secondOut, sinkIn } =
+			setUpTwoSources();
+		editorStore.getState().connectNodePins(firstOut, sinkIn);
+		expect(editorStore.getState().connectionRejectionNotice).toBeNull();
+
+		editorStore.getState().connectNodePins(secondOut, sinkIn);
+		const notice = editorStore.getState().connectionRejectionNotice;
+		expect(notice?.rejection).toEqual({ type: "inputAlreadyConnected" });
+		editorStore.getState().connectNodePins(secondOut, sinkIn);
+		expect(editorStore.getState().connectionRejectionNotice?.id).not.toBe(
+			notice?.id,
+		);
+		expect(store.connections.getConnectionsByNodePinId(sinkIn)).toHaveLength(1);
+	});
+
+	it("drops the notice once a connection succeeds or it is dismissed", () => {
+		const { editorStore, firstOut, secondOut, sinkIn } = setUpTwoSources();
+		editorStore.getState().connectNodePins(firstOut, secondOut);
+		expect(editorStore.getState().connectionRejectionNotice).not.toBeNull();
+		editorStore.getState().dismissConnectionRejectionNotice();
+		expect(editorStore.getState().connectionRejectionNotice).toBeNull();
+
+		editorStore.getState().connectNodePins(firstOut, secondOut);
+		editorStore.getState().connectNodePins(firstOut, sinkIn);
+
+		expect(editorStore.getState().connectionRejectionNotice).toBeNull();
 	});
 });

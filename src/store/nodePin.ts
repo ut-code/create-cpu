@@ -19,6 +19,17 @@ export type CCNodePin = {
 	manualBitWidth: number | null;
 };
 
+export type CCConnectionRejection =
+	| { type: "sameDirection" }
+	| { type: "sameNode" }
+	| { type: "differentParentComponent" }
+	| { type: "inputAlreadyConnected" }
+	| {
+			type: "bitWidthConflict";
+			/** the widths fixed around each pin, in ascending order */
+			bitWidths: readonly [readonly number[], readonly number[]];
+	  };
+
 export type CCNodePinStoreEvents = CCObjectStoreEvents<CCNodePin> & {
 	didUpdate(pin: CCNodePin): void;
 };
@@ -193,7 +204,7 @@ export class CCNodePinStore extends CCObjectStoreBase<
 	}
 
 	/**
-	 * Check whether two node pins can be connected.
+	 * Find why two node pins cannot be connected.
 	 *
 	 * Only the component the connection is drawn in is checked for a bit width
 	 * conflict. A connection inside a component can still cause one in the components
@@ -205,87 +216,49 @@ export class CCNodePinStore extends CCObjectStoreBase<
 	 * @param b id of the other pin
 	 * @param options.allowBitWidthConflict skip the bit width check, to copy a connection
 	 *   as it is even when it is in conflict
+	 * @returns the reason, or `null` if the pins can be connected
+	 * @see ComponentBitWidths.canTie
 	 */
-	isConnectable(
+	getConnectionRejection(
 		a: CCNodePinId,
 		b: CCNodePinId,
 		{ allowBitWidthConflict = false }: { allowBitWidthConflict?: boolean } = {},
-	) {
-		const aNodePin = this.get(a);
-		const bNodePin = this.get(b);
-		if (!aNodePin || !bNodePin) {
-			throw new Error(`Node pin ${a} or ${b} does not exist in the store`);
-		}
-		const aComponentPin = this.store.componentPins.get(
-			aNodePin?.componentPinId ?? null,
+	): CCConnectionRejection | null {
+		const aNodePin = nullthrows(this.get(a), `Node pin ${a} does not exist`);
+		const bNodePin = nullthrows(this.get(b), `Node pin ${b} does not exist`);
+		const aComponentPin = nullthrows(
+			this.store.componentPins.get(aNodePin.componentPinId),
+			`Component pin ${aNodePin.componentPinId} does not exist`,
 		);
-		const bComponentPin = this.store.componentPins.get(
-			bNodePin?.componentPinId ?? null,
+		const bComponentPin = nullthrows(
+			this.store.componentPins.get(bNodePin.componentPinId),
+			`Component pin ${bNodePin.componentPinId} does not exist`,
 		);
-		if (!aComponentPin || !bComponentPin) {
-			throw new Error(
-				`Component pin ${aNodePin?.componentPinId} or ${bNodePin?.componentPinId} does not exist in the store`,
-			);
-		}
-		if (aComponentPin.type === bComponentPin.type) {
-			console.warn(
-				`Cannot connect pins of the same type: ${aNodePin.id} and ${bNodePin.id}`,
-			);
-			return false;
-		}
-		const aNode = this.store.nodes.get(aNodePin.nodeId);
-		const bNode = this.store.nodes.get(bNodePin.nodeId);
-		if (!aNode || !bNode) {
-			throw new Error(
-				`Node ${aNodePin.nodeId} or ${bNodePin.nodeId} does not exist in the store`,
-			);
-		}
-		if (aNode.id === bNode.id) {
-			console.warn(
-				`Cannot connect pins of the same node: ${aNodePin.id} and ${bNodePin.id}`,
-			);
-			return false;
-		}
-		if (aNode.parentComponentId !== bNode.parentComponentId) {
-			console.warn(
-				`Cannot connect pins of different components: ${aNodePin.id} and ${bNodePin.id}`,
-			);
-			return false;
-		}
-		const aConnections = this.store.connections.getConnectionsByNodePinId(
-			aNodePin.id,
+		if (aComponentPin.type === bComponentPin.type)
+			return { type: "sameDirection" };
+		const aNode = nullthrows(
+			this.store.nodes.get(aNodePin.nodeId),
+			`Node ${aNodePin.nodeId} does not exist`,
 		);
-		const bConnections = this.store.connections.getConnectionsByNodePinId(
-			bNodePin.id,
+		const bNode = nullthrows(
+			this.store.nodes.get(bNodePin.nodeId),
+			`Node ${bNodePin.nodeId} does not exist`,
 		);
-		if (aComponentPin.type === "input" && aConnections.length > 0) {
-			console.warn(`Input pin already has a connection: ${aNodePin.id}`);
-			return false;
-		}
-		if (bComponentPin.type === "input" && bConnections.length > 0) {
-			console.warn(`Input pin already has a connection: ${bNodePin.id}`);
-			return false;
-		}
-		if (!allowBitWidthConflict && !this.hasCompatibleBitWidths(a, b)) {
-			console.warn(
-				`Cannot connect pins with conflicting bit widths: ${aNodePin.id} and ${bNodePin.id}`,
-			);
-			return false;
-		}
-		return true;
-	}
-
-	/**
-	 * Check whether two node pins of the same component can be connected without
-	 * causing a bit width conflict. A pin whose bit width is not fixed yet adapts to the
-	 * pin it is connected to, and so do the pins tied to it.
-	 * @param a id of a pin
-	 * @param b id of the other pin
-	 * @returns whether the connection brings no new width into a conflict
-	 * @see ComponentBitWidths.canTie
-	 */
-	hasCompatibleBitWidths(a: CCNodePinId, b: CCNodePinId): boolean {
-		return this.#getBitWidthsAround(a).canTie(a, b);
+		if (aNode.id === bNode.id) return { type: "sameNode" };
+		if (aNode.parentComponentId !== bNode.parentComponentId)
+			return { type: "differentParentComponent" };
+		const inputNodePinId = aComponentPin.type === "input" ? a : b;
+		if (this.store.connections.getConnectionsByNodePinId(inputNodePinId).length)
+			return { type: "inputAlreadyConnected" };
+		if (allowBitWidthConflict) return null;
+		const bitWidths = this.#getBitWidthsAround(a);
+		if (bitWidths.canTie(a, b)) return null;
+		const sortedBitWidthsOf = (nodePinId: CCNodePinId) =>
+			[...bitWidths.getGroupBitWidths(nodePinId)].sort((x, y) => x - y);
+		return {
+			type: "bitWidthConflict",
+			bitWidths: [sortedBitWidthsOf(a), sortedBitWidthsOf(b)],
+		};
 	}
 
 	/**

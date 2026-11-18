@@ -144,9 +144,14 @@ export class ComponentBitWidths {
 			: { isFixed: false };
 	}
 
+	/** The widths fixed by the pins of the group of a pin. */
+	getGroupBitWidths(nodePinId: CCNodePinId): ReadonlySet<number> {
+		return this.#getBitWidths(this.getGroup(nodePinId));
+	}
+
 	/** Whether the pins of the group of a pin fix different widths. */
 	isInConflict(nodePinId: CCNodePinId): boolean {
-		return this.#getBitWidths(this.getGroup(nodePinId)).size > 1;
+		return this.getGroupBitWidths(nodePinId).size > 1;
 	}
 
 	/** Whether any group of the component is in conflict. */

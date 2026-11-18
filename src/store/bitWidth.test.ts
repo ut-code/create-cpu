@@ -305,7 +305,9 @@ describe("bit width groups", () => {
 		const sameWidth = registerConst(store, root.id, 8);
 		const otherWidth = registerConst(store, root.id, 4);
 		// Allowed before the conflict, so what is refused below is due to it
-		expect(store.nodePins.isConnectable(sameWidth.out, andB)).toBe(true);
+		expect(
+			store.nodePins.getConnectionRejection(sameWidth.out, andB),
+		).toBeNull();
 		store.nodes.update(screen.node.id, {
 			config: { resolution: { x: 2, y: 2 }, pixelOrder: "row-major" },
 		});
@@ -409,14 +411,17 @@ describe("bit width groups", () => {
 				testNodePin(store, inverterNode, inverter.out),
 			),
 		).toEqual({ isFixed: true, bitWidth: 8 });
-		expect(
-			tryConnect(
-				store,
-				root.id,
-				testNodePin(store, inverterNode, inverter.out),
-				screen.pixels,
-			),
-		).toBe(false);
+		const connection = CCConnectionStore.create({
+			from: testNodePin(store, inverterNode, inverter.out),
+			to: screen.pixels,
+			parentComponentId: root.id,
+			bentPortion: 0.5,
+		});
+		expect(store.connections.register(connection)).toEqual({
+			type: "bitWidthConflict",
+			bitWidths: [[8], [4]],
+		});
+		expect(store.connections.get(connection.id)).toBeUndefined();
 	});
 
 	it("keeps the independent paths of a component apart", () => {

@@ -2,7 +2,10 @@ import type { Vector2 } from "../../../../../../common/vector2";
 import type { CCComponentPinId } from "../../../../../../store/componentPin";
 import type { CCConnectionId } from "../../../../../../store/connection";
 import type { CCNodeId } from "../../../../../../store/node";
-import type { CCNodePinId } from "../../../../../../store/nodePin";
+import type {
+	CCConnectionRejection,
+	CCNodePinId,
+} from "../../../../../../store/nodePin";
 import type { SimulationValue } from "../../../../../../store/simulation";
 
 export type EditorMode = EditorModeEdit | EditorModePlay;
@@ -39,6 +42,12 @@ export type NodePinPropertyEditorTarget = {
 	componentPinId: CCComponentPinId;
 };
 
+export type ConnectionRejectionNotice = {
+	/** tells a repeated rejection apart from the one shown before */
+	id: number;
+	rejection: CCConnectionRejection;
+};
+
 export type EditorStoreCoreSlice = {
 	editorMode: EditorMode;
 	timeStep: number;
@@ -66,6 +75,10 @@ export type EditorStoreCoreSlice = {
 	/** message the last simulation attempt failed with, if it failed */
 	simulationError: string | null;
 	dismissSimulationError(): void;
+	connectNodePins(from: CCNodePinId, to: CCNodePinId): void;
+	/** why the last attempt to connect pins was refused, until it is dismissed */
+	connectionRejectionNotice: ConnectionRejectionNotice | null;
+	dismissConnectionRejectionNotice(): void;
 	getNodePinValue(nodePinId: CCNodePinId): SimulationValue | undefined;
 	getComponentPinValue(
 		componentPinId: CCComponentPinId,

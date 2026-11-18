@@ -3,7 +3,7 @@ import { CCObjectStoreBase, type CCObjectStoreEvents } from "./base";
 import type { CCComponentId } from "./component";
 import type { CCComponentPinId } from "./componentPin";
 import type { CCNodeId } from "./node";
-import type { CCNodePinId } from "./nodePin";
+import type { CCConnectionRejection, CCNodePinId } from "./nodePin";
 import type { CCObjectId } from "./types";
 
 export type CCConnectionId = CCObjectId<"connections">;
@@ -58,22 +58,24 @@ export class CCConnectionStore extends CCObjectStoreBase<
 	 * @param connection connection to be registered
 	 * @param options.allowBitWidthConflict keep the connection even if its pins fix
 	 *   different bit widths, to copy one that is in conflict as it is
+	 * @returns why the connection was not registered, or `null` if it was
 	 */
 	register(
 		connection: CCConnection,
 		options: { allowBitWidthConflict?: boolean } = {},
-	): void {
-		if (
-			!this.store.nodePins.isConnectable(
-				connection.from,
-				connection.to,
-				options,
-			)
-		) {
-			return;
+	): CCConnectionRejection | null {
+		const rejection = this.store.nodePins.getConnectionRejection(
+			connection.from,
+			connection.to,
+			options,
+		);
+		if (rejection) {
+			console.warn("Connection rejected", rejection, connection);
+			return rejection;
 		}
 		this.setObject(connection);
 		this.emit("didRegister", connection);
+		return null;
 	}
 
 	/**

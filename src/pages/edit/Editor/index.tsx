@@ -3,6 +3,7 @@ import { useState } from "react";
 import { ComponentPropertyDialog } from "../../../components/ComponentPropertyDialog";
 import type { CCComponentId } from "../../../store/component";
 import { theme } from "../../../style";
+import CCComponentEditorConnectionRejectionAlert from "./components/ConnectionRejectionAlert";
 import CCComponentEditorContextMenu from "./components/ContextMenu";
 import CCComponentEditorFrameControl from "./components/FrameControl";
 import CCComponentEditorGrid from "./components/Grid";
@@ -51,6 +52,7 @@ function CCComponentEditorContent({
 			/>
 			<CCComponentEditorNodePinPropertyEditor />
 			<CCComponentEditorSimulationErrorAlert />
+			<CCComponentEditorConnectionRejectionAlert />
 			{propertyDialogComponentId && (
 				<ComponentPropertyDialog
 					componentId={propertyDialogComponentId}
