@@ -26,6 +26,7 @@ import {
 	testComponentPin,
 	testNodePin,
 	testNumber,
+	thrownBy,
 	tryConnectTestNodePins,
 } from "./testUtils";
 
@@ -567,9 +568,14 @@ describe("simulation of bit width groups", () => {
 		connectTestNodePins(store, root.id, constant.out, screen.pixels);
 		setConstBitWidth(store, constant, 8);
 
-		expect(() => simulateComponent(store, root.id, new Map())).toThrow(
+		const error = thrownBy(
+			() => simulateComponent(store, root.id, new Map()),
 			SimulationBitWidthConflictError,
 		);
+		expect(error.message).toBe(
+			"The bit widths of some connected pins in Root do not match. Fix the highlighted connections.",
+		);
+		expect(error.nodePaths).toEqual([]);
 	});
 
 	it("refuses to simulate a component using one with a bit width conflict", () => {
@@ -580,11 +586,16 @@ describe("simulation of bit width groups", () => {
 		connectTestNodePins(store, inner.id, constant.out, screen.pixels);
 		setConstBitWidth(store, constant, 8);
 		const root = registerTestComponent(store, "Root");
-		registerTestNode(store, root.id, inner.id);
+		const innerNode = registerTestNode(store, root.id, inner.id);
 
-		expect(() => simulateComponent(store, root.id, new Map())).toThrow(
-			/in Inner do not match/,
+		const error = thrownBy(
+			() => simulateComponent(store, root.id, new Map()),
+			SimulationBitWidthConflictError,
 		);
+		expect(error.message).toBe(
+			"The bit widths of some connected pins in Inner do not match. Open Inner to fix the highlighted connections.",
+		);
+		expect(error.nodePaths).toEqual([[innerNode.id]]);
 	});
 
 	it("gives each independent path of a component the width it is used with", () => {
