@@ -1,13 +1,20 @@
 import nullthrows from "nullthrows";
+import { useLayoutEffect, useRef, useState } from "react";
 import { display } from "../../../../../../../store/intrinsics/definitions";
 import type { CCIntrinsicComponentDisplaySpec } from "../../../../../../../store/intrinsics/types";
 import { useStore } from "../../../../../../../store/react";
 import { theme } from "../../../../../../../style";
 import { useComponentEditorStore } from "../../../../store";
 import type { CCComponentEditorRendererNodeRendererProps } from "../../types";
-import { CCComponentEditorRendererNodeDefaultRenderer } from "../Default";
+import {
+	CC_COMPONENT_EDITOR_RENDERER_NODE_TITLE,
+	CCComponentEditorRendererNodeDefaultRenderer,
+} from "../Default";
 import { CCComponentEditorRendererNodeDisplayRendererConfigSettingButton } from "./ConfigSettingButton";
 import { ccComponentEditorRendererNodeDisplayLayoutConstants } from "./geometry";
+
+const SETTING_BUTTON_SIZE = 20;
+const SETTING_BUTTON_GAP = 2;
 
 export function CCComponentEditorRendererNodeDisplayRenderer(
 	props: CCComponentEditorRendererNodeRendererProps,
@@ -33,20 +40,32 @@ export function CCComponentEditorRendererNodeDisplayRenderer(
 	const { padding, gridSize, gridSizeDisplayWidth } =
 		ccComponentEditorRendererNodeDisplayLayoutConstants;
 
+	const title = `${props.component.name} ${config.resolution.x}x${config.resolution.y}`;
+	const titleRef = useRef<SVGTextElement>(null);
+	const [measuredTitle, setMeasuredTitle] = useState({ title: "", width: 0 });
+	useLayoutEffect(() => {
+		const width = nullthrows(titleRef.current).getComputedTextLength();
+		setMeasuredTitle({ title, width });
+	}, [title]);
+
 	return (
 		<>
-			<CCComponentEditorRendererNodeDefaultRenderer {...props} />
-			<text
-				x={padding}
-				y={padding}
-				fontSize={16}
-				fill={theme.colors.textPrimary}
-				dominantBaseline="hanging"
-			>
-				{config.resolution.x}x{config.resolution.y}
-			</text>
-			{editorState.editorMode === "edit" && (
-				<foreignObject x={padding / 2} y={padding + 16} width={32} height={32}>
+			<CCComponentEditorRendererNodeDefaultRenderer
+				{...props}
+				title={title}
+				titleRef={titleRef}
+			/>
+			{editorState.editorMode === "edit" && measuredTitle.title === title && (
+				<foreignObject
+					x={measuredTitle.width + SETTING_BUTTON_GAP}
+					y={
+						CC_COMPONENT_EDITOR_RENDERER_NODE_TITLE.baselineY -
+						CC_COMPONENT_EDITOR_RENDERER_NODE_TITLE.fontSize * 0.35 -
+						SETTING_BUTTON_SIZE / 2
+					}
+					width={SETTING_BUTTON_SIZE}
+					height={SETTING_BUTTON_SIZE}
+				>
 					<CCComponentEditorRendererNodeDisplayRendererConfigSettingButton
 						config={config}
 						onConfigChange={updateConfig}
