@@ -46,13 +46,6 @@ export function CCComponentEditorRendererConnectionCore({
 }: CCComponentEditorRendererConnectionCoreProps) {
 	const componentEditorState = useComponentEditorStore()();
 
-	const handleClick = (e: React.MouseEvent) => {
-		if (!connectionId) {
-			return;
-		}
-		componentEditorState.selectConnection([connectionId], !e.shiftKey);
-	};
-
 	const d = [
 		`M ${from.position.x} ${from.position.y}`,
 		`h ${straightGap * polarity[from.direction]}`,
@@ -92,7 +85,9 @@ export function CCComponentEditorRendererConnectionCore({
 					strokeWidth={HIT_AREA_STROKE_WIDTH}
 					fill="none"
 					pointerEvents="stroke"
-					onClick={handleClick}
+					onClick={(e) =>
+						componentEditorState.selectConnection([connectionId], !e.shiftKey)
+					}
 					onContextMenu={(e) => {
 						e.preventDefault();
 						e.stopPropagation();
@@ -165,7 +160,7 @@ export default function CCComponentEditorRendererConnection({
 				}}
 			/>
 			{isHovered && componentEditorState.editorMode === "play" && (
-				// The path is symmetric about the midpoint of its ends
+				// The path is symmetric about the midpoint of its ends, so that point lies on it
 				<foreignObject
 					x={
 						(fromNodePinPosition.x + toNodePinPosition.x - VALUE_LABEL_SIZE.x) /
