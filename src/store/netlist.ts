@@ -43,6 +43,10 @@ import { definitionByComponentId } from "./intrinsics/definitions";
 import { ccIntrinsicComponentTypes } from "./intrinsics/types";
 import type { CCNode, CCNodeId } from "./node";
 import type { CCNodePinId } from "./nodePin";
+import {
+	englishSimulationErrorTexts,
+	type SimulationErrorTexts,
+} from "./simulationErrorTexts";
 
 /**
  * Bit width of a pin of the simulated component that the circuit leaves open. The values
@@ -143,15 +147,12 @@ function nameOfNode(store: CCStore, nodeId: CCNodeId): string {
 	return exposedPin ? `${componentName} ${exposedPin.name}` : componentName;
 }
 
-/** From the inside out, e.g. `Xor in HalfAdder` for a Xor inside a HalfAdder node */
 export function describeNodePath(
 	store: CCStore,
 	path: readonly CCNodeId[],
+	texts: SimulationErrorTexts = englishSimulationErrorTexts,
 ): string {
-	return path
-		.map((nodeId) => nameOfNode(store, nodeId))
-		.reverse()
-		.join(" in ");
+	return texts.nodeName(path.map((nodeId) => nameOfNode(store, nodeId)));
 }
 
 function commonPrefixOf(
@@ -176,6 +177,30 @@ export class SimulationNodeError extends Error {
 		super(message, options);
 		this.name = "SimulationNodeError";
 	}
+
+	/**
+	 * The message worded with `texts`, from the store as it is now. An error without a
+	 * wording of its own, such as a failed evaluation, keeps its English message.
+	 */
+	describe(_store: CCStore, _texts: SimulationErrorTexts): string {
+		return this.message;
+	}
+}
+
+function describeLoop(
+	store: CCStore,
+	loop: readonly (readonly CCNodeId[])[],
+	texts: SimulationErrorTexts,
+): string {
+	const owner = commonPrefixOf(loop);
+	const ownerNodeId = owner.at(-1);
+	const isInsideOwner = loop.every((path) => path.length > owner.length);
+	return ownerNodeId !== undefined && isInsideOwner
+		? texts.loopInside(
+				describeNodePath(store, owner, texts),
+				componentNameOfNode(store, ownerNodeId),
+			)
+		: texts.loop;
 }
 
 /**
@@ -184,17 +209,35 @@ export class SimulationNodeError extends Error {
  */
 export class SimulationCombinationalLoopError extends SimulationNodeError {
 	constructor(store: CCStore, loop: readonly (readonly CCNodeId[])[]) {
-		const owner = commonPrefixOf(loop);
-		const ownerNodeId = owner.at(-1);
-		const isInsideOwner = loop.every((path) => path.length > owner.length);
-		super(
-			ownerNodeId !== undefined && isInsideOwner
-				? `There is a loop inside ${describeNodePath(store, owner)}, so the values in it cannot be determined. Open ${componentNameOfNode(store, ownerNodeId)} to fix the connections, or add a FlipFlop to the loop if the value should feed back.`
-				: "The outlined nodes form a loop, so their values cannot be determined. Fix the connections in the loop, or add a FlipFlop to it if the value should feed back.",
-			loop,
-		);
+		super(describeLoop(store, loop, englishSimulationErrorTexts), loop);
 		this.name = "SimulationCombinationalLoopError";
 	}
+
+	override describe(store: CCStore, texts: SimulationErrorTexts): string {
+		return describeLoop(store, this.nodePaths, texts);
+	}
+}
+
+function describeUnconnectedPin(
+	store: CCStore,
+	nodePath: readonly CCNodeId[],
+	nodePinId: CCNodePinId,
+	texts: SimulationErrorTexts,
+): string {
+	const nodeName = describeNodePath(store, nodePath, texts);
+	const nodePin = nullthrows(store.nodePins.get(nodePinId));
+	const pinName = nullthrows(
+		store.componentPins.get(nodePin.componentPinId),
+	).name;
+	const ownerNodeId = nodePath.at(-2);
+	return texts.sentences([
+		isInterfaceNode(store, nullthrows(nodePath.at(-1)))
+			? texts.unconnectedNode(nodeName)
+			: texts.unconnectedPin(pinName, nodeName),
+		...(ownerNodeId === undefined
+			? []
+			: [texts.openToConnect(componentNameOfNode(store, ownerNodeId))]),
+	]);
 }
 
 /** Thrown when an input pin has nothing connected to it. */
@@ -202,26 +245,40 @@ export class SimulationUnconnectedPinError extends SimulationNodeError {
 	constructor(
 		store: CCStore,
 		nodePath: readonly CCNodeId[],
-		nodePinId: CCNodePinId,
+		readonly nodePinId: CCNodePinId,
 	) {
-		const nodeName = describeNodePath(store, nodePath);
-		const nodePin = nullthrows(store.nodePins.get(nodePinId));
-		const pinName = nullthrows(
-			store.componentPins.get(nodePin.componentPinId),
-		).name;
-		const ownerNodeId = nodePath.at(-2);
-		const hint =
-			ownerNodeId === undefined
-				? ""
-				: ` Open ${componentNameOfNode(store, ownerNodeId)} to connect it.`;
 		super(
-			isInterfaceNode(store, nullthrows(nodePath.at(-1)))
-				? `${nodeName} is not connected.${hint}`
-				: `Input pin ${pinName} of ${nodeName} is not connected.${hint}`,
+			describeUnconnectedPin(
+				store,
+				nodePath,
+				nodePinId,
+				englishSimulationErrorTexts,
+			),
 			[nodePath],
 		);
 		this.name = "SimulationUnconnectedPinError";
 	}
+
+	override describe(store: CCStore, texts: SimulationErrorTexts): string {
+		return describeUnconnectedPin(
+			store,
+			nullthrows(this.nodePaths[0]),
+			this.nodePinId,
+			texts,
+		);
+	}
+}
+
+function describeBitWidthConflict(
+	store: CCStore,
+	componentId: CCComponentId,
+	isNested: boolean,
+	texts: SimulationErrorTexts,
+): string {
+	const { name } = nullthrows(store.components.get(componentId));
+	return isNested
+		? texts.bitWidthConflictInside(name)
+		: texts.bitWidthConflict(name);
 }
 
 /**
@@ -231,19 +288,29 @@ export class SimulationUnconnectedPinError extends SimulationNodeError {
 export class SimulationBitWidthConflictError extends SimulationNodeError {
 	/** @param nodePath empty for the simulated component itself */
 	constructor(
+		store: CCStore,
 		readonly componentId: CCComponentId,
-		componentName: string,
 		nodePath: readonly CCNodeId[],
 	) {
-		const fix =
-			nodePath.length === 0
-				? "Fix the highlighted connections."
-				: `Open ${componentName} to fix the highlighted connections.`;
 		super(
-			`The bit widths of some connected pins in ${componentName} do not match. ${fix}`,
+			describeBitWidthConflict(
+				store,
+				componentId,
+				nodePath.length > 0,
+				englishSimulationErrorTexts,
+			),
 			nodePath.length === 0 ? [] : [nodePath],
 		);
 		this.name = "SimulationBitWidthConflictError";
+	}
+
+	override describe(store: CCStore, texts: SimulationErrorTexts): string {
+		return describeBitWidthConflict(
+			store,
+			this.componentId,
+			this.nodePaths.length > 0,
+			texts,
+		);
 	}
 }
 
@@ -420,12 +487,7 @@ export function buildSimulationNetlist(
 		);
 		const bitWidths = store.nodePins.getComponentBitWidths(ownerComponentId);
 		if (bitWidths.hasConflict()) {
-			const ownerComponent = nullthrows(store.components.get(ownerComponentId));
-			throw new SimulationBitWidthConflictError(
-				ownerComponentId,
-				ownerComponent.name,
-				path,
-			);
+			throw new SimulationBitWidthConflictError(store, ownerComponentId, path);
 		}
 		/** a group fixing no width takes it from the surroundings, or else the default */
 		const getBitWidth = (nodePinId: CCNodePinId): number => {
