@@ -6,6 +6,7 @@ const listOf = (names: readonly string[]) =>
 	names.length < 2
 		? names.join("")
 		: `${names.slice(0, -1).join(", ")} and ${names.at(-1)}`;
+const digits = (count: number) => (count === 1 ? "1 digit" : `${count} digits`);
 const themOf = (names: readonly string[]) =>
 	names.length === 1 ? "it" : "them";
 
@@ -45,12 +46,12 @@ const stageTexts: Record<TutorialStageId, StageTexts> = {
 	},
 	"four-bit-adder": {
 		title: "Adding four digits",
-		goal: "A and B are four-digit binary numbers. Output A + B in four digits to S, and turn C ON when it overflows into a fifth digit. The table shows some examples.",
+		goal: "A and B are four-digit binary numbers. Output A + B in four digits to S, and its fifth digit, the sixteens digit, to C: C is 1 when A + B is 16 or more. The table shows some examples.",
 		steps: [
 			'Place four "Adding with a carry". From the top, the pins of Decompose and Aggregate are the eights, fours, twos and ones digits.',
 			"For each digit, connect that digit of A and of B to the A and B of one adder, and its S to the same digit of Aggregate.",
 			"Connect the C of each digit to the Cin of the digit above. The ones digit gets False on its Cin, and the C of the eights digit goes to the output C.",
-			"While playing, click a digit of A or B to switch it between 0 and 1. The sum also shows as a numeral on the right, with 10 to 15 as A to F.",
+			"While playing, click a digit of A or B to switch it between 0 and 1. The sum also shows on the right, with 10 to 15 shown as the letters A, b, C, d, E and F.",
 		],
 	},
 };
@@ -167,7 +168,7 @@ export const en = {
 		missingPin: (pinType: "input" | "output", pinName: string) =>
 			`There is no ${pinType} pin named ${pinName}. "Reset this stage" brings back how the stage started.`,
 		wrongBitWidth: (pinName: string, expected: number, actual: number) =>
-			`${pinName} should have ${expected} digits, but it has ${actual === 1 ? "1 digit" : `${actual} digits`}. Check what it is connected to.`,
+			`${pinName} should have ${digits(expected)}, but it has ${digits(actual)}. Check what it is connected to.`,
 		wrongOutput: (
 			inputs: readonly { name: string; value: string }[],
 			pinName: string,

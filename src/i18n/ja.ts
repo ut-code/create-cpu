@@ -113,7 +113,7 @@ export const ja: Messages = {
 		missingPin: (pinType, pinName) =>
 			`${pinName} という名前の${pinType === "input" ? "入力" : "出力"}ピンが見つかりません。「この課題をやり直す」で最初の状態に戻せます。`,
 		wrongBitWidth: (pinName, expected, actual) =>
-			`${pinName} は ${expected}けたのはずが、${actual}けたになっています。つないだ先を確かめてください。`,
+			`${pinName} は ${expected}けたのはずですが、${actual}けたになっています。つないだ先を確かめてください。`,
 		wrongOutput: (inputs, pinName, expected, actual) =>
 			`${inputs.map(({ name, value }) => `${name} が ${value}`).join("、")} のとき、${pinName} は ${expected} になるはずが、${actual === null ? "値がありませんでした" : `${actual} でした`}。`,
 		simulationFailed: (detail) =>
@@ -159,12 +159,12 @@ export const ja: Messages = {
 			},
 			"four-bit-adder": {
 				title: "4けたの足し算",
-				goal: "A と B は4けたの2進数です。A＋B を4けたで S に出し、5けた目にあふれたら C を ON にしましょう。表はその例です。",
+				goal: "A と B は4けたの2進数です。A＋B を4けたで S に、5けた目（16の位）を C に出しましょう。A＋B が 16 以上なら、C は 1 です。表はその例です。",
 				steps: [
 					"「桁上がりつきの足し算」を4つ置きます。Decompose と Aggregate のピンは、上から8の位・4の位・2の位・1の位です。",
 					"けたごとに、A と B のそのけたを1つの足し算の A と B に、その S を Aggregate の同じけたにつなぎます。",
 					"それぞれのけたの C を、1つ上のけたの Cin につなぎます。1の位の Cin には False を、8の位の C は出力の C につなぎます。",
-					"再生中は、A と B のけたをクリックして 0 と 1 を切り替えられます。答えは右の数字にも出ます（10 から 15 は A から F）。",
+					"再生中は、A と B のけたをクリックして 0 と 1 を切り替えられます。答えは右にも出ます（10 から 15 は、A、b、C、d、E、F の字で出ます）。",
 				],
 			},
 		},

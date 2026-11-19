@@ -11,6 +11,7 @@ import {
 	registerTestOutputNode,
 	splitTestNodePin,
 	testNodePin,
+	tryConnectTestNodePins,
 } from "../store/testUtils";
 import {
 	type CombinationalCheck,
@@ -214,6 +215,57 @@ describe("checkCombinational on pins of several bits", () => {
 			pinName: "A",
 			expected: 2,
 			actual: 1,
+		});
+	});
+
+	it("leaves an unconnected output to the simulation", () => {
+		const store = createTestStore();
+		const component = registerTestComponent(store, "Wide");
+		const a = registerTestInputNode(store, component.id, "A");
+		registerTestOutputNode(store, component.id, "Out");
+		const split = registerTestNode(store, component.id, decompose.component.id);
+		splitTestNodePin(store, split, decompose.outputPin.Out, [1, 1]);
+		connectTestNodePins(
+			store,
+			component.id,
+			a.out,
+			testNodePin(store, split, decompose.inputPin.In),
+		);
+
+		expect(checkCombinational(store, component.id, twoBitCheck)).toMatchObject({
+			type: "simulationFailed",
+		});
+	});
+
+	it("leaves a pin in a width conflict to the simulation", () => {
+		const store = createTestStore();
+		const component = registerTestComponent(store, "Wide");
+		const a = registerTestInputNode(store, component.id, "A");
+		registerTestOutputNode(store, component.id, "Out");
+		const split = registerTestNode(store, component.id, decompose.component.id);
+		splitTestNodePin(store, split, decompose.outputPin.Out, [1, 1]);
+		const joined = registerTestNode(
+			store,
+			component.id,
+			aggregate.component.id,
+		);
+		connectTestNodePins(
+			store,
+			component.id,
+			a.out,
+			testNodePin(store, split, decompose.inputPin.In),
+		);
+		tryConnectTestNodePins(
+			store,
+			component.id,
+			a.out,
+			testNodePin(store, joined, aggregate.inputPin.In),
+			{ allowBitWidthConflict: true },
+		);
+
+		expect(store.nodePins.isInBitWidthConflict(a.out)).toBe(true);
+		expect(checkCombinational(store, component.id, twoBitCheck)).toMatchObject({
+			type: "simulationFailed",
 		});
 	});
 

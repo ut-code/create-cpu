@@ -41,15 +41,17 @@ export class StageCircuit {
 		return node;
 	}
 
-	/** Splits a configurable pin of `node` into pins of the given bit widths */
 	split(node: CCNode, componentPin: CCComponentPin, widths: readonly number[]) {
 		const [first, ...rest] = widths;
-		const [existing] = this.store.nodePins.getManyByNodeIdAndComponentPinId(
+		const existing = this.store.nodePins.getManyByNodeIdAndComponentPinId(
 			node.id,
 			componentPin.id,
 		);
-		invariant(first !== undefined && existing, "Nothing to split");
-		this.store.nodePins.update(existing.id, { manualBitWidth: first });
+		invariant(
+			first !== undefined && existing.length === 1 && existing[0],
+			"Only a pin not split yet can be split",
+		);
+		this.store.nodePins.update(existing[0].id, { manualBitWidth: first });
 		for (const [index, manualBitWidth] of rest.entries()) {
 			this.store.nodePins.register(
 				CCNodePinStore.create({

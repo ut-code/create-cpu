@@ -137,8 +137,11 @@ describe("the message on a pin of the wrong width", () => {
 		expect(messagesByLanguage.en.tutorial.wrongBitWidth("A", 4, 1)).toBe(
 			"A should have 4 digits, but it has 1 digit. Check what it is connected to.",
 		);
+		expect(messagesByLanguage.en.tutorial.wrongBitWidth("C", 1, 4)).toBe(
+			"C should have 1 digit, but it has 4 digits. Check what it is connected to.",
+		);
 		expect(messagesByLanguage.ja.tutorial.wrongBitWidth("A", 4, 1)).toBe(
-			"A は 4けたのはずが、1けたになっています。つないだ先を確かめてください。",
+			"A は 4けたのはずですが、1けたになっています。つないだ先を確かめてください。",
 		);
 	});
 });
