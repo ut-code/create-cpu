@@ -51,6 +51,7 @@ export default function CCComponentEditorContextMenu({
 					top: `${componentEditorState.contextMenuState.position.y}px`,
 					left: `${componentEditorState.contextMenuState.position.x}px`,
 					minWidth: "200px",
+					maxWidth: "280px",
 				}}
 			>
 				{/* <MenuItem onClick={componentEditorState.closeContextMenu}>
@@ -84,6 +85,7 @@ export default function CCComponentEditorContextMenu({
 						}}
 					>
 						<ListItemText
+							slotProps={{ secondary: { sx: { whiteSpace: "normal" } } }}
 							primary={messages.common.delete}
 							secondary={
 								keptNodeNames.length === 0
