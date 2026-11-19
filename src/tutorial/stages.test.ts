@@ -156,6 +156,23 @@ describe("isStagePart", () => {
 		expect(isStagePart(stage, xor.component, own.id)).toBe(false);
 	});
 
+	it("offers only the parts handed over directly, not those built into them", () => {
+		const fourBit = nullthrows(findTutorialStage("four-bit-adder"));
+		const store = createTestStore();
+		setUpTutorialStage(store, fourBit, titleOf);
+		const componentOf = (id: TutorialStageId) =>
+			nullthrows(
+				store.components.get(nullthrows(findTutorialStage(id)).componentId),
+			);
+
+		expect(
+			isStagePart(fourBit, componentOf("full-adder"), fourBit.componentId),
+		).toBe(true);
+		expect(
+			isStagePart(fourBit, componentOf("half-adder"), fourBit.componentId),
+		).toBe(false);
+	});
+
 	it("offers inside a part handed over what its own stage offers, and no pins", () => {
 		const inGiven = (component: Parameters<typeof isStagePart>[1]) =>
 			isStagePart(xorStage, component, aOnlyStage.componentId);

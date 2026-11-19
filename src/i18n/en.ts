@@ -43,6 +43,16 @@ const stageTexts: Record<TutorialStageId, StageTexts> = {
 		goal: 'Output A + B + Cin as a two-digit binary number to C and S. Cin is the carry coming up from the next lower digit. The answer is 0 to 3, and 3 is 11 in binary. "Adding one digit" is ready to use as a part: add A and B with one, then add Cin to its S with another. This circuit is called a full adder.',
 		steps: [],
 	},
+	"four-bit-adder": {
+		title: "Adding four digits",
+		goal: "A and B are four-digit binary numbers. Output A + B in four digits to S, and turn C ON when it overflows into a fifth digit. The table shows some examples.",
+		steps: [
+			'Place four "Adding with a carry". From the top, the pins of Decompose and Aggregate are the eights, fours, twos and ones digits.',
+			"For each digit, connect that digit of A and of B to the A and B of one adder, and its S to the same digit of Aggregate.",
+			"Connect the C of each digit to the Cin of the digit above. The ones digit gets False on its Cin, and the C of the eights digit goes to the output C.",
+			"While playing, click a digit of A or B to switch it between 0 and 1. The sum also shows as a numeral on the right, with 10 to 15 as A to F.",
+		],
+	},
 };
 
 export const en = {
@@ -62,6 +72,10 @@ export const en = {
 			XOR: "ON when exactly one input is ON",
 			TRUE: "Always ON",
 			FALSE: "Always OFF",
+			DECOMPOSE:
+				"Splits a number of several digits, from the highest digit down",
+			AGGREGATE:
+				"Joins values into one number, the upper pins as the higher digits",
 		},
 		about: (name: string) => `About ${name}`,
 		ofStage: "Available parts",
