@@ -176,7 +176,7 @@ export const en = {
 		parts: "Parts",
 		goalHeading: "Goal",
 		stepsHeading: "Steps",
-		digitsLegend: "In the tables, 1 is ON and 0 is OFF.",
+		digitsLegend: "The tables write ON as 1 and OFF as 0.",
 		check: "Check",
 		passed: "Cleared! The circuit works for every combination of the inputs.",
 		passedSteps: (count: number) =>
