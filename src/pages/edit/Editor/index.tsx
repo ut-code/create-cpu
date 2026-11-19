@@ -11,11 +11,7 @@ import CCComponentEditorNotifications from "./components/Notifications";
 import CCComponentEditorTitleBar from "./components/TitleBar";
 import CCComponentEditorViewModeSwitcher from "./components/ViewModeSwitcher";
 import CCComponentEditorRenderer from "./renderer";
-import {
-	ComponentEditorStoreProvider,
-	type EditorStoreOptions,
-	useComponentEditorStore,
-} from "./store";
+import { ComponentEditorStoreProvider, type EditorStoreOptions } from "./store";
 
 export type CCComponentEditorProps = {
 	componentId: CCComponentId;
@@ -31,9 +27,6 @@ function CCComponentEditorContent({
 }: CCComponentEditorProps) {
 	const [propertyDialogComponentId, setPropertyDialogComponentId] =
 		useState<CCComponentId | null>(null);
-	const isProtectedNode = useComponentEditorStore()(
-		(state) => state.isProtectedNode,
-	);
 
 	return (
 		<Box
@@ -74,7 +67,6 @@ function CCComponentEditorContent({
 			{propertyDialogComponentId && (
 				<ComponentPropertyDialog
 					componentId={propertyDialogComponentId}
-					isProtectedNode={isProtectedNode}
 					onClose={() => setPropertyDialogComponentId(null)}
 				/>
 			)}

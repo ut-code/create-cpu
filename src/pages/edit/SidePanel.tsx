@@ -4,19 +4,16 @@ import { useState } from "react";
 import invariant from "tiny-invariant";
 import { setDataTransferAsComponent } from "../../common/serialization";
 import { useMessages } from "../../i18n";
-import type { CCComponent, CCComponentId } from "../../store/component";
+import type { CCComponentId } from "../../store/component";
 import { ccPinTypes } from "../../store/componentPin";
 import { useStore } from "../../store/react";
 import { useComponents } from "../../store/react/selectors";
 import { theme } from "../../style";
-import { canPlaceComponent } from "./placement";
+import { canPlaceComponent, type OffersComponent } from "./placement";
 
 export type SidePanelProps = {
 	editedComponentId: CCComponentId;
-	isOffered?: (
-		component: CCComponent,
-		editedComponentId: CCComponentId,
-	) => boolean;
+	isOffered?: OffersComponent;
 };
 
 function ComponentRenderer({ componentId }: { componentId: CCComponentId }) {

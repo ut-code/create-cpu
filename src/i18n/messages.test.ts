@@ -112,3 +112,22 @@ describe("English messages", () => {
 		);
 	});
 });
+
+describe("the note on nodes a delete keeps", () => {
+	it("lists the nodes in a sentence", () => {
+		const { en, ja } = messagesByLanguage;
+
+		expect(en.editor.contextMenu.cannotDelete(["A"])).toBe(
+			"A cannot be deleted, as the stage uses it",
+		);
+		expect(en.editor.contextMenu.keptOnDelete(["A", "Out"])).toBe(
+			"A and Out are kept, as the stage uses them",
+		);
+		expect(en.editor.contextMenu.cannotDelete(["A", "B", "Out"])).toBe(
+			"A, B and Out cannot be deleted, as the stage uses them",
+		);
+		expect(ja.editor.contextMenu.keptOnDelete(["A", "B", "Out"])).toBe(
+			"A、B、Out は課題で使うので残ります",
+		);
+	});
+});

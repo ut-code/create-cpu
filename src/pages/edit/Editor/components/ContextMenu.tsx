@@ -85,6 +85,7 @@ export default function CCComponentEditorContextMenu({
 						}}
 					>
 						<ListItemText
+							sx={{ m: 0 }}
 							slotProps={{ secondary: { sx: { whiteSpace: "normal" } } }}
 							primary={messages.common.delete}
 							secondary={
@@ -97,8 +98,7 @@ export default function CCComponentEditorContextMenu({
 						/>
 					</MenuItem>
 				)}
-				{componentToEdit &&
-					(canExtract || canDelete || keptNodeNames.length > 0) && <Divider />}
+				{componentToEdit && (canExtract || canDelete) && <Divider />}
 				{componentToEdit && (
 					<MenuItem
 						onClick={() => {

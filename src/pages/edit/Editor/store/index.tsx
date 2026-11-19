@@ -2,9 +2,10 @@ import { createContext, useContext, useState } from "react";
 import invariant from "tiny-invariant";
 import { create } from "zustand";
 import type CCStore from "../../../../store";
-import type { CCComponent, CCComponentId } from "../../../../store/component";
+import type { CCComponentId } from "../../../../store/component";
 import type { CCNodeId } from "../../../../store/node";
 import { useStore } from "../../../../store/react";
+import type { OffersComponent } from "../../placement";
 import createComponentEditorStoreContextMenuSlice from "./slices/contextMenu";
 import { createComponentEditorStoreCoreSlice } from "./slices/core";
 import createComponentEditorStorePerspectiveSlice from "./slices/perspective";
@@ -12,10 +13,7 @@ import type { ComponentEditorStoreValue } from "./types";
 
 export type EditorStoreOptions = {
 	isProtectedNode?: (nodeId: CCNodeId) => boolean;
-	isOffered?: (
-		component: CCComponent,
-		editedComponentId: CCComponentId,
-	) => boolean;
+	isOffered?: OffersComponent;
 	canCreateComponents?: boolean;
 	hasProperties?: (componentId: CCComponentId) => boolean;
 };

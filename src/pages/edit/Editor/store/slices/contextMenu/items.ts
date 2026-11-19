@@ -1,3 +1,4 @@
+import { partition } from "es-toolkit";
 import nullthrows from "nullthrows";
 import type CCStore from "../../../../../../store";
 import type { CCComponent } from "../../../../../../store/component";
@@ -37,8 +38,8 @@ export function getContextMenuItems(
 		(connectionId) => store.connections.get(connectionId),
 	);
 	const isEditMode = state.editorMode === "edit";
-	const removableNodeIds = selectedNodeIds.filter(
-		(nodeId) => !state.isProtectedNode(nodeId),
+	const [keptNodeIds, removableNodeIds] = partition(selectedNodeIds, (nodeId) =>
+		state.isProtectedNode(nodeId),
 	);
 	const [targetNodeId] = selectedNodeIds;
 	const targetComponent =
@@ -53,9 +54,7 @@ export function getContextMenuItems(
 		selectedConnectionIds,
 		removableNodeIds,
 		keptNodeNames: isEditMode
-			? selectedNodeIds
-					.filter((nodeId) => state.isProtectedNode(nodeId))
-					.map((nodeId) => nameOfNode(store, nodeId))
+			? keptNodeIds.map((nodeId) => nameOfNode(store, nodeId))
 			: [],
 		canExtract:
 			isEditMode &&

@@ -15,13 +15,11 @@ import { z } from "zod";
 import { useMessages } from "../i18n";
 import type CCStore from "../store";
 import type { CCComponentId } from "../store/component";
-import type { CCComponentPin, CCComponentPinId } from "../store/componentPin";
-import type { CCNodeId } from "../store/node";
+import type { CCComponentPinId } from "../store/componentPin";
 import { useStore } from "../store/react";
 
 export type ComponentPropertyDialogProps = {
 	componentId: CCComponentId;
-	isProtectedNode: (nodeId: CCNodeId) => boolean;
 	onClose(): void;
 };
 
@@ -56,7 +54,6 @@ function applyStateToStore(
 
 export function ComponentPropertyDialog({
 	componentId,
-	isProtectedNode,
 	onClose,
 }: ComponentPropertyDialogProps) {
 	const { store } = useStore();
@@ -66,11 +63,6 @@ export function ComponentPropertyDialog({
 		extractStateFromStore(store, componentId),
 	);
 	const result = stateSchema.safeParse(state);
-	const isPinProtected = (pin: CCComponentPin) => {
-		const nodePin =
-			pin.implementation && store.nodePins.get(pin.implementation);
-		return !!nodePin && isProtectedNode(nodePin.nodeId);
-	};
 
 	return (
 		<Dialog maxWidth="sm" fullWidth open onClose={onClose}>
@@ -118,7 +110,6 @@ export function ComponentPropertyDialog({
 										size="small"
 										value={state.pinNameById.get(pin.id)}
 										fullWidth
-										disabled={isPinProtected(pin)}
 										onChange={(e) =>
 											setState({
 												...state,
@@ -144,7 +135,6 @@ export function ComponentPropertyDialog({
 										size="small"
 										value={state.pinNameById.get(pin.id)}
 										fullWidth
-										disabled={isPinProtected(pin)}
 										onChange={(e) =>
 											setState({
 												...state,

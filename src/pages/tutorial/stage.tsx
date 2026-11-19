@@ -36,6 +36,7 @@ import {
 	tutorialStages,
 } from "../../tutorial/stages";
 import CCComponentEditor from "../edit/Editor";
+import type { OffersComponent } from "../edit/placement";
 import SidePanel from "../edit/SidePanel";
 
 function formatValue(value: SimulationValue, texts: Messages["tutorial"]) {
@@ -122,6 +123,9 @@ function StageView({ stage }: { stage: TutorialStage }) {
 		}
 	};
 
+	const isOffered: OffersComponent = (component, componentId) =>
+		isStagePart(stage, component, componentId);
+
 	const shownComponentId = store.components.get(editedComponentId)
 		? editedComponentId
 		: stage.componentId;
@@ -201,9 +205,7 @@ function StageView({ stage }: { stage: TutorialStage }) {
 					</Typography>
 					<SidePanel
 						editedComponentId={shownComponentId}
-						isOffered={(component, componentId) =>
-							isStagePart(stage, component, componentId)
-						}
+						isOffered={isOffered}
 					/>
 				</Box>
 				<Divider orientation="vertical" />
@@ -212,8 +214,7 @@ function StageView({ stage }: { stage: TutorialStage }) {
 					componentId={shownComponentId}
 					options={{
 						isProtectedNode: (nodeId) => isStagePinNode(store, stage, nodeId),
-						isOffered: (component, componentId) =>
-							isStagePart(stage, component, componentId),
+						isOffered,
 						canCreateComponents: stage.allowsNewComponents,
 						hasProperties: (componentId) => componentId !== stage.componentId,
 					}}

@@ -133,8 +133,8 @@ export const ja: Messages = {
 		contextMenu: {
 			createComponent: "新しいコンポーネントにまとめる...",
 			edit: "編集...",
-			cannotDelete: (names) => `${names.join("・")} は課題で使うので消せません`,
-			keptOnDelete: (names) => `${names.join("・")} は課題で使うので残ります`,
+			cannotDelete: (names) => `${names.join("、")} は課題で使うので消せません`,
+			keptOnDelete: (names) => `${names.join("、")} は課題で使うので残ります`,
 		},
 		frameControl: {
 			auto: "自動",
