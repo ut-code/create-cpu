@@ -132,6 +132,17 @@ describe("the message on a wrong output", () => {
 	});
 });
 
+describe("the message on a pin of the wrong width", () => {
+	it("counts digits in both languages", () => {
+		expect(messagesByLanguage.en.tutorial.wrongBitWidth("A", 4, 1)).toBe(
+			"A should have 4 digits, but it has 1 digit. Check what it is connected to.",
+		);
+		expect(messagesByLanguage.ja.tutorial.wrongBitWidth("A", 4, 1)).toBe(
+			"A は 4けたのはずが、1けたになっています。つないだ先を確かめてください。",
+		);
+	});
+});
+
 describe("English messages", () => {
 	it("lists the inputs reset with their bit widths", () => {
 		expect(

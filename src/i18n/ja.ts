@@ -110,6 +110,8 @@ export const ja: Messages = {
 		backToStages: "課題の一覧へ",
 		missingPin: (pinType, pinName) =>
 			`${pinName} という名前の${pinType === "input" ? "入力" : "出力"}ピンが見つかりません。「この課題をやり直す」で最初の状態に戻せます。`,
+		wrongBitWidth: (pinName, expected, actual) =>
+			`${pinName} は ${expected}けたのはずが、${actual}けたになっています。つないだ先を確かめてください。`,
 		wrongOutput: (inputs, pinName, expected, actual) =>
 			`${inputs.map(({ name, value }) => `${name} が ${value}`).join("、")} のとき、${pinName} は ${expected} になるはずが、${actual === null ? "値がありませんでした" : `${actual} でした`}。`,
 		simulationFailed: (detail) =>

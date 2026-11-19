@@ -1,11 +1,15 @@
 import nullthrows from "nullthrows";
 import { describe, expect, it } from "vitest";
 import { extractNodesIntoNewComponent } from "../store/extractComponent";
-import { and, or } from "../store/intrinsics/definitions";
+import { aggregate, and, decompose, or } from "../store/intrinsics/definitions";
 import {
 	connectTestNodePins,
 	createTestStore,
+	registerTestComponent,
+	registerTestInputNode,
 	registerTestNode,
+	registerTestOutputNode,
+	splitTestNodePin,
 	testNodePin,
 } from "../store/testUtils";
 import {
@@ -195,6 +199,62 @@ describe("checkCombinational", () => {
 			type: "missingPin",
 			pinType: "input",
 			pinName: "B",
+		});
+	});
+});
+
+describe("checkCombinational on pins of several bits", () => {
+	const twoBitCheck: CombinationalCheck = {
+		inputs: [{ name: "A", bitWidth: 2 }],
+		outputs: ["Out"],
+		expected: (values) => ({ Out: [...nullthrows(values.A)] }),
+	};
+
+	it("tells an input left one bit wide", () => {
+		const store = createTestStore();
+		const component = registerTestComponent(store, "Wide");
+		registerTestInputNode(store, component.id, "A");
+		registerTestOutputNode(store, component.id, "Out");
+
+		expect(checkCombinational(store, component.id, twoBitCheck)).toEqual({
+			type: "wrongBitWidth",
+			pinName: "A",
+			expected: 2,
+			actual: 1,
+		});
+	});
+
+	it("tells an output fixed to another width", () => {
+		const store = createTestStore();
+		const component = registerTestComponent(store, "Wide");
+		const a = registerTestInputNode(store, component.id, "A");
+		const out = registerTestOutputNode(store, component.id, "Out");
+		const split = registerTestNode(store, component.id, decompose.component.id);
+		splitTestNodePin(store, split, decompose.outputPin.Out, [1, 1]);
+		const joined = registerTestNode(
+			store,
+			component.id,
+			aggregate.component.id,
+		);
+		splitTestNodePin(store, joined, aggregate.inputPin.In, [1, 1, 1]);
+		connectTestNodePins(
+			store,
+			component.id,
+			a.out,
+			testNodePin(store, split, decompose.inputPin.In),
+		);
+		connectTestNodePins(
+			store,
+			component.id,
+			testNodePin(store, joined, aggregate.outputPin.Out),
+			out.in,
+		);
+
+		expect(checkCombinational(store, component.id, twoBitCheck)).toEqual({
+			type: "wrongBitWidth",
+			pinName: "Out",
+			expected: 2,
+			actual: 3,
 		});
 	});
 });

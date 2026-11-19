@@ -3,6 +3,7 @@ import type CCStore from "../store";
 import type { CCComponentId } from "../store/component";
 import type { CCComponentPinId } from "../store/componentPin";
 import type { TruthTable } from "../store/intrinsics/truthTable";
+import { DEFAULT_SIMULATION_BIT_WIDTH } from "../store/netlist";
 import type { CCNodePinId } from "../store/nodePin";
 import simulateComponent, {
 	type SimulationFrame,
@@ -21,6 +22,12 @@ export type CombinationalCheck = {
 export type CheckResult =
 	| { type: "passed" }
 	| { type: "missingPin"; pinType: "input" | "output"; pinName: string }
+	| {
+			type: "wrongBitWidth";
+			pinName: string;
+			expected: number;
+			actual: number;
+	  }
 	| { type: "simulationFailed"; error: unknown }
 	| {
 			type: "wrongOutput";
@@ -107,6 +114,41 @@ export function checkCombinational(
 			return { type: "missingPin", pinType: "output", pinName: name };
 		}
 		outputNodePinIds.set(name, pin.implementation);
+	}
+
+	// A pin whose width nothing fixes is simulated as one bit wide
+	const bitWidthOf = (nodePinId: CCNodePinId) => {
+		const status = store.nodePins.getNodePinBitWidthStatus(nodePinId);
+		return status.isFixed ? status.bitWidth : DEFAULT_SIMULATION_BIT_WIDTH;
+	};
+	const someExpected = check.expected(
+		nullthrows(inputCombinations(check.inputs).next().value),
+	);
+	const expectedBitWidths = [
+		...check.inputs.map(({ name, bitWidth }) => ({
+			name,
+			bitWidth,
+			nodePinId: nullthrows(
+				store.componentPins.get(nullthrows(inputPinIds.get(name)))
+					?.implementation,
+			),
+		})),
+		...check.outputs.map((name) => ({
+			name,
+			bitWidth: expectedValueOf(someExpected, name).length,
+			nodePinId: nullthrows(outputNodePinIds.get(name)),
+		})),
+	];
+	for (const { name, bitWidth, nodePinId } of expectedBitWidths) {
+		const actual = bitWidthOf(nodePinId);
+		if (actual !== bitWidth) {
+			return {
+				type: "wrongBitWidth",
+				pinName: name,
+				expected: bitWidth,
+				actual,
+			};
+		}
 	}
 
 	for (const inputs of inputCombinations(check.inputs)) {

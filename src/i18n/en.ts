@@ -152,6 +152,8 @@ export const en = {
 		backToStages: "Back to the stages",
 		missingPin: (pinType: "input" | "output", pinName: string) =>
 			`There is no ${pinType} pin named ${pinName}. "Reset this stage" brings back how the stage started.`,
+		wrongBitWidth: (pinName: string, expected: number, actual: number) =>
+			`${pinName} should have ${expected} digits, but it has ${actual === 1 ? "1 digit" : `${actual} digits`}. Check what it is connected to.`,
 		wrongOutput: (
 			inputs: readonly { name: string; value: string }[],
 			pinName: string,

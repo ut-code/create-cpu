@@ -16,7 +16,6 @@ import {
 	useNavigate,
 	useParams,
 } from "react-router";
-import { valueLabel } from "../../common/bitLabel";
 import { BitNotationContext } from "../../components/bitNotation";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
 import {
@@ -24,10 +23,8 @@ import {
 	PartDescriptionView,
 } from "../../components/PartDescription";
 import { TruthTableView } from "../../components/TruthTableView";
-import { type Messages, useMessages } from "../../i18n";
-import type CCStore from "../../store";
+import { useMessages } from "../../i18n";
 import { definitionByComponentId } from "../../store/intrinsics/definitions";
-import { SimulationNodeError } from "../../store/netlist";
 import { StoreScope } from "../../store/react";
 import { theme } from "../../style";
 import {
@@ -35,6 +32,7 @@ import {
 	checkCombinational,
 	truthTableOfCheck,
 } from "../../tutorial/check";
+import { describeFailure } from "../../tutorial/failure";
 import { markStageCleared } from "../../tutorial/progress";
 import {
 	getTutorialStageStore,
@@ -52,36 +50,6 @@ import {
 import CCComponentEditor from "../edit/Editor";
 import type { OffersComponent } from "../edit/placement";
 import SidePanel from "../edit/SidePanel";
-
-function describeFailure(
-	result: Exclude<CheckResult, { type: "passed" }>,
-	store: CCStore,
-	messages: Messages,
-): string {
-	const texts = messages.tutorial;
-	switch (result.type) {
-		case "missingPin":
-			return texts.missingPin(result.pinType, result.pinName);
-		case "wrongOutput":
-			return texts.wrongOutput(
-				result.inputs.map(({ name, value }) => ({
-					name,
-					value: valueLabel(value),
-				})),
-				result.pinName,
-				valueLabel(result.expected),
-				result.actual ? valueLabel(result.actual) : null,
-			);
-		case "simulationFailed":
-			return texts.simulationFailed(
-				result.error instanceof SimulationNodeError
-					? result.error.describe(store, messages.simulation)
-					: result.error instanceof Error
-						? result.error.message
-						: String(result.error),
-			);
-	}
-}
 
 function SectionHeading({ children }: { children: ReactNode }) {
 	return (

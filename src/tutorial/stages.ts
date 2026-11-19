@@ -41,7 +41,13 @@ export type TutorialStage = {
 	tableNotation: BitNotation;
 	/** also the input and output pins the stage starts with */
 	check: CombinationalCheck;
-	solve(circuit: StageCircuit): void;
+	/** how far left and right of the middle the input and output pins sit */
+	pinDistance: number;
+	/**
+	 * Places what the stage starts with besides its pins, and returns how to clear it
+	 * from there. Decorations, such as a display, are only placed for the player.
+	 */
+	layOut(circuit: StageCircuit, options: { decorate: boolean }): () => void;
 };
 
 const gateParts = [and, or, not].map((gate) => gate.component.id);
@@ -52,26 +58,45 @@ const isOn = (value: readonly boolean[] | undefined) => nullthrows(value?.[0]);
 const oneBitInputs = (...names: string[]) =>
 	names.map((name) => ({ name, bitWidth: 1 }));
 
-type StageDefinition = Pick<TutorialStage, "parts" | "check" | "solve"> &
-	Partial<Pick<TutorialStage, "givenParts" | "tableNotation">>;
+/** For a stage that starts with nothing but its pins */
+type Solving = { solve(circuit: StageCircuit): void };
+
+type StageDefinition = Pick<TutorialStage, "parts" | "check"> &
+	Partial<Pick<TutorialStage, "givenParts" | "tableNotation" | "pinDistance">> &
+	(Pick<TutorialStage, "layOut"> | Solving);
 
 function defineStage(
 	id: TutorialStageId,
 	definition: StageDefinition,
 ): TutorialStage {
+	const {
+		parts,
+		check,
+		givenParts = [],
+		tableNotation = "onOff",
+		pinDistance = 300,
+	} = definition;
 	return {
 		id,
 		componentId: `tutorial-${id}` as CCComponentId,
-		givenParts: [],
+		parts,
+		check,
+		givenParts,
+		tableNotation,
+		pinDistance,
 		allowsNewComponents: false,
-		tableNotation: "onOff",
-		...definition,
+		layOut:
+			"layOut" in definition
+				? definition.layOut
+				: (circuit) => () => definition.solve(circuit),
 	};
 }
 
 function twoSwitchesStage(
 	id: TutorialStageId,
-	definition: Omit<StageDefinition, "check">,
+	definition: Pick<TutorialStage, "parts"> &
+		Partial<Pick<TutorialStage, "givenParts">> &
+		Solving,
 	lampIsOn: (a: boolean, b: boolean) => boolean,
 ): TutorialStage {
 	return defineStage(id, {
@@ -332,9 +357,14 @@ function registerStageComponent(
 		input.component.id,
 		input.outputPin.Out,
 		stage.check.inputs.map(({ name }) => name),
-		-300,
+		-stage.pinDistance,
 	);
-	place(output.component.id, output.inputPin.In, stage.check.outputs, 300);
+	place(
+		output.component.id,
+		output.inputPin.In,
+		stage.check.outputs,
+		stage.pinDistance,
+	);
 }
 
 /** Skips the parts `store` already has, as a save from before may lack only some */
@@ -347,19 +377,25 @@ export function registerGivenParts(
 		if (store.components.get(given.componentId)) continue;
 		registerGivenParts(store, given, titleOf);
 		registerStageComponent(store, given, titleOf(given.id));
-		given.solve(new StageCircuit(store, given.componentId));
+		given.layOut(new StageCircuit(store, given.componentId), {
+			decorate: false,
+		})();
 	}
 }
 
 /**
- * Lay out the component of `stage`, with its input and output pins, and the components
- * it hands over, in a mounted store
+ * Lay out the component of `stage`, with its pins and what else it starts with, and the
+ * components it hands over, in a mounted store
+ * @returns builds the stage's solution from there
  */
 export function setUpTutorialStage(
 	store: CCStore,
 	stage: TutorialStage,
 	titleOf: StageTitleOf,
-): void {
+): () => void {
 	registerGivenParts(store, stage, titleOf);
 	registerStageComponent(store, stage, titleOf(stage.id));
+	return stage.layOut(new StageCircuit(store, stage.componentId), {
+		decorate: true,
+	});
 }

@@ -14,7 +14,6 @@ import {
 	registerTestNode,
 } from "../store/testUtils";
 import { checkCombinational } from "./check";
-import { StageCircuit } from "./circuit";
 import {
 	findTutorialStage,
 	isStagePart,
@@ -55,16 +54,21 @@ describe("tutorialStages", () => {
 		"%s is cleared by its solution, made of the parts it offers",
 		(_, solved) => {
 			const store = createTestStore();
-			setUpTutorialStage(store, solved, titleOf);
+			const solve = setUpTutorialStage(store, solved, titleOf);
+			const laidOut = new Set(
+				store.nodes
+					.getManyByParentComponentId(solved.componentId)
+					.map((node) => node.id),
+			);
 
-			solved.solve(new StageCircuit(store, solved.componentId));
+			solve();
 
 			expect(
 				checkCombinational(store, solved.componentId, solved.check),
 			).toEqual({ type: "passed" });
 			const placed = store.nodes
 				.getManyByParentComponentId(solved.componentId)
-				.filter((node) => !isStagePinNode(store, solved, node.id))
+				.filter((node) => !laidOut.has(node.id))
 				.map((node) => node.componentId);
 			const offered = [
 				...solved.parts,
