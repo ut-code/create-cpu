@@ -12,6 +12,8 @@ export type ComponentEditorStoreValue = {
 	readonly isProtectedNode: (nodeId: CCNodeId) => boolean;
 	readonly isOffered: OffersComponent;
 	readonly canCreateComponents: boolean;
+	/** whether the view is fitted to the nodes when the editor first gets its size */
+	readonly fitsNodesInView: boolean;
 	readonly hasProperties: (componentId: CCComponentId) => boolean;
 } & EditorStoreCoreSlice &
 	PerspectiveStoreSlice &

@@ -20,24 +20,24 @@ describe("truthTableOf", () => {
 			inputs: ["A", "B"],
 			outputs: ["Out"],
 			rows: [
-				{ inputs: [false, false], outputs: [false] },
-				{ inputs: [false, true], outputs: [false] },
-				{ inputs: [true, false], outputs: [false] },
-				{ inputs: [true, true], outputs: [true] },
+				{ inputs: [[false], [false]], outputs: [[false]] },
+				{ inputs: [[false], [true]], outputs: [[false]] },
+				{ inputs: [[true], [false]], outputs: [[false]] },
+				{ inputs: [[true], [true]], outputs: [[true]] },
 			],
 		});
 		expect(truthTableOf(xor)?.rows.map((row) => row.outputs[0])).toEqual([
-			false,
-			true,
-			true,
-			false,
+			[false],
+			[true],
+			[true],
+			[false],
 		]);
 		expect(truthTableOf(not)?.rows).toEqual([
-			{ inputs: [false], outputs: [true] },
-			{ inputs: [true], outputs: [false] },
+			{ inputs: [[false]], outputs: [[true]] },
+			{ inputs: [[true]], outputs: [[false]] },
 		]);
 		expect(truthTableOf(true_)?.rows).toEqual([
-			{ inputs: [], outputs: [true] },
+			{ inputs: [], outputs: [[true]] },
 		]);
 	});
 

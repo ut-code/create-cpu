@@ -1,5 +1,6 @@
 import nullthrows from "nullthrows";
 import type { BitNotation } from "../common/bitLabel";
+import { bitsOf, numberOf } from "../common/bits";
 import type CCStore from "../store";
 import {
 	type CCComponent,
@@ -8,15 +9,20 @@ import {
 } from "../store/component";
 import type { CCComponentPin } from "../store/componentPin";
 import {
+	aggregate,
 	and,
+	decompose,
+	display,
+	false_,
 	input,
 	not,
 	or,
 	output,
+	seven_segment,
 	xor,
 } from "../store/intrinsics/definitions";
 import { type CCNodeId, CCNodeStore } from "../store/node";
-import type { CombinationalCheck } from "./check";
+import type { CombinationalCheck, PinValues } from "./check";
 import { StageCircuit } from "./circuit";
 
 export const tutorialStageIds = [
@@ -25,6 +31,7 @@ export const tutorialStageIds = [
 	"xor",
 	"half-adder",
 	"full-adder",
+	"four-bit-adder",
 ] as const;
 export type TutorialStageId = (typeof tutorialStageIds)[number];
 export type StageTitleOf = (id: TutorialStageId) => string;
@@ -41,7 +48,15 @@ export type TutorialStage = {
 	tableNotation: BitNotation;
 	/** also the input and output pins the stage starts with */
 	check: CombinationalCheck;
-	solve(circuit: StageCircuit): void;
+	/** inputs the goal shows when every combination of them is too many */
+	examples: readonly PinValues[];
+	/** how far left and right of the middle the input and output pins sit */
+	pinDistance: number;
+	/**
+	 * Places what the stage starts with besides its pins, and returns how to clear it
+	 * from there. Decorations, such as a display, are only placed for the player.
+	 */
+	layOut(circuit: StageCircuit, options: { decorate: boolean }): () => void;
 };
 
 const gateParts = [and, or, not].map((gate) => gate.component.id);
@@ -52,26 +67,52 @@ const isOn = (value: readonly boolean[] | undefined) => nullthrows(value?.[0]);
 const oneBitInputs = (...names: string[]) =>
 	names.map((name) => ({ name, bitWidth: 1 }));
 
-type StageDefinition = Pick<TutorialStage, "parts" | "check" | "solve"> &
-	Partial<Pick<TutorialStage, "givenParts" | "tableNotation">>;
+/** For a stage that starts with nothing but its pins */
+type Solving = { solve(circuit: StageCircuit): void };
+
+type StageDefinition = Pick<TutorialStage, "parts" | "check"> &
+	Partial<
+		Pick<
+			TutorialStage,
+			"givenParts" | "tableNotation" | "pinDistance" | "examples"
+		>
+	> &
+	(Pick<TutorialStage, "layOut"> | Solving);
 
 function defineStage(
 	id: TutorialStageId,
 	definition: StageDefinition,
 ): TutorialStage {
+	const {
+		parts,
+		check,
+		givenParts = [],
+		tableNotation = "onOff",
+		pinDistance = 300,
+		examples = [],
+	} = definition;
 	return {
 		id,
 		componentId: `tutorial-${id}` as CCComponentId,
-		givenParts: [],
+		parts,
+		check,
+		givenParts,
+		tableNotation,
+		pinDistance,
+		examples,
 		allowsNewComponents: false,
-		tableNotation: "onOff",
-		...definition,
+		layOut:
+			"layOut" in definition
+				? definition.layOut
+				: (circuit) => () => definition.solve(circuit),
 	};
 }
 
 function twoSwitchesStage(
 	id: TutorialStageId,
-	definition: Omit<StageDefinition, "check">,
+	definition: Pick<TutorialStage, "parts"> &
+		Partial<Pick<TutorialStage, "givenParts">> &
+		Solving,
 	lampIsOn: (a: boolean, b: boolean) => boolean,
 ): TutorialStage {
 	return defineStage(id, {
@@ -214,12 +255,114 @@ const fullAdderStage = defineStage("full-adder", {
 	},
 });
 
+const digitCount = 4;
+
+const fourBitAdderStage = defineStage("four-bit-adder", {
+	parts: [decompose, aggregate, false_].map((part) => part.component.id),
+	givenParts: ["full-adder"],
+	tableNotation: "digits",
+	pinDistance: 420,
+	check: {
+		inputs: [
+			{ name: "A", bitWidth: digitCount },
+			{ name: "B", bitWidth: digitCount },
+		],
+		outputs: ["C", "S"],
+		expected: (values) => {
+			const total =
+				numberOf(nullthrows(values.A)) + numberOf(nullthrows(values.B));
+			return {
+				C: bit(total >= 2 ** digitCount),
+				S: bitsOf(total % 2 ** digitCount, digitCount),
+			};
+		},
+	},
+	examples: [
+		[3, 5],
+		[6, 7],
+		[9, 8],
+	].map(([a, b]) => ({
+		A: bitsOf(nullthrows(a), digitCount),
+		B: bitsOf(nullthrows(b), digitCount),
+	})),
+	layOut(circuit, { decorate }) {
+		const single = new Array<number>(digitCount).fill(1);
+		const splitA = circuit.place(decompose.component.id, { x: -250, y: -170 });
+		const splitB = circuit.place(decompose.component.id, { x: -250, y: 170 });
+		const joined = circuit.place(aggregate.component.id, { x: 150, y: 100 });
+		circuit.split(splitA, decompose.outputPin.Out, single);
+		circuit.split(splitB, decompose.outputPin.Out, single);
+		circuit.split(joined, aggregate.inputPin.In, single);
+		circuit.connect(
+			circuit.pin("A"),
+			circuit.pinOf(splitA, decompose.inputPin.In),
+		);
+		circuit.connect(
+			circuit.pin("B"),
+			circuit.pinOf(splitB, decompose.inputPin.In),
+		);
+		const sum = circuit.pinOf(joined, aggregate.outputPin.Out);
+		circuit.connect(sum, circuit.pin("S"));
+		if (decorate) {
+			const digit = circuit.place(seven_segment.component.id, {
+				x: 290,
+				y: -250,
+			});
+			const screen = circuit.place(
+				display.component.id,
+				{ x: 430, y: -250 },
+				{ resolution: { x: 4, y: 7 }, pixelOrder: "row-major" },
+			);
+			circuit.connect(sum, circuit.pinOf(digit, seven_segment.inputPin.In));
+			circuit.connect(
+				circuit.pinOf(digit, seven_segment.outputPin.Out),
+				circuit.pinOf(screen, display.inputPin.Pixels),
+			);
+		}
+		return () => {
+			const adders = Array.from({ length: digitCount }, (_, index) =>
+				circuit.place(fullAdderStage.componentId, {
+					x: -50,
+					y: -300 + 200 * index,
+				}),
+			);
+			const noCarry = circuit.place(false_.component.id, { x: -200, y: 390 });
+			for (const [index, adder] of adders.entries()) {
+				circuit.connect(
+					circuit.pinOf(splitA, decompose.outputPin.Out, index),
+					circuit.pinOf(adder, "A"),
+				);
+				circuit.connect(
+					circuit.pinOf(splitB, decompose.outputPin.Out, index),
+					circuit.pinOf(adder, "B"),
+				);
+				circuit.connect(
+					circuit.pinOf(adder, "S"),
+					circuit.pinOf(joined, aggregate.inputPin.In, index),
+				);
+				const lower = adders[index + 1];
+				circuit.connect(
+					lower
+						? circuit.pinOf(lower, "C")
+						: circuit.pinOf(noCarry, false_.outputPin.Out),
+					circuit.pinOf(adder, "Cin"),
+				);
+			}
+			circuit.connect(
+				circuit.pinOf(nullthrows(adders[0]), "C"),
+				circuit.pin("C"),
+			);
+		};
+	},
+});
+
 export const tutorialStages: readonly TutorialStage[] = [
 	andStage,
 	aOnlyStage,
 	xorStage,
 	halfAdderStage,
 	fullAdderStage,
+	fourBitAdderStage,
 ];
 
 export function findTutorialStage(id: string | undefined) {
@@ -255,14 +398,19 @@ export function isStagePart(
 	editedComponentId: CCComponentId,
 ) {
 	const owner = stageOwning(stage, editedComponentId);
+	const isGivenTo = (receiver: TutorialStage) =>
+		receiver.givenParts.some(
+			(id) => tutorialStageById(id).componentId === component.id,
+		);
 	if (owner && owner !== stage) {
 		return component.intrinsicType
 			? owner.parts.includes(component.id)
-			: owner.givenParts.some(
-					(id) => tutorialStageById(id).componentId === component.id,
-				);
+			: isGivenTo(owner);
 	}
-	if (!component.intrinsicType) return true;
+	if (!component.intrinsicType) {
+		// A part handed over to a part handed over is built in, not offered
+		return !isStageComponent(stage, component.id) || isGivenTo(stage);
+	}
 	if (owner) return owner.parts.includes(component.id);
 	// A component of the player's own gets its pins from Input and Output nodes
 	return (
@@ -332,9 +480,14 @@ function registerStageComponent(
 		input.component.id,
 		input.outputPin.Out,
 		stage.check.inputs.map(({ name }) => name),
-		-300,
+		-stage.pinDistance,
 	);
-	place(output.component.id, output.inputPin.In, stage.check.outputs, 300);
+	place(
+		output.component.id,
+		output.inputPin.In,
+		stage.check.outputs,
+		stage.pinDistance,
+	);
 }
 
 /** Skips the parts `store` already has, as a save from before may lack only some */
@@ -347,19 +500,25 @@ export function registerGivenParts(
 		if (store.components.get(given.componentId)) continue;
 		registerGivenParts(store, given, titleOf);
 		registerStageComponent(store, given, titleOf(given.id));
-		given.solve(new StageCircuit(store, given.componentId));
+		given.layOut(new StageCircuit(store, given.componentId), {
+			decorate: false,
+		})();
 	}
 }
 
 /**
- * Lay out the component of `stage`, with its input and output pins, and the components
- * it hands over, in a mounted store
+ * Lay out the component of `stage`, with its pins and what else it starts with, and the
+ * components it hands over, in a mounted store
+ * @returns builds the stage's solution from there
  */
 export function setUpTutorialStage(
 	store: CCStore,
 	stage: TutorialStage,
 	titleOf: StageTitleOf,
-): void {
+): () => void {
 	registerGivenParts(store, stage, titleOf);
 	registerStageComponent(store, stage, titleOf(stage.id));
+	return stage.layOut(new StageCircuit(store, stage.componentId), {
+		decorate: true,
+	});
 }

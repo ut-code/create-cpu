@@ -1,11 +1,12 @@
 import { mapValues } from "es-toolkit";
 import nullthrows from "nullthrows";
+import type { SimulationValue } from "../simulation";
 import { IntrinsicComponentDefinition } from "./base";
 
 export type TruthTable = {
 	inputs: string[];
 	outputs: string[];
-	rows: { inputs: boolean[]; outputs: boolean[] }[];
+	rows: { inputs: SimulationValue[]; outputs: SimulationValue[] }[];
 };
 
 const maxInputCount = 2;
@@ -45,9 +46,9 @@ export function truthTableOf(
 			},
 		);
 		return {
-			inputs,
+			inputs: inputs.map((input) => [input]),
 			outputs: outputKeys.map((key) =>
-				nullthrows(values[key]?.[0]?.[0], `No value for ${key}`),
+				nullthrows(values[key]?.[0], `No value for ${key}`),
 			),
 		};
 	});

@@ -1,23 +1,12 @@
 import { chunk } from "es-toolkit";
 import invariant from "tiny-invariant";
+import { bitsOf, numberOf } from "../../../../../common/bits";
 import type { Messages } from "../../../../../i18n/messages";
 import type { CCIntrinsicComponentConstSpecConfigViewMode as Mode } from "../../../../../store/intrinsics/types";
 import type { SimulationValue } from "../../../../../store/simulation";
 
 const bitsPerHexDigit = 4;
 const bitsPerByte = 8;
-
-/** Bits are ordered from the most significant one, as in `SimulationValue`. */
-function toBits(value: number, bitCount: number): boolean[] {
-	return Array.from(
-		{ length: bitCount },
-		(_, i) => ((value >> (bitCount - 1 - i)) & 1) === 1,
-	);
-}
-
-function fromBits(bits: boolean[]): number {
-	return bits.reduce((value, bit) => value * 2 + (bit ? 1 : 0), 0);
-}
 
 /** Pads the head with zeros so that the length becomes a multiple of `unit`. */
 function padBits(bits: SimulationValue, unit: number): boolean[] {
@@ -34,12 +23,12 @@ export function formatSimulationValue(
 			return data.map((bit) => (bit ? "1" : "0")).join("");
 		case "hex":
 			return chunk(padBits(data, bitsPerHexDigit), bitsPerHexDigit)
-				.map((digit) => fromBits(digit).toString(16))
+				.map((digit) => numberOf(digit).toString(16))
 				.join("");
 		case "utf-8": {
 			const bytes = Uint8Array.from(
 				chunk(padBits(data, bitsPerByte), bitsPerByte),
-				fromBits,
+				numberOf,
 			);
 			return new TextDecoder("utf-8", { ignoreBOM: true }).decode(bytes);
 		}
@@ -61,13 +50,13 @@ export function parseSimulationValue(
 			const digits = text.replace(/\s/g, "").replace(/^0x/i, "");
 			if (!/^[0-9a-f]+$/i.test(digits)) return null;
 			return [...digits].flatMap((digit) =>
-				toBits(Number.parseInt(digit, 16), bitsPerHexDigit),
+				bitsOf(Number.parseInt(digit, 16), bitsPerHexDigit),
 			);
 		}
 		case "utf-8": {
 			const bytes = new TextEncoder().encode(text);
 			if (bytes.length === 0) return null;
-			return [...bytes].flatMap((byte) => toBits(byte, bitsPerByte));
+			return [...bytes].flatMap((byte) => bitsOf(byte, bitsPerByte));
 		}
 	}
 }

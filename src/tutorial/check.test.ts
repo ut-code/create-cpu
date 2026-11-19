@@ -1,18 +1,23 @@
 import nullthrows from "nullthrows";
 import { describe, expect, it } from "vitest";
 import { extractNodesIntoNewComponent } from "../store/extractComponent";
-import { and, or } from "../store/intrinsics/definitions";
+import { aggregate, and, decompose, or } from "../store/intrinsics/definitions";
 import {
 	connectTestNodePins,
 	createTestStore,
+	registerTestComponent,
+	registerTestInputNode,
 	registerTestNode,
+	registerTestOutputNode,
+	splitTestNodePin,
 	testNodePin,
+	tryConnectTestNodePins,
 } from "../store/testUtils";
 import {
 	type CombinationalCheck,
 	checkCombinational,
+	goalTableOf,
 	inputCombinations,
-	truthTableOfCheck,
 } from "./check";
 import {
 	findTutorialStage,
@@ -65,16 +70,16 @@ describe("inputCombinations", () => {
 	});
 });
 
-describe("truthTableOfCheck", () => {
+describe("goalTableOf", () => {
 	it("lists what the stage asks for, in the order the check tries the inputs", () => {
-		expect(truthTableOfCheck(xorStage.check)).toEqual({
+		expect(goalTableOf(xorStage.check, [])).toEqual({
 			inputs: ["A", "B"],
 			outputs: ["Out"],
 			rows: [
-				{ inputs: [false, false], outputs: [false] },
-				{ inputs: [false, true], outputs: [true] },
-				{ inputs: [true, false], outputs: [true] },
-				{ inputs: [true, true], outputs: [false] },
+				{ inputs: [[false], [false]], outputs: [[false]] },
+				{ inputs: [[false], [true]], outputs: [[true]] },
+				{ inputs: [[true], [false]], outputs: [[true]] },
+				{ inputs: [[true], [true]], outputs: [[false]] },
 			],
 		});
 	});
@@ -82,32 +87,25 @@ describe("truthTableOfCheck", () => {
 	it("lists several outputs in the order the stage names them", () => {
 		const halfAdder = nullthrows(findTutorialStage("half-adder"));
 
-		expect(truthTableOfCheck(halfAdder.check)).toEqual({
-			inputs: ["A", "B"],
-			outputs: ["C", "S"],
-			rows: [
-				{ inputs: [false, false], outputs: [false, false] },
-				{ inputs: [false, true], outputs: [false, true] },
-				{ inputs: [true, false], outputs: [false, true] },
-				{ inputs: [true, true], outputs: [true, false] },
-			],
-		});
+		expect(goalTableOf(halfAdder.check, [])?.rows).toEqual([
+			{ inputs: [[false], [false]], outputs: [[false], [false]] },
+			{ inputs: [[false], [true]], outputs: [[false], [true]] },
+			{ inputs: [[true], [false]], outputs: [[false], [true]] },
+			{ inputs: [[true], [true]], outputs: [[true], [false]] },
+		]);
 	});
 
-	it("gives no table when a pin carries more than one bit", () => {
-		const wideInput: CombinationalCheck = {
+	it("shows only the examples when an input has several bits", () => {
+		const wide: CombinationalCheck = {
 			inputs: [{ name: "A", bitWidth: 2 }],
 			outputs: ["Out"],
-			expected: () => ({ Out: [false] }),
-		};
-		const wideOutput: CombinationalCheck = {
-			inputs: [{ name: "A", bitWidth: 1 }],
-			outputs: ["Out"],
-			expected: () => ({ Out: [false, false] }),
+			expected: (values) => ({ Out: [...nullthrows(values.A)].reverse() }),
 		};
 
-		expect(truthTableOfCheck(wideInput)).toBeNull();
-		expect(truthTableOfCheck(wideOutput)).toBeNull();
+		expect(goalTableOf(wide, [])).toBeNull();
+		expect(goalTableOf(wide, [{ A: [true, false] }])?.rows).toEqual([
+			{ inputs: [[true, false]], outputs: [[false, true]] },
+		]);
 	});
 
 	it("refuses a check that gives no value for an output", () => {
@@ -117,7 +115,7 @@ describe("truthTableOfCheck", () => {
 			expected: () => ({}),
 		};
 
-		expect(() => truthTableOfCheck(check)).toThrow("Out");
+		expect(() => goalTableOf(check, [])).toThrow("Out");
 	});
 });
 
@@ -173,6 +171,20 @@ describe("checkCombinational", () => {
 		});
 	});
 
+	it("reports a check that throws instead of throwing", () => {
+		const { store } = stageStore(andStage);
+		const error = new Error("broken");
+
+		expect(
+			checkCombinational(store, andStage.componentId, {
+				...andStage.check,
+				expected: () => {
+					throw error;
+				},
+			}),
+		).toEqual({ type: "checkFailed", error });
+	});
+
 	it("reports a circuit that cannot be simulated", () => {
 		const { store } = stageStore(andStage);
 
@@ -195,6 +207,113 @@ describe("checkCombinational", () => {
 			type: "missingPin",
 			pinType: "input",
 			pinName: "B",
+		});
+	});
+});
+
+describe("checkCombinational on pins of several bits", () => {
+	const twoBitCheck: CombinationalCheck = {
+		inputs: [{ name: "A", bitWidth: 2 }],
+		outputs: ["Out"],
+		expected: (values) => ({ Out: [...nullthrows(values.A)] }),
+	};
+
+	it("tells an input left one bit wide", () => {
+		const store = createTestStore();
+		const component = registerTestComponent(store, "Wide");
+		registerTestInputNode(store, component.id, "A");
+		registerTestOutputNode(store, component.id, "Out");
+
+		expect(checkCombinational(store, component.id, twoBitCheck)).toEqual({
+			type: "wrongBitWidth",
+			pinName: "A",
+			expected: 2,
+			actual: 1,
+		});
+	});
+
+	it("leaves an unconnected output to the simulation", () => {
+		const store = createTestStore();
+		const component = registerTestComponent(store, "Wide");
+		const a = registerTestInputNode(store, component.id, "A");
+		registerTestOutputNode(store, component.id, "Out");
+		const split = registerTestNode(store, component.id, decompose.component.id);
+		splitTestNodePin(store, split, decompose.outputPin.Out, [1, 1]);
+		connectTestNodePins(
+			store,
+			component.id,
+			a.out,
+			testNodePin(store, split, decompose.inputPin.In),
+		);
+
+		expect(checkCombinational(store, component.id, twoBitCheck)).toMatchObject({
+			type: "simulationFailed",
+		});
+	});
+
+	it("leaves a pin in a width conflict to the simulation", () => {
+		const store = createTestStore();
+		const component = registerTestComponent(store, "Wide");
+		const a = registerTestInputNode(store, component.id, "A");
+		registerTestOutputNode(store, component.id, "Out");
+		const split = registerTestNode(store, component.id, decompose.component.id);
+		splitTestNodePin(store, split, decompose.outputPin.Out, [1, 1]);
+		const joined = registerTestNode(
+			store,
+			component.id,
+			aggregate.component.id,
+		);
+		connectTestNodePins(
+			store,
+			component.id,
+			a.out,
+			testNodePin(store, split, decompose.inputPin.In),
+		);
+		tryConnectTestNodePins(
+			store,
+			component.id,
+			a.out,
+			testNodePin(store, joined, aggregate.inputPin.In),
+			{ allowBitWidthConflict: true },
+		);
+
+		expect(store.nodePins.isInBitWidthConflict(a.out)).toBe(true);
+		expect(checkCombinational(store, component.id, twoBitCheck)).toMatchObject({
+			type: "simulationFailed",
+		});
+	});
+
+	it("tells an output fixed to another width", () => {
+		const store = createTestStore();
+		const component = registerTestComponent(store, "Wide");
+		const a = registerTestInputNode(store, component.id, "A");
+		const out = registerTestOutputNode(store, component.id, "Out");
+		const split = registerTestNode(store, component.id, decompose.component.id);
+		splitTestNodePin(store, split, decompose.outputPin.Out, [1, 1]);
+		const joined = registerTestNode(
+			store,
+			component.id,
+			aggregate.component.id,
+		);
+		splitTestNodePin(store, joined, aggregate.inputPin.In, [1, 1, 1]);
+		connectTestNodePins(
+			store,
+			component.id,
+			a.out,
+			testNodePin(store, split, decompose.inputPin.In),
+		);
+		connectTestNodePins(
+			store,
+			component.id,
+			testNodePin(store, joined, aggregate.outputPin.Out),
+			out.in,
+		);
+
+		expect(checkCombinational(store, component.id, twoBitCheck)).toEqual({
+			type: "wrongBitWidth",
+			pinName: "Out",
+			expected: 2,
+			actual: 3,
 		});
 	});
 });

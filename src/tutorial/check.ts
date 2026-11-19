@@ -3,6 +3,7 @@ import type CCStore from "../store";
 import type { CCComponentId } from "../store/component";
 import type { CCComponentPinId } from "../store/componentPin";
 import type { TruthTable } from "../store/intrinsics/truthTable";
+import { DEFAULT_SIMULATION_BIT_WIDTH } from "../store/netlist";
 import type { CCNodePinId } from "../store/nodePin";
 import simulateComponent, {
 	type SimulationFrame,
@@ -21,7 +22,14 @@ export type CombinationalCheck = {
 export type CheckResult =
 	| { type: "passed" }
 	| { type: "missingPin"; pinType: "input" | "output"; pinName: string }
+	| {
+			type: "wrongBitWidth";
+			pinName: string;
+			expected: number;
+			actual: number;
+	  }
 	| { type: "simulationFailed"; error: unknown }
+	| { type: "checkFailed"; error: unknown }
 	| {
 			type: "wrongOutput";
 			inputs: readonly { name: string; value: SimulationValue }[];
@@ -53,27 +61,28 @@ function expectedValueOf(expected: PinValues, name: string) {
 	return nullthrows(expected[name], `The check gives no value for ${name}`);
 }
 
-/** null when a pin carries more than one bit */
-export function truthTableOfCheck(
+/**
+ * Every combination of the inputs when each is one bit, or else the given examples,
+ * with what the outputs should be; null when there is nothing to show
+ */
+export function goalTableOf(
 	check: CombinationalCheck,
+	examples: readonly PinValues[],
 ): TruthTable | null {
-	if (check.inputs.some(({ bitWidth }) => bitWidth !== 1)) return null;
-	const rows: TruthTable["rows"] = [];
-	for (const inputs of inputCombinations(check.inputs)) {
-		const expected = check.expected(inputs);
-		const outputs = check.outputs.map((name) =>
-			expectedValueOf(expected, name),
-		);
-		if (outputs.some((value) => value.length !== 1)) return null;
-		rows.push({
-			inputs: check.inputs.map(({ name }) => nullthrows(inputs[name]?.[0])),
-			outputs: outputs.map((value) => nullthrows(value[0])),
-		});
-	}
+	const rows = check.inputs.every(({ bitWidth }) => bitWidth === 1)
+		? [...inputCombinations(check.inputs)]
+		: examples;
+	if (rows.length === 0) return null;
 	return {
 		inputs: check.inputs.map(({ name }) => name),
 		outputs: [...check.outputs],
-		rows,
+		rows: rows.map((inputs) => {
+			const expected = check.expected(inputs);
+			return {
+				inputs: check.inputs.map(({ name }) => nullthrows(inputs[name])),
+				outputs: check.outputs.map((name) => expectedValueOf(expected, name)),
+			};
+		}),
 	};
 }
 
@@ -86,6 +95,18 @@ function isSameValue(a: SimulationValue, b: SimulationValue | undefined) {
 }
 
 export function checkCombinational(
+	store: CCStore,
+	componentId: CCComponentId,
+	check: CombinationalCheck,
+): CheckResult {
+	try {
+		return checkCircuit(store, componentId, check);
+	} catch (error) {
+		return { type: "checkFailed", error };
+	}
+}
+
+function checkCircuit(
 	store: CCStore,
 	componentId: CCComponentId,
 	check: CombinationalCheck,
@@ -107,6 +128,46 @@ export function checkCombinational(
 			return { type: "missingPin", pinType: "output", pinName: name };
 		}
 		outputNodePinIds.set(name, pin.implementation);
+	}
+
+	// An input nothing fixes is simulated one bit wide. A conflict or an unconnected
+	// output is left to the simulation, which tells what is wrong with it.
+	const bitWidthOf = (nodePinId: CCNodePinId, pinType: "input" | "output") => {
+		if (store.nodePins.isInBitWidthConflict(nodePinId)) return null;
+		const status = store.nodePins.getNodePinBitWidthStatus(nodePinId);
+		if (status.isFixed) return status.bitWidth;
+		return pinType === "input" ? DEFAULT_SIMULATION_BIT_WIDTH : null;
+	};
+	const someExpected = check.expected(
+		nullthrows(inputCombinations(check.inputs).next().value),
+	);
+	const expectedBitWidths = [
+		...check.inputs.map(({ name, bitWidth }) => ({
+			name,
+			pinType: "input" as const,
+			bitWidth,
+			nodePinId: nullthrows(
+				store.componentPins.get(nullthrows(inputPinIds.get(name)))
+					?.implementation,
+			),
+		})),
+		...check.outputs.map((name) => ({
+			name,
+			pinType: "output" as const,
+			bitWidth: expectedValueOf(someExpected, name).length,
+			nodePinId: nullthrows(outputNodePinIds.get(name)),
+		})),
+	];
+	for (const { name, pinType, bitWidth, nodePinId } of expectedBitWidths) {
+		const actual = bitWidthOf(nodePinId, pinType);
+		if (actual !== null && actual !== bitWidth) {
+			return {
+				type: "wrongBitWidth",
+				pinName: name,
+				expected: bitWidth,
+				actual,
+			};
+		}
 	}
 
 	for (const inputs of inputCombinations(check.inputs)) {

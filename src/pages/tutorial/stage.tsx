@@ -16,7 +16,6 @@ import {
 	useNavigate,
 	useParams,
 } from "react-router";
-import { valueLabel } from "../../common/bitLabel";
 import { BitNotationContext } from "../../components/bitNotation";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
 import {
@@ -24,17 +23,16 @@ import {
 	PartDescriptionView,
 } from "../../components/PartDescription";
 import { TruthTableView } from "../../components/TruthTableView";
-import { type Messages, useMessages } from "../../i18n";
-import type CCStore from "../../store";
+import { useMessages } from "../../i18n";
 import { definitionByComponentId } from "../../store/intrinsics/definitions";
-import { SimulationNodeError } from "../../store/netlist";
 import { StoreScope } from "../../store/react";
 import { theme } from "../../style";
 import {
 	type CheckResult,
 	checkCombinational,
-	truthTableOfCheck,
+	goalTableOf,
 } from "../../tutorial/check";
+import { describeFailure } from "../../tutorial/failure";
 import { markStageCleared } from "../../tutorial/progress";
 import {
 	getTutorialStageStore,
@@ -52,36 +50,6 @@ import {
 import CCComponentEditor from "../edit/Editor";
 import type { OffersComponent } from "../edit/placement";
 import SidePanel from "../edit/SidePanel";
-
-function describeFailure(
-	result: Exclude<CheckResult, { type: "passed" }>,
-	store: CCStore,
-	messages: Messages,
-): string {
-	const texts = messages.tutorial;
-	switch (result.type) {
-		case "missingPin":
-			return texts.missingPin(result.pinType, result.pinName);
-		case "wrongOutput":
-			return texts.wrongOutput(
-				result.inputs.map(({ name, value }) => ({
-					name,
-					value: valueLabel(value),
-				})),
-				result.pinName,
-				valueLabel(result.expected),
-				result.actual ? valueLabel(result.actual) : null,
-			);
-		case "simulationFailed":
-			return texts.simulationFailed(
-				result.error instanceof SimulationNodeError
-					? result.error.describe(store, messages.simulation)
-					: result.error instanceof Error
-						? result.error.message
-						: String(result.error),
-			);
-	}
-}
 
 function SectionHeading({ children }: { children: ReactNode }) {
 	return (
@@ -103,7 +71,7 @@ function StageView({ stage }: { stage: TutorialStage }) {
 	const stageIndex = tutorialStages.indexOf(stage);
 	const nextStage = tutorialStages[stageIndex + 1];
 	const titleOf: StageTitleOf = (id) => texts.stageTexts[id].title;
-	const goalTable = truthTableOfCheck(stage.check);
+	const goalTable = goalTableOf(stage.check, stage.examples);
 	const stageTexts = texts.stageTexts[stage.id];
 
 	const [store, setStore] = useState(() =>
@@ -129,6 +97,7 @@ function StageView({ stage }: { stage: TutorialStage }) {
 
 	const check = () => {
 		const checked = checkCombinational(store, stage.componentId, stage.check);
+		if (checked.type === "checkFailed") console.error(checked.error);
 		setResult(checked);
 		if (checked.type === "passed") markStageCleared(stage.id);
 	};
@@ -223,16 +192,16 @@ function StageView({ stage }: { stage: TutorialStage }) {
 										}
 									/>
 								))}
-								{stage.givenParts.map((id) => (
-									<PartDescriptionView
-										key={id}
-										name={titleOf(id)}
-										summary={null}
-										table={truthTableOfCheck(
-											nullthrows(findTutorialStage(id)).check,
-										)}
-									/>
-								))}
+								{stage.givenParts
+									.map((id) => nullthrows(findTutorialStage(id)))
+									.map((given) => (
+										<PartDescriptionView
+											key={given.id}
+											name={titleOf(given.id)}
+											summary={null}
+											table={goalTableOf(given.check, given.examples)}
+										/>
+									))}
 							</Stack>
 						</div>
 						<Box sx={{ flexGrow: 1 }} />
@@ -299,6 +268,7 @@ function StageView({ stage }: { stage: TutorialStage }) {
 							isProtectedNode: (nodeId) => isStagePinNode(store, stage, nodeId),
 							isOffered,
 							canCreateComponents: stage.allowsNewComponents,
+							fitsNodesInView: true,
 							hasProperties: (componentId) =>
 								!isStageComponent(stage, componentId),
 						}}

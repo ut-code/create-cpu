@@ -6,6 +6,7 @@ const listOf = (names: readonly string[]) =>
 	names.length < 2
 		? names.join("")
 		: `${names.slice(0, -1).join(", ")} and ${names.at(-1)}`;
+const digits = (count: number) => (count === 1 ? "1 digit" : `${count} digits`);
 const themOf = (names: readonly string[]) =>
 	names.length === 1 ? "it" : "them";
 
@@ -14,7 +15,7 @@ type StageTexts = { title: string; goal: string; steps: readonly string[] };
 const stageTexts: Record<TutorialStageId, StageTexts> = {
 	and: {
 		title: "Both switches",
-		goal: "Make the lamp Out light up only when both switches A and B are ON. The stage is cleared when the circuit works as in the table below.",
+		goal: "Make the lamp Out turn ON only when both switches A and B are ON. The stage is cleared when the circuit works as in the table below.",
 		steps: [
 			"Pick a part in the Parts list and drag it onto the editor on the right.",
 			"The small squares on the edges of a part are its pins. A pin on the left side is an input, which receives ON or OFF, and a pin on the right side is an output, which sends ON or OFF. Drag between an output pin and an input pin to connect them with a wire.",
@@ -25,12 +26,12 @@ const stageTexts: Record<TutorialStageId, StageTexts> = {
 	},
 	"a-only": {
 		title: "Only switch A",
-		goal: "Make the lamp Out light up only when switch A is ON and B is OFF. This time, one part alone is not enough.",
+		goal: "Make the lamp Out turn ON only when switch A is ON and B is OFF. This time, one part alone is not enough.",
 		steps: [],
 	},
 	xor: {
 		title: "Only one switch",
-		goal: 'Make the lamp Out light up when exactly one of the switches A and B is ON. It does not light up when both are ON. "Only switch A" is ready to use as a part.',
+		goal: 'Make the lamp Out turn ON when exactly one of the switches A and B is ON. It stays OFF when both are ON. "Only switch A" is ready to use as a part.',
 		steps: [],
 	},
 	"half-adder": {
@@ -42,6 +43,16 @@ const stageTexts: Record<TutorialStageId, StageTexts> = {
 		title: "Adding with a carry",
 		goal: 'Output A + B + Cin as a two-digit binary number to C and S. Cin is the carry coming up from the next lower digit. The answer is 0 to 3, and 3 is 11 in binary. "Adding one digit" is ready to use as a part: add A and B with one, then add Cin to its S with another. This circuit is called a full adder.',
 		steps: [],
+	},
+	"four-bit-adder": {
+		title: "Adding four digits",
+		goal: "A and B are four-digit binary numbers. Output A + B in four digits to S, and its fifth digit, the sixteens digit, to C: C is 1 when A + B is 16 or more. The table shows some examples.",
+		steps: [
+			'Place four "Adding with a carry". From the top, the pins on the right of Decompose and on the left of Aggregate are the eights, fours, twos and ones digits.',
+			"For each digit, connect that digit's pin on the upper Decompose, which A goes into, and on the lower one, which B goes into, to the A and B of one \"Adding with a carry\". Connect the S of that adder to the same digit's pin of Aggregate.",
+			"Connect the C of each digit's adder to the Cin of the adder one digit up. The ones digit's adder gets False on its Cin, and the C of the eights digit's adder goes to the output C on the right.",
+			"While playing, click a digit of A or B to switch it between 0 and 1. The sum S is shown as one character on the Display at the top right. The 7seg before it turns the binary number into the shape of a numeral. To write 10 to 15 with one character, A (10), b (11), C (12), d (13), E (14) and F (15) are used. This way of writing is called hexadecimal.",
+		],
 	},
 };
 
@@ -62,6 +73,10 @@ export const en = {
 			XOR: "ON when exactly one input is ON",
 			TRUE: "Always ON",
 			FALSE: "Always OFF",
+			DECOMPOSE:
+				"Splits a number of several digits, from the highest digit down",
+			AGGREGATE:
+				"Joins values into one number, the upper pins as the higher digits",
 		},
 		about: (name: string) => `About ${name}`,
 		ofStage: "Available parts",
@@ -152,6 +167,8 @@ export const en = {
 		backToStages: "Back to the stages",
 		missingPin: (pinType: "input" | "output", pinName: string) =>
 			`There is no ${pinType} pin named ${pinName}. "Reset this stage" brings back how the stage started.`,
+		wrongBitWidth: (pinName: string, expected: number, actual: number) =>
+			`${pinName} should have ${digits(expected)}, but it has ${digits(actual)}. Check what it is connected to.`,
 		wrongOutput: (
 			inputs: readonly { name: string; value: string }[],
 			pinName: string,
@@ -159,6 +176,8 @@ export const en = {
 			actual: string | null,
 		) =>
 			`When ${listOf(inputs.map(({ name, value }) => `${name} is ${value}`))}, ${pinName} should be ${expected}, but it ${actual === null ? "has no value" : `is ${actual}`}.`,
+		checkFailed:
+			"Something went wrong while checking. Change the circuit a little and press Check again.",
 		simulationFailed: (detail: string) =>
 			`The circuit could not be simulated. ${detail}`,
 		resetStage: "Reset this stage",
