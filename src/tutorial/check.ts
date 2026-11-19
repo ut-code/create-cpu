@@ -153,10 +153,10 @@ export function goalTableOf(check: CircuitCheck): TruthTable | null {
 		if (shownStepNumbers.length === 0) return null;
 		return {
 			...names,
-			rows: shownStepNumbers.map((number) =>
-				rowOf(nullthrows(check.steps[number - 1])),
-			),
-			stepNumbers: [...shownStepNumbers],
+			rows: shownStepNumbers.map((stepNumber) => ({
+				...rowOf(nullthrows(check.steps[stepNumber - 1])),
+				stepNumber,
+			})),
 		};
 	}
 	const rows = check.inputs.every(({ bitWidth }) => bitWidth === 1)

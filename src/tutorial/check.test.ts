@@ -136,11 +136,10 @@ describe("goalTableOf", () => {
 			inputs: ["Up"],
 			outputs: ["Odd"],
 			rows: [
-				{ inputs: [[true]], outputs: [[false]] },
-				{ inputs: [[true]], outputs: [[true]] },
-				{ inputs: [[true]], outputs: [[false]] },
+				{ inputs: [[true]], outputs: [[false]], stepNumber: 1 },
+				{ inputs: [[true]], outputs: [[true]], stepNumber: 3 },
+				{ inputs: [[true]], outputs: [[false]], stepNumber: 4 },
 			],
-			stepNumbers: [1, 3, 4],
 		});
 	});
 
@@ -400,6 +399,12 @@ describe("sequentialCheck refuses steps that do not fit the pins", () => {
 			"steps shown",
 		);
 		expect(() => sequentialCheck(pins, model, twoSteps, [2, 1])).toThrow(
+			"steps shown",
+		);
+		expect(() => sequentialCheck(pins, model, twoSteps, [0])).toThrow(
+			"steps shown",
+		);
+		expect(() => sequentialCheck(pins, model, twoSteps, [1, 1])).toThrow(
 			"steps shown",
 		);
 	});

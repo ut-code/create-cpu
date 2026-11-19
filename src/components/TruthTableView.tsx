@@ -1,34 +1,21 @@
 import { Box, type Theme } from "@mui/material";
-import { Fragment, useContext } from "react";
+import { useContext } from "react";
 import { bitDigit, bitLabel } from "../common/bitLabel";
 import { useMessages } from "../i18n";
 import type { TruthTable } from "../store/intrinsics/truthTable";
 import type { SimulationValue } from "../store/simulation";
 import { theme } from "../style";
 import { BitNotationContext } from "./bitNotation";
+import { truthTableColumnsOf, truthTableLinesOf } from "./truthTableLayout";
 
 const divider = (muiTheme: Theme) => `1px solid ${muiTheme.palette.divider}`;
 const onSx = { color: theme.colors.primary, fontWeight: "bold" } as const;
-const binaryOf = (value: SimulationValue) => value.map(bitDigit).join("");
 
 export function TruthTableView({ table }: { table: TruthTable }) {
 	const messages = useMessages();
 	const singleBitLabel =
 		useContext(BitNotationContext) === "digits" ? bitDigit : bitLabel;
-	const { stepNumbers } = table;
-	const groups = [
-		...(stepNumbers
-			? [[{ key: "step", name: messages.tutorial.timeStepColumn }]]
-			: []),
-		table.inputs.map((name) => ({ key: `in-${name}`, name })),
-		table.outputs.map((name) => ({ key: `out-${name}`, name })),
-	].filter((group) => group.length > 0);
-	const columns = groups.flatMap((group, groupIndex) =>
-		group.map((column, index) => ({
-			...column,
-			startsGroup: groupIndex > 0 && index === 0,
-		})),
-	);
+	const columns = truthTableColumnsOf(table, messages.truthTable.timeStep);
 	const cellSx = (column: number) =>
 		({
 			px: 1,
@@ -71,34 +58,22 @@ export function TruthTableView({ table }: { table: TruthTable }) {
 				</tr>
 			</thead>
 			<tbody>
-				{table.rows.map((row, rowIndex) => {
-					const stepNumber = stepNumbers?.[rowIndex];
-					const previousStepNumber = stepNumbers?.[rowIndex - 1];
-					const cells = [
-						...(stepNumber === undefined ? [] : [String(stepNumber)]),
-						...[...row.inputs, ...row.outputs].map(valueCell),
-					];
+				{truthTableLinesOf(table).map((line) => {
+					const cells =
+						line.type === "gap"
+							? columns.map(() => "⋮")
+							: [
+									...(line.stepLabel === null ? [] : [line.stepLabel]),
+									...line.values.map(valueCell),
+								];
 					return (
-						<Fragment key={stepNumber ?? row.inputs.map(binaryOf).join()}>
-							{stepNumber !== undefined &&
-								previousStepNumber !== undefined &&
-								stepNumber > previousStepNumber + 1 && (
-									<tr>
-										{columns.map(({ key }, i) => (
-											<Box key={key} component="td" sx={cellSx(i)}>
-												⋮
-											</Box>
-										))}
-									</tr>
-								)}
-							<tr>
-								{cells.map((cell, i) => (
-									<Box key={columns[i]?.key} component="td" sx={cellSx(i)}>
-										{cell}
-									</Box>
-								))}
-							</tr>
-						</Fragment>
+						<tr key={line.key}>
+							{cells.map((cell, i) => (
+								<Box key={columns[i]?.key} component="td" sx={cellSx(i)}>
+									{cell}
+								</Box>
+							))}
+						</tr>
 					);
 				})}
 			</tbody>
