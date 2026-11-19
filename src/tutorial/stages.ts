@@ -421,7 +421,7 @@ const decimalDigitStage = defineStage("decimal-digit", {
 	),
 	givenParts: ["four-bit-adder"],
 	tableNotation: "digits",
-	pinDistance: 600,
+	pinDistance: 560,
 	check: sequentialCheck(
 		{ inputs: oneBitInputs("Up"), outputs: ["Count", "Carry"] },
 		{
@@ -442,19 +442,21 @@ const decimalDigitStage = defineStage("decimal-digit", {
 		[1, 2, 10, 11, 12, 13],
 	),
 	layOut(circuit, { decorate }) {
-		const memory = circuit.place(flipflop.component.id, { x: 250, y: -100 });
+		// The adder sits well below the FlipFlop, so that the wire from Count to A
+		// crosses over and does not look like S already going into the FlipFlop
+		const memory = circuit.place(flipflop.component.id, { x: 200, y: -100 });
 		const adder = circuit.place(fourBitAdderStage.componentId, {
-			x: -120,
-			y: -100,
+			x: -60,
+			y: 120,
 		});
 		const one = circuit.place(
 			const_.component.id,
-			{ x: -420, y: -330 },
+			{ x: -350, y: -300 },
 			{ mode: "binary", data: bitsOf(1, digitCount) },
 		);
-		const spreadUp = circuit.place(broadcast.component.id, { x: -420, y: 60 });
-		const step = circuit.place(and.component.id, { x: -260, y: -40 });
-		const digits = circuit.place(decompose.component.id, { x: 250, y: 130 });
+		const spreadUp = circuit.place(broadcast.component.id, { x: -380, y: 100 });
+		const step = circuit.place(and.component.id, { x: -220, y: 40 });
+		const digits = circuit.place(decompose.component.id, { x: 200, y: 170 });
 		circuit.setBitWidth(spreadUp, broadcast.outputPin.Out, digitCount);
 		circuit.split(
 			digits,
@@ -482,17 +484,17 @@ const decimalDigitStage = defineStage("decimal-digit", {
 			circuit.pinOf(adder, "B"),
 		);
 		if (decorate) {
-			circuit.connect(count, placeNumeral(circuit, { x: 420, y: -330 }));
+			circuit.connect(count, placeNumeral(circuit, { x: 380, y: -330 }));
 		}
 		return () => {
-			const nineAt = circuit.place(and.component.id, { x: 420, y: 150 });
-			const carries = circuit.place(and.component.id, { x: 500, y: 100 });
-			const stays = circuit.place(not.component.id, { x: 0, y: 60 });
+			const nineAt = circuit.place(and.component.id, { x: 340, y: 230 });
+			const carries = circuit.place(and.component.id, { x: 440, y: 130 });
+			const stays = circuit.place(not.component.id, { x: 340, y: 30 });
 			const spreadStays = circuit.place(broadcast.component.id, {
-				x: 120,
-				y: 60,
+				x: 340,
+				y: -30,
 			});
-			const kept = circuit.place(and.component.id, { x: 70, y: -100 });
+			const kept = circuit.place(and.component.id, { x: 60, y: -60 });
 			circuit.setBitWidth(spreadStays, broadcast.outputPin.Out, digitCount);
 			const digit = (index: number) =>
 				circuit.pinOf(digits, decompose.outputPin.Out, index);

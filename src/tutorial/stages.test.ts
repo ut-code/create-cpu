@@ -1,5 +1,6 @@
 import nullthrows from "nullthrows";
 import { describe, expect, it } from "vitest";
+import { getCCComponentEditorRendererNodeGeometry } from "../pages/edit/Editor/renderer/Node/geometry";
 import type { CCComponentId } from "../store/component";
 import {
 	and,
@@ -81,6 +82,36 @@ describe("tutorialStages", () => {
 			];
 			expect(placed.length).toBeGreaterThan(0);
 			expect(offered).toEqual(expect.arrayContaining(placed));
+		},
+	);
+});
+
+describe("the layout of every stage", () => {
+	it.each(tutorialStages.map((s) => [s.id, s] as const))(
+		"%s places no node over another, also once solved",
+		(_, laidOut) => {
+			const store = createTestStore();
+			setUpTutorialStage(store, laidOut, titleOf)();
+			const rects = store.nodes
+				.getManyByParentComponentId(laidOut.componentId)
+				.map((node) => ({
+					name: nullthrows(store.components.get(node.componentId)).name,
+					...getCCComponentEditorRendererNodeGeometry(store, node.id).rect,
+				}));
+			const overlaps = rects.flatMap((a, i) =>
+				rects
+					.slice(i + 1)
+					.filter(
+						(b) =>
+							a.position.x < b.position.x + b.size.x &&
+							b.position.x < a.position.x + a.size.x &&
+							a.position.y < b.position.y + b.size.y &&
+							b.position.y < a.position.y + a.size.y,
+					)
+					.map((b) => `${a.name} and ${b.name}`),
+			);
+
+			expect(overlaps).toEqual([]);
 		},
 	);
 });
