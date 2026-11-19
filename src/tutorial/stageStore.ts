@@ -3,6 +3,8 @@ import { CCStoreAutoSaver } from "../store/autoSaver";
 import { importStoreJson } from "../store/savedStore";
 import { forgetClearedStages } from "./progress";
 import {
+	registerGivenParts,
+	type StageTitleOf,
 	setUpTutorialStage,
 	type TutorialStage,
 	tutorialStages,
@@ -15,15 +17,18 @@ function storageKeyOf(stage: TutorialStage) {
 // One store per stage for the whole visit, so that rendering twice reuses it
 const storeByStageId = new Map<TutorialStage["id"], CCStore>();
 
-function createStageStore(stage: TutorialStage, componentName: string) {
+function createStageStore(stage: TutorialStage, titleOf: StageTitleOf) {
 	const store = new CCStore({ storageKey: storageKeyOf(stage) });
 	store.mount();
-	setUpTutorialStage(store, stage, componentName);
+	setUpTutorialStage(store, stage, titleOf);
 	store.autoSaver.watch();
 	return store;
 }
 
-function restoreStageStore(stage: TutorialStage): CCStore | null {
+function restoreStageStore(
+	stage: TutorialStage,
+	titleOf: StageTitleOf,
+): CCStore | null {
 	const json = CCStoreAutoSaver.readSaved(storageKeyOf(stage));
 	if (!json) return null;
 	let store: CCStore;
@@ -37,6 +42,8 @@ function restoreStageStore(stage: TutorialStage): CCStore | null {
 	}
 	if (!store.components.get(stage.componentId)) return null;
 	store.mount();
+	// A save from before the stage handed a part over keeps the player's circuit
+	registerGivenParts(store, stage, titleOf);
 	store.autoSaver.watch();
 	return store;
 }
@@ -47,11 +54,12 @@ function restoreStageStore(stage: TutorialStage): CCStore | null {
  */
 export function getTutorialStageStore(
 	stage: TutorialStage,
-	componentName: string,
+	titleOf: StageTitleOf,
 ): CCStore {
 	let store = storeByStageId.get(stage.id);
 	if (!store) {
-		store = restoreStageStore(stage) ?? createStageStore(stage, componentName);
+		store =
+			restoreStageStore(stage, titleOf) ?? createStageStore(stage, titleOf);
 		storeByStageId.set(stage.id, store);
 	}
 	return store;
@@ -66,10 +74,10 @@ function forgetStage(stage: TutorialStage) {
 
 export function resetTutorialStage(
 	stage: TutorialStage,
-	componentName: string,
+	titleOf: StageTitleOf,
 ): CCStore {
 	forgetStage(stage);
-	return getTutorialStageStore(stage, componentName);
+	return getTutorialStageStore(stage, titleOf);
 }
 
 /** Forget every stage and what was cleared, for the next player */

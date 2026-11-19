@@ -18,7 +18,10 @@ import {
 } from "react-router";
 import { valueLabel } from "../../common/bitLabel";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
-import { PartDescription } from "../../components/PartDescription";
+import {
+	PartDescription,
+	PartDescriptionView,
+} from "../../components/PartDescription";
 import { TruthTableView } from "../../components/TruthTableView";
 import { type Messages, useMessages } from "../../i18n";
 import type CCStore from "../../store";
@@ -38,8 +41,10 @@ import {
 } from "../../tutorial/stageStore";
 import {
 	findTutorialStage,
+	isStageComponent,
 	isStagePart,
 	isStagePinNode,
+	type StageTitleOf,
 	type TutorialStage,
 	tutorialStages,
 } from "../../tutorial/stages";
@@ -96,11 +101,11 @@ function StageView({ stage }: { stage: TutorialStage }) {
 	const navigate = useNavigate();
 	const stageIndex = tutorialStages.indexOf(stage);
 	const nextStage = tutorialStages[stageIndex + 1];
-	const componentName = texts.stageTexts[stage.id].title;
+	const titleOf: StageTitleOf = (id) => texts.stageTexts[id].title;
 	const goalTable = truthTableOfCheck(stage.check);
 
 	const [store, setStore] = useState(() =>
-		getTutorialStageStore(stage, componentName),
+		getTutorialStageStore(stage, titleOf),
 	);
 	const [editedComponentId, setEditedComponentId] = useState(stage.componentId);
 	const [result, setResult] = useState<CheckResult | null>(null);
@@ -129,7 +134,7 @@ function StageView({ stage }: { stage: TutorialStage }) {
 	const resetStage = () => {
 		setIsConfirmingReset(false);
 		try {
-			setStore(resetTutorialStage(stage, componentName));
+			setStore(resetTutorialStage(stage, titleOf));
 			setResetCount((count) => count + 1);
 			setEditedComponentId(stage.componentId);
 			setResult(null);
@@ -217,6 +222,16 @@ function StageView({ stage }: { stage: TutorialStage }) {
 								}
 							/>
 						))}
+						{stage.givenParts.map((id) => (
+							<PartDescriptionView
+								key={id}
+								name={titleOf(id)}
+								summary={null}
+								table={truthTableOfCheck(
+									nullthrows(findTutorialStage(id)).check,
+								)}
+							/>
+						))}
 					</Stack>
 				</div>
 				<Box sx={{ flexGrow: 1 }} />
@@ -254,7 +269,8 @@ function StageView({ stage }: { stage: TutorialStage }) {
 						isProtectedNode: (nodeId) => isStagePinNode(store, stage, nodeId),
 						isOffered,
 						canCreateComponents: stage.allowsNewComponents,
-						hasProperties: (componentId) => componentId !== stage.componentId,
+						hasProperties: (componentId) =>
+							!isStageComponent(stage, componentId),
 					}}
 					onEditComponent={setEditedComponentId}
 					onClose={() => {

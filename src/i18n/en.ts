@@ -134,9 +134,13 @@ export const en = {
 				title: "Both switches",
 				goal: "Make the lamp Out light up only when both switches A and B are ON. Drag parts from the Parts list onto the editor, and drag from pin to pin to connect them. The play button at the bottom right lets you try the switches. When it works, press Check.",
 			},
+			"a-only": {
+				title: "Only switch A",
+				goal: "Make the lamp Out light up only when switch A is ON and B is OFF. This time, one part alone is not enough.",
+			},
 			xor: {
 				title: "Only one switch",
-				goal: "Make the lamp Out light up when exactly one of the switches A and B is ON. It does not light up when both are ON.",
+				goal: 'Make the lamp Out light up when exactly one of the switches A and B is ON. It does not light up when both are ON. "Only switch A" is ready to use as a part.',
 			},
 		},
 	},
