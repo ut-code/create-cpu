@@ -1,6 +1,7 @@
 import { mapValues } from "es-toolkit";
 import nullthrows from "nullthrows";
 import invariant from "tiny-invariant";
+import { valueLabel } from "../../../../../../common/bitLabel";
 import { messagesByLanguage } from "../../../../../../i18n/messages";
 import type { CCComponentPinId } from "../../../../../../store/componentPin";
 import {
@@ -31,8 +32,8 @@ import {
 } from "./types";
 
 export function stringifySimulationValue(value: SimulationValue): string {
+	if (value.length <= 4) return valueLabel(value);
 	const binary = value.map((v) => (v ? "1" : "0")).join("");
-	if (value.length <= 4) return binary;
 	return `0x${Number.parseInt(binary, 2).toString(16)}`;
 }
 
