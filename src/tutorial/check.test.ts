@@ -1,6 +1,7 @@
+import nullthrows from "nullthrows";
 import { describe, expect, it } from "vitest";
 import { extractNodesIntoNewComponent } from "../store/extractComponent";
-import { and, not, or } from "../store/intrinsics/definitions";
+import { and, or } from "../store/intrinsics/definitions";
 import {
 	connectTestNodePins,
 	createTestStore,
@@ -14,14 +15,14 @@ import {
 	truthTableOfCheck,
 } from "./check";
 import {
+	findTutorialStage,
 	setUpTutorialStage,
 	type TutorialStage,
-	tutorialStages,
 } from "./stages";
 
 function stageStore(stage: TutorialStage) {
 	const store = createTestStore();
-	setUpTutorialStage(store, stage, "Lamp");
+	setUpTutorialStage(store, stage, (id) => id);
 	const pins = store.componentPins.getManyByComponentId(stage.componentId);
 	const pinOf = (name: string) => {
 		const pin = pins.find((p) => p.name === name);
@@ -44,8 +45,8 @@ function wireGate(stage: TutorialStage, gate: typeof and | typeof or) {
 	return store;
 }
 
-const [andStage, xorStage] = tutorialStages;
-if (!andStage || !xorStage) throw new Error("Two stages are expected");
+const andStage = nullthrows(findTutorialStage("and"));
+const xorStage = nullthrows(findTutorialStage("xor"));
 
 describe("inputCombinations", () => {
 	it("counts up with the first input as the high bits", () => {
@@ -112,43 +113,6 @@ describe("checkCombinational", () => {
 		expect(
 			checkCombinational(store, andStage.componentId, andStage.check),
 		).toEqual({
-			type: "passed",
-		});
-	});
-
-	it("passes the second stage built from AND, OR and NOT", () => {
-		const { store, pinOf } = stageStore(xorStage);
-		const id = xorStage.componentId;
-		const either = registerTestNode(store, id, or.component.id);
-		const both = registerTestNode(store, id, and.component.id);
-		const notBoth = registerTestNode(store, id, not.component.id);
-		const only = registerTestNode(store, id, and.component.id);
-		const connect = (
-			from: Parameters<typeof connectTestNodePins>[2],
-			to: typeof from,
-		) => connectTestNodePins(store, id, from, to);
-		for (const [node, gate] of [
-			[either, or],
-			[both, and],
-		] as const) {
-			connect(pinOf("A"), testNodePin(store, node, gate.inputPin.A));
-			connect(pinOf("B"), testNodePin(store, node, gate.inputPin.B));
-		}
-		connect(
-			testNodePin(store, both, and.outputPin.Out),
-			testNodePin(store, notBoth, not.inputPin.In),
-		);
-		connect(
-			testNodePin(store, either, or.outputPin.Out),
-			testNodePin(store, only, and.inputPin.A),
-		);
-		connect(
-			testNodePin(store, notBoth, not.outputPin.Out),
-			testNodePin(store, only, and.inputPin.B),
-		);
-		connect(testNodePin(store, only, and.outputPin.Out), pinOf("Out"));
-
-		expect(checkCombinational(store, id, xorStage.check)).toEqual({
 			type: "passed",
 		});
 	});

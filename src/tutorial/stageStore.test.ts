@@ -1,17 +1,28 @@
+import nullthrows from "nullthrows";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CCStoreAutoSaver } from "../store/autoSaver";
-import { registerTestComponent, stubLocalStorage } from "../store/testUtils";
+import {
+	createTestStore,
+	registerTestComponent,
+	stubLocalStorage,
+} from "../store/testUtils";
 import { markStageCleared, readClearedStages } from "./progress";
 import {
 	getTutorialStageStore,
 	resetTutorial,
 	resetTutorialStage,
 } from "./stageStore";
-import { tutorialStages } from "./stages";
+import {
+	findTutorialStage,
+	setUpTutorialStage,
+	type TutorialStageId,
+	tutorialStages,
+} from "./stages";
 
 const [firstStage, secondStage] = tutorialStages;
 if (!firstStage || !secondStage) throw new Error("Two stages are expected");
 const firstKey = `ccTutorialStage:${firstStage.id}`;
+const titleOf = (id: TutorialStageId) => `Stage ${id}`;
 
 let saved: Map<string, string>;
 beforeEach(() => {
@@ -27,7 +38,7 @@ afterEach(() => {
 describe("getTutorialStageStore", () => {
 	it("saves apart from the free mode", () => {
 		saved.set(CCStoreAutoSaver.localStorageKey, "free mode");
-		const store = getTutorialStageStore(firstStage, "Lamp");
+		const store = getTutorialStageStore(firstStage, titleOf);
 
 		registerTestComponent(store, "Mine");
 		vi.advanceTimersByTime(2000);
@@ -37,7 +48,7 @@ describe("getTutorialStageStore", () => {
 	});
 
 	it("lays out the stage, and saves it only once it changes", () => {
-		const store = getTutorialStageStore(firstStage, "Lamp");
+		const store = getTutorialStageStore(firstStage, titleOf);
 
 		expect(store.components.get(firstStage.componentId)).toBeDefined();
 		expect(
@@ -53,13 +64,13 @@ describe("getTutorialStageStore", () => {
 	});
 
 	it("gives the same store while the page is open", () => {
-		expect(getTutorialStageStore(firstStage, "Lamp")).toBe(
-			getTutorialStageStore(firstStage, "Lamp"),
+		expect(getTutorialStageStore(firstStage, titleOf)).toBe(
+			getTutorialStageStore(firstStage, titleOf),
 		);
 	});
 
 	it("brings back a stage saved earlier", () => {
-		const earlier = getTutorialStageStore(firstStage, "Lamp");
+		const earlier = getTutorialStageStore(firstStage, titleOf);
 		registerTestComponent(earlier, "Mine");
 		vi.advanceTimersByTime(2000);
 		const json = earlier.toJSON();
@@ -68,15 +79,28 @@ describe("getTutorialStageStore", () => {
 		vi.resetModules();
 
 		return import("./stageStore").then(({ getTutorialStageStore: fresh }) => {
-			expect(fresh(firstStage, "Lamp").toJSON()).toBe(json);
+			expect(fresh(firstStage, titleOf).toJSON()).toBe(json);
 		});
+	});
+
+	it("starts a stage over when what was saved lacks a part it hands over", async () => {
+		const stage = nullthrows(findTutorialStage("xor"));
+		const given = nullthrows(findTutorialStage(stage.givenParts[0]));
+		const earlier = createTestStore();
+		setUpTutorialStage(earlier, stage, titleOf);
+		await earlier.components.unregister(given.componentId);
+		saved.set(`ccTutorialStage:${stage.id}`, earlier.toJSON());
+
+		const store = getTutorialStageStore(stage, titleOf);
+
+		expect(store.components.get(given.componentId)).toBeDefined();
 	});
 
 	it("starts a stage over when what was saved is broken", () => {
 		saved.set(firstKey, "broken");
 		vi.spyOn(console, "warn").mockImplementation(() => {});
 
-		const store = getTutorialStageStore(firstStage, "Lamp");
+		const store = getTutorialStageStore(firstStage, titleOf);
 
 		expect(store.components.get(firstStage.componentId)).toBeDefined();
 	});
@@ -84,10 +108,10 @@ describe("getTutorialStageStore", () => {
 
 describe("resetTutorialStage", () => {
 	it("lays the stage out anew and stops the old store from saving", () => {
-		const old = getTutorialStageStore(firstStage, "Lamp");
+		const old = getTutorialStageStore(firstStage, titleOf);
 		registerTestComponent(old, "Mine");
 
-		const store = resetTutorialStage(firstStage, "Lamp");
+		const store = resetTutorialStage(firstStage, titleOf);
 		vi.advanceTimersByTime(2000);
 
 		expect(store).not.toBe(old);
@@ -100,7 +124,7 @@ describe("resetTutorialStage", () => {
 
 describe("resetTutorial", () => {
 	it("forgets every stage and what was cleared", () => {
-		const store = getTutorialStageStore(secondStage, "Lamp");
+		const store = getTutorialStageStore(secondStage, titleOf);
 		registerTestComponent(store, "Mine");
 		vi.advanceTimersByTime(2000);
 		markStageCleared(firstStage.id);
@@ -109,6 +133,6 @@ describe("resetTutorial", () => {
 
 		expect(saved.size).toBe(0);
 		expect(readClearedStages().size).toBe(0);
-		expect(getTutorialStageStore(secondStage, "Lamp")).not.toBe(store);
+		expect(getTutorialStageStore(secondStage, titleOf)).not.toBe(store);
 	});
 });

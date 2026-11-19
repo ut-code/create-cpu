@@ -1,3 +1,4 @@
+import nullthrows from "nullthrows";
 import { describe, expect, it } from "vitest";
 import { and, input, output, xor } from "../store/intrinsics/definitions";
 import {
@@ -5,20 +6,72 @@ import {
 	registerTestComponent,
 	registerTestNode,
 } from "../store/testUtils";
+import { checkCombinational } from "./check";
+import { StageCircuit } from "./circuit";
 import {
+	findTutorialStage,
+	hasStageComponents,
 	isStagePart,
 	isStagePinNode,
 	setUpTutorialStage,
+	type TutorialStageId,
 	tutorialStages,
 } from "./stages";
 
 const [stage] = tutorialStages;
 if (!stage) throw new Error("No stage");
+const titleOf = (id: TutorialStageId) => `Stage ${id}`;
+
+describe("tutorialStages", () => {
+	it.each(tutorialStages.map((s) => [s.id, s] as const))(
+		"%s is cleared by its solution, made of the parts it offers",
+		(_, solved) => {
+			const store = createTestStore();
+			setUpTutorialStage(store, solved, titleOf);
+
+			solved.solve(new StageCircuit(store, solved.componentId));
+
+			expect(
+				checkCombinational(store, solved.componentId, solved.check),
+			).toEqual({ type: "passed" });
+			const placed = store.nodes
+				.getManyByParentComponentId(solved.componentId)
+				.filter((node) => !isStagePinNode(store, solved, node.id))
+				.map((node) => node.componentId);
+			const offered = [
+				...solved.parts,
+				...solved.givenParts.map(
+					(id) => nullthrows(findTutorialStage(id)).componentId,
+				),
+			];
+			expect(placed.length).toBeGreaterThan(0);
+			expect(offered).toEqual(expect.arrayContaining(placed));
+		},
+	);
+});
+
+describe("setUpTutorialStage", () => {
+	it("hands over the parts of earlier stages, built and named after them", () => {
+		const xorStage = nullthrows(findTutorialStage("xor"));
+		const aOnlyStage = nullthrows(findTutorialStage("a-only"));
+		const store = createTestStore();
+
+		setUpTutorialStage(store, xorStage, titleOf);
+
+		expect(hasStageComponents(store, xorStage)).toBe(true);
+		expect(store.components.get(aOnlyStage.componentId)?.name).toBe(
+			"Stage a-only",
+		);
+		expect(
+			checkCombinational(store, aOnlyStage.componentId, aOnlyStage.check),
+		).toEqual({ type: "passed" });
+	});
+});
 
 describe("isStagePinNode", () => {
 	it("tells the pins the stage placed from the nodes the player adds", () => {
 		const store = createTestStore();
-		setUpTutorialStage(store, stage, "Lamp");
+		setUpTutorialStage(store, stage, titleOf);
 		const placed = store.nodes.getManyByParentComponentId(stage.componentId);
 		const gate = registerTestNode(store, stage.componentId, and.component.id);
 		const own = registerTestComponent(store, "Mine");

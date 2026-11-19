@@ -2,7 +2,7 @@ import { Box, Typography } from "@mui/material";
 import { type Messages, useMessages } from "../i18n";
 import type { CCComponent } from "../store/component";
 import { definitionByComponentId } from "../store/intrinsics/definitions";
-import { truthTableOf } from "../store/intrinsics/truthTable";
+import { type TruthTable, truthTableOf } from "../store/intrinsics/truthTable";
 import { TruthTableView } from "./TruthTableView";
 
 type Summaries = Messages["parts"]["summaries"];
@@ -19,10 +19,25 @@ export function partSummary(
 
 export function PartDescription({ component }: { component: CCComponent }) {
 	const messages = useMessages();
-	const summary = partSummary(messages, component);
 	const definition = definitionByComponentId.get(component.id);
-	const table = definition && truthTableOf(definition);
+	return (
+		<PartDescriptionView
+			name={component.name}
+			summary={partSummary(messages, component)}
+			table={definition ? truthTableOf(definition) : null}
+		/>
+	);
+}
 
+export function PartDescriptionView({
+	name,
+	summary,
+	table,
+}: {
+	name: string;
+	summary: string | null;
+	table: TruthTable | null;
+}) {
 	return (
 		<div>
 			<Typography
@@ -30,7 +45,7 @@ export function PartDescription({ component }: { component: CCComponent }) {
 				component="h4"
 				sx={{ fontWeight: "bold" }}
 			>
-				{component.name}
+				{name}
 			</Typography>
 			{summary && <Typography variant="body2">{summary}</Typography>}
 			{table && (
