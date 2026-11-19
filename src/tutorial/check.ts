@@ -49,6 +49,10 @@ export function* inputCombinations(
 	}
 }
 
+function expectedValueOf(expected: PinValues, name: string) {
+	return nullthrows(expected[name], `The check gives no value for ${name}`);
+}
+
 /** null when a pin carries more than one bit, which a table of ON and OFF cannot show */
 export function truthTableOfCheck(
 	check: CombinationalCheck,
@@ -57,11 +61,13 @@ export function truthTableOfCheck(
 	const rows: TruthTable["rows"] = [];
 	for (const inputs of inputCombinations(check.inputs)) {
 		const expected = check.expected(inputs);
-		const outputs = check.outputs.map((name) => expected[name]);
-		if (outputs.some((value) => value?.length !== 1)) return null;
+		const outputs = check.outputs.map((name) =>
+			expectedValueOf(expected, name),
+		);
+		if (outputs.some((value) => value.length !== 1)) return null;
 		rows.push({
 			inputs: check.inputs.map(({ name }) => nullthrows(inputs[name]?.[0])),
-			outputs: outputs.map((value) => nullthrows(value?.[0])),
+			outputs: outputs.map((value) => nullthrows(value[0])),
 		});
 	}
 	return {
@@ -116,10 +122,7 @@ export function checkCombinational(
 		}
 		const expected = check.expected(inputs);
 		for (const name of check.outputs) {
-			const expectedValue = nullthrows(
-				expected[name],
-				`The check gives no value for ${name}`,
-			);
+			const expectedValue = expectedValueOf(expected, name);
 			const actual = frame.getNodePinValue(
 				nullthrows(outputNodePinIds.get(name)),
 			);

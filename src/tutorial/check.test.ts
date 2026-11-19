@@ -93,6 +93,16 @@ describe("truthTableOfCheck", () => {
 		expect(truthTableOfCheck(wideInput)).toBeNull();
 		expect(truthTableOfCheck(wideOutput)).toBeNull();
 	});
+
+	it("refuses a check that gives no value for an output", () => {
+		const check: CombinationalCheck = {
+			inputs: [{ name: "A", bitWidth: 1 }],
+			outputs: ["Out"],
+			expected: () => ({}),
+		};
+
+		expect(() => truthTableOfCheck(check)).toThrow("Out");
+	});
 });
 
 describe("checkCombinational", () => {

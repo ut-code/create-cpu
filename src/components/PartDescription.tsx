@@ -3,7 +3,7 @@ import { type Messages, useMessages } from "../i18n";
 import type { CCComponent } from "../store/component";
 import { definitionByComponentId } from "../store/intrinsics/definitions";
 import { truthTableOf } from "../store/intrinsics/truthTable";
-import { TruthTableView } from "./TruthTable";
+import { TruthTableView } from "./TruthTableView";
 
 type Summaries = Messages["parts"]["summaries"];
 

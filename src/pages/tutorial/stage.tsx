@@ -19,7 +19,7 @@ import {
 import { valueLabel } from "../../common/bitLabel";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
 import { PartDescription } from "../../components/PartDescription";
-import { TruthTableView } from "../../components/TruthTable";
+import { TruthTableView } from "../../components/TruthTableView";
 import { type Messages, useMessages } from "../../i18n";
 import type CCStore from "../../store";
 import { definitionByComponentId } from "../../store/intrinsics/definitions";
