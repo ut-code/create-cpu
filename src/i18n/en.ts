@@ -18,7 +18,7 @@ const stageTexts: Record<TutorialStageId, StageTexts> = {
 		steps: [
 			"Pick a part in the Parts list and drag it onto the editor on the right.",
 			"The small squares on the edges of a part are its pins. A pin on the left side is an input, which receives ON or OFF, and a pin on the right side is an output, which sends ON or OFF. Drag between an output pin and an input pin to connect them with a wire.",
-			"Once Out and every pin on the left side of the parts you placed are connected, the play button at the bottom right can be pressed. It cannot be pressed while a part has a free pin on its left side.",
+			"Once Out and every input pin of the parts you placed are connected, the play button at the bottom right can be pressed. It cannot be pressed while a part has a free input pin.",
 			"After pressing it, click the switches A and B to turn them ON and OFF, and watch the lamp Out. To fix the circuit, the pencil button in the same place takes you back to editing.",
 			"When it works as in the table, press Check.",
 		],
