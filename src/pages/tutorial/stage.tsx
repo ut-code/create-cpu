@@ -8,6 +8,7 @@ import {
 	Stack,
 	Typography,
 } from "@mui/material";
+import nullthrows from "nullthrows";
 import { useEffect, useState } from "react";
 import {
 	Navigate,
@@ -16,8 +17,10 @@ import {
 	useParams,
 } from "react-router";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
+import { PartDescription } from "../../components/PartDescription";
 import { type Messages, useMessages } from "../../i18n";
 import type CCStore from "../../store";
+import { definitionByComponentId } from "../../store/intrinsics/definitions";
 import { SimulationNodeError } from "../../store/netlist";
 import { StoreScope } from "../../store/react";
 import type { SimulationValue } from "../../store/simulation";
@@ -39,7 +42,7 @@ import CCComponentEditor from "../edit/Editor";
 import type { OffersComponent } from "../edit/placement";
 import SidePanel from "../edit/SidePanel";
 
-function formatValue(value: SimulationValue, texts: Messages["tutorial"]) {
+function formatValue(value: SimulationValue, texts: Messages["common"]) {
 	if (value.length === 1) return value[0] ? texts.on : texts.off;
 	return value.map((bit) => (bit ? "1" : "0")).join("");
 }
@@ -57,11 +60,11 @@ function describeFailure(
 			return texts.wrongOutput(
 				result.inputs.map(({ name, value }) => ({
 					name,
-					value: formatValue(value, texts),
+					value: formatValue(value, messages.common),
 				})),
 				result.pinName,
-				formatValue(result.expected, texts),
-				result.actual ? formatValue(result.actual, texts) : null,
+				formatValue(result.expected, messages.common),
+				result.actual ? formatValue(result.actual, messages.common) : null,
 			);
 		case "simulationFailed":
 			return texts.simulationFailed(
@@ -181,6 +184,21 @@ function StageView({ stage }: { stage: TutorialStage }) {
 						{describeFailure(result, store, messages)}
 					</Alert>
 				)}
+				<div>
+					<Typography color="textSecondary" variant="body2" gutterBottom>
+						{messages.parts.ofStage}
+					</Typography>
+					<Stack spacing={1.5}>
+						{stage.parts.map((partId) => (
+							<PartDescription
+								key={partId}
+								component={
+									nullthrows(definitionByComponentId.get(partId)).component
+								}
+							/>
+						))}
+					</Stack>
+				</div>
 				<Box sx={{ flexGrow: 1 }} />
 				{hasResetFailed && (
 					<Alert severity="error">{texts.resetStageFailed}</Alert>
