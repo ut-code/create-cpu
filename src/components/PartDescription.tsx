@@ -25,8 +25,8 @@ export function PartDescription({ component }: { component: CCComponent }) {
 	const table = definition && truthTableOf(definition);
 	const columns = table
 		? [
-				...table.inputs.map((name) => `in-${name}`),
-				...table.outputs.map((name) => `out-${name}`),
+				...table.inputs.map((name) => ({ key: `in-${name}`, name })),
+				...table.outputs.map((name) => ({ key: `out-${name}`, name })),
 			]
 		: [];
 	const cellSx = (column: number) =>
@@ -53,9 +53,9 @@ export function PartDescription({ component }: { component: CCComponent }) {
 				>
 					<thead>
 						<tr>
-							{[...table.inputs, ...table.outputs].map((name, i) => (
+							{columns.map(({ key, name }, i) => (
 								<Box
-									key={columns[i]}
+									key={key}
 									component="th"
 									sx={{ ...cellSx(i), borderBottom: 1, borderColor: "divider" }}
 								>
@@ -69,7 +69,7 @@ export function PartDescription({ component }: { component: CCComponent }) {
 							<tr key={row.inputs.join()}>
 								{[...row.inputs, ...row.outputs].map((value, i) => (
 									<Box
-										key={columns[i]}
+										key={columns[i]?.key}
 										component="td"
 										sx={{
 											...cellSx(i),
