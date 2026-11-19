@@ -12,20 +12,18 @@ export const ja: Messages = {
 		cancel: "キャンセル",
 		apply: "適用",
 		delete: "削除",
-		on: "オン",
-		off: "オフ",
 	},
 	parts: {
 		summaries: {
-			AND: "両方オンのときだけオン",
-			OR: "どちらかがオンならオン",
+			AND: "両方がオンのときだけオン",
+			OR: "少なくとも一方がオンならオン",
 			NOT: "オンとオフを逆にする",
 			XOR: "片方だけがオンのときオン",
 			TRUE: "いつもオン",
 			FALSE: "いつもオフ",
 		},
 		about: (name) => `${name} について`,
-		ofStage: "この課題で使う部品",
+		ofStage: "この課題で使える部品",
 	},
 	header: {
 		language: "言語",

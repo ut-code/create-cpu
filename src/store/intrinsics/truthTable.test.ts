@@ -1,5 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { and, display, flipflop, input, not, true_, xor } from "./definitions";
+import type { IntrinsicComponentDefinition } from "./base";
+import {
+	and,
+	and_n,
+	const_,
+	definitions,
+	display,
+	flipflop,
+	input,
+	not,
+	true_,
+	xor,
+} from "./definitions";
 import { truthTableOf } from "./truthTable";
 
 describe("truthTableOf", () => {
@@ -33,5 +45,15 @@ describe("truthTableOf", () => {
 		expect(truthTableOf(input)).toBeNull();
 		expect(truthTableOf(flipflop)).toBeNull();
 		expect(truthTableOf(display)).toBeNull();
+		expect(truthTableOf(const_)).toBeNull();
+		expect(truthTableOf(and_n)).toBeNull();
+	});
+
+	it("can be asked of any part", () => {
+		for (const definition of Object.values(definitions)) {
+			expect(() =>
+				truthTableOf(definition as IntrinsicComponentDefinition),
+			).not.toThrow();
+		}
 	});
 });

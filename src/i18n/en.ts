@@ -16,20 +16,18 @@ export const en = {
 		cancel: "Cancel",
 		apply: "Apply",
 		delete: "Delete",
-		on: "on",
-		off: "off",
 	},
 	parts: {
 		summaries: {
 			AND: "On only when both inputs are on",
-			OR: "On when either input is on",
+			OR: "On when at least one input is on",
 			NOT: "Turns on into off, and off into on",
 			XOR: "On when exactly one input is on",
 			TRUE: "Always on",
 			FALSE: "Always off",
 		},
 		about: (name: string) => `About ${name}`,
-		ofStage: "Parts for this stage",
+		ofStage: "Parts you can use in this stage",
 	},
 	header: {
 		language: "Language",

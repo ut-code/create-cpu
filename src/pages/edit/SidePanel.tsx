@@ -154,6 +154,7 @@ export default function SidePanel(sidePanelProps: SidePanelProps) {
 								<IconButton
 									size="small"
 									aria-label={messages.parts.about(component.name)}
+									aria-haspopup="dialog"
 									sx={{ position: "absolute", top: 8, right: 8 }}
 									onClick={(e) =>
 										setDescribedPart({ component, anchorEl: e.currentTarget })
@@ -170,6 +171,14 @@ export default function SidePanel(sidePanelProps: SidePanelProps) {
 				anchorEl={describedPart?.anchorEl ?? null}
 				anchorOrigin={{ vertical: "top", horizontal: "right" }}
 				onClose={() => setDescribedPart(null)}
+				slotProps={{
+					paper: {
+						role: "dialog",
+						"aria-label": describedPart
+							? messages.parts.about(describedPart.component.name)
+							: "",
+					},
+				}}
 			>
 				{describedPart && (
 					<Box sx={{ p: 2, maxWidth: 280 }}>

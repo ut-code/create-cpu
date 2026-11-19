@@ -16,6 +16,7 @@ import {
 	useNavigate,
 	useParams,
 } from "react-router";
+import { valueLabel } from "../../common/bitLabel";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
 import { PartDescription } from "../../components/PartDescription";
 import { type Messages, useMessages } from "../../i18n";
@@ -23,7 +24,6 @@ import type CCStore from "../../store";
 import { definitionByComponentId } from "../../store/intrinsics/definitions";
 import { SimulationNodeError } from "../../store/netlist";
 import { StoreScope } from "../../store/react";
-import type { SimulationValue } from "../../store/simulation";
 import { theme } from "../../style";
 import { type CheckResult, checkCombinational } from "../../tutorial/check";
 import { markStageCleared } from "../../tutorial/progress";
@@ -42,11 +42,6 @@ import CCComponentEditor from "../edit/Editor";
 import type { OffersComponent } from "../edit/placement";
 import SidePanel from "../edit/SidePanel";
 
-function formatValue(value: SimulationValue, texts: Messages["common"]) {
-	if (value.length === 1) return value[0] ? texts.on : texts.off;
-	return value.map((bit) => (bit ? "1" : "0")).join("");
-}
-
 function describeFailure(
 	result: Exclude<CheckResult, { type: "passed" }>,
 	store: CCStore,
@@ -60,11 +55,11 @@ function describeFailure(
 			return texts.wrongOutput(
 				result.inputs.map(({ name, value }) => ({
 					name,
-					value: formatValue(value, messages.common),
+					value: valueLabel(value),
 				})),
 				result.pinName,
-				formatValue(result.expected, messages.common),
-				result.actual ? formatValue(result.actual, messages.common) : null,
+				valueLabel(result.expected),
+				result.actual ? valueLabel(result.actual) : null,
 			);
 		case "simulationFailed":
 			return texts.simulationFailed(

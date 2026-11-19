@@ -1,4 +1,5 @@
 import { Box, Typography } from "@mui/material";
+import { bitLabel } from "../common/bitLabel";
 import { type Messages, useMessages } from "../i18n";
 import type { CCComponent } from "../store/component";
 import { definitionByComponentId } from "../store/intrinsics/definitions";
@@ -22,16 +23,23 @@ export function PartDescription({ component }: { component: CCComponent }) {
 	const summary = partSummary(messages, component);
 	const definition = definitionByComponentId.get(component.id);
 	const table = definition && truthTableOf(definition);
-	const columns = table ? [...table.inputs, ...table.outputs] : [];
+	const columns = table
+		? [
+				...table.inputs.map((name) => `in-${name}`),
+				...table.outputs.map((name) => `out-${name}`),
+			]
+		: [];
 	const cellSx = (column: number) =>
 		({
 			px: 1,
 			py: 0.25,
 			textAlign: "center",
-			...(column === table?.inputs.length && {
-				borderLeft: 1,
-				borderColor: "divider",
-			}),
+			...(table &&
+				table.inputs.length > 0 &&
+				column === table.inputs.length && {
+					borderLeft: 1,
+					borderColor: "divider",
+				}),
 		}) as const;
 
 	return (
@@ -45,9 +53,9 @@ export function PartDescription({ component }: { component: CCComponent }) {
 				>
 					<thead>
 						<tr>
-							{columns.map((name, i) => (
+							{[...table.inputs, ...table.outputs].map((name, i) => (
 								<Box
-									key={name}
+									key={columns[i]}
 									component="th"
 									sx={{ ...cellSx(i), borderBottom: 1, borderColor: "divider" }}
 								>
@@ -71,7 +79,7 @@ export function PartDescription({ component }: { component: CCComponent }) {
 											}),
 										}}
 									>
-										{value ? messages.common.on : messages.common.off}
+										{bitLabel(value)}
 									</Box>
 								))}
 							</tr>
