@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { extractNodesIntoNewComponent } from "../store/extractComponent";
 import { and, not, or } from "../store/intrinsics/definitions";
 import {
 	connectTestNodePins,
@@ -102,6 +103,30 @@ describe("checkCombinational", () => {
 		connect(testNodePin(store, only, and.outputPin.Out), pinOf("Out"));
 
 		expect(checkCombinational(store, id, xorStage.check)).toEqual({
+			type: "passed",
+		});
+	});
+
+	it("passes a circuit grouped into a component of the player's own", async () => {
+		const store = wireGate(andStage, and);
+		const gates = store.nodes
+			.getManyByParentComponentId(andStage.componentId)
+			.filter((node) => node.componentId === and.component.id);
+
+		await extractNodesIntoNewComponent(
+			store,
+			gates.map((node) => node.id),
+			"Mine",
+		);
+
+		expect(
+			store.nodes
+				.getManyByParentComponentId(andStage.componentId)
+				.some((node) => node.componentId === and.component.id),
+		).toBe(false);
+		expect(
+			checkCombinational(store, andStage.componentId, andStage.check),
+		).toEqual({
 			type: "passed",
 		});
 	});

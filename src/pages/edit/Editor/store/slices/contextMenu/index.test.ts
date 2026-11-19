@@ -153,4 +153,25 @@ describe("Context menu slice", () => {
 		editorStore.getState().openContextMenu(rightClick);
 		expect(editorStore.getState().contextMenuState).toBeNull();
 	});
+
+	it("offers no new component when the editor is told not to", () => {
+		const { store, editorStore, inverter } = setUp();
+		const closed = createEditorStore(
+			editorStore.getState().componentId,
+			store,
+			{
+				canCreateComponents: false,
+			},
+		);
+		editorStore.getState().selectNode([inverter.id], true);
+		closed.getState().selectNode([inverter.id], true);
+
+		expect(getContextMenuItems(store, editorStore.getState()).canExtract).toBe(
+			true,
+		);
+		expect(getContextMenuItems(store, closed.getState())).toMatchObject({
+			canExtract: false,
+			canDelete: true,
+		});
+	});
 });

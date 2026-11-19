@@ -10,13 +10,16 @@ export function canPlaceComponent(
 	store: CCStore,
 	editedComponentId: CCComponentId,
 	componentId: CCComponentId,
-	isOffered: (component: CCComponent) => boolean,
+	isOffered: (
+		component: CCComponent,
+		editedComponentId: CCComponentId,
+	) => boolean,
 ): boolean {
 	const component = store.components.get(componentId);
 	return (
 		!!component &&
 		component.id !== editedComponentId &&
 		!isIncluding(store, component.id, editedComponentId) &&
-		isOffered(component)
+		isOffered(component, editedComponentId)
 	);
 }

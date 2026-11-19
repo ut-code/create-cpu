@@ -58,7 +58,9 @@ export function getContextMenuItems(
 					.map((nodeId) => nameOfNode(store, nodeId))
 			: [],
 		canExtract:
-			isEditMode && getExtractableNodeIds(store, removableNodeIds).length > 0,
+			isEditMode &&
+			state.canCreateComponents &&
+			getExtractableNodeIds(store, removableNodeIds).length > 0,
 		canDelete:
 			isEditMode &&
 			(removableNodeIds.length > 0 || selectedConnectionIds.length > 0),

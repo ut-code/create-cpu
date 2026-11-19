@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { and, input, xor } from "../store/intrinsics/definitions";
+import { and, input, output, xor } from "../store/intrinsics/definitions";
 import {
 	createTestStore,
 	registerTestComponent,
@@ -37,10 +37,21 @@ describe("isStagePart", () => {
 	it("offers the stage's parts and the components the player made", () => {
 		const store = createTestStore();
 		const own = registerTestComponent(store, "Mine");
+		const inStage = (component: Parameters<typeof isStagePart>[1]) =>
+			isStagePart(stage, component, stage.componentId);
 
-		expect(isStagePart(stage, and.component)).toBe(true);
-		expect(isStagePart(stage, own)).toBe(true);
-		expect(isStagePart(stage, xor.component)).toBe(false);
-		expect(isStagePart(stage, input.component)).toBe(false);
+		expect(inStage(and.component)).toBe(true);
+		expect(inStage(own)).toBe(true);
+		expect(inStage(xor.component)).toBe(false);
+		expect(inStage(input.component)).toBe(false);
+	});
+
+	it("offers pins inside a component the player made", () => {
+		const store = createTestStore();
+		const own = registerTestComponent(store, "Mine");
+
+		expect(isStagePart(stage, input.component, own.id)).toBe(true);
+		expect(isStagePart(stage, output.component, own.id)).toBe(true);
+		expect(isStagePart(stage, xor.component, own.id)).toBe(false);
 	});
 });

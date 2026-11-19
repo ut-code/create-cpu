@@ -13,7 +13,10 @@ import { canPlaceComponent } from "./placement";
 
 export type SidePanelProps = {
 	editedComponentId: CCComponentId;
-	isOffered?: (component: CCComponent) => boolean;
+	isOffered?: (
+		component: CCComponent,
+		editedComponentId: CCComponentId,
+	) => boolean;
 };
 
 function ComponentRenderer({ componentId }: { componentId: CCComponentId }) {

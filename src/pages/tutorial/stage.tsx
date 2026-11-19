@@ -201,7 +201,9 @@ function StageView({ stage }: { stage: TutorialStage }) {
 					</Typography>
 					<SidePanel
 						editedComponentId={shownComponentId}
-						isOffered={(component) => isStagePart(stage, component)}
+						isOffered={(component, componentId) =>
+							isStagePart(stage, component, componentId)
+						}
 					/>
 				</Box>
 				<Divider orientation="vertical" />
@@ -210,7 +212,9 @@ function StageView({ stage }: { stage: TutorialStage }) {
 					componentId={shownComponentId}
 					options={{
 						isProtectedNode: (nodeId) => isStagePinNode(store, stage, nodeId),
-						isOffered: (component) => isStagePart(stage, component),
+						isOffered: (component, componentId) =>
+							isStagePart(stage, component, componentId),
+						canCreateComponents: stage.allowsNewComponents,
 						hasProperties: (componentId) => componentId !== stage.componentId,
 					}}
 					onEditComponent={setEditedComponentId}
