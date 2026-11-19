@@ -15,6 +15,15 @@ export const ja: Messages = {
 	},
 	header: {
 		language: "言語",
+		modes: {
+			free: "自由に作る",
+			tutorial: "チュートリアル",
+		},
+	},
+	start: {
+		title: "何をしますか？",
+		tutorial: "2つのスイッチから始めて、課題に沿って論理回路を組み立てます。",
+		free: "好きな回路を自由に作ります。",
 	},
 	home: {
 		file: "ファイル",
@@ -65,6 +74,49 @@ export const ja: Messages = {
 			storageFull:
 				"ブラウザの保存領域がいっぱいのため、サンプルを保存できませんでした。",
 			startOverFailed: "やり直せませんでした。",
+		},
+	},
+	tutorial: {
+		lead: "上から順に進めるのがおすすめですが、どの課題からでも始められます。",
+		stageNumber: (number) => `課題 ${number}`,
+		cleared: "クリア",
+		startOver: "最初からやり直す",
+		startOverDialog: {
+			title: "チュートリアルを最初からやり直しますか？",
+			body: "すべての課題が最初の状態に戻り、クリアした記録も消えます。",
+			confirm: "やり直す",
+		},
+		startOverFailed: "チュートリアルをやり直せませんでした。",
+		stages: "課題の一覧",
+		parts: "部品",
+		check: "確かめる",
+		on: "オン",
+		off: "オフ",
+		passed: "クリア！どの入力の組み合わせでも正しく動きます。",
+		next: "次の課題へ",
+		backToStages: "課題の一覧へ",
+		missingPin: (pinType, pinName) =>
+			`${pinName} という名前の${pinType === "input" ? "入力" : "出力"}ピンが見つかりません。「この課題をやり直す」で最初の状態に戻せます。`,
+		wrongOutput: (inputs, pinName, expected, actual) =>
+			`${inputs.map(({ name, value }) => `${name} が ${value}`).join("、")} のとき、${pinName} は ${expected} になるはずが、${actual === null ? "値がありませんでした" : `${actual} でした`}。`,
+		simulationFailed: (detail) =>
+			`回路をシミュレーションできませんでした。${detail}`,
+		resetStage: "この課題をやり直す",
+		resetStageDialog: {
+			title: "この課題をやり直しますか？",
+			body: "この課題の回路が最初の状態に戻ります。",
+			confirm: "やり直す",
+		},
+		resetStageFailed: "課題をやり直せませんでした。",
+		stageTexts: {
+			and: {
+				title: "両方のスイッチ",
+				goal: "スイッチ A と B が両方オンのときだけ、ランプ Out がつくようにしましょう。「部品」の一覧から部品をエディタにドラッグして置き、ピンからピンへドラッグしてつなぎます。右下の再生ボタンで、スイッチを切り替えて試せます。できたら「確かめる」を押してください。",
+			},
+			xor: {
+				title: "片方だけのスイッチ",
+				goal: "スイッチ A と B のどちらか片方だけがオンのときに、ランプ Out がつくようにしましょう。両方オンのときはつきません。",
+			},
 		},
 	},
 	componentProperties: {

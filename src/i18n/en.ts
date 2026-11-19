@@ -13,6 +13,16 @@ export const en = {
 	},
 	header: {
 		language: "Language",
+		modes: {
+			free: "Free mode",
+			tutorial: "Tutorial",
+		},
+	},
+	start: {
+		title: "What would you like to do?",
+		tutorial:
+			"Build logic circuits step by step, starting from a pair of switches.",
+		free: "Build any circuit you like.",
 	},
 	home: {
 		file: "File",
@@ -63,6 +73,54 @@ export const en = {
 			storageFull:
 				"The storage of this browser is full, so the sample could not be saved.",
 			startOverFailed: "Could not start over.",
+		},
+	},
+	tutorial: {
+		lead: "Going from the top is recommended, but you can start from any stage.",
+		stageNumber: (number: number) => `Stage ${number}`,
+		cleared: "Cleared",
+		startOver: "Start over from the beginning",
+		startOverDialog: {
+			title: "Start the tutorial over?",
+			body: "Every stage goes back to how it started, and the stages cleared are forgotten.",
+			confirm: "Start over",
+		},
+		startOverFailed: "Could not start the tutorial over.",
+		stages: "Stages",
+		parts: "Parts",
+		check: "Check",
+		on: "on",
+		off: "off",
+		passed: "Cleared! The circuit works for every combination of the inputs.",
+		next: "Next stage",
+		backToStages: "Back to the stages",
+		missingPin: (pinType: "input" | "output", pinName: string) =>
+			`There is no ${pinType} pin named ${pinName}. "Reset this stage" brings back how the stage started.`,
+		wrongOutput: (
+			inputs: readonly { name: string; value: string }[],
+			pinName: string,
+			expected: string,
+			actual: string | null,
+		) =>
+			`When ${inputs.map(({ name, value }) => `${name} is ${value}`).join(" and ")}, ${pinName} should be ${expected}, but it ${actual === null ? "has no value" : `is ${actual}`}.`,
+		simulationFailed: (detail: string) =>
+			`The circuit could not be simulated. ${detail}`,
+		resetStage: "Reset this stage",
+		resetStageDialog: {
+			title: "Reset this stage?",
+			body: "The circuit of this stage goes back to how it started.",
+			confirm: "Reset",
+		},
+		resetStageFailed: "Could not reset the stage.",
+		stageTexts: {
+			and: {
+				title: "Both switches",
+				goal: "Make the lamp Out light up only when both switches A and B are on. Drag parts from the Parts list onto the editor, and drag from pin to pin to connect them. The play button at the bottom right lets you try the switches. When it works, press Check.",
+			},
+			xor: {
+				title: "Only one switch",
+				goal: "Make the lamp Out light up when exactly one of the switches A and B is on. It stays off when both are on.",
+			},
 		},
 	},
 	componentProperties: {

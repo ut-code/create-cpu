@@ -12,6 +12,8 @@ import { theme } from "../../style";
 
 export type SidePanelProps = {
 	editedComponentId: CCComponentId;
+	/** the intrinsic components to offer, if not all of them */
+	parts?: readonly CCComponentId[];
 };
 
 function ComponentRenderer({ componentId }: { componentId: CCComponentId }) {
@@ -88,7 +90,7 @@ function ComponentRenderer({ componentId }: { componentId: CCComponentId }) {
 }
 
 export default function SidePanel(sidePanelProps: SidePanelProps) {
-	const { editedComponentId } = sidePanelProps;
+	const { editedComponentId, parts } = sidePanelProps;
 	const { store } = useStore();
 	const messages = useMessages();
 	const components = useComponents();
@@ -117,6 +119,12 @@ export default function SidePanel(sidePanelProps: SidePanelProps) {
 			/>
 			<Box component="ul" sx={{ m: 0, p: 0, listStyleType: "none" }}>
 				{components
+					.filter(
+						(component) =>
+							!parts ||
+							!component.intrinsicType ||
+							parts.includes(component.id),
+					)
 					.filter((component) => component.name.includes(searchText))
 					.filter((component) => component.id !== editedComponentId)
 					.filter(

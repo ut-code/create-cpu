@@ -14,8 +14,11 @@ export class CCStoreAutoSaver {
 
 	static localStorageKey = "ccStoreAutoSaverState";
 
-	constructor(store: CCStore) {
+	readonly storageKey: string;
+
+	constructor(store: CCStore, storageKey = CCStoreAutoSaver.localStorageKey) {
 		this.#store = store;
+		this.storageKey = storageKey;
 	}
 
 	watch() {
@@ -50,13 +53,12 @@ export class CCStoreAutoSaver {
 	}
 
 	save(): void {
-		window.localStorage.setItem(
-			CCStoreAutoSaver.localStorageKey,
-			this.#store.toJSON(),
-		);
+		window.localStorage.setItem(this.storageKey, this.#store.toJSON());
 	}
 
-	static readSaved(): string | null {
-		return window.localStorage.getItem(CCStoreAutoSaver.localStorageKey);
+	static readSaved(
+		storageKey = CCStoreAutoSaver.localStorageKey,
+	): string | null {
+		return window.localStorage.getItem(storageKey);
 	}
 }

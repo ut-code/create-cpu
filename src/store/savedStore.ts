@@ -6,8 +6,11 @@ import { setupDefaultSample } from "./samples/default";
  * The store saved as `json`, not mounted yet, checked to be one the editor can work on.
  * @throws {CCStoreJsonError} if it is not
  */
-export function importStoreJson(json: string): CCStore {
-	const store = new CCStore();
+export function importStoreJson(
+	json: string,
+	options: { storageKey?: string } = {},
+): CCStore {
+	const store = new CCStore(options);
 	try {
 		store.importJson(json);
 	} catch (error) {
