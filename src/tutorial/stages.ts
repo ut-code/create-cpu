@@ -1,6 +1,7 @@
 import nullthrows from "nullthrows";
 import type { BitNotation } from "../common/bitLabel";
 import { bitsOf, numberOf } from "../common/bits";
+import type { Rect } from "../common/rect";
 import type CCStore from "../store";
 import {
 	type CCComponent,
@@ -414,6 +415,14 @@ export const tutorialStages: readonly TutorialStage[] = [
 	fourBitAdderStage,
 	counterStage,
 ];
+
+/** Between the columns of input and output pins, also for a stage without inputs */
+export function stageAreaOf(stage: TutorialStage): Rect {
+	return {
+		position: { x: -stage.pinDistance, y: 0 },
+		size: { x: 2 * stage.pinDistance, y: 0 },
+	};
+}
 
 export function findTutorialStage(id: string | undefined) {
 	return tutorialStages.find((stage) => stage.id === id);

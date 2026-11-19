@@ -44,6 +44,7 @@ import {
 	isStagePart,
 	isStagePinNode,
 	type StageTitleOf,
+	stageAreaOf,
 	type TutorialStage,
 	tutorialStages,
 } from "../../tutorial/stages";
@@ -273,6 +274,10 @@ function StageView({ stage }: { stage: TutorialStage }) {
 							isOffered,
 							canCreateComponents: stage.allowsNewComponents,
 							fitsNodesInView: true,
+							areaToFit:
+								shownComponentId === stage.componentId
+									? stageAreaOf(stage)
+									: null,
 							hasProperties: (componentId) =>
 								!isStageComponent(stage, componentId),
 						}}
