@@ -9,10 +9,21 @@ import type { ComponentEditorStoreValue } from "../../types";
 export type ContextMenuItems = {
 	selectedConnectionIds: CCConnectionId[];
 	removableNodeIds: CCNodeId[];
+	keptNodeNames: string[];
 	canExtract: boolean;
 	canDelete: boolean;
 	componentToEdit: CCComponent | null;
 };
+
+function nameOfNode(store: CCStore, nodeId: CCNodeId): string {
+	const exposedPin = store.nodePins
+		.getManyByNodeId(nodeId)
+		.map((nodePin) => store.componentPins.getByImplementation(nodePin.id))
+		.find((componentPin) => componentPin !== undefined);
+	if (exposedPin) return exposedPin.name;
+	const node = nullthrows(store.nodes.get(nodeId));
+	return nullthrows(store.components.get(node.componentId)).name;
+}
 
 export function getContextMenuItems(
 	store: CCStore,
@@ -41,6 +52,11 @@ export function getContextMenuItems(
 	return {
 		selectedConnectionIds,
 		removableNodeIds,
+		keptNodeNames: isEditMode
+			? selectedNodeIds
+					.filter((nodeId) => state.isProtectedNode(nodeId))
+					.map((nodeId) => nameOfNode(store, nodeId))
+			: [],
 		canExtract:
 			isEditMode && getExtractableNodeIds(store, removableNodeIds).length > 0,
 		canDelete:
@@ -51,5 +67,10 @@ export function getContextMenuItems(
 }
 
 export function hasContextMenuItems(items: ContextMenuItems): boolean {
-	return items.canExtract || items.canDelete || items.componentToEdit !== null;
+	return (
+		items.canExtract ||
+		items.canDelete ||
+		items.keptNodeNames.length > 0 ||
+		items.componentToEdit !== null
+	);
 }

@@ -1,15 +1,12 @@
 import nullthrows from "nullthrows";
 import type { MouseEvent } from "react";
 import { describe, expect, it } from "vitest";
-import {
-	input,
-	not,
-	true_,
-} from "../../../../../../store/intrinsics/definitions";
+import { not, true_ } from "../../../../../../store/intrinsics/definitions";
 import {
 	connectTestNodePins,
 	createTestStore,
 	registerTestComponent,
+	registerTestInputNode,
 	registerTestNode,
 	testNodePin,
 } from "../../../../../../store/testUtils";
@@ -123,24 +120,37 @@ describe("Context menu slice", () => {
 		});
 	});
 
-	it("leaves protected nodes out of what it deletes or moves", () => {
+	it("keeps protected nodes from deleting and moving, and names them", () => {
 		const store = createTestStore();
 		const root = registerTestComponent(store, "Root");
-		const pin = registerTestNode(store, root.id, input.component.id);
+		const pin = registerTestInputNode(store, root.id, "A");
 		const gate = registerTestNode(store, root.id, not.component.id);
+		connectTestNodePins(
+			store,
+			root.id,
+			pin.out,
+			testNodePin(store, gate, not.inputPin.In),
+		);
 		const editorStore = createEditorStore(root.id, store, {
-			isProtectedNode: (nodeId) => nodeId === pin.id,
+			isProtectedNode: (nodeId) => nodeId === pin.node.id,
 		});
-		editorStore.getState().selectNode([pin.id, gate.id], true);
+		const items = () => getContextMenuItems(store, editorStore.getState());
 
-		expect(getContextMenuItems(store, editorStore.getState())).toMatchObject({
+		editorStore.getState().selectNode([pin.node.id, gate.id], true);
+		expect(items()).toMatchObject({
 			removableNodeIds: [gate.id],
+			keptNodeNames: ["A"],
 			canDelete: true,
 		});
 
-		editorStore.getState().selectNode([pin.id], true);
+		editorStore.getState().selectNode([pin.node.id], true);
+		expect(items()).toMatchObject({ keptNodeNames: ["A"], canDelete: false });
 		editorStore.getState().openContextMenu(rightClick);
+		expect(editorStore.getState().contextMenuState).not.toBeNull();
 
+		editorStore.getState().setEditorMode("play");
+		expect(editorStore.getState().editorMode).toBe("play");
+		editorStore.getState().openContextMenu(rightClick);
 		expect(editorStore.getState().contextMenuState).toBeNull();
 	});
 });

@@ -1,6 +1,10 @@
 import { englishSimulationErrorTexts } from "../store/simulationErrorTexts";
 
 const bitWidths = (widths: readonly number[]) => `${widths.join("/")} bit`;
+const listOf = (names: readonly string[]) =>
+	names.length < 2
+		? names.join("")
+		: `${names.slice(0, -1).join(", ")} and ${names.at(-1)}`;
 
 export const en = {
 	languageName: "English",
@@ -137,6 +141,10 @@ export const en = {
 		contextMenu: {
 			createComponent: "Create a new component...",
 			edit: "Edit...",
+			cannotDelete: (names: readonly string[]) =>
+				`${listOf(names)} ${names.length === 1 ? "is" : "are"} used by the stage and cannot be deleted`,
+			keptOnDelete: (names: readonly string[]) =>
+				`${listOf(names)} ${names.length === 1 ? "is" : "are"} used by the stage and stay`,
 		},
 		frameControl: {
 			auto: "Auto",

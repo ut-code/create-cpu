@@ -1,6 +1,7 @@
 import {
 	ClickAwayListener,
 	Divider,
+	ListItemText,
 	MenuItem,
 	MenuList,
 	Paper,
@@ -34,6 +35,7 @@ export default function CCComponentEditorContextMenu({
 	const {
 		selectedConnectionIds,
 		removableNodeIds,
+		keptNodeNames,
 		canExtract,
 		canDelete,
 		componentToEdit,
@@ -69,8 +71,9 @@ export default function CCComponentEditorContextMenu({
 						{messages.editor.contextMenu.createComponent}
 					</MenuItem>
 				)}
-				{canDelete && (
+				{(canDelete || keptNodeNames.length > 0) && (
 					<MenuItem
+						disabled={!canDelete}
 						onClick={() => {
 							if (removableNodeIds.length > 0)
 								store.nodes.unregister(removableNodeIds);
@@ -80,10 +83,20 @@ export default function CCComponentEditorContextMenu({
 							componentEditorState.closeContextMenu();
 						}}
 					>
-						{messages.common.delete}
+						<ListItemText
+							primary={messages.common.delete}
+							secondary={
+								keptNodeNames.length === 0
+									? null
+									: canDelete
+										? messages.editor.contextMenu.keptOnDelete(keptNodeNames)
+										: messages.editor.contextMenu.cannotDelete(keptNodeNames)
+							}
+						/>
 					</MenuItem>
 				)}
-				{componentToEdit && (canExtract || canDelete) && <Divider />}
+				{componentToEdit &&
+					(canExtract || canDelete || keptNodeNames.length > 0) && <Divider />}
 				{componentToEdit && (
 					<MenuItem
 						onClick={() => {
