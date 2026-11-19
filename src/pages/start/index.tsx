@@ -37,9 +37,13 @@ export default function StartPage() {
 						<Card
 							key={choice.to}
 							variant="outlined"
-							sx={{ borderTop: `4px solid ${choice.color}` }}
+							sx={{ display: "flex", borderTop: `4px solid ${choice.color}` }}
 						>
-							<CardActionArea component={Link} to={choice.to} sx={{ p: 3 }}>
+							<CardActionArea
+								component={Link}
+								to={choice.to}
+								sx={{ p: 3, flexGrow: 1, alignSelf: "stretch" }}
+							>
 								<Typography variant="h3" typography="h5" gutterBottom>
 									{choice.title}
 								</Typography>
