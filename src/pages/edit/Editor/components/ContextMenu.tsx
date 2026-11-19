@@ -98,7 +98,8 @@ export default function CCComponentEditorContextMenu({
 						/>
 					</MenuItem>
 				)}
-				{componentToEdit && (canExtract || canDelete) && <Divider />}
+				{componentToEdit &&
+					(canExtract || canDelete || keptNodeNames.length > 0) && <Divider />}
 				{componentToEdit && (
 					<MenuItem
 						onClick={() => {
