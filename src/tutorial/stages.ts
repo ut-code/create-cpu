@@ -1,6 +1,10 @@
 import nullthrows from "nullthrows";
 import type CCStore from "../store";
-import { type CCComponentId, CCComponentStore } from "../store/component";
+import {
+	type CCComponent,
+	type CCComponentId,
+	CCComponentStore,
+} from "../store/component";
 import type { CCComponentPin } from "../store/componentPin";
 import { and, input, not, or, output } from "../store/intrinsics/definitions";
 import { type CCNodeId, CCNodeStore } from "../store/node";
@@ -15,6 +19,7 @@ export type TutorialStage = {
 	componentId: CCComponentId;
 	/** the intrinsic components the side panel offers */
 	parts: readonly CCComponentId[];
+	allowsNewComponents: boolean;
 	/** also the input and output pins the stage starts with */
 	check: CombinationalCheck;
 };
@@ -30,6 +35,7 @@ function twoSwitchesStage(
 		id,
 		componentId: `tutorial-${id}` as CCComponentId,
 		parts: [and.component.id, or.component.id, not.component.id],
+		allowsNewComponents: false,
 		check: {
 			inputs: [
 				{ name: "A", bitWidth: 1 },
@@ -50,6 +56,35 @@ export const tutorialStages: readonly TutorialStage[] = [
 
 export function findTutorialStage(id: string | undefined) {
 	return tutorialStages.find((stage) => stage.id === id);
+}
+
+export function isStagePart(
+	stage: TutorialStage,
+	component: CCComponent,
+	editedComponentId: CCComponentId,
+) {
+	if (!component.intrinsicType || stage.parts.includes(component.id)) {
+		return true;
+	}
+	// A component of the player's own gets its pins from Input and Output nodes
+	return (
+		editedComponentId !== stage.componentId &&
+		(component.id === input.component.id ||
+			component.id === output.component.id)
+	);
+}
+
+export function isStagePinNode(
+	store: CCStore,
+	stage: TutorialStage,
+	nodeId: CCNodeId,
+): boolean {
+	const node = store.nodes.get(nodeId);
+	return (
+		node?.parentComponentId === stage.componentId &&
+		(node.componentId === input.component.id ||
+			node.componentId === output.component.id)
+	);
 }
 
 function renamePinOfNode(

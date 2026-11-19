@@ -1,3 +1,4 @@
+import { partition } from "es-toolkit";
 import nullthrows from "nullthrows";
 import type CCStore from "../../../../../../store";
 import type { CCComponent } from "../../../../../../store/component";
@@ -7,12 +8,23 @@ import type { CCNodeId } from "../../../../../../store/node";
 import type { ComponentEditorStoreValue } from "../../types";
 
 export type ContextMenuItems = {
-	selectedNodeIds: CCNodeId[];
 	selectedConnectionIds: CCConnectionId[];
+	removableNodeIds: CCNodeId[];
+	keptNodeNames: string[];
 	canExtract: boolean;
 	canDelete: boolean;
 	componentToEdit: CCComponent | null;
 };
+
+function nameOfNode(store: CCStore, nodeId: CCNodeId): string {
+	const exposedPin = store.nodePins
+		.getManyByNodeId(nodeId)
+		.map((nodePin) => store.componentPins.getByImplementation(nodePin.id))
+		.find((componentPin) => componentPin !== undefined);
+	if (exposedPin) return exposedPin.name;
+	const node = nullthrows(store.nodes.get(nodeId));
+	return nullthrows(store.components.get(node.componentId)).name;
+}
 
 export function getContextMenuItems(
 	store: CCStore,
@@ -26,6 +38,9 @@ export function getContextMenuItems(
 		(connectionId) => store.connections.get(connectionId),
 	);
 	const isEditMode = state.editorMode === "edit";
+	const [keptNodeIds, removableNodeIds] = partition(selectedNodeIds, (nodeId) =>
+		state.isProtectedNode(nodeId),
+	);
 	const [targetNodeId] = selectedNodeIds;
 	const targetComponent =
 		selectedNodeIds.length === 1 && targetNodeId
@@ -36,17 +51,27 @@ export function getContextMenuItems(
 				)
 			: null;
 	return {
-		selectedNodeIds,
 		selectedConnectionIds,
+		removableNodeIds,
+		keptNodeNames: isEditMode
+			? keptNodeIds.map((nodeId) => nameOfNode(store, nodeId))
+			: [],
 		canExtract:
-			isEditMode && getExtractableNodeIds(store, selectedNodeIds).length > 0,
+			isEditMode &&
+			state.canCreateComponents &&
+			getExtractableNodeIds(store, removableNodeIds).length > 0,
 		canDelete:
 			isEditMode &&
-			(selectedNodeIds.length > 0 || selectedConnectionIds.length > 0),
+			(removableNodeIds.length > 0 || selectedConnectionIds.length > 0),
 		componentToEdit: targetComponent?.intrinsicType ? null : targetComponent,
 	};
 }
 
 export function hasContextMenuItems(items: ContextMenuItems): boolean {
-	return items.canExtract || items.canDelete || items.componentToEdit !== null;
+	return (
+		items.canExtract ||
+		items.canDelete ||
+		items.keptNodeNames.length > 0 ||
+		items.componentToEdit !== null
+	);
 }

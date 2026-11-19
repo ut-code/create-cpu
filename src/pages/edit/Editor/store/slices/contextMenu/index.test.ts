@@ -6,11 +6,13 @@ import {
 	connectTestNodePins,
 	createTestStore,
 	registerTestComponent,
+	registerTestInputNode,
 	registerTestNode,
 	testNodePin,
 } from "../../../../../../store/testUtils";
 import { createEditorStore } from "../..";
 import { stubResizeObserver } from "../../testUtils";
+import { getContextMenuItems } from "./items";
 
 stubResizeObserver();
 
@@ -32,7 +34,9 @@ function setUp() {
 	const [connection] = store.connections.getMany();
 	const editorStore = createEditorStore(root.id, store);
 	return {
+		store,
 		editorStore,
+		inverter,
 		intrinsicNode,
 		subNode,
 		connectionId: nullthrows(connection).id,
@@ -105,5 +109,69 @@ describe("Context menu slice", () => {
 		editorStore.getState().selectNode([intrinsicNode.id], true);
 
 		expect(editorStore.getState().contextMenuState).not.toBeNull();
+	});
+
+	it("protects nothing unless told to", () => {
+		const { store, editorStore, intrinsicNode, inverter } = setUp();
+		editorStore.getState().selectNode([intrinsicNode.id, inverter.id], true);
+
+		expect(getContextMenuItems(store, editorStore.getState())).toMatchObject({
+			removableNodeIds: [intrinsicNode.id, inverter.id],
+		});
+	});
+
+	it("keeps protected nodes from deleting and moving, and names them", () => {
+		const store = createTestStore();
+		const root = registerTestComponent(store, "Root");
+		const pin = registerTestInputNode(store, root.id, "A");
+		const gate = registerTestNode(store, root.id, not.component.id);
+		connectTestNodePins(
+			store,
+			root.id,
+			pin.out,
+			testNodePin(store, gate, not.inputPin.In),
+		);
+		const editorStore = createEditorStore(root.id, store, {
+			isProtectedNode: (nodeId) => nodeId === pin.node.id,
+		});
+		const items = () => getContextMenuItems(store, editorStore.getState());
+
+		editorStore.getState().selectNode([pin.node.id, gate.id], true);
+		expect(items()).toMatchObject({
+			removableNodeIds: [gate.id],
+			keptNodeNames: ["A"],
+			canDelete: true,
+		});
+
+		editorStore.getState().selectNode([pin.node.id], true);
+		expect(items()).toMatchObject({ keptNodeNames: ["A"], canDelete: false });
+		editorStore.getState().openContextMenu(rightClick);
+		expect(editorStore.getState().contextMenuState).not.toBeNull();
+
+		editorStore.getState().setEditorMode("play");
+		expect(editorStore.getState().editorMode).toBe("play");
+		editorStore.getState().openContextMenu(rightClick);
+		expect(editorStore.getState().contextMenuState).toBeNull();
+	});
+
+	it("offers no new component when the editor is told not to", () => {
+		const { store, editorStore, inverter } = setUp();
+		const closed = createEditorStore(
+			editorStore.getState().componentId,
+			store,
+			{
+				canCreateComponents: false,
+			},
+		);
+		editorStore.getState().selectNode([inverter.id], true);
+		closed.getState().selectNode([inverter.id], true);
+
+		expect(getContextMenuItems(store, editorStore.getState()).canExtract).toBe(
+			true,
+		);
+		expect(getContextMenuItems(store, closed.getState())).toMatchObject({
+			canExtract: false,
+			canDelete: true,
+		});
 	});
 });

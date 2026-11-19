@@ -1,6 +1,7 @@
 import {
 	ClickAwayListener,
 	Divider,
+	ListItemText,
 	MenuItem,
 	MenuList,
 	Paper,
@@ -32,8 +33,9 @@ export default function CCComponentEditorContextMenu({
 	const items = getContextMenuItems(store, componentEditorState);
 	if (!hasContextMenuItems(items)) return null;
 	const {
-		selectedNodeIds,
 		selectedConnectionIds,
+		removableNodeIds,
+		keptNodeNames,
 		canExtract,
 		canDelete,
 		componentToEdit,
@@ -49,6 +51,7 @@ export default function CCComponentEditorContextMenu({
 					top: `${componentEditorState.contextMenuState.position.y}px`,
 					left: `${componentEditorState.contextMenuState.position.x}px`,
 					minWidth: "200px",
+					maxWidth: "280px",
 				}}
 			>
 				{/* <MenuItem onClick={componentEditorState.closeContextMenu}>
@@ -60,7 +63,7 @@ export default function CCComponentEditorContextMenu({
 							componentEditorState.closeContextMenu();
 							const newComponent = await extractNodesIntoNewComponent(
 								store,
-								selectedNodeIds,
+								removableNodeIds,
 								messages.common.newComponentName,
 							);
 							onComponentCreated(newComponent.id);
@@ -69,21 +72,34 @@ export default function CCComponentEditorContextMenu({
 						{messages.editor.contextMenu.createComponent}
 					</MenuItem>
 				)}
-				{canDelete && (
+				{(canDelete || keptNodeNames.length > 0) && (
 					<MenuItem
+						disabled={!canDelete}
 						onClick={() => {
-							if (selectedNodeIds.length > 0)
-								store.nodes.unregister(selectedNodeIds);
+							if (removableNodeIds.length > 0)
+								store.nodes.unregister(removableNodeIds);
 							if (selectedConnectionIds.length > 0)
 								store.connections.unregister(selectedConnectionIds);
 							componentEditorState.selectConnection([], true);
 							componentEditorState.closeContextMenu();
 						}}
 					>
-						{messages.common.delete}
+						<ListItemText
+							sx={{ m: 0 }}
+							slotProps={{ secondary: { sx: { whiteSpace: "normal" } } }}
+							primary={messages.common.delete}
+							secondary={
+								keptNodeNames.length === 0
+									? null
+									: canDelete
+										? messages.editor.contextMenu.keptOnDelete(keptNodeNames)
+										: messages.editor.contextMenu.cannotDelete(keptNodeNames)
+							}
+						/>
 					</MenuItem>
 				)}
-				{componentToEdit && (canExtract || canDelete) && <Divider />}
+				{componentToEdit &&
+					(canExtract || canDelete || keptNodeNames.length > 0) && <Divider />}
 				{componentToEdit && (
 					<MenuItem
 						onClick={() => {

@@ -11,10 +11,11 @@ import CCComponentEditorNotifications from "./components/Notifications";
 import CCComponentEditorTitleBar from "./components/TitleBar";
 import CCComponentEditorViewModeSwitcher from "./components/ViewModeSwitcher";
 import CCComponentEditorRenderer from "./renderer";
-import { ComponentEditorStoreProvider } from "./store";
+import { ComponentEditorStoreProvider, type EditorStoreOptions } from "./store";
 
 export type CCComponentEditorProps = {
 	componentId: CCComponentId;
+	options?: EditorStoreOptions;
 	onEditComponent: (componentId: CCComponentId) => void;
 	onClose: () => void;
 };
@@ -74,9 +75,9 @@ function CCComponentEditorContent({
 }
 
 export default function CCComponentEditor(props: CCComponentEditorProps) {
-	const { componentId } = props;
+	const { componentId, options = {} } = props;
 	return (
-		<ComponentEditorStoreProvider componentId={componentId}>
+		<ComponentEditorStoreProvider componentId={componentId} options={options}>
 			<CCComponentEditorContent {...props} />
 		</ComponentEditorStoreProvider>
 	);

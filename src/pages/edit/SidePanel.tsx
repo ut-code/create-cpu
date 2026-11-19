@@ -4,16 +4,16 @@ import { useState } from "react";
 import invariant from "tiny-invariant";
 import { setDataTransferAsComponent } from "../../common/serialization";
 import { useMessages } from "../../i18n";
-import { type CCComponentId, isIncluding } from "../../store/component";
+import type { CCComponentId } from "../../store/component";
 import { ccPinTypes } from "../../store/componentPin";
 import { useStore } from "../../store/react";
 import { useComponents } from "../../store/react/selectors";
 import { theme } from "../../style";
+import { canPlaceComponent, type OffersComponent } from "./placement";
 
 export type SidePanelProps = {
 	editedComponentId: CCComponentId;
-	/** the intrinsic components to offer, if not all of them */
-	parts?: readonly CCComponentId[];
+	isOffered?: OffersComponent;
 };
 
 function ComponentRenderer({ componentId }: { componentId: CCComponentId }) {
@@ -90,7 +90,7 @@ function ComponentRenderer({ componentId }: { componentId: CCComponentId }) {
 }
 
 export default function SidePanel(sidePanelProps: SidePanelProps) {
-	const { editedComponentId, parts } = sidePanelProps;
+	const { editedComponentId, isOffered = () => true } = sidePanelProps;
 	const { store } = useStore();
 	const messages = useMessages();
 	const components = useComponents();
@@ -119,16 +119,14 @@ export default function SidePanel(sidePanelProps: SidePanelProps) {
 			/>
 			<Box component="ul" sx={{ m: 0, p: 0, listStyleType: "none" }}>
 				{components
-					.filter(
-						(component) =>
-							!parts ||
-							!component.intrinsicType ||
-							parts.includes(component.id),
-					)
 					.filter((component) => component.name.includes(searchText))
-					.filter((component) => component.id !== editedComponentId)
-					.filter(
-						(component) => !isIncluding(store, component.id, editedComponentId),
+					.filter((component) =>
+						canPlaceComponent(
+							store,
+							editedComponentId,
+							component.id,
+							isOffered,
+						),
 					)
 					.map((component) => (
 						<Box
