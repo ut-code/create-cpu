@@ -27,7 +27,7 @@ export const en = {
 			FALSE: "Always OFF",
 		},
 		about: (name: string) => `About ${name}`,
-		ofStage: "Parts you can use in this stage",
+		ofStage: "Available parts",
 	},
 	header: {
 		language: "Language",
@@ -106,7 +106,7 @@ export const en = {
 		startOverFailed: "Could not start the tutorial over.",
 		stages: "Stages",
 		parts: "Parts",
-		goalTable: "The stage is cleared when the circuit works like this",
+		goal: "Goal",
 		check: "Check",
 		passed: "Cleared! The circuit works for every combination of the inputs.",
 		next: "Next stage",

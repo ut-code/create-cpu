@@ -173,13 +173,15 @@ function StageView({ stage }: { stage: TutorialStage }) {
 						{texts.stageTexts[stage.id].title}
 					</Typography>
 				</div>
-				<Typography>{texts.stageTexts[stage.id].goal}</Typography>
-				{goalTable && (
-					<div>
-						<SectionHeading>{texts.goalTable}</SectionHeading>
-						<TruthTableView table={goalTable} />
-					</div>
-				)}
+				<div>
+					<SectionHeading>{texts.goal}</SectionHeading>
+					<Typography>{texts.stageTexts[stage.id].goal}</Typography>
+					{goalTable && (
+						<Box sx={{ mt: 1 }}>
+							<TruthTableView table={goalTable} />
+						</Box>
+					)}
+				</div>
 				<Button
 					variant="contained"
 					onClick={check}

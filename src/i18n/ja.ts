@@ -23,7 +23,7 @@ export const ja: Messages = {
 			FALSE: "いつも OFF",
 		},
 		about: (name) => `${name} について`,
-		ofStage: "この課題で使える部品",
+		ofStage: "使える部品",
 	},
 	header: {
 		language: "言語",
@@ -101,7 +101,7 @@ export const ja: Messages = {
 		startOverFailed: "チュートリアルをやり直せませんでした。",
 		stages: "課題の一覧",
 		parts: "部品",
-		goalTable: "回路がこのように動けばクリアです",
+		goal: "目標",
 		check: "確かめる",
 		passed: "クリア！どの入力の組み合わせでも正しく動きます。",
 		next: "次の課題へ",
