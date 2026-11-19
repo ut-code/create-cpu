@@ -1,4 +1,5 @@
 import { englishSimulationErrorTexts } from "../store/simulationErrorTexts";
+import type { TutorialStageId } from "../tutorial/stages";
 
 const bitWidths = (widths: readonly number[]) => `${widths.join("/")} bit`;
 const listOf = (names: readonly string[]) =>
@@ -7,6 +8,32 @@ const listOf = (names: readonly string[]) =>
 		: `${names.slice(0, -1).join(", ")} and ${names.at(-1)}`;
 const themOf = (names: readonly string[]) =>
 	names.length === 1 ? "it" : "them";
+
+type StageTexts = { title: string; goal: string; steps: readonly string[] };
+
+const stageTexts: Record<TutorialStageId, StageTexts> = {
+	and: {
+		title: "Both switches",
+		goal: "Make the lamp Out light up only when both switches A and B are ON. The stage is cleared when the circuit works as in the table below.",
+		steps: [
+			"Pick a part in the Parts list and drag it onto the editor on the right.",
+			"Drag from pin to pin to connect them with a wire.",
+			"Once Out and every input pin of the parts you placed are connected, the play button at the bottom right can be pressed. A part left with an unconnected input keeps it disabled.",
+			"After pressing it, click the switches A and B to turn them ON and OFF, and watch the lamp Out. To fix the circuit, the pencil button in the same place takes you back to editing.",
+			"When it works as in the table, press Check.",
+		],
+	},
+	"a-only": {
+		title: "Only switch A",
+		goal: "Make the lamp Out light up only when switch A is ON and B is OFF. This time, one part alone is not enough.",
+		steps: [],
+	},
+	xor: {
+		title: "Only one switch",
+		goal: 'Make the lamp Out light up when exactly one of the switches A and B is ON. It does not light up when both are ON. "Only switch A" is ready to use as a part.',
+		steps: [],
+	},
+};
 
 export const en = {
 	languageName: "English",
@@ -130,29 +157,7 @@ export const en = {
 			confirm: "Reset",
 		},
 		resetStageFailed: "Could not reset the stage.",
-		stageTexts: {
-			and: {
-				title: "Both switches",
-				goal: "Make the lamp Out light up only when both switches A and B are ON. The stage is cleared when the circuit works as in the table below.",
-				steps: [
-					"Pick a part in the Parts list and drag it onto the editor on the right.",
-					"Drag from pin to pin to connect them with a wire.",
-					"Once every pin of A, B and Out is connected, the play button at the bottom right can be pressed.",
-					"After pressing it, click the switches A and B to turn them ON and OFF, and watch the lamp Out. To fix the circuit, the pencil button in the same place takes you back to editing.",
-					"When it works as in the table, press Check.",
-				],
-			},
-			"a-only": {
-				title: "Only switch A",
-				goal: "Make the lamp Out light up only when switch A is ON and B is OFF. This time, one part alone is not enough.",
-				steps: [],
-			},
-			xor: {
-				title: "Only one switch",
-				goal: 'Make the lamp Out light up when exactly one of the switches A and B is ON. It does not light up when both are ON. "Only switch A" is ready to use as a part.',
-				steps: [],
-			},
-		},
+		stageTexts,
 	},
 	componentProperties: {
 		title: (componentName: string) => `${componentName} Properties`,
