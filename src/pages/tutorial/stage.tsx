@@ -19,13 +19,18 @@ import {
 import { valueLabel } from "../../common/bitLabel";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
 import { PartDescription } from "../../components/PartDescription";
+import { TruthTableView } from "../../components/TruthTable";
 import { type Messages, useMessages } from "../../i18n";
 import type CCStore from "../../store";
 import { definitionByComponentId } from "../../store/intrinsics/definitions";
 import { SimulationNodeError } from "../../store/netlist";
 import { StoreScope } from "../../store/react";
 import { theme } from "../../style";
-import { type CheckResult, checkCombinational } from "../../tutorial/check";
+import {
+	type CheckResult,
+	checkCombinational,
+	truthTableOfCheck,
+} from "../../tutorial/check";
 import { markStageCleared } from "../../tutorial/progress";
 import {
 	getTutorialStageStore,
@@ -79,6 +84,7 @@ function StageView({ stage }: { stage: TutorialStage }) {
 	const stageIndex = tutorialStages.indexOf(stage);
 	const nextStage = tutorialStages[stageIndex + 1];
 	const componentName = texts.stageTexts[stage.id].title;
+	const goalTable = truthTableOfCheck(stage.check);
 
 	const [store, setStore] = useState(() =>
 		getTutorialStageStore(stage, componentName),
@@ -155,6 +161,14 @@ function StageView({ stage }: { stage: TutorialStage }) {
 					</Typography>
 				</div>
 				<Typography>{texts.stageTexts[stage.id].goal}</Typography>
+				{goalTable && (
+					<div>
+						<Typography color="textSecondary" variant="body2" gutterBottom>
+							{texts.goalTable}
+						</Typography>
+						<TruthTableView table={goalTable} />
+					</div>
+				)}
 				<Button
 					variant="contained"
 					onClick={check}

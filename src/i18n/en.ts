@@ -106,6 +106,7 @@ export const en = {
 		startOverFailed: "Could not start the tutorial over.",
 		stages: "Stages",
 		parts: "Parts",
+		goalTable: "The stage is cleared when the circuit works like this",
 		check: "Check",
 		passed: "Cleared! The circuit works for every combination of the inputs.",
 		next: "Next stage",

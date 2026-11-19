@@ -2,6 +2,7 @@ import nullthrows from "nullthrows";
 import type CCStore from "../store";
 import type { CCComponentId } from "../store/component";
 import type { CCComponentPinId } from "../store/componentPin";
+import type { TruthTable } from "../store/intrinsics/truthTable";
 import type { CCNodePinId } from "../store/nodePin";
 import simulateComponent, {
 	type SimulationFrame,
@@ -46,6 +47,28 @@ export function* inputCombinations(
 		}
 		yield values;
 	}
+}
+
+/** null when a pin carries more than one bit, which a table of ON and OFF cannot show */
+export function truthTableOfCheck(
+	check: CombinationalCheck,
+): TruthTable | null {
+	if (check.inputs.some(({ bitWidth }) => bitWidth !== 1)) return null;
+	const rows: TruthTable["rows"] = [];
+	for (const inputs of inputCombinations(check.inputs)) {
+		const expected = check.expected(inputs);
+		const outputs = check.outputs.map((name) => expected[name]);
+		if (outputs.some((value) => value?.length !== 1)) return null;
+		rows.push({
+			inputs: check.inputs.map(({ name }) => nullthrows(inputs[name]?.[0])),
+			outputs: outputs.map((value) => nullthrows(value?.[0])),
+		});
+	}
+	return {
+		inputs: check.inputs.map(({ name }) => name),
+		outputs: [...check.outputs],
+		rows,
+	};
 }
 
 function isSameValue(a: SimulationValue, b: SimulationValue | undefined) {
