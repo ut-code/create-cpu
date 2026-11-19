@@ -1,4 +1,5 @@
 import clsx from "clsx";
+import { bitLabel } from "../../../../../../../../common/bitLabel";
 import type { SimulationValue } from "../../../../../../../../store/simulation";
 import { stringifySimulationValue } from "../../../../../store/slices/core";
 import { CCComponentEditorRendererNodeInterfaceRendererValueEditButton } from "./EditButton";
@@ -45,7 +46,7 @@ export function CCComponentEditorRendererNodeInterfaceRendererValue({
 		>
 			{value.map((bit, index) => {
 				const className = clsx(styles.bit, bit && styles.on);
-				const label = isSingleBit ? (bit ? "ON" : "OFF") : bit ? "1" : "0";
+				const label = isSingleBit ? bitLabel(bit) : bit ? "1" : "0";
 				return onChange ? (
 					<button
 						// biome-ignore lint/suspicious/noArrayIndexKey: bits are identified by their index

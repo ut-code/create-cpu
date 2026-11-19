@@ -1,10 +1,17 @@
-import { Search } from "@mui/icons-material";
-import { Box, InputAdornment, TextField } from "@mui/material";
+import { InfoOutlined, Search } from "@mui/icons-material";
+import {
+	Box,
+	IconButton,
+	InputAdornment,
+	Popover,
+	TextField,
+} from "@mui/material";
 import { useState } from "react";
 import invariant from "tiny-invariant";
 import { setDataTransferAsComponent } from "../../common/serialization";
+import { PartDescription, partSummary } from "../../components/PartDescription";
 import { useMessages } from "../../i18n";
-import type { CCComponentId } from "../../store/component";
+import type { CCComponent, CCComponentId } from "../../store/component";
 import { ccPinTypes } from "../../store/componentPin";
 import { useStore } from "../../store/react";
 import { useComponents } from "../../store/react/selectors";
@@ -95,6 +102,10 @@ export default function SidePanel(sidePanelProps: SidePanelProps) {
 	const messages = useMessages();
 	const components = useComponents();
 	const [searchText, setSearchText] = useState("");
+	const [describedPart, setDescribedPart] = useState<{
+		component: CCComponent;
+		anchorEl: HTMLElement;
+	} | null>(null);
 
 	return (
 		<Box sx={{ overflowY: "auto" }}>
@@ -133,15 +144,48 @@ export default function SidePanel(sidePanelProps: SidePanelProps) {
 							key={component.id}
 							component="li"
 							draggable
-							sx={{ cursor: "grab", p: 2 }}
+							sx={{ cursor: "grab", p: 2, position: "relative" }}
 							onDragStart={(e) => {
 								setDataTransferAsComponent(e.dataTransfer, component.id);
 							}}
 						>
 							<ComponentRenderer componentId={component.id} />
+							{partSummary(messages, component) && (
+								<IconButton
+									size="small"
+									aria-label={messages.parts.about(component.name)}
+									aria-haspopup="dialog"
+									sx={{ position: "absolute", top: 8, right: 8 }}
+									onClick={(e) =>
+										setDescribedPart({ component, anchorEl: e.currentTarget })
+									}
+								>
+									<InfoOutlined fontSize="small" />
+								</IconButton>
+							)}
 						</Box>
 					))}
 			</Box>
+			<Popover
+				open={describedPart !== null}
+				anchorEl={describedPart?.anchorEl ?? null}
+				anchorOrigin={{ vertical: "top", horizontal: "right" }}
+				onClose={() => setDescribedPart(null)}
+				slotProps={{
+					paper: {
+						role: "dialog",
+						"aria-label": describedPart
+							? messages.parts.about(describedPart.component.name)
+							: "",
+					},
+				}}
+			>
+				{describedPart && (
+					<Box sx={{ p: 2, maxWidth: 280 }}>
+						<PartDescription component={describedPart.component} />
+					</Box>
+				)}
+			</Popover>
 		</Box>
 	);
 }

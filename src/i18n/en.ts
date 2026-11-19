@@ -17,6 +17,18 @@ export const en = {
 		apply: "Apply",
 		delete: "Delete",
 	},
+	parts: {
+		summaries: {
+			AND: "ON only when both inputs are ON",
+			OR: "ON when at least one input is ON",
+			NOT: "Turns ON into OFF, and OFF into ON",
+			XOR: "ON when exactly one input is ON",
+			TRUE: "Always ON",
+			FALSE: "Always OFF",
+		},
+		about: (name: string) => `About ${name}`,
+		ofStage: "Parts you can use in this stage",
+	},
 	header: {
 		language: "Language",
 		modes: {
@@ -95,8 +107,6 @@ export const en = {
 		stages: "Stages",
 		parts: "Parts",
 		check: "Check",
-		on: "on",
-		off: "off",
 		passed: "Cleared! The circuit works for every combination of the inputs.",
 		next: "Next stage",
 		backToStages: "Back to the stages",
@@ -121,11 +131,11 @@ export const en = {
 		stageTexts: {
 			and: {
 				title: "Both switches",
-				goal: "Make the lamp Out light up only when both switches A and B are on. Drag parts from the Parts list onto the editor, and drag from pin to pin to connect them. The play button at the bottom right lets you try the switches. When it works, press Check.",
+				goal: "Make the lamp Out light up only when both switches A and B are ON. Drag parts from the Parts list onto the editor, and drag from pin to pin to connect them. The play button at the bottom right lets you try the switches. When it works, press Check.",
 			},
 			xor: {
 				title: "Only one switch",
-				goal: "Make the lamp Out light up when exactly one of the switches A and B is on. It stays off when both are on.",
+				goal: "Make the lamp Out light up when exactly one of the switches A and B is ON. It does not light up when both are ON.",
 			},
 		},
 	},
