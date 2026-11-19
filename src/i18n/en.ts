@@ -33,6 +33,16 @@ const stageTexts: Record<TutorialStageId, StageTexts> = {
 		goal: 'Make the lamp Out light up when exactly one of the switches A and B is ON. It does not light up when both are ON. "Only switch A" is ready to use as a part.',
 		steps: [],
 	},
+	"half-adder": {
+		title: "Adding one digit",
+		goal: "Think of ON as 1 and OFF as 0. Then A + B is 0, 1 or 2. In binary, numbers are written with only 0 and 1, so these are 00, 01 and 10: 2 is written 10. Output the twos digit to C and the ones digit to S. C is called the carry and S the sum, and this circuit is called a half adder.",
+		steps: [],
+	},
+	"full-adder": {
+		title: "Adding with a carry",
+		goal: 'Output A + B + Cin as a two-digit binary number to C and S. Cin is the carry coming from the digit below. The answer is 0 to 3, and 3 is 11 in binary. "Adding one digit" is ready to use as a part. This circuit is called a full adder.',
+		steps: [],
+	},
 };
 
 export const en = {
