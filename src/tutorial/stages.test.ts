@@ -120,6 +120,32 @@ describe("the counter stage", () => {
 	});
 });
 
+describe("the decimal digit stage", () => {
+	it("shows Count held at 1001 while Up is OFF, and the carry back to 0000", () => {
+		const decimal = nullthrows(findTutorialStage("decimal-digit"));
+		const table = nullthrows(goalTableOf(decimal.check));
+		const digitsOf = (values: boolean[][]) =>
+			values.map((value) => value.map(Number).join(""));
+
+		expect(table.inputs).toEqual(["Up"]);
+		expect(table.outputs).toEqual(["Count", "Carry"]);
+		expect(
+			table.rows.map(({ stepNumber, inputs, outputs }) => [
+				stepNumber,
+				...digitsOf(inputs),
+				...digitsOf(outputs),
+			]),
+		).toEqual([
+			[1, "1", "0000", "0"],
+			[2, "1", "0001", "0"],
+			[10, "0", "1001", "0"],
+			[11, "0", "1001", "0"],
+			[12, "1", "1001", "1"],
+			[13, "1", "0000", "0"],
+		]);
+	});
+});
+
 describe("setUpTutorialStage with decorations", () => {
 	it("places the display only for the player, not inside the part handed over", () => {
 		const fourBit = nullthrows(findTutorialStage("four-bit-adder"));

@@ -64,6 +64,17 @@ const stageTexts: Record<TutorialStageId, StageTexts> = {
 			'Press the play button and go through the time steps with the right arrow. Press "Auto" to go on by itself, one time step a second. The circuit works when the Display at the top right shows 0 to F in turn.',
 		],
 	},
+	"decimal-digit": {
+		title: "One decimal digit",
+		goal: "Writing numbers with 0 to 9, carrying over after 9 as everyday numbers do, is called decimal. Make Count go up by 1 only at the time steps when Up is ON, and go back to 0000 after 1001. At a time step when Count is 1001 and Up is ON, make Carry ON: it tells the digit above to go up. Check turns Up ON for time steps 1 to 9, OFF for 10 and 11, and ON again from 12.",
+		steps: [
+			'The Const, Broadcast and And on the left send 0001 to B of "Adding four digits" when Up is ON, and 0000 when it is OFF. A Broadcast spreads a one-digit value over several digits: 1111 for ON, 0000 for OFF. An And given values of several digits makes each digit 1 only where both are 1.',
+			"Make Carry. From 0000 to 1001, only 1001 has 1 in both the eights and the ones digit. Join the top pin (eights) and the bottom pin (ones) on the right of the Decompose below the FlipFlop with an And, join its output and Up with another And, and connect that to Carry.",
+			"Place a Broadcast, click the pin on its right, enter 4 in the box that appears and press Apply. Its output now has four digits. Do this before connecting it.",
+			"Go back to 0000 when Carry is ON. S is not connected to the FlipFlop yet. Turn Carry over with a Not, spread it to four digits with that Broadcast, join it and S with an And, and connect the And to the input of the FlipFlop.",
+			"While playing, click Up to switch it ON and OFF, and go through the time steps with the right arrow. The circuit works when the number on the Display goes up only while Up is ON, and goes back to 0 after 9.",
+		],
+	},
 };
 
 export const en = {
@@ -90,6 +101,7 @@ export const en = {
 			FLIPFLOP:
 				"Outputs what it received at the time step before (0 at the first time step)",
 			CONST: "Always outputs the value written in it",
+			BROADCAST: "Spreads a one-digit value over several digits",
 		},
 		about: (name: string) => `About ${name}`,
 		ofStage: "Available parts",
