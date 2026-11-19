@@ -171,6 +171,20 @@ describe("checkCombinational", () => {
 		});
 	});
 
+	it("reports a check that throws instead of throwing", () => {
+		const { store } = stageStore(andStage);
+		const error = new Error("broken");
+
+		expect(
+			checkCombinational(store, andStage.componentId, {
+				...andStage.check,
+				expected: () => {
+					throw error;
+				},
+			}),
+		).toEqual({ type: "checkFailed", error });
+	});
+
 	it("reports a circuit that cannot be simulated", () => {
 		const { store } = stageStore(andStage);
 

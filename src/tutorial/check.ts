@@ -29,7 +29,6 @@ export type CheckResult =
 			actual: number;
 	  }
 	| { type: "simulationFailed"; error: unknown }
-	/** the check itself failed, on a circuit it has no words for */
 	| { type: "checkFailed"; error: unknown }
 	| {
 			type: "wrongOutput";
@@ -96,6 +95,18 @@ function isSameValue(a: SimulationValue, b: SimulationValue | undefined) {
 }
 
 export function checkCombinational(
+	store: CCStore,
+	componentId: CCComponentId,
+	check: CombinationalCheck,
+): CheckResult {
+	try {
+		return checkCircuit(store, componentId, check);
+	} catch (error) {
+		return { type: "checkFailed", error };
+	}
+}
+
+function checkCircuit(
 	store: CCStore,
 	componentId: CCComponentId,
 	check: CombinationalCheck,

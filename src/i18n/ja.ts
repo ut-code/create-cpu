@@ -117,7 +117,7 @@ export const ja: Messages = {
 		wrongOutput: (inputs, pinName, expected, actual) =>
 			`${inputs.map(({ name, value }) => `${name} が ${value}`).join("、")} のとき、${pinName} は ${expected} になるはずが、${actual === null ? "値がありませんでした" : `${actual} でした`}。`,
 		checkFailed:
-			"確かめる途中で問題が起きました。「この課題をやり直す」で直ることがあります。",
+			"確かめる途中で問題が起きました。回路を少し変えてから、もう一度押してください。",
 		simulationFailed: (detail) =>
 			`回路をシミュレーションできませんでした。${detail}`,
 		resetStage: "この課題をやり直す",

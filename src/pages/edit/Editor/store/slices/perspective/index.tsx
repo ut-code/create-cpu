@@ -9,6 +9,7 @@ const createComponentEditorStorePerspectiveSlice: ComponentEditorSliceCreator<
 > = ({ store, componentId }) => {
 	let resizeObserver: ResizeObserver | null;
 	let rendererElement: SVGSVGElement | null;
+	let hasFitted = false;
 	const registerRendererElement = (element: SVGSVGElement | null) => {
 		if (!resizeObserver) return;
 		if (rendererElement) resizeObserver.unobserve(rendererElement);
@@ -60,23 +61,26 @@ const createComponentEditorStorePerspectiveSlice: ComponentEditorSliceCreator<
 					y: entries[0].contentRect.height,
 				};
 				const state = editorStore.getState();
-				const isFirstSize =
-					state.rendererSize.x === 0 && state.rendererSize.y === 0;
+				const fitsNow =
+					state.fitsNodesInView &&
+					!hasFitted &&
+					rendererSize.x > 0 &&
+					rendererSize.y > 0;
+				if (fitsNow) hasFitted = true;
 				editorStore.setState({
 					rendererSize,
-					...(isFirstSize &&
-						state.fitsNodesInView && {
-							perspective: perspectiveFitting(
-								store.nodes
-									.getManyByParentComponentId(componentId)
-									.map(
-										(node) =>
-											getCCComponentEditorRendererNodeGeometry(store, node.id)
-												.rect,
-									),
-								rendererSize,
-							),
-						}),
+					...(fitsNow && {
+						perspective: perspectiveFitting(
+							store.nodes
+								.getManyByParentComponentId(componentId)
+								.map(
+									(node) =>
+										getCCComponentEditorRendererNodeGeometry(store, node.id)
+											.rect,
+								),
+							rendererSize,
+						),
+					}),
 				});
 			});
 		},

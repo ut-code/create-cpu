@@ -19,8 +19,15 @@ export function perspectiveFitting(
 	const bottom = Math.max(
 		...rects.map((rect) => rect.position.y + rect.size.y),
 	);
-	const roomX = rendererSize.x - fitPadding.left - fitPadding.right;
-	const roomY = rendererSize.y - fitPadding.top - fitPadding.bottom;
+	// A renderer smaller than the padding still gets a finite scale
+	const roomX = Math.max(
+		1,
+		rendererSize.x - fitPadding.left - fitPadding.right,
+	);
+	const roomY = Math.max(
+		1,
+		rendererSize.y - fitPadding.top - fitPadding.bottom,
+	);
 	const scale = Math.max(1, (right - left) / roomX, (bottom - top) / roomY);
 	// The middle of the room is off the middle of the renderer by half the uneven padding
 	return {

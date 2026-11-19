@@ -96,13 +96,8 @@ function StageView({ stage }: { stage: TutorialStage }) {
 	}, [store]);
 
 	const check = () => {
-		let checked: CheckResult;
-		try {
-			checked = checkCombinational(store, stage.componentId, stage.check);
-		} catch (error) {
-			console.error(error);
-			checked = { type: "checkFailed", error };
-		}
+		const checked = checkCombinational(store, stage.componentId, stage.check);
+		if (checked.type === "checkFailed") console.error(checked.error);
 		setResult(checked);
 		if (checked.type === "passed") markStageCleared(stage.id);
 	};

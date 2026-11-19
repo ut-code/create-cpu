@@ -55,9 +55,19 @@ describe("perspectiveFitting", () => {
 		expect(perspective.scale).toBeGreaterThan(1);
 		expectInsideRoom(rects, perspective);
 		expect(
-			perspectiveFitting(rects, rendererSize).scale *
-				(rendererSize.y - fitPadding.top - fitPadding.bottom),
+			perspective.scale * (rendererSize.y - fitPadding.top - fitPadding.bottom),
 		).toBeCloseTo(1000);
+	});
+
+	it("stays finite on a renderer smaller than the padding", () => {
+		const perspective = perspectiveFitting(
+			[{ position: { x: 0, y: 0 }, size: { x: 100, y: 100 } }],
+			{ x: 50, y: 200 },
+		);
+
+		expect(Number.isFinite(perspective.scale)).toBe(true);
+		expect(Number.isFinite(perspective.center.x)).toBe(true);
+		expect(Number.isFinite(perspective.center.y)).toBe(true);
 	});
 
 	it("shows the middle when there are no nodes", () => {
