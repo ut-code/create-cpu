@@ -29,6 +29,8 @@ export type CheckResult =
 			actual: number;
 	  }
 	| { type: "simulationFailed"; error: unknown }
+	/** the check itself failed, on a circuit it has no words for */
+	| { type: "checkFailed"; error: unknown }
 	| {
 			type: "wrongOutput";
 			inputs: readonly { name: string; value: SimulationValue }[];

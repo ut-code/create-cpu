@@ -176,6 +176,8 @@ export const en = {
 			actual: string | null,
 		) =>
 			`When ${listOf(inputs.map(({ name, value }) => `${name} is ${value}`))}, ${pinName} should be ${expected}, but it ${actual === null ? "has no value" : `is ${actual}`}.`,
+		checkFailed:
+			'Something went wrong while checking. "Reset this stage" may fix it.',
 		simulationFailed: (detail: string) =>
 			`The circuit could not be simulated. ${detail}`,
 		resetStage: "Reset this stage",

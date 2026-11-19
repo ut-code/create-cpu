@@ -116,6 +116,8 @@ export const ja: Messages = {
 			`${pinName} は ${expected}桁のはずですが、${actual}桁になっています。つないだ先を確かめてください。`,
 		wrongOutput: (inputs, pinName, expected, actual) =>
 			`${inputs.map(({ name, value }) => `${name} が ${value}`).join("、")} のとき、${pinName} は ${expected} になるはずが、${actual === null ? "値がありませんでした" : `${actual} でした`}。`,
+		checkFailed:
+			"確かめる途中で問題が起きました。「この課題をやり直す」で直ることがあります。",
 		simulationFailed: (detail) =>
 			`回路をシミュレーションできませんでした。${detail}`,
 		resetStage: "この課題をやり直す",

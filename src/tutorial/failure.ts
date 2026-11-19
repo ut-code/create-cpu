@@ -29,6 +29,8 @@ export function describeFailure(
 				valueLabel(result.expected),
 				result.actual ? valueLabel(result.actual) : null,
 			);
+		case "checkFailed":
+			return texts.checkFailed;
 		case "simulationFailed":
 			return texts.simulationFailed(
 				result.error instanceof SimulationNodeError

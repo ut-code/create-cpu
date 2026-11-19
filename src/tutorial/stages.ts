@@ -261,7 +261,7 @@ const fourBitAdderStage = defineStage("four-bit-adder", {
 	parts: [decompose, aggregate, false_].map((part) => part.component.id),
 	givenParts: ["full-adder"],
 	tableNotation: "digits",
-	pinDistance: 390,
+	pinDistance: 420,
 	check: {
 		inputs: [
 			{ name: "A", bitWidth: digitCount },
@@ -287,9 +287,9 @@ const fourBitAdderStage = defineStage("four-bit-adder", {
 	})),
 	layOut(circuit, { decorate }) {
 		const single = new Array<number>(digitCount).fill(1);
-		const splitA = circuit.place(decompose.component.id, { x: -230, y: -170 });
-		const splitB = circuit.place(decompose.component.id, { x: -230, y: 170 });
-		const joined = circuit.place(aggregate.component.id, { x: 160, y: 100 });
+		const splitA = circuit.place(decompose.component.id, { x: -250, y: -170 });
+		const splitB = circuit.place(decompose.component.id, { x: -250, y: 170 });
+		const joined = circuit.place(aggregate.component.id, { x: 150, y: 100 });
 		circuit.split(splitA, decompose.outputPin.Out, single);
 		circuit.split(splitB, decompose.outputPin.Out, single);
 		circuit.split(joined, aggregate.inputPin.In, single);
@@ -305,12 +305,12 @@ const fourBitAdderStage = defineStage("four-bit-adder", {
 		circuit.connect(sum, circuit.pin("S"));
 		if (decorate) {
 			const digit = circuit.place(seven_segment.component.id, {
-				x: 170,
-				y: 250,
+				x: 290,
+				y: -250,
 			});
 			const screen = circuit.place(
 				display.component.id,
-				{ x: 330, y: 240 },
+				{ x: 430, y: -250 },
 				{ resolution: { x: 4, y: 7 }, pixelOrder: "row-major" },
 			);
 			circuit.connect(sum, circuit.pinOf(digit, seven_segment.inputPin.In));
@@ -322,7 +322,7 @@ const fourBitAdderStage = defineStage("four-bit-adder", {
 		return () => {
 			const adders = Array.from({ length: digitCount }, (_, index) =>
 				circuit.place(fullAdderStage.componentId, {
-					x: -40,
+					x: -50,
 					y: -300 + 200 * index,
 				}),
 			);

@@ -15,6 +15,7 @@ export type EditorStoreOptions = {
 	isProtectedNode?: (nodeId: CCNodeId) => boolean;
 	isOffered?: OffersComponent;
 	canCreateComponents?: boolean;
+	fitsNodesInView?: boolean;
 	hasProperties?: (componentId: CCComponentId) => boolean;
 };
 
@@ -26,6 +27,7 @@ export function createEditorStore(
 		isOffered = () => true,
 		hasProperties = () => true,
 		canCreateComponents = true,
+		fitsNodesInView = false,
 	}: EditorStoreOptions = {},
 ) {
 	const props = { store, componentId };
@@ -38,6 +40,7 @@ export function createEditorStore(
 		isOffered,
 		hasProperties,
 		canCreateComponents,
+		fitsNodesInView,
 		...coreSlice.define(set, get),
 		...perspectiveSlice.define(set, get),
 		...contextMenuSlice.define(set, get),

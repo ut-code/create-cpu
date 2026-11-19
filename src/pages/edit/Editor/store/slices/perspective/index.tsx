@@ -1,10 +1,12 @@
 import { vector2 } from "../../../../../../common/vector2";
+import { getCCComponentEditorRendererNodeGeometry } from "../../../renderer/Node/geometry";
 import type { ComponentEditorSliceCreator } from "../../types";
+import { perspectiveFitting } from "./fit";
 import type { PerspectiveStoreSlice } from "./types";
 
 const createComponentEditorStorePerspectiveSlice: ComponentEditorSliceCreator<
 	PerspectiveStoreSlice
-> = () => {
+> = ({ store, componentId }) => {
 	let resizeObserver: ResizeObserver | null;
 	let rendererElement: SVGSVGElement | null;
 	const registerRendererElement = (element: SVGSVGElement | null) => {
@@ -53,11 +55,28 @@ const createComponentEditorStorePerspectiveSlice: ComponentEditorSliceCreator<
 		postCreate(editorStore) {
 			resizeObserver = new ResizeObserver((entries) => {
 				if (!entries[0]) return;
+				const rendererSize = {
+					x: entries[0].contentRect.width,
+					y: entries[0].contentRect.height,
+				};
+				const state = editorStore.getState();
+				const isFirstSize =
+					state.rendererSize.x === 0 && state.rendererSize.y === 0;
 				editorStore.setState({
-					rendererSize: {
-						x: entries[0].contentRect.width,
-						y: entries[0].contentRect.height,
-					},
+					rendererSize,
+					...(isFirstSize &&
+						state.fitsNodesInView && {
+							perspective: perspectiveFitting(
+								store.nodes
+									.getManyByParentComponentId(componentId)
+									.map(
+										(node) =>
+											getCCComponentEditorRendererNodeGeometry(store, node.id)
+												.rect,
+									),
+								rendererSize,
+							),
+						}),
 				});
 			});
 		},

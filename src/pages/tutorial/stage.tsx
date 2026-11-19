@@ -96,7 +96,13 @@ function StageView({ stage }: { stage: TutorialStage }) {
 	}, [store]);
 
 	const check = () => {
-		const checked = checkCombinational(store, stage.componentId, stage.check);
+		let checked: CheckResult;
+		try {
+			checked = checkCombinational(store, stage.componentId, stage.check);
+		} catch (error) {
+			console.error(error);
+			checked = { type: "checkFailed", error };
+		}
 		setResult(checked);
 		if (checked.type === "passed") markStageCleared(stage.id);
 	};
@@ -267,6 +273,7 @@ function StageView({ stage }: { stage: TutorialStage }) {
 							isProtectedNode: (nodeId) => isStagePinNode(store, stage, nodeId),
 							isOffered,
 							canCreateComponents: stage.allowsNewComponents,
+							fitsNodesInView: true,
 							hasProperties: (componentId) =>
 								!isStageComponent(stage, componentId),
 						}}
