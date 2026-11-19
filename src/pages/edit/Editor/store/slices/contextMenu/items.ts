@@ -7,9 +7,7 @@ import type { CCNodeId } from "../../../../../../store/node";
 import type { ComponentEditorStoreValue } from "../../types";
 
 export type ContextMenuItems = {
-	selectedNodeIds: CCNodeId[];
 	selectedConnectionIds: CCConnectionId[];
-	/** the selected nodes that may be deleted or moved into a new component */
 	removableNodeIds: CCNodeId[];
 	canExtract: boolean;
 	canDelete: boolean;
@@ -41,7 +39,6 @@ export function getContextMenuItems(
 				)
 			: null;
 	return {
-		selectedNodeIds,
 		selectedConnectionIds,
 		removableNodeIds,
 		canExtract:

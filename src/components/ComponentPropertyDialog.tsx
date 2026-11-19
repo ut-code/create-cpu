@@ -21,7 +21,6 @@ import { useStore } from "../store/react";
 
 export type ComponentPropertyDialogProps = {
 	componentId: CCComponentId;
-	/** the nodes whose pins keep their names */
 	isProtectedNode: (nodeId: CCNodeId) => boolean;
 	onClose(): void;
 };

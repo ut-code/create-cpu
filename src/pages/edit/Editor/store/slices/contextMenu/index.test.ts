@@ -1,7 +1,11 @@
 import nullthrows from "nullthrows";
 import type { MouseEvent } from "react";
 import { describe, expect, it } from "vitest";
-import { not, true_ } from "../../../../../../store/intrinsics/definitions";
+import {
+	input,
+	not,
+	true_,
+} from "../../../../../../store/intrinsics/definitions";
 import {
 	connectTestNodePins,
 	createTestStore,
@@ -17,7 +21,7 @@ stubResizeObserver();
 
 const rightClick = { nativeEvent: { offsetX: 10, offsetY: 20 } } as MouseEvent;
 
-function setUp(options: Parameters<typeof createEditorStore>[2] = {}) {
+function setUp() {
 	const store = createTestStore();
 	const sub = registerTestComponent(store, "Sub");
 	const root = registerTestComponent(store, "Root");
@@ -31,7 +35,7 @@ function setUp(options: Parameters<typeof createEditorStore>[2] = {}) {
 		testNodePin(store, inverter, not.inputPin.In),
 	);
 	const [connection] = store.connections.getMany();
-	const editorStore = createEditorStore(root.id, store, options);
+	const editorStore = createEditorStore(root.id, store);
 	return {
 		store,
 		editorStore,
@@ -110,21 +114,31 @@ describe("Context menu slice", () => {
 		expect(editorStore.getState().contextMenuState).not.toBeNull();
 	});
 
-	it("leaves protected nodes out of what it deletes or moves", () => {
-		let protectedNodeId: string | null = null;
-		const { store, editorStore, intrinsicNode, inverter } = setUp({
-			isProtectedNode: (nodeId) => nodeId === protectedNodeId,
-		});
-		protectedNodeId = intrinsicNode.id;
+	it("protects nothing unless told to", () => {
+		const { store, editorStore, intrinsicNode, inverter } = setUp();
 		editorStore.getState().selectNode([intrinsicNode.id, inverter.id], true);
 
 		expect(getContextMenuItems(store, editorStore.getState())).toMatchObject({
-			removableNodeIds: [inverter.id],
+			removableNodeIds: [intrinsicNode.id, inverter.id],
+		});
+	});
+
+	it("leaves protected nodes out of what it deletes or moves", () => {
+		const store = createTestStore();
+		const root = registerTestComponent(store, "Root");
+		const pin = registerTestNode(store, root.id, input.component.id);
+		const gate = registerTestNode(store, root.id, not.component.id);
+		const editorStore = createEditorStore(root.id, store, {
+			isProtectedNode: (nodeId) => nodeId === pin.id,
+		});
+		editorStore.getState().selectNode([pin.id, gate.id], true);
+
+		expect(getContextMenuItems(store, editorStore.getState())).toMatchObject({
+			removableNodeIds: [gate.id],
 			canDelete: true,
-			canExtract: true,
 		});
 
-		editorStore.getState().selectNode([intrinsicNode.id], true);
+		editorStore.getState().selectNode([pin.id], true);
 		editorStore.getState().openContextMenu(rightClick);
 
 		expect(editorStore.getState().contextMenuState).toBeNull();

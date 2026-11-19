@@ -30,6 +30,7 @@ import {
 } from "../../tutorial/stageStore";
 import {
 	findTutorialStage,
+	isStagePart,
 	isStagePinNode,
 	type TutorialStage,
 	tutorialStages,
@@ -198,7 +199,10 @@ function StageView({ stage }: { stage: TutorialStage }) {
 					>
 						{texts.parts}
 					</Typography>
-					<SidePanel editedComponentId={shownComponentId} parts={stage.parts} />
+					<SidePanel
+						editedComponentId={shownComponentId}
+						isOffered={(component) => isStagePart(stage, component)}
+					/>
 				</Box>
 				<Divider orientation="vertical" />
 				<CCComponentEditor
@@ -206,6 +210,7 @@ function StageView({ stage }: { stage: TutorialStage }) {
 					componentId={shownComponentId}
 					options={{
 						isProtectedNode: (nodeId) => isStagePinNode(store, stage, nodeId),
+						isOffered: (component) => isStagePart(stage, component),
 					}}
 					onEditComponent={setEditedComponentId}
 					onClose={() => {

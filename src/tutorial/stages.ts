@@ -1,6 +1,10 @@
 import nullthrows from "nullthrows";
 import type CCStore from "../store";
-import { type CCComponentId, CCComponentStore } from "../store/component";
+import {
+	type CCComponent,
+	type CCComponentId,
+	CCComponentStore,
+} from "../store/component";
 import type { CCComponentPin } from "../store/componentPin";
 import { and, input, not, or, output } from "../store/intrinsics/definitions";
 import { type CCNodeId, CCNodeStore } from "../store/node";
@@ -52,7 +56,10 @@ export function findTutorialStage(id: string | undefined) {
 	return tutorialStages.find((stage) => stage.id === id);
 }
 
-/** The pins the stage placed, which the check looks for by name */
+export function isStagePart(stage: TutorialStage, component: CCComponent) {
+	return !component.intrinsicType || stage.parts.includes(component.id);
+}
+
 export function isStagePinNode(
 	store: CCStore,
 	stage: TutorialStage,

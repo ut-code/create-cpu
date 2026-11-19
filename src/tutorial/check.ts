@@ -56,11 +56,6 @@ function isSameValue(a: SimulationValue, b: SimulationValue | undefined) {
 	);
 }
 
-/**
- * Simulate the component for every combination of its inputs and compare its outputs
- * with `check`. Its pins are found by name, as the player may have removed or renamed
- * the ones the stage placed.
- */
 export function checkCombinational(
 	store: CCStore,
 	componentId: CCComponentId,

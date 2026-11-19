@@ -2,7 +2,7 @@ import { createContext, useContext, useState } from "react";
 import invariant from "tiny-invariant";
 import { create } from "zustand";
 import type CCStore from "../../../../store";
-import type { CCComponentId } from "../../../../store/component";
+import type { CCComponent, CCComponentId } from "../../../../store/component";
 import type { CCNodeId } from "../../../../store/node";
 import { useStore } from "../../../../store/react";
 import createComponentEditorStoreContextMenuSlice from "./slices/contextMenu";
@@ -12,12 +12,16 @@ import type { ComponentEditorStoreValue } from "./types";
 
 export type EditorStoreOptions = {
 	isProtectedNode?: (nodeId: CCNodeId) => boolean;
+	isOffered?: (component: CCComponent) => boolean;
 };
 
 export function createEditorStore(
 	componentId: CCComponentId,
 	store: CCStore,
-	{ isProtectedNode = () => false }: EditorStoreOptions = {},
+	{
+		isProtectedNode = () => false,
+		isOffered = () => true,
+	}: EditorStoreOptions = {},
 ) {
 	const props = { store, componentId };
 	const coreSlice = createComponentEditorStoreCoreSlice(props);
@@ -26,6 +30,7 @@ export function createEditorStore(
 	const editorStore = create<ComponentEditorStoreValue>((set, get) => ({
 		componentId,
 		isProtectedNode,
+		isOffered,
 		...coreSlice.define(set, get),
 		...perspectiveSlice.define(set, get),
 		...contextMenuSlice.define(set, get),
@@ -50,6 +55,7 @@ export function ComponentEditorStoreProvider({
 	children: React.ReactNode;
 }) {
 	const { store } = useStore();
+	// Read once, so a caller changes them by remounting with another key
 	const [editorStore] = useState(() =>
 		createEditorStore(componentId, store, options),
 	);

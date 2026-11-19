@@ -6,6 +6,7 @@ import {
 	useConnectionIds,
 	useNodeIds,
 } from "../../../../store/react/selectors";
+import { canPlaceComponent } from "../../placement";
 import { useComponentEditorStore } from "../store";
 import CCComponentEditorRendererBackground from "./Background";
 import CCComponentEditorRendererConnection from "./Connection";
@@ -61,7 +62,16 @@ export default function CCComponentEditorRenderer() {
 			}}
 			onDrop={(e) => {
 				const droppedComponentId = parseDataTransferAsComponent(e.dataTransfer);
-				if (!droppedComponentId || componentEditorState.editorMode === "play")
+				if (
+					!droppedComponentId ||
+					componentEditorState.editorMode === "play" ||
+					!canPlaceComponent(
+						store,
+						componentEditorState.componentId,
+						droppedComponentId,
+						componentEditorState.isOffered,
+					)
+				)
 					return;
 				store.nodes.register(
 					CCNodeStore.create({
