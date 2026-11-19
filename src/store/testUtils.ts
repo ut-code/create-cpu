@@ -1,7 +1,6 @@
-import { uniqBy } from "es-toolkit";
 import nullthrows from "nullthrows";
 import invariant from "tiny-invariant";
-import { expect } from "vitest";
+import { expect, vi } from "vitest";
 import CCStore from ".";
 import {
 	type CCComponent,
@@ -18,43 +17,9 @@ import {
 	CCNodePinStore,
 } from "./nodePin";
 import type { SimulationValue } from "./simulation";
-import {
-	type CCObjectByType,
-	type CCObjectId,
-	type CCObjectType,
-	ccObjectTypes,
-} from "./types";
 
 export function expectConsistentStore(store: CCStore) {
-	for (const type of ccObjectTypes) {
-		expectReferencesToExist(store, type);
-	}
-
-	// Ensure an input pin is only connected to one output pin
-	const connections = store.connections.getMany();
-	expect(connections).toEqual(uniqBy(connections, (c) => c.to));
-}
-
-/** Expect every object of `type` to refer only to objects in the store. */
-function expectReferencesToExist<K extends CCObjectType>(
-	store: CCStore,
-	type: K,
-) {
-	const objectStore = store.getObjectStore(type);
-	const references = Object.entries(objectStore.references) as [
-		keyof CCObjectByType[K],
-		CCObjectType,
-	][];
-	for (const object of objectStore.getMany()) {
-		for (const [field, targetType] of references) {
-			const targetId = object[field] as CCObjectId | null;
-			if (targetId === null) continue;
-			expect(
-				store.getObjectStore(targetType).get(targetId),
-				`${type}.${String(field)} of ${object.id}`,
-			).toBeDefined();
-		}
-	}
+	expect(store.findInconsistencies()).toEqual([]);
 }
 
 /**
@@ -249,4 +214,23 @@ export function thrownBy<E extends Error>(
 		return error as E;
 	}
 	throw new Error("Expected the function to throw");
+}
+
+/**
+ * Stand in for the local storage of the browser, which tests run without.
+ * @param setItem replaces how a value is saved, e.g. to make saving fail
+ * @returns the values saved, by key
+ */
+export function stubLocalStorage(
+	setItem?: (key: string, value: string) => void,
+): Map<string, string> {
+	const saved = new Map<string, string>();
+	vi.stubGlobal("window", {
+		localStorage: {
+			getItem: (key: string) => saved.get(key) ?? null,
+			setItem:
+				setItem ?? ((key: string, value: string) => saved.set(key, value)),
+		},
+	});
+	return saved;
 }
