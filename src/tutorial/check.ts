@@ -60,27 +60,28 @@ function expectedValueOf(expected: PinValues, name: string) {
 	return nullthrows(expected[name], `The check gives no value for ${name}`);
 }
 
-/** null when a pin carries more than one bit */
-export function truthTableOfCheck(
+/**
+ * Every combination of the inputs when each is one bit, or else the given examples,
+ * with what the outputs should be; null when there is nothing to show
+ */
+export function goalTableOf(
 	check: CombinationalCheck,
+	examples: readonly PinValues[],
 ): TruthTable | null {
-	if (check.inputs.some(({ bitWidth }) => bitWidth !== 1)) return null;
-	const rows: TruthTable["rows"] = [];
-	for (const inputs of inputCombinations(check.inputs)) {
-		const expected = check.expected(inputs);
-		const outputs = check.outputs.map((name) =>
-			expectedValueOf(expected, name),
-		);
-		if (outputs.some((value) => value.length !== 1)) return null;
-		rows.push({
-			inputs: check.inputs.map(({ name }) => nullthrows(inputs[name]?.[0])),
-			outputs: outputs.map((value) => nullthrows(value[0])),
-		});
-	}
+	const rows = check.inputs.every(({ bitWidth }) => bitWidth === 1)
+		? [...inputCombinations(check.inputs)]
+		: examples;
+	if (rows.length === 0) return null;
 	return {
 		inputs: check.inputs.map(({ name }) => name),
 		outputs: [...check.outputs],
-		rows,
+		rows: rows.map((inputs) => {
+			const expected = check.expected(inputs);
+			return {
+				inputs: check.inputs.map(({ name }) => nullthrows(inputs[name])),
+				outputs: check.outputs.map((name) => expectedValueOf(expected, name)),
+			};
+		}),
 	};
 }
 

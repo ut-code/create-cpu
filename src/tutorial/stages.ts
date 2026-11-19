@@ -16,7 +16,7 @@ import {
 	xor,
 } from "../store/intrinsics/definitions";
 import { type CCNodeId, CCNodeStore } from "../store/node";
-import type { CombinationalCheck } from "./check";
+import type { CombinationalCheck, PinValues } from "./check";
 import { StageCircuit } from "./circuit";
 
 export const tutorialStageIds = [
@@ -41,6 +41,8 @@ export type TutorialStage = {
 	tableNotation: BitNotation;
 	/** also the input and output pins the stage starts with */
 	check: CombinationalCheck;
+	/** inputs the goal shows when every combination of them is too many */
+	examples: readonly PinValues[];
 	/** how far left and right of the middle the input and output pins sit */
 	pinDistance: number;
 	/**
@@ -62,7 +64,12 @@ const oneBitInputs = (...names: string[]) =>
 type Solving = { solve(circuit: StageCircuit): void };
 
 type StageDefinition = Pick<TutorialStage, "parts" | "check"> &
-	Partial<Pick<TutorialStage, "givenParts" | "tableNotation" | "pinDistance">> &
+	Partial<
+		Pick<
+			TutorialStage,
+			"givenParts" | "tableNotation" | "pinDistance" | "examples"
+		>
+	> &
 	(Pick<TutorialStage, "layOut"> | Solving);
 
 function defineStage(
@@ -75,6 +82,7 @@ function defineStage(
 		givenParts = [],
 		tableNotation = "onOff",
 		pinDistance = 300,
+		examples = [],
 	} = definition;
 	return {
 		id,
@@ -84,6 +92,7 @@ function defineStage(
 		givenParts,
 		tableNotation,
 		pinDistance,
+		examples,
 		allowsNewComponents: false,
 		layOut:
 			"layOut" in definition

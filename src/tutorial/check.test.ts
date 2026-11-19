@@ -15,8 +15,8 @@ import {
 import {
 	type CombinationalCheck,
 	checkCombinational,
+	goalTableOf,
 	inputCombinations,
-	truthTableOfCheck,
 } from "./check";
 import {
 	findTutorialStage,
@@ -69,16 +69,16 @@ describe("inputCombinations", () => {
 	});
 });
 
-describe("truthTableOfCheck", () => {
+describe("goalTableOf", () => {
 	it("lists what the stage asks for, in the order the check tries the inputs", () => {
-		expect(truthTableOfCheck(xorStage.check)).toEqual({
+		expect(goalTableOf(xorStage.check, [])).toEqual({
 			inputs: ["A", "B"],
 			outputs: ["Out"],
 			rows: [
-				{ inputs: [false, false], outputs: [false] },
-				{ inputs: [false, true], outputs: [true] },
-				{ inputs: [true, false], outputs: [true] },
-				{ inputs: [true, true], outputs: [false] },
+				{ inputs: [[false], [false]], outputs: [[false]] },
+				{ inputs: [[false], [true]], outputs: [[true]] },
+				{ inputs: [[true], [false]], outputs: [[true]] },
+				{ inputs: [[true], [true]], outputs: [[false]] },
 			],
 		});
 	});
@@ -86,32 +86,25 @@ describe("truthTableOfCheck", () => {
 	it("lists several outputs in the order the stage names them", () => {
 		const halfAdder = nullthrows(findTutorialStage("half-adder"));
 
-		expect(truthTableOfCheck(halfAdder.check)).toEqual({
-			inputs: ["A", "B"],
-			outputs: ["C", "S"],
-			rows: [
-				{ inputs: [false, false], outputs: [false, false] },
-				{ inputs: [false, true], outputs: [false, true] },
-				{ inputs: [true, false], outputs: [false, true] },
-				{ inputs: [true, true], outputs: [true, false] },
-			],
-		});
+		expect(goalTableOf(halfAdder.check, [])?.rows).toEqual([
+			{ inputs: [[false], [false]], outputs: [[false], [false]] },
+			{ inputs: [[false], [true]], outputs: [[false], [true]] },
+			{ inputs: [[true], [false]], outputs: [[false], [true]] },
+			{ inputs: [[true], [true]], outputs: [[true], [false]] },
+		]);
 	});
 
-	it("gives no table when a pin carries more than one bit", () => {
-		const wideInput: CombinationalCheck = {
+	it("shows only the examples when an input has several bits", () => {
+		const wide: CombinationalCheck = {
 			inputs: [{ name: "A", bitWidth: 2 }],
 			outputs: ["Out"],
-			expected: () => ({ Out: [false] }),
-		};
-		const wideOutput: CombinationalCheck = {
-			inputs: [{ name: "A", bitWidth: 1 }],
-			outputs: ["Out"],
-			expected: () => ({ Out: [false, false] }),
+			expected: (values) => ({ Out: [...nullthrows(values.A)].reverse() }),
 		};
 
-		expect(truthTableOfCheck(wideInput)).toBeNull();
-		expect(truthTableOfCheck(wideOutput)).toBeNull();
+		expect(goalTableOf(wide, [])).toBeNull();
+		expect(goalTableOf(wide, [{ A: [true, false] }])?.rows).toEqual([
+			{ inputs: [[true, false]], outputs: [[false, true]] },
+		]);
 	});
 
 	it("refuses a check that gives no value for an output", () => {
@@ -121,7 +114,7 @@ describe("truthTableOfCheck", () => {
 			expected: () => ({}),
 		};
 
-		expect(() => truthTableOfCheck(check)).toThrow("Out");
+		expect(() => goalTableOf(check, [])).toThrow("Out");
 	});
 });
 

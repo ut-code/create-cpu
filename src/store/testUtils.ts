@@ -1,6 +1,7 @@
 import nullthrows from "nullthrows";
 import invariant from "tiny-invariant";
 import { expect, vi } from "vitest";
+import { bitsOf, numberOf } from "../common/bits";
 import CCStore from ".";
 import {
 	type CCComponent,
@@ -189,18 +190,10 @@ export function testComponentPin(
 	);
 }
 
-/** MSB-first bit array of `value` in `width` bits. */
-export function testBits(value: number, width: number): SimulationValue {
-	return Array.from(
-		{ length: width },
-		(_, i) => ((value >> (width - 1 - i)) & 1) === 1,
-	);
-}
+export const testBits = bitsOf;
 
-/** Decimal reading of an MSB-first bit array. */
 export function testNumber(value: SimulationValue | undefined): number | null {
-	if (!value) return null;
-	return Number.parseInt(value.map((bit) => (bit ? "1" : "0")).join(""), 2);
+	return value ? numberOf(value) : null;
 }
 
 export function thrownBy<E extends Error>(

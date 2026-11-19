@@ -2,14 +2,19 @@ import { Box, type Theme } from "@mui/material";
 import { useContext } from "react";
 import { bitDigit, bitLabel } from "../common/bitLabel";
 import type { TruthTable } from "../store/intrinsics/truthTable";
+import type { SimulationValue } from "../store/simulation";
 import { theme } from "../style";
 import { BitNotationContext } from "./bitNotation";
 
 const divider = (muiTheme: Theme) => `1px solid ${muiTheme.palette.divider}`;
 
 export function TruthTableView({ table }: { table: TruthTable }) {
-	const labelOf =
+	const bitLabelOf =
 		useContext(BitNotationContext) === "digits" ? bitDigit : bitLabel;
+	const labelOf = (value: SimulationValue) =>
+		value.length === 1 && value[0] !== undefined
+			? bitLabelOf(value[0])
+			: value.map(bitDigit).join("");
 	const columns = [
 		...table.inputs.map((name) => ({ key: `in-${name}`, name })),
 		...table.outputs.map((name) => ({ key: `out-${name}`, name })),
@@ -43,17 +48,18 @@ export function TruthTableView({ table }: { table: TruthTable }) {
 			</thead>
 			<tbody>
 				{table.rows.map((row) => (
-					<tr key={row.inputs.join()}>
+					<tr key={row.inputs.map(labelOf).join()}>
 						{[...row.inputs, ...row.outputs].map((value, i) => (
 							<Box
 								key={columns[i]?.key}
 								component="td"
 								sx={{
 									...cellSx(i),
-									...(value && {
-										color: theme.colors.primary,
-										fontWeight: "bold",
-									}),
+									...(value.length === 1 &&
+										value[0] && {
+											color: theme.colors.primary,
+											fontWeight: "bold",
+										}),
 								}}
 							>
 								{labelOf(value)}

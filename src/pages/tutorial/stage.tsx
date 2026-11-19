@@ -30,7 +30,7 @@ import { theme } from "../../style";
 import {
 	type CheckResult,
 	checkCombinational,
-	truthTableOfCheck,
+	goalTableOf,
 } from "../../tutorial/check";
 import { describeFailure } from "../../tutorial/failure";
 import { markStageCleared } from "../../tutorial/progress";
@@ -71,7 +71,7 @@ function StageView({ stage }: { stage: TutorialStage }) {
 	const stageIndex = tutorialStages.indexOf(stage);
 	const nextStage = tutorialStages[stageIndex + 1];
 	const titleOf: StageTitleOf = (id) => texts.stageTexts[id].title;
-	const goalTable = truthTableOfCheck(stage.check);
+	const goalTable = goalTableOf(stage.check, stage.examples);
 	const stageTexts = texts.stageTexts[stage.id];
 
 	const [store, setStore] = useState(() =>
@@ -191,16 +191,16 @@ function StageView({ stage }: { stage: TutorialStage }) {
 										}
 									/>
 								))}
-								{stage.givenParts.map((id) => (
-									<PartDescriptionView
-										key={id}
-										name={titleOf(id)}
-										summary={null}
-										table={truthTableOfCheck(
-											nullthrows(findTutorialStage(id)).check,
-										)}
-									/>
-								))}
+								{stage.givenParts
+									.map((id) => nullthrows(findTutorialStage(id)))
+									.map((given) => (
+										<PartDescriptionView
+											key={given.id}
+											name={titleOf(given.id)}
+											summary={null}
+											table={goalTableOf(given.check, given.examples)}
+										/>
+									))}
 							</Stack>
 						</div>
 						<Box sx={{ flexGrow: 1 }} />
