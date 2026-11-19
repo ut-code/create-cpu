@@ -103,6 +103,7 @@ function StageView({ stage }: { stage: TutorialStage }) {
 	const nextStage = tutorialStages[stageIndex + 1];
 	const titleOf: StageTitleOf = (id) => texts.stageTexts[id].title;
 	const goalTable = truthTableOfCheck(stage.check);
+	const stageTexts = texts.stageTexts[stage.id];
 
 	const [store, setStore] = useState(() =>
 		getTutorialStageStore(stage, titleOf),
@@ -160,92 +161,114 @@ function StageView({ stage }: { stage: TutorialStage }) {
 				minHeight: 0,
 			}}
 		>
-			<Stack spacing={2} sx={{ p: 2, overflowY: "auto" }}>
-				<Link
-					component={RouterLink}
-					to="/tutorial"
-					underline="hover"
-					sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
-				>
-					<ArrowBack fontSize="small" />
-					{texts.stages}
-				</Link>
-				<div>
-					<Typography color="textSecondary" variant="body2">
-						{texts.stageNumber(stageIndex + 1)}
-					</Typography>
-					<Typography variant="h2" typography="h5" sx={{ fontWeight: "bold" }}>
-						{texts.stageTexts[stage.id].title}
-					</Typography>
-				</div>
-				<div>
-					<SectionHeading>{texts.goalHeading}</SectionHeading>
-					<Typography>{texts.stageTexts[stage.id].goal}</Typography>
-					{goalTable && (
-						<Box sx={{ mt: 1 }}>
-							<TruthTableView table={goalTable} />
-						</Box>
-					)}
-				</div>
-				<Button
-					variant="contained"
-					onClick={check}
-					sx={{ background: theme.colors.tutorial }}
-				>
-					{texts.check}
-				</Button>
-				{result?.type === "passed" && (
-					<>
-						<Alert severity="success">{texts.passed}</Alert>
-						<Button
-							variant="outlined"
-							component={RouterLink}
-							to={nextStage ? `/tutorial/${nextStage.id}` : "/tutorial"}
+			<Box sx={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
+				<Stack spacing={2} sx={{ p: 2, overflowY: "auto", flexGrow: 1 }}>
+					<Link
+						component={RouterLink}
+						to="/tutorial"
+						underline="hover"
+						sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
+					>
+						<ArrowBack fontSize="small" />
+						{texts.stages}
+					</Link>
+					<div>
+						<Typography color="textSecondary" variant="body2">
+							{texts.stageNumber(stageIndex + 1)}
+						</Typography>
+						<Typography
+							variant="h2"
+							typography="h5"
+							sx={{ fontWeight: "bold" }}
 						>
-							{nextStage ? texts.next : texts.backToStages}
-						</Button>
-					</>
-				)}
-				{result && result.type !== "passed" && (
-					<Alert severity="error">
-						{describeFailure(result, store, messages)}
-					</Alert>
-				)}
-				<div>
-					<SectionHeading>{messages.parts.ofStage}</SectionHeading>
-					<Stack spacing={1.5}>
-						{stage.parts.map((partId) => (
-							<PartDescription
-								key={partId}
-								component={
-									nullthrows(definitionByComponentId.get(partId)).component
-								}
-							/>
-						))}
-						{stage.givenParts.map((id) => (
-							<PartDescriptionView
-								key={id}
-								name={titleOf(id)}
-								summary={null}
-								table={truthTableOfCheck(
-									nullthrows(findTutorialStage(id)).check,
-								)}
-							/>
-						))}
-					</Stack>
-				</div>
-				<Box sx={{ flexGrow: 1 }} />
-				{hasResetFailed && (
-					<Alert severity="error">{texts.resetStageFailed}</Alert>
-				)}
-				<Button
-					variant="text"
-					color="error"
-					onClick={() => setIsConfirmingReset(true)}
-				>
-					{texts.resetStage}
-				</Button>
-			</Stack>
+							{stageTexts.title}
+						</Typography>
+					</div>
+					<div>
+						<SectionHeading>{texts.goalHeading}</SectionHeading>
+						<Typography>{stageTexts.goal}</Typography>
+						{goalTable && (
+							<Box sx={{ mt: 1 }}>
+								<TruthTableView table={goalTable} />
+							</Box>
+						)}
+					</div>
+					{stageTexts.steps.length > 0 && (
+						<div>
+							<SectionHeading>{texts.stepsHeading}</SectionHeading>
+							<Box component="ol" sx={{ m: 0, pl: 3 }}>
+								{stageTexts.steps.map((step) => (
+									<Typography key={step} component="li" sx={{ mb: 0.5 }}>
+										{step}
+									</Typography>
+								))}
+							</Box>
+						</div>
+					)}
+					<div>
+						<SectionHeading>{messages.parts.ofStage}</SectionHeading>
+						<Stack spacing={1.5}>
+							{stage.parts.map((partId) => (
+								<PartDescription
+									key={partId}
+									component={
+										nullthrows(definitionByComponentId.get(partId)).component
+									}
+								/>
+							))}
+							{stage.givenParts.map((id) => (
+								<PartDescriptionView
+									key={id}
+									name={titleOf(id)}
+									summary={null}
+									table={truthTableOfCheck(
+										nullthrows(findTutorialStage(id)).check,
+									)}
+								/>
+							))}
+						</Stack>
+					</div>
+					<Box sx={{ flexGrow: 1 }} />
+					{hasResetFailed && (
+						<Alert severity="error">{texts.resetStageFailed}</Alert>
+					)}
+					<Button
+						variant="text"
+						color="error"
+						onClick={() => setIsConfirmingReset(true)}
+					>
+						{texts.resetStage}
+					</Button>
+				</Stack>
+				<Divider />
+				{/* Outside the scrolling, so that Check and its result stay in view */}
+				<Stack spacing={1} sx={{ p: 2 }}>
+					<Button
+						variant="contained"
+						onClick={check}
+						sx={{ background: theme.colors.tutorial }}
+					>
+						{texts.check}
+					</Button>
+					{result?.type === "passed" && (
+						<>
+							<Alert severity="success">{texts.passed}</Alert>
+							<Button
+								variant="outlined"
+								component={RouterLink}
+								to={nextStage ? `/tutorial/${nextStage.id}` : "/tutorial"}
+							>
+								{nextStage ? texts.next : texts.backToStages}
+							</Button>
+						</>
+					)}
+					{result && result.type !== "passed" && (
+						<Alert severity="error">
+							{describeFailure(result, store, messages)}
+						</Alert>
+					)}
+				</Stack>
+			</Box>
 			<Divider orientation="vertical" />
 			<StoreScope store={store}>
 				<Box sx={{ overflowY: "auto" }}>
