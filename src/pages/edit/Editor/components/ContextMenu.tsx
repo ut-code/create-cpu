@@ -48,7 +48,7 @@ export default function CCComponentEditorContextMenu({
 					position: "absolute",
 					top: `${componentEditorState.contextMenuState.position.y}px`,
 					left: `${componentEditorState.contextMenuState.position.x}px`,
-					width: "200px",
+					minWidth: "200px",
 				}}
 			>
 				{/* <MenuItem onClick={componentEditorState.closeContextMenu}>

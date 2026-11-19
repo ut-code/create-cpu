@@ -29,15 +29,31 @@ export default function CCComponentEditorTitleBar({
 				top: "30px",
 				left: "30px",
 				width: "400px",
+				maxWidth: "calc(100% - 60px)",
 				display: "flex",
 				alignItems: "center",
 				gap: 1,
 				p: 1,
 			}}
 		>
-			<Box sx={{ color: "text.secondary" }}>{messages.common.components}</Box>
-			<KeyboardDoubleArrowRight />
-			<span>{component.name}</span>
+			<Box
+				sx={{ color: "text.secondary", flexShrink: 0, whiteSpace: "nowrap" }}
+			>
+				{messages.common.components}
+			</Box>
+			<KeyboardDoubleArrowRight sx={{ flexShrink: 0 }} />
+			<Box
+				component="span"
+				title={component.name}
+				sx={{
+					minWidth: 0,
+					overflow: "hidden",
+					textOverflow: "ellipsis",
+					whiteSpace: "nowrap",
+				}}
+			>
+				{component.name}
+			</Box>
 			<IconButton
 				size="small"
 				aria-label={messages.editor.editProperties}
