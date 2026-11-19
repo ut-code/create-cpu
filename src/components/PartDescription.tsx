@@ -25,7 +25,9 @@ export function PartDescription({ component }: { component: CCComponent }) {
 
 	return (
 		<div>
-			<Typography variant="subtitle2">{component.name}</Typography>
+			<Typography variant="subtitle1" sx={{ fontWeight: "bold" }}>
+				{component.name}
+			</Typography>
 			{summary && <Typography variant="body2">{summary}</Typography>}
 			{table && (
 				<Box sx={{ mt: 0.5 }}>
