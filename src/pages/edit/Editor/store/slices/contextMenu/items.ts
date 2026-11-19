@@ -9,6 +9,8 @@ import type { ComponentEditorStoreValue } from "../../types";
 export type ContextMenuItems = {
 	selectedNodeIds: CCNodeId[];
 	selectedConnectionIds: CCConnectionId[];
+	/** the selected nodes that may be deleted or moved into a new component */
+	removableNodeIds: CCNodeId[];
 	canExtract: boolean;
 	canDelete: boolean;
 	componentToEdit: CCComponent | null;
@@ -26,6 +28,9 @@ export function getContextMenuItems(
 		(connectionId) => store.connections.get(connectionId),
 	);
 	const isEditMode = state.editorMode === "edit";
+	const removableNodeIds = selectedNodeIds.filter(
+		(nodeId) => !state.isProtectedNode(nodeId),
+	);
 	const [targetNodeId] = selectedNodeIds;
 	const targetComponent =
 		selectedNodeIds.length === 1 && targetNodeId
@@ -38,11 +43,12 @@ export function getContextMenuItems(
 	return {
 		selectedNodeIds,
 		selectedConnectionIds,
+		removableNodeIds,
 		canExtract:
-			isEditMode && getExtractableNodeIds(store, selectedNodeIds).length > 0,
+			isEditMode && getExtractableNodeIds(store, removableNodeIds).length > 0,
 		canDelete:
 			isEditMode &&
-			(selectedNodeIds.length > 0 || selectedConnectionIds.length > 0),
+			(removableNodeIds.length > 0 || selectedConnectionIds.length > 0),
 		componentToEdit: targetComponent?.intrinsicType ? null : targetComponent,
 	};
 }

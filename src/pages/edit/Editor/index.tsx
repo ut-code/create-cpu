@@ -11,10 +11,15 @@ import CCComponentEditorNotifications from "./components/Notifications";
 import CCComponentEditorTitleBar from "./components/TitleBar";
 import CCComponentEditorViewModeSwitcher from "./components/ViewModeSwitcher";
 import CCComponentEditorRenderer from "./renderer";
-import { ComponentEditorStoreProvider } from "./store";
+import {
+	ComponentEditorStoreProvider,
+	type EditorStoreOptions,
+	useComponentEditorStore,
+} from "./store";
 
 export type CCComponentEditorProps = {
 	componentId: CCComponentId;
+	options?: EditorStoreOptions;
 	onEditComponent: (componentId: CCComponentId) => void;
 	onClose: () => void;
 };
@@ -26,6 +31,9 @@ function CCComponentEditorContent({
 }: CCComponentEditorProps) {
 	const [propertyDialogComponentId, setPropertyDialogComponentId] =
 		useState<CCComponentId | null>(null);
+	const isProtectedNode = useComponentEditorStore()(
+		(state) => state.isProtectedNode,
+	);
 
 	return (
 		<Box
@@ -66,6 +74,7 @@ function CCComponentEditorContent({
 			{propertyDialogComponentId && (
 				<ComponentPropertyDialog
 					componentId={propertyDialogComponentId}
+					isProtectedNode={isProtectedNode}
 					onClose={() => setPropertyDialogComponentId(null)}
 				/>
 			)}
@@ -74,9 +83,9 @@ function CCComponentEditorContent({
 }
 
 export default function CCComponentEditor(props: CCComponentEditorProps) {
-	const { componentId } = props;
+	const { componentId, options = {} } = props;
 	return (
-		<ComponentEditorStoreProvider componentId={componentId}>
+		<ComponentEditorStoreProvider componentId={componentId} options={options}>
 			<CCComponentEditorContent {...props} />
 		</ComponentEditorStoreProvider>
 	);

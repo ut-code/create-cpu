@@ -52,6 +52,20 @@ export function findTutorialStage(id: string | undefined) {
 	return tutorialStages.find((stage) => stage.id === id);
 }
 
+/** The pins the stage placed, which the check looks for by name */
+export function isStagePinNode(
+	store: CCStore,
+	stage: TutorialStage,
+	nodeId: CCNodeId,
+): boolean {
+	const node = store.nodes.get(nodeId);
+	return (
+		node?.parentComponentId === stage.componentId &&
+		(node.componentId === input.component.id ||
+			node.componentId === output.component.id)
+	);
+}
+
 function renamePinOfNode(
 	store: CCStore,
 	nodeId: CCNodeId,

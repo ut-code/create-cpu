@@ -68,12 +68,14 @@ export function CCComponentEditorRendererNodeInterfaceRenderer(
 				{simulation === null ? (
 					<div className={styles.edit}>
 						<span className={styles.name}>{componentPin.name}</span>
-						<CCComponentEditorRendererNodeInterfaceRendererRenameButton
-							name={componentPin.name}
-							onNameChange={(name) =>
-								store.componentPins.update(componentPin.id, { name })
-							}
-						/>
+						{!editorState.isProtectedNode(props.node.id) && (
+							<CCComponentEditorRendererNodeInterfaceRendererRenameButton
+								name={componentPin.name}
+								onNameChange={(name) =>
+									store.componentPins.update(componentPin.id, { name })
+								}
+							/>
+						)}
 					</div>
 				) : (
 					<div className={styles.simulation}>

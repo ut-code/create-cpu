@@ -30,6 +30,7 @@ import {
 } from "../../tutorial/stageStore";
 import {
 	findTutorialStage,
+	isStagePinNode,
 	type TutorialStage,
 	tutorialStages,
 } from "../../tutorial/stages";
@@ -203,6 +204,9 @@ function StageView({ stage }: { stage: TutorialStage }) {
 				<CCComponentEditor
 					key={`${resetCount}:${shownComponentId}`}
 					componentId={shownComponentId}
+					options={{
+						isProtectedNode: (nodeId) => isStagePinNode(store, stage, nodeId),
+					}}
 					onEditComponent={setEditedComponentId}
 					onClose={() => {
 						if (shownComponentId === stage.componentId) navigate("/tutorial");

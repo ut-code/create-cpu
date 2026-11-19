@@ -32,8 +32,8 @@ export default function CCComponentEditorContextMenu({
 	const items = getContextMenuItems(store, componentEditorState);
 	if (!hasContextMenuItems(items)) return null;
 	const {
-		selectedNodeIds,
 		selectedConnectionIds,
+		removableNodeIds,
 		canExtract,
 		canDelete,
 		componentToEdit,
@@ -60,7 +60,7 @@ export default function CCComponentEditorContextMenu({
 							componentEditorState.closeContextMenu();
 							const newComponent = await extractNodesIntoNewComponent(
 								store,
-								selectedNodeIds,
+								removableNodeIds,
 								messages.common.newComponentName,
 							);
 							onComponentCreated(newComponent.id);
@@ -72,8 +72,8 @@ export default function CCComponentEditorContextMenu({
 				{canDelete && (
 					<MenuItem
 						onClick={() => {
-							if (selectedNodeIds.length > 0)
-								store.nodes.unregister(selectedNodeIds);
+							if (removableNodeIds.length > 0)
+								store.nodes.unregister(removableNodeIds);
 							if (selectedConnectionIds.length > 0)
 								store.connections.unregister(selectedConnectionIds);
 							componentEditorState.selectConnection([], true);
