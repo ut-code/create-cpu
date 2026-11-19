@@ -17,7 +17,7 @@ const stageTexts: Record<TutorialStageId, StageTexts> = {
 		goal: "Make the lamp Out light up only when both switches A and B are ON. The stage is cleared when the circuit works as in the table below.",
 		steps: [
 			"Pick a part in the Parts list and drag it onto the editor on the right.",
-			"The small circles on the edges of a part are its pins. Drag from one pin to another to connect them with a wire.",
+			"The small squares on the edges of a part are its pins. Drag from one pin to another to connect them with a wire.",
 			"Once Out and every pin on the left side of the parts you placed are connected, the play button at the bottom right can be pressed. It cannot be pressed while a part has a free pin on its left side.",
 			"After pressing it, click the switches A and B to turn them ON and OFF, and watch the lamp Out. To fix the circuit, the pencil button in the same place takes you back to editing.",
 			"When it works as in the table, press Check.",
