@@ -1,7 +1,13 @@
 import { ThemeProvider } from "@mui/material";
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router";
+import {
+	BrowserRouter,
+	Navigate,
+	Route,
+	Routes,
+	useParams,
+} from "react-router";
 import App from "./App";
 import { LanguageProvider } from "./i18n";
 import "./style.css";
@@ -17,6 +23,12 @@ import { restoreSavedStore } from "./store/savedStore";
 
 const restoredStore = restoreSavedStore();
 if (restoredStore.type === "unrestorable") console.error(restoredStore.error);
+
+// The free mode was at the top before the start page was added
+function RedirectToFreeMode() {
+	const { componentId } = useParams<"componentId">();
+	return <Navigate to={`/free/components/${componentId}`} replace />;
+}
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
 	<React.StrictMode>
@@ -34,6 +46,10 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
 								<Route
 									path="free/components/:componentId"
 									element={<EditPage />}
+								/>
+								<Route
+									path="components/:componentId"
+									element={<RedirectToFreeMode />}
 								/>
 								<Route path="tutorial" element={<TutorialPage />} />
 								<Route

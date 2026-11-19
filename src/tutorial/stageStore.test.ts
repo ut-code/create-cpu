@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { CCStoreAutoSaver } from "../store/autoSaver";
 import { registerTestComponent, stubLocalStorage } from "../store/testUtils";
 import { markStageCleared, readClearedStages } from "./progress";
 import {
@@ -24,6 +25,17 @@ afterEach(() => {
 });
 
 describe("getTutorialStageStore", () => {
+	it("saves apart from the free mode", () => {
+		saved.set(CCStoreAutoSaver.localStorageKey, "free mode");
+		const store = getTutorialStageStore(firstStage, "Lamp");
+
+		registerTestComponent(store, "Mine");
+		vi.advanceTimersByTime(2000);
+
+		expect(saved.get(CCStoreAutoSaver.localStorageKey)).toBe("free mode");
+		expect(saved.get(firstKey)).toBe(store.toJSON());
+	});
+
 	it("lays out the stage, and saves it only once it changes", () => {
 		const store = getTutorialStageStore(firstStage, "Lamp");
 

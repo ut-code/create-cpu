@@ -29,7 +29,8 @@ export type CheckResult =
 			actual: SimulationValue | undefined;
 	  };
 
-function* combinations(
+/** Every combination of the inputs, counting up with the first input as the high bits */
+export function* inputCombinations(
 	inputs: CombinationalCheck["inputs"],
 ): Generator<PinValues> {
 	const totalBits = inputs.reduce((sum, input) => sum + input.bitWidth, 0);
@@ -84,7 +85,7 @@ export function checkCombinational(
 		outputNodePinIds.set(name, pin.implementation);
 	}
 
-	for (const inputs of combinations(check.inputs)) {
+	for (const inputs of inputCombinations(check.inputs)) {
 		const inputValues = new Map<CCComponentPinId, SimulationValue>();
 		for (const [name, pinId] of inputPinIds) {
 			inputValues.set(pinId, nullthrows(inputs[name]));

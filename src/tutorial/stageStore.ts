@@ -57,10 +57,11 @@ export function getTutorialStageStore(
 	return store;
 }
 
+// Removed from the storage first, so that the store keeps saving if that fails
 function forgetStage(stage: TutorialStage) {
+	window.localStorage.removeItem(storageKeyOf(stage));
 	storeByStageId.get(stage.id)?.autoSaver.unwatch();
 	storeByStageId.delete(stage.id);
-	window.localStorage.removeItem(storageKeyOf(stage));
 }
 
 export function resetTutorialStage(

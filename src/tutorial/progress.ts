@@ -6,8 +6,8 @@ function isStageId(value: unknown): value is TutorialStageId {
 	return tutorialStageIds.some((id) => id === value);
 }
 
-// What was cleared only decorates the list of stages, so the tutorial goes on without
-// the storage, which can be full, or blocked so that even reaching it throws
+// What was cleared only decorates the list of stages, so the tutorial goes on when the
+// storage cannot keep it, e.g. when it is full
 export function readClearedStages(): ReadonlySet<TutorialStageId> {
 	try {
 		const parsed: unknown = JSON.parse(

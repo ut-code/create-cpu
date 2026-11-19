@@ -27,13 +27,13 @@ export function StoreScope({
 	store: CCStore;
 	children: ReactNode;
 }) {
-	// For debugging
+	// For debugging. A nested scope hands it back to the outer one when it goes.
 	useEffect(() => {
-		// biome-ignore lint/suspicious/noExplicitAny: We need to use `any` here to assign the property to the window object.
-		(window as any)._store = store;
+		const debugWindow = window as Window & { _store?: CCStore | undefined };
+		const outer = debugWindow._store;
+		debugWindow._store = store;
 		return () => {
-			// biome-ignore lint/suspicious/noExplicitAny: We need to use `any` here to delete the property from the window object.
-			delete (window as any)._store;
+			debugWindow._store = outer;
 		};
 	}, [store]);
 	const value = useMemo(() => ({ store }), [store]);
