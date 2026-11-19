@@ -11,6 +11,7 @@ export type ComponentEditorStoreValue = {
 	/** neither deleted nor its pin renamed */
 	readonly isProtectedNode: (nodeId: CCNodeId) => boolean;
 	readonly isOffered: (component: CCComponent) => boolean;
+	readonly hasProperties: (componentId: CCComponentId) => boolean;
 } & EditorStoreCoreSlice &
 	PerspectiveStoreSlice &
 	ContextMenuStoreSlice;

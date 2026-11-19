@@ -13,6 +13,7 @@ import type { ComponentEditorStoreValue } from "./types";
 export type EditorStoreOptions = {
 	isProtectedNode?: (nodeId: CCNodeId) => boolean;
 	isOffered?: (component: CCComponent) => boolean;
+	hasProperties?: (componentId: CCComponentId) => boolean;
 };
 
 export function createEditorStore(
@@ -21,6 +22,7 @@ export function createEditorStore(
 	{
 		isProtectedNode = () => false,
 		isOffered = () => true,
+		hasProperties = () => true,
 	}: EditorStoreOptions = {},
 ) {
 	const props = { store, componentId };
@@ -31,6 +33,7 @@ export function createEditorStore(
 		componentId,
 		isProtectedNode,
 		isOffered,
+		hasProperties,
 		...coreSlice.define(set, get),
 		...perspectiveSlice.define(set, get),
 		...contextMenuSlice.define(set, get),

@@ -211,6 +211,7 @@ function StageView({ stage }: { stage: TutorialStage }) {
 					options={{
 						isProtectedNode: (nodeId) => isStagePinNode(store, stage, nodeId),
 						isOffered: (component) => isStagePart(stage, component),
+						hasProperties: (componentId) => componentId !== stage.componentId,
 					}}
 					onEditComponent={setEditedComponentId}
 					onClose={() => {

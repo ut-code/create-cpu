@@ -54,13 +54,15 @@ export default function CCComponentEditorTitleBar({
 			>
 				{component.name}
 			</Box>
-			<IconButton
-				size="small"
-				aria-label={messages.editor.editProperties}
-				onClick={onComponentPropertyDialogOpen}
-			>
-				<Edit fontSize="small" />
-			</IconButton>
+			{componentEditorState.hasProperties(component.id) && (
+				<IconButton
+					size="small"
+					aria-label={messages.editor.editProperties}
+					onClick={onComponentPropertyDialogOpen}
+				>
+					<Edit fontSize="small" />
+				</IconButton>
+			)}
 			<div aria-hidden style={{ flexGrow: 1 }} />
 			<IconButton
 				size="small"
