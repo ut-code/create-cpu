@@ -49,6 +49,22 @@ export const en = {
 				`Could not delete ${componentName}.`,
 		},
 	},
+	recovery: {
+		title: "Your saved components could not be loaded",
+		body: "The components saved in this browser are damaged, or were saved in a form this version cannot read. Nothing is saved over them until you start over, so download them first to keep a copy.",
+		download: "Download saved data",
+		startOver: "Start over with the sample",
+		startOverDialog: {
+			title: "Start over with the sample?",
+			body: "The saved components are replaced with the sample and cannot be brought back. Download them first to keep a copy.",
+			confirm: "Start over",
+		},
+		errors: {
+			storageFull:
+				"The storage of this browser is full, so the sample could not be saved.",
+			startOverFailed: "Could not start over.",
+		},
+	},
 	componentProperties: {
 		title: (componentName: string) => `${componentName} Properties`,
 		name: "Name",
