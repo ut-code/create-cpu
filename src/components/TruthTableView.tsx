@@ -1,7 +1,9 @@
-import { Box } from "@mui/material";
+import { Box, type Theme } from "@mui/material";
 import { bitLabel } from "../common/bitLabel";
 import type { TruthTable } from "../store/intrinsics/truthTable";
 import { theme } from "../style";
+
+const divider = (theme: Theme) => `1px solid ${theme.palette.divider}`;
 
 export function TruthTableView({ table }: { table: TruthTable }) {
 	const columns = [
@@ -14,10 +16,7 @@ export function TruthTableView({ table }: { table: TruthTable }) {
 			py: 0.25,
 			textAlign: "center",
 			...(table.inputs.length > 0 &&
-				column === table.inputs.length && {
-					borderLeft: 1,
-					borderColor: "divider",
-				}),
+				column === table.inputs.length && { borderLeft: divider }),
 		}) as const;
 
 	return (
@@ -31,7 +30,7 @@ export function TruthTableView({ table }: { table: TruthTable }) {
 						<Box
 							key={key}
 							component="th"
-							sx={{ ...cellSx(i), borderBottom: 1, borderColor: "divider" }}
+							sx={{ ...cellSx(i), borderBottom: divider }}
 						>
 							{name}
 						</Box>
