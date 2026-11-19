@@ -14,7 +14,6 @@ import {
 	createSavedStore,
 	type RestoredStore,
 	replaceSavedStore,
-	restoreSavedStore,
 } from "../savedStore";
 
 function useContextValue(initialStore: CCStore) {
@@ -67,19 +66,18 @@ export type UnrestorableSavedStore = {
 /**
  * Until the store saved in this browser is one the editor can work on, `recovery` takes
  * the place of `children`, and nothing is saved over it
+ * @param initial restored outside rendering, as it saves and React may render twice
  */
 export function StoreProvider({
+	initial,
 	children,
 	recovery,
 }: {
+	initial: RestoredStore;
 	children: ReactNode;
 	recovery: (saved: UnrestorableSavedStore) => ReactNode;
 }) {
-	const [restored, setRestored] = useState<RestoredStore>(() => {
-		const result = restoreSavedStore();
-		if (result.type === "unrestorable") console.error(result.error);
-		return result;
-	});
+	const [restored, setRestored] = useState(initial);
 	if (restored.type === "unrestorable") {
 		return recovery({
 			json: restored.json,

@@ -10,12 +10,19 @@ import EditPage from "./pages/edit";
 import HomePage from "./pages/home";
 import RecoveryPage from "./pages/recovery";
 import { StoreProvider } from "./store/react";
+import { restoreSavedStore } from "./store/savedStore";
+
+const restoredStore = restoreSavedStore();
+if (restoredStore.type === "unrestorable") console.error(restoredStore.error);
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
 	<React.StrictMode>
 		<LanguageProvider>
 			<ThemeProvider theme={muiTheme}>
-				<StoreProvider recovery={(saved) => <RecoveryPage {...saved} />}>
+				<StoreProvider
+					initial={restoredStore}
+					recovery={(saved) => <RecoveryPage {...saved} />}
+				>
 					<BrowserRouter>
 						<Routes>
 							<Route element={<App />}>

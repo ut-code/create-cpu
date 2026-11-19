@@ -136,6 +136,14 @@ describe("restoreSavedStore", () => {
 		expect(savedJson()).toBe(store.toJSON());
 	});
 
+	it("starts with the sample when the saved store is empty", () => {
+		saved.set(CCStoreAutoSaver.localStorageKey, "");
+
+		const store = readyStore(restoreSavedStore());
+
+		expect(savedJson()).toBe(store.toJSON());
+	});
+
 	it("brings back the saved store and keeps saving it", () => {
 		const source = createTestStore();
 		registerTestComponent(source, "Adder");

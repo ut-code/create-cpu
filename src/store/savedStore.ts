@@ -47,7 +47,7 @@ export type RestoredStore =
  */
 export function restoreSavedStore(): RestoredStore {
 	const json = CCStoreAutoSaver.readSaved();
-	if (json === null) return { type: "ready", store: createSavedStore() };
+	if (!json) return { type: "ready", store: createSavedStore() };
 	let store: CCStore;
 	try {
 		store = importStoreJson(json);

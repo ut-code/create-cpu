@@ -20,6 +20,7 @@ import {
 import { type ChangeEvent, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { downloadJson } from "../../common/downloadJson";
+import { isStorageFull } from "../../common/storageError";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
 import { useMessages } from "../../i18n";
 import {
@@ -87,8 +88,7 @@ export default function HomePage() {
 		} catch (replaceError) {
 			console.error(replaceError);
 			showError(
-				replaceError instanceof DOMException &&
-					replaceError.name === "QuotaExceededError"
+				isStorageFull(replaceError)
 					? { type: "storageFull" }
 					: file
 						? { type: "importFailed", fileName: file.name }

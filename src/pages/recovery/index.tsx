@@ -3,6 +3,7 @@ import { Alert, Box, Button, Container, Typography } from "@mui/material";
 import { useState } from "react";
 import { AppLayout } from "../../App";
 import { downloadJson } from "../../common/downloadJson";
+import { isStorageFull } from "../../common/storageError";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
 import { useMessages } from "../../i18n";
 import type { UnrestorableSavedStore } from "../../store/react";
@@ -25,10 +26,7 @@ export default function RecoveryPage({
 		} catch (startOverError) {
 			console.error(startOverError);
 			setError(
-				startOverError instanceof DOMException &&
-					startOverError.name === "QuotaExceededError"
-					? "storageFull"
-					: "startOverFailed",
+				isStorageFull(startOverError) ? "storageFull" : "startOverFailed",
 			);
 		}
 	};
