@@ -117,7 +117,7 @@ export default function HomePage() {
 			name: messages.common.newComponentName,
 		});
 		store.components.register(component);
-		navigate(`/components/${component.id}`);
+		navigate(`/free/components/${component.id}`);
 	};
 
 	const [componentMenuState, setComponentMenuState] = useState<{
@@ -199,7 +199,7 @@ export default function HomePage() {
 						>
 							<CardActionArea
 								component={Link}
-								to={`/components/${component.id}`}
+								to={`/free/components/${component.id}`}
 								sx={{
 									display: "flex",
 									flexDirection: "column",

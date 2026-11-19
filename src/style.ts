@@ -11,5 +11,7 @@ export const theme = {
 		border: "#bbbbbb",
 		editorBackground: "#fafafa",
 		editorGrid: "#dddddd",
+		tutorial: "#c45100",
+		tutorialBackground: "#fff3e0",
 	},
 };

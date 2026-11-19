@@ -1,5 +1,13 @@
-import { AppBar, Box, ToggleButton, ToggleButtonGroup } from "@mui/material";
+import {
+	AppBar,
+	Box,
+	Chip,
+	Link,
+	ToggleButton,
+	ToggleButtonGroup,
+} from "@mui/material";
 import type { CSSProperties } from "react";
+import { Link as RouterLink, useLocation } from "react-router";
 import {
 	type Language,
 	languages,
@@ -13,9 +21,18 @@ export type GlobalHeaderProps = {
 	style: CSSProperties;
 };
 
+type Mode = "free" | "tutorial";
+
+function modeOfPath(pathname: string): Mode | null {
+	if (pathname.startsWith("/tutorial")) return "tutorial";
+	if (pathname.startsWith("/free")) return "free";
+	return null;
+}
+
 export default function GlobalHeader({ style }: GlobalHeaderProps) {
 	const { language, setLanguage } = useLanguage();
 	const messages = useMessages();
+	const mode = modeOfPath(useLocation().pathname);
 
 	return (
 		<AppBar
@@ -26,14 +43,32 @@ export default function GlobalHeader({ style }: GlobalHeaderProps) {
 			sx={{
 				px: 2,
 				py: 1,
+				gap: 2,
 				flexDirection: "row",
 				alignItems: "center",
-				background: theme.colors.white,
+				background:
+					mode === "tutorial"
+						? theme.colors.tutorialBackground
+						: theme.colors.white,
 				borderBottom: "1px solid",
 				borderColor: "divider",
 			}}
 		>
-			CreateCPU
+			<Link component={RouterLink} to="/" color="inherit" underline="hover">
+				CreateCPU
+			</Link>
+			{mode && (
+				<Chip
+					label={messages.header.modes[mode]}
+					size="small"
+					variant={mode === "tutorial" ? "filled" : "outlined"}
+					sx={
+						mode === "tutorial"
+							? { background: theme.colors.tutorial, color: theme.colors.white }
+							: {}
+					}
+				/>
+			)}
 			<Box sx={{ flexGrow: 1 }} />
 			<ToggleButtonGroup
 				value={language}

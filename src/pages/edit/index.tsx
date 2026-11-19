@@ -12,7 +12,7 @@ export default function EditPage() {
 		.componentId as CCComponentId;
 
 	if (!store.components.get(editedComponentId))
-		return <Navigate to="/" replace />;
+		return <Navigate to="/free" replace />;
 
 	return (
 		<div
@@ -27,10 +27,10 @@ export default function EditPage() {
 				key={editedComponentId}
 				componentId={editedComponentId}
 				onEditComponent={(componentId) => {
-					navigate(`/components/${componentId}`);
+					navigate(`/free/components/${componentId}`);
 				}}
 				onClose={() => {
-					navigate("/");
+					navigate("/free");
 				}}
 			/>
 		</div>
