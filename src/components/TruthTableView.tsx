@@ -7,14 +7,12 @@ import { theme } from "../style";
 import { BitNotationContext } from "./bitNotation";
 
 const divider = (muiTheme: Theme) => `1px solid ${muiTheme.palette.divider}`;
+const onSx = { color: theme.colors.primary, fontWeight: "bold" } as const;
+const binaryOf = (value: SimulationValue) => value.map(bitDigit).join("");
 
 export function TruthTableView({ table }: { table: TruthTable }) {
-	const bitLabelOf =
+	const singleBitLabel =
 		useContext(BitNotationContext) === "digits" ? bitDigit : bitLabel;
-	const labelOf = (value: SimulationValue) =>
-		value.length === 1 && value[0] !== undefined
-			? bitLabelOf(value[0])
-			: value.map(bitDigit).join("");
 	const columns = [
 		...table.inputs.map((name) => ({ key: `in-${name}`, name })),
 		...table.outputs.map((name) => ({ key: `out-${name}`, name })),
@@ -31,7 +29,11 @@ export function TruthTableView({ table }: { table: TruthTable }) {
 	return (
 		<Box
 			component="table"
-			sx={{ borderCollapse: "collapse", fontSize: "0.875rem" }}
+			sx={{
+				borderCollapse: "collapse",
+				fontSize: "0.875rem",
+				fontVariantNumeric: "tabular-nums",
+			}}
 		>
 			<thead>
 				<tr>
@@ -48,21 +50,19 @@ export function TruthTableView({ table }: { table: TruthTable }) {
 			</thead>
 			<tbody>
 				{table.rows.map((row) => (
-					<tr key={row.inputs.map(labelOf).join()}>
+					<tr key={row.inputs.map(binaryOf).join()}>
 						{[...row.inputs, ...row.outputs].map((value, i) => (
-							<Box
-								key={columns[i]?.key}
-								component="td"
-								sx={{
-									...cellSx(i),
-									...(value.length === 1 &&
-										value[0] && {
-											color: theme.colors.primary,
-											fontWeight: "bold",
-										}),
-								}}
-							>
-								{labelOf(value)}
+							<Box key={columns[i]?.key} component="td" sx={cellSx(i)}>
+								{value.map((bit, index) => (
+									<Box
+										// biome-ignore lint/suspicious/noArrayIndexKey: bits are identified by their index
+										key={index}
+										component="span"
+										sx={bit ? onSx : {}}
+									>
+										{value.length === 1 ? singleBitLabel(bit) : bitDigit(bit)}
+									</Box>
+								))}
 							</Box>
 						))}
 					</tr>
