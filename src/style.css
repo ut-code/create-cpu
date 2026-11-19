@@ -5,7 +5,11 @@
 }
 
 :root {
-	font-family: sans-serif;
+	/* MUI's default Latin fonts first, then Japanese */
+	--font-family:
+		"Roboto", "Helvetica", "Arial", "Noto Sans JP", "Hiragino Sans",
+		"Yu Gothic UI", Meiryo, sans-serif;
+	font-family: var(--font-family);
 
 	/* Keep in sync with the colors in style.ts */
 	--color-black: #000000;

@@ -8,6 +8,7 @@ import {
 	useState,
 } from "react";
 import invariant from "tiny-invariant";
+import { loadJapaneseFont } from "./japaneseFont";
 import { readSavedLanguage, saveLanguage } from "./languageStorage";
 import { detectLanguage, type Language, messagesByLanguage } from "./messages";
 
@@ -27,6 +28,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 	);
 	useEffect(() => {
 		document.documentElement.lang = language;
+		if (language === "ja") loadJapaneseFont();
 	}, [language]);
 	// Only a choice is saved, so that a detected language keeps following the browser
 	const setLanguage = useCallback((chosen: Language) => {
