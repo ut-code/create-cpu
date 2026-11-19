@@ -103,6 +103,7 @@ export const ja: Messages = {
 		parts: "部品",
 		goalHeading: "目標",
 		stepsHeading: "手順",
+		digitsLegend: "表の 1 は ON、0 は OFF です。",
 		check: "確かめる",
 		passed: "クリア！どの入力の組み合わせでも正しく動きます。",
 		next: "次の課題へ",

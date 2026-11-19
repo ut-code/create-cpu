@@ -1,4 +1,5 @@
 import nullthrows from "nullthrows";
+import type { BitNotation } from "../common/bitLabel";
 import type CCStore from "../store";
 import {
 	type CCComponent,
@@ -37,6 +38,7 @@ export type TutorialStage = {
 	/** earlier stages whose components the stage hands over, built and ready to use */
 	givenParts: readonly TutorialStageId[];
 	allowsNewComponents: boolean;
+	tableNotation: BitNotation;
 	/** also the input and output pins the stage starts with */
 	check: CombinationalCheck;
 	solve(circuit: StageCircuit): void;
@@ -51,7 +53,7 @@ const oneBitInputs = (...names: string[]) =>
 	names.map((name) => ({ name, bitWidth: 1 }));
 
 type StageDefinition = Pick<TutorialStage, "parts" | "check" | "solve"> &
-	Partial<Pick<TutorialStage, "givenParts">>;
+	Partial<Pick<TutorialStage, "givenParts" | "tableNotation">>;
 
 function defineStage(
 	id: TutorialStageId,
@@ -62,6 +64,7 @@ function defineStage(
 		componentId: `tutorial-${id}` as CCComponentId,
 		givenParts: [],
 		allowsNewComponents: false,
+		tableNotation: "onOff",
 		...definition,
 	};
 }
@@ -166,6 +169,7 @@ const xorStage = twoSwitchesStage(
 
 const halfAdderStage = defineStage("half-adder", {
 	parts: [and.component.id, xor.component.id],
+	tableNotation: "digits",
 	check: addingCheck("A", "B"),
 	solve(circuit) {
 		const carry = circuit.place(and.component.id, { x: 0, y: -100 });
@@ -185,6 +189,7 @@ const halfAdderStage = defineStage("half-adder", {
 const fullAdderStage = defineStage("full-adder", {
 	parts: [or.component.id],
 	givenParts: ["half-adder"],
+	tableNotation: "digits",
 	check: addingCheck("A", "B", "Cin"),
 	solve(circuit) {
 		const first = circuit.place(halfAdderStage.componentId, {

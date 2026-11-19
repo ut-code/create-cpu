@@ -31,6 +31,16 @@ const aOnlyStage = nullthrows(findTutorialStage("a-only"));
 const titleOf = (id: TutorialStageId) => `Stage ${id}`;
 
 describe("tutorialStages", () => {
+	it("writes tables in digits from the stage that teaches binary on", () => {
+		const binaryFrom = tutorialStages.findIndex((s) => s.id === "half-adder");
+
+		expect(tutorialStages.map((s) => s.tableNotation)).toEqual(
+			tutorialStages.map((_, index) =>
+				index < binaryFrom ? "onOff" : "digits",
+			),
+		);
+	});
+
 	it("hands over only the parts of earlier stages", () => {
 		for (const [index, later] of tutorialStages.entries()) {
 			for (const id of later.givenParts) {

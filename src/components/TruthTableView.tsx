@@ -1,11 +1,16 @@
 import { Box, type Theme } from "@mui/material";
-import { bitLabel } from "../common/bitLabel";
+import { createContext, useContext } from "react";
+import { type BitNotation, bitDigit, bitLabel } from "../common/bitLabel";
 import type { TruthTable } from "../store/intrinsics/truthTable";
 import { theme } from "../style";
 
 const divider = (theme: Theme) => `1px solid ${theme.palette.divider}`;
 
+export const BitNotationContext = createContext<BitNotation>("onOff");
+
 export function TruthTableView({ table }: { table: TruthTable }) {
+	const labelOf =
+		useContext(BitNotationContext) === "digits" ? bitDigit : bitLabel;
 	const columns = [
 		...table.inputs.map((name) => ({ key: `in-${name}`, name })),
 		...table.outputs.map((name) => ({ key: `out-${name}`, name })),
@@ -52,7 +57,7 @@ export function TruthTableView({ table }: { table: TruthTable }) {
 									}),
 								}}
 							>
-								{bitLabel(value)}
+								{labelOf(value)}
 							</Box>
 						))}
 					</tr>

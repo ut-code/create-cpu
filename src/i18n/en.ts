@@ -145,6 +145,7 @@ export const en = {
 		parts: "Parts",
 		goalHeading: "Goal",
 		stepsHeading: "Steps",
+		digitsLegend: "In the table, 1 is ON and 0 is OFF.",
 		check: "Check",
 		passed: "Cleared! The circuit works for every combination of the inputs.",
 		next: "Next stage",
