@@ -50,10 +50,12 @@ const isOn = (value: readonly boolean[] | undefined) => nullthrows(value?.[0]);
 const oneBitInputs = (...names: string[]) =>
 	names.map((name) => ({ name, bitWidth: 1 }));
 
+type StageDefinition = Pick<TutorialStage, "parts" | "check" | "solve"> &
+	Partial<Pick<TutorialStage, "givenParts">>;
+
 function defineStage(
 	id: TutorialStageId,
-	definition: Pick<TutorialStage, "parts" | "check" | "solve"> &
-		Partial<Pick<TutorialStage, "givenParts">>,
+	definition: StageDefinition,
 ): TutorialStage {
 	return {
 		id,
@@ -66,8 +68,7 @@ function defineStage(
 
 function twoSwitchesStage(
 	id: TutorialStageId,
-	definition: Pick<TutorialStage, "parts" | "solve"> &
-		Partial<Pick<TutorialStage, "givenParts">>,
+	definition: Omit<StageDefinition, "check">,
 	lampIsOn: (a: boolean, b: boolean) => boolean,
 ): TutorialStage {
 	return defineStage(id, {
@@ -82,11 +83,17 @@ function twoSwitchesStage(
 	});
 }
 
-/** The two digits of `total` in binary, as the carry C and the sum S */
-const carryAndSum = (total: number) => ({
-	C: bit(total >= 2),
-	S: bit(total % 2 === 1),
-});
+/** Adds up the inputs that are ON, and outputs the total as two binary digits C and S */
+function addingCheck(...inputNames: string[]): CombinationalCheck {
+	return {
+		inputs: oneBitInputs(...inputNames),
+		outputs: ["C", "S"],
+		expected: (values) => {
+			const total = inputNames.filter((name) => isOn(values[name])).length;
+			return { C: bit(total >= 2), S: bit(total % 2 === 1) };
+		},
+	};
+}
 
 const andStage = twoSwitchesStage(
 	"and",
@@ -159,12 +166,7 @@ const xorStage = twoSwitchesStage(
 
 const halfAdderStage = defineStage("half-adder", {
 	parts: [and.component.id, xor.component.id],
-	check: {
-		inputs: oneBitInputs("A", "B"),
-		outputs: ["C", "S"],
-		expected: (values) =>
-			carryAndSum(Number(isOn(values.A)) + Number(isOn(values.B))),
-	},
+	check: addingCheck("A", "B"),
 	solve(circuit) {
 		const carry = circuit.place(and.component.id, { x: 0, y: -100 });
 		const sum = circuit.place(xor.component.id, { x: 0, y: 100 });
@@ -183,26 +185,14 @@ const halfAdderStage = defineStage("half-adder", {
 const fullAdderStage = defineStage("full-adder", {
 	parts: [or.component.id],
 	givenParts: ["half-adder"],
-	check: {
-		inputs: oneBitInputs("A", "B", "Cin"),
-		outputs: ["C", "S"],
-		expected: (values) =>
-			carryAndSum(
-				Number(isOn(values.A)) +
-					Number(isOn(values.B)) +
-					Number(isOn(values.Cin)),
-			),
-	},
+	check: addingCheck("A", "B", "Cin"),
 	solve(circuit) {
 		const first = circuit.place(halfAdderStage.componentId, {
-			x: -100,
+			x: -140,
 			y: -100,
 		});
-		const second = circuit.place(halfAdderStage.componentId, {
-			x: 60,
-			y: 100,
-		});
-		const either = circuit.place(or.component.id, { x: 170, y: -130 });
+		const second = circuit.place(halfAdderStage.componentId, { x: 0, y: 100 });
+		const either = circuit.place(or.component.id, { x: 150, y: -100 });
 		circuit.connect(circuit.pin("A"), circuit.pinOf(first, "A"));
 		circuit.connect(circuit.pin("B"), circuit.pinOf(first, "B"));
 		circuit.connect(circuit.pinOf(first, "S"), circuit.pinOf(second, "A"));
