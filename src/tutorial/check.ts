@@ -52,7 +52,23 @@ export function sequentialCheck<State>(
 		state = next;
 		return { inputs, outputs };
 	});
-	invariant(steps.length > 0, "A sequential check needs a step");
+	// A mistake in the stage would otherwise show as one in the player's circuit
+	const [first] = steps;
+	invariant(first, "A sequential check needs a step");
+	for (const [index, { inputs, outputs }] of steps.entries()) {
+		for (const { name, bitWidth } of pins.inputs) {
+			invariant(
+				inputs[name]?.length === bitWidth,
+				`Step ${index + 1} feeds ${name} a value not ${bitWidth} bits wide`,
+			);
+		}
+		for (const name of pins.outputs) {
+			invariant(
+				outputs[name]?.length === first.outputs[name]?.length,
+				`Step ${index + 1} expects ${name} at another width than step 1`,
+			);
+		}
+	}
 	return { ...pins, kind: "sequential", steps };
 }
 
@@ -68,10 +84,13 @@ export type CheckResult =
 	| { type: "simulationFailed"; error: unknown }
 	| { type: "checkFailed"; error: unknown }
 	| ({ type: "wrongOutput" } & WrongOutput)
-	/** `stepNumber` counts from 1, as the editor shows the time step */
-	| ({ type: "wrongOutputAtStep"; stepNumber: number } & WrongOutput);
+	| ({
+			type: "wrongOutputAtStep";
+			/** Counts from 1, as the editor shows the time step */
+			stepNumber: number;
+	  } & WrongOutput);
 
-type WrongOutput = {
+export type WrongOutput = {
 	inputs: readonly { name: string; value: SimulationValue }[];
 	pinName: string;
 	expected: SimulationValue;

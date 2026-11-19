@@ -139,7 +139,9 @@ describe("the message on a wrong output at a step", () => {
 	it("puts the inputs of the step in brackets", () => {
 		expect(
 			en.tutorial.wrongOutputAtStep(3, start, "Count", "0011", "0010"),
-		).toBe("At step 3 (Start is ON), Count should be 0011, but it is 0010.");
+		).toBe(
+			"At time step 3 (Start is ON), Count should be 0011, but it is 0010.",
+		);
 		expect(
 			ja.tutorial.wrongOutputAtStep(3, start, "Count", "0011", "0010"),
 		).toBe(
@@ -149,7 +151,7 @@ describe("the message on a wrong output at a step", () => {
 
 	it("leaves the brackets out without inputs", () => {
 		expect(en.tutorial.wrongOutputAtStep(2, [], "Count", "0001", null)).toBe(
-			"At step 2, Count should be 0001, but it has no value.",
+			"At time step 2, Count should be 0001, but it has no value.",
 		);
 		expect(ja.tutorial.wrongOutputAtStep(2, [], "Count", "0001", null)).toBe(
 			"2 ステップ目に、Count が 0001 のはずが、値がありませんでした。",

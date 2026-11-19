@@ -345,6 +345,38 @@ describe("sequentialCheck", () => {
 	});
 });
 
+describe("sequentialCheck refuses steps that do not fit the pins", () => {
+	const pins = { inputs: [{ name: "Up", bitWidth: 1 }], outputs: ["Count"] };
+
+	it("refuses an input of another width or none at all", () => {
+		const model = {
+			initialState: null,
+			step: () => ({ outputs: { Count: [false] }, next: null }),
+		};
+
+		expect(() => sequentialCheck(pins, model, [{ Up: [true, false] }])).toThrow(
+			"Step 1",
+		);
+		expect(() => sequentialCheck(pins, model, [{ Up: [true] }, {}])).toThrow(
+			"Step 2",
+		);
+	});
+
+	it("refuses an output whose width changes", () => {
+		const model = {
+			initialState: 1,
+			step: (width: number) => ({
+				outputs: { Count: new Array<boolean>(width).fill(false) },
+				next: width + 1,
+			}),
+		};
+
+		expect(() =>
+			sequentialCheck(pins, model, [{ Up: [true] }, { Up: [true] }]),
+		).toThrow("Step 2");
+	});
+});
+
 describe("checkCircuit over time", () => {
 	const onOff = (...bits: boolean[]): PinValues[] =>
 		bits.map((A) => ({ A: [A] }));
@@ -380,6 +412,24 @@ describe("checkCircuit over time", () => {
 		}
 		return { store, componentId: component.id };
 	}
+
+	it("starts each combination of a combinational check afresh", () => {
+		const { store, componentId } = registerPassThrough(true);
+		registerTestInputNode(store, componentId, "B");
+		const neverOn: CombinationalCheck = {
+			kind: "combinational",
+			inputs: [
+				{ name: "A", bitWidth: 1 },
+				{ name: "B", bitWidth: 1 },
+			],
+			outputs: ["Out"],
+			expected: () => ({ Out: [false] }),
+		};
+
+		expect(checkCircuit(store, componentId, neverOn)).toEqual({
+			type: "passed",
+		});
+	});
 
 	it("feeds each step what the flip-flops held from the step before", () => {
 		const { store, componentId } = registerPassThrough(true);
