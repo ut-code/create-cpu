@@ -15,7 +15,7 @@ type StageTexts = { title: string; goal: string; steps: readonly string[] };
 const stageTexts: Record<TutorialStageId, StageTexts> = {
 	and: {
 		title: "Both switches",
-		goal: "Make the lamp Out light up only when both switches A and B are ON. The stage is cleared when the circuit works as in the table below.",
+		goal: "Make the lamp Out turn ON only when both switches A and B are ON. The stage is cleared when the circuit works as in the table below.",
 		steps: [
 			"Pick a part in the Parts list and drag it onto the editor on the right.",
 			"The small squares on the edges of a part are its pins. A pin on the left side is an input, which receives ON or OFF, and a pin on the right side is an output, which sends ON or OFF. Drag between an output pin and an input pin to connect them with a wire.",
@@ -26,12 +26,12 @@ const stageTexts: Record<TutorialStageId, StageTexts> = {
 	},
 	"a-only": {
 		title: "Only switch A",
-		goal: "Make the lamp Out light up only when switch A is ON and B is OFF. This time, one part alone is not enough.",
+		goal: "Make the lamp Out turn ON only when switch A is ON and B is OFF. This time, one part alone is not enough.",
 		steps: [],
 	},
 	xor: {
 		title: "Only one switch",
-		goal: 'Make the lamp Out light up when exactly one of the switches A and B is ON. It does not light up when both are ON. "Only switch A" is ready to use as a part.',
+		goal: 'Make the lamp Out turn ON when exactly one of the switches A and B is ON. It stays OFF when both are ON. "Only switch A" is ready to use as a part.',
 		steps: [],
 	},
 	"half-adder": {
@@ -48,10 +48,10 @@ const stageTexts: Record<TutorialStageId, StageTexts> = {
 		title: "Adding four digits",
 		goal: "A and B are four-digit binary numbers. Output A + B in four digits to S, and its fifth digit, the sixteens digit, to C: C is 1 when A + B is 16 or more. The table shows some examples.",
 		steps: [
-			'Place four "Adding with a carry". From the top, the pins of Decompose and Aggregate are the eights, fours, twos and ones digits.',
-			"For each digit, connect that digit of A and of B to the A and B of one adder, and its S to the same digit of Aggregate.",
-			"Connect the C of each digit to the Cin of the digit above. The ones digit gets False on its Cin, and the C of the eights digit goes to the output C.",
-			"While playing, click a digit of A or B to switch it between 0 and 1. The sum also shows on the right, with 10 to 15 shown as the letters A, b, C, d, E and F.",
+			'Place four "Adding with a carry". From the top, the pins on the right of Decompose and on the left of Aggregate are the eights, fours, twos and ones digits.',
+			"For each digit, connect that digit's pin on the upper Decompose, which A goes into, and on the lower one, which B goes into, to the A and B of one \"Adding with a carry\". Connect the S of that adder to the same digit's pin of Aggregate.",
+			"Connect the C of each digit's adder to the Cin of the adder one digit up. The ones digit's adder gets False on its Cin, and the C of the eights digit's adder goes to the output C on the right.",
+			"While playing, click a digit of A or B to switch it between 0 and 1. The sum S is shown as one character on the Display at the top right. The 7seg before it turns the binary number into the shape of a numeral. To write 10 to 15 with one character, A (10), b (11), C (12), d (13), E (14) and F (15) are used. This way of writing is called hexadecimal.",
 		],
 	},
 };
