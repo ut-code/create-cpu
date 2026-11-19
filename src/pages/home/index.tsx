@@ -153,6 +153,7 @@ export default function HomePage() {
 					<input
 						ref={inputRef}
 						type="file"
+						accept=".json,application/json"
 						style={{ display: "none" }}
 						onChange={chooseFileToImport}
 					/>
