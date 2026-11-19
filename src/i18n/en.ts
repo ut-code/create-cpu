@@ -33,6 +33,16 @@ const stageTexts: Record<TutorialStageId, StageTexts> = {
 		goal: 'Make the lamp Out light up when exactly one of the switches A and B is ON. It does not light up when both are ON. "Only switch A" is ready to use as a part.',
 		steps: [],
 	},
+	"half-adder": {
+		title: "Adding one digit",
+		goal: "From here on, think of ON as 1 and OFF as 0, and the tables write them that way too. Then A + B is 0, 1 or 2. Binary writes numbers with only 0 and 1: just as 9 + 1 carries over and becomes 10 in everyday numbers, 1 + 1 carries over and becomes 10 in binary. So 0, 1 and 2 are 00, 01 and 10 in two digits. Output the left digit (the twos digit) to C and the right digit (the ones digit) to S. C is called the carry and S the sum, and this circuit is called a half adder.",
+		steps: [],
+	},
+	"full-adder": {
+		title: "Adding with a carry",
+		goal: 'Output A + B + Cin as a two-digit binary number to C and S. Cin is the carry coming up from the next lower digit. The answer is 0 to 3, and 3 is 11 in binary. "Adding one digit" is ready to use as a part: add A and B with one, then add Cin to its S with another. This circuit is called a full adder.',
+		steps: [],
+	},
 };
 
 export const en = {
@@ -135,6 +145,7 @@ export const en = {
 		parts: "Parts",
 		goalHeading: "Goal",
 		stepsHeading: "Steps",
+		digitsLegend: "In the tables, 1 is ON and 0 is OFF.",
 		check: "Check",
 		passed: "Cleared! The circuit works for every combination of the inputs.",
 		next: "Next stage",
@@ -147,7 +158,7 @@ export const en = {
 			expected: string,
 			actual: string | null,
 		) =>
-			`When ${inputs.map(({ name, value }) => `${name} is ${value}`).join(" and ")}, ${pinName} should be ${expected}, but it ${actual === null ? "has no value" : `is ${actual}`}.`,
+			`When ${listOf(inputs.map(({ name, value }) => `${name} is ${value}`))}, ${pinName} should be ${expected}, but it ${actual === null ? "has no value" : `is ${actual}`}.`,
 		simulationFailed: (detail: string) =>
 			`The circuit could not be simulated. ${detail}`,
 		resetStage: "Reset this stage",

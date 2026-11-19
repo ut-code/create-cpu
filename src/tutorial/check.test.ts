@@ -79,6 +79,21 @@ describe("truthTableOfCheck", () => {
 		});
 	});
 
+	it("lists several outputs in the order the stage names them", () => {
+		const halfAdder = nullthrows(findTutorialStage("half-adder"));
+
+		expect(truthTableOfCheck(halfAdder.check)).toEqual({
+			inputs: ["A", "B"],
+			outputs: ["C", "S"],
+			rows: [
+				{ inputs: [false, false], outputs: [false, false] },
+				{ inputs: [false, true], outputs: [false, true] },
+				{ inputs: [true, false], outputs: [false, true] },
+				{ inputs: [true, true], outputs: [true, false] },
+			],
+		});
+	});
+
 	it("gives no table when a pin carries more than one bit", () => {
 		const wideInput: CombinationalCheck = {
 			inputs: [{ name: "A", bitWidth: 2 }],

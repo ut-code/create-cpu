@@ -53,7 +53,7 @@ function expectedValueOf(expected: PinValues, name: string) {
 	return nullthrows(expected[name], `The check gives no value for ${name}`);
 }
 
-/** null when a pin carries more than one bit, which a table of ON and OFF cannot show */
+/** null when a pin carries more than one bit */
 export function truthTableOfCheck(
 	check: CombinationalCheck,
 ): TruthTable | null {

@@ -1,4 +1,5 @@
 import nullthrows from "nullthrows";
+import type { BitNotation } from "../common/bitLabel";
 import type CCStore from "../store";
 import {
 	type CCComponent,
@@ -6,12 +7,25 @@ import {
 	CCComponentStore,
 } from "../store/component";
 import type { CCComponentPin } from "../store/componentPin";
-import { and, input, not, or, output } from "../store/intrinsics/definitions";
+import {
+	and,
+	input,
+	not,
+	or,
+	output,
+	xor,
+} from "../store/intrinsics/definitions";
 import { type CCNodeId, CCNodeStore } from "../store/node";
 import type { CombinationalCheck } from "./check";
 import { StageCircuit } from "./circuit";
 
-export const tutorialStageIds = ["and", "a-only", "xor"] as const;
+export const tutorialStageIds = [
+	"and",
+	"a-only",
+	"xor",
+	"half-adder",
+	"full-adder",
+] as const;
 export type TutorialStageId = (typeof tutorialStageIds)[number];
 export type StageTitleOf = (id: TutorialStageId) => string;
 
@@ -24,6 +38,7 @@ export type TutorialStage = {
 	/** earlier stages whose components the stage hands over, built and ready to use */
 	givenParts: readonly TutorialStageId[];
 	allowsNewComponents: boolean;
+	tableNotation: BitNotation;
 	/** also the input and output pins the stage starts with */
 	check: CombinationalCheck;
 	solve(circuit: StageCircuit): void;
@@ -34,27 +49,50 @@ const gateParts = [and, or, not].map((gate) => gate.component.id);
 const bit = (value: boolean) => [value];
 const isOn = (value: readonly boolean[] | undefined) => nullthrows(value?.[0]);
 
-function twoSwitchesStage(
+const oneBitInputs = (...names: string[]) =>
+	names.map((name) => ({ name, bitWidth: 1 }));
+
+type StageDefinition = Pick<TutorialStage, "parts" | "check" | "solve"> &
+	Partial<Pick<TutorialStage, "givenParts" | "tableNotation">>;
+
+function defineStage(
 	id: TutorialStageId,
-	definition: Pick<TutorialStage, "parts" | "solve"> &
-		Partial<Pick<TutorialStage, "givenParts">>,
-	lampIsOn: (a: boolean, b: boolean) => boolean,
+	definition: StageDefinition,
 ): TutorialStage {
 	return {
 		id,
 		componentId: `tutorial-${id}` as CCComponentId,
 		givenParts: [],
-		...definition,
 		allowsNewComponents: false,
+		tableNotation: "onOff",
+		...definition,
+	};
+}
+
+function twoSwitchesStage(
+	id: TutorialStageId,
+	definition: Omit<StageDefinition, "check">,
+	lampIsOn: (a: boolean, b: boolean) => boolean,
+): TutorialStage {
+	return defineStage(id, {
+		...definition,
 		check: {
-			inputs: [
-				{ name: "A", bitWidth: 1 },
-				{ name: "B", bitWidth: 1 },
-			],
+			inputs: oneBitInputs("A", "B"),
 			outputs: ["Out"],
 			expected: (values) => ({
 				Out: bit(lampIsOn(isOn(values.A), isOn(values.B))),
 			}),
+		},
+	});
+}
+
+function addingCheck(...inputNames: string[]): CombinationalCheck {
+	return {
+		inputs: oneBitInputs(...inputNames),
+		outputs: ["C", "S"],
+		expected: (values) => {
+			const total = inputNames.filter((name) => isOn(values[name])).length;
+			return { C: bit(total >= 2), S: bit(total % 2 === 1) };
 		},
 	};
 }
@@ -128,10 +166,60 @@ const xorStage = twoSwitchesStage(
 	(a, b) => a !== b,
 );
 
+const halfAdderStage = defineStage("half-adder", {
+	parts: [and.component.id, xor.component.id],
+	tableNotation: "digits",
+	check: addingCheck("A", "B"),
+	solve(circuit) {
+		const carry = circuit.place(and.component.id, { x: 0, y: -100 });
+		const sum = circuit.place(xor.component.id, { x: 0, y: 100 });
+		for (const [node, gate] of [
+			[carry, and],
+			[sum, xor],
+		] as const) {
+			circuit.connect(circuit.pin("A"), circuit.pinOf(node, gate.inputPin.A));
+			circuit.connect(circuit.pin("B"), circuit.pinOf(node, gate.inputPin.B));
+		}
+		circuit.connect(circuit.pinOf(carry, and.outputPin.Out), circuit.pin("C"));
+		circuit.connect(circuit.pinOf(sum, xor.outputPin.Out), circuit.pin("S"));
+	},
+});
+
+const fullAdderStage = defineStage("full-adder", {
+	parts: [or.component.id],
+	givenParts: ["half-adder"],
+	tableNotation: "digits",
+	check: addingCheck("A", "B", "Cin"),
+	solve(circuit) {
+		const first = circuit.place(halfAdderStage.componentId, {
+			x: -140,
+			y: -100,
+		});
+		const second = circuit.place(halfAdderStage.componentId, { x: 0, y: 100 });
+		const either = circuit.place(or.component.id, { x: 150, y: -100 });
+		circuit.connect(circuit.pin("A"), circuit.pinOf(first, "A"));
+		circuit.connect(circuit.pin("B"), circuit.pinOf(first, "B"));
+		circuit.connect(circuit.pinOf(first, "S"), circuit.pinOf(second, "A"));
+		circuit.connect(circuit.pin("Cin"), circuit.pinOf(second, "B"));
+		circuit.connect(
+			circuit.pinOf(first, "C"),
+			circuit.pinOf(either, or.inputPin.A),
+		);
+		circuit.connect(
+			circuit.pinOf(second, "C"),
+			circuit.pinOf(either, or.inputPin.B),
+		);
+		circuit.connect(circuit.pinOf(either, or.outputPin.Out), circuit.pin("C"));
+		circuit.connect(circuit.pinOf(second, "S"), circuit.pin("S"));
+	},
+});
+
 export const tutorialStages: readonly TutorialStage[] = [
 	andStage,
 	aOnlyStage,
 	xorStage,
+	halfAdderStage,
+	fullAdderStage,
 ];
 
 export function findTutorialStage(id: string | undefined) {
