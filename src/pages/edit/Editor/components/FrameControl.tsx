@@ -2,6 +2,7 @@ import { ChevronLeft, ChevronRight } from "@mui/icons-material";
 import { Box, IconButton, Paper, TextField, ToggleButton } from "@mui/material";
 import { useState } from "react";
 import { useInterval } from "react-use";
+import { useMessages } from "../../../../i18n";
 import { useComponentEditorStore } from "../store";
 import {
 	isValidPlaybackSpeed,
@@ -12,6 +13,7 @@ import {
 export default function CCComponentEditorFrameControl() {
 	const componentEditorStore = useComponentEditorStore();
 	const componentEditorState = componentEditorStore();
+	const messages = useMessages();
 	const [speedInput, setSpeedInput] = useState(
 		String(componentEditorState.playbackSpeed),
 	);
@@ -57,19 +59,19 @@ export default function CCComponentEditorFrameControl() {
 					value="auto"
 					selected={isAutomatic}
 					size="small"
-					aria-label="自動再生"
+					aria-label={messages.editor.frameControl.autoPlay}
 					onChange={() => {
 						componentEditorState.setPlaybackMode(
 							isAutomatic ? "manual" : "auto",
 						);
 					}}
 				>
-					Auto
+					{messages.editor.frameControl.auto}
 				</ToggleButton>
 				<Box sx={{ display: "flex", width: "160px", flexShrink: 0 }}>
 					<IconButton
 						size="large"
-						aria-label="前のステップ"
+						aria-label={messages.editor.frameControl.previousStep}
 						disabled={isAutomatic || componentEditorState.timeStep <= 0}
 						onClick={() => {
 							componentEditorState.setTimeStep(
@@ -80,7 +82,7 @@ export default function CCComponentEditorFrameControl() {
 						<ChevronLeft />
 					</IconButton>
 					<input
-						aria-label="タイムステップ"
+						aria-label={messages.editor.frameControl.timeStep}
 						disabled={isAutomatic}
 						style={{
 							flex: 1,
@@ -100,7 +102,7 @@ export default function CCComponentEditorFrameControl() {
 					/>
 					<IconButton
 						size="large"
-						aria-label="次のステップ"
+						aria-label={messages.editor.frameControl.nextStep}
 						disabled={isAutomatic}
 						onClick={() => {
 							componentEditorState.setTimeStep(
@@ -112,7 +114,7 @@ export default function CCComponentEditorFrameControl() {
 					</IconButton>
 				</Box>
 				<TextField
-					label="クロック周波数 (Hz)"
+					label={messages.editor.frameControl.clockFrequency}
 					type="number"
 					size="small"
 					sx={{ width: "160px" }}
@@ -121,7 +123,10 @@ export default function CCComponentEditorFrameControl() {
 					helperText={
 						isSpeedValid
 							? undefined
-							: `${MIN_PLAYBACK_SPEED}〜${MAX_PLAYBACK_SPEED} を入力`
+							: messages.editor.frameControl.speedRange(
+									MIN_PLAYBACK_SPEED,
+									MAX_PLAYBACK_SPEED,
+								)
 					}
 					slotProps={{
 						htmlInput: {

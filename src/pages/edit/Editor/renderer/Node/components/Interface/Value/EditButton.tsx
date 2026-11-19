@@ -1,6 +1,7 @@
 import { Edit } from "@mui/icons-material";
 import { IconButton, Popover } from "@mui/material";
 import { useState } from "react";
+import { useMessages } from "../../../../../../../../i18n";
 import type { CCIntrinsicComponentConstSpecConfigViewMode as Mode } from "../../../../../../../../store/intrinsics/types";
 import type { SimulationValue } from "../../../../../../../../store/simulation";
 import { CCComponentEditorValueEditor } from "../../../../../components/ValueEditor";
@@ -13,12 +14,14 @@ type Props = {
 export function CCComponentEditorRendererNodeInterfaceRendererValueEditButton(
 	props: Props,
 ) {
+	const messages = useMessages();
 	const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
 	const [mode, setMode] = useState<Mode>("hex");
 
 	return (
 		<>
 			<IconButton
+				aria-label={messages.editor.editValue}
 				sx={{ width: "14px", height: "14px" }}
 				// Prevent the drag behavior of the parent node when clicking the button
 				onPointerDown={(e) => e.stopPropagation()}

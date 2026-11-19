@@ -4,6 +4,7 @@ import nullthrows from "nullthrows";
 import { useState } from "react";
 import invariant from "tiny-invariant";
 import { rect } from "../../../../common/rect";
+import { useMessages } from "../../../../i18n";
 import { IntrinsicComponentDefinition } from "../../../../store/intrinsics/base";
 import { CCNodePinStore } from "../../../../store/nodePin";
 import { useStore } from "../../../../store/react";
@@ -12,6 +13,7 @@ import { useComponentEditorStore } from "../store";
 
 export function CCComponentEditorNodePinPropertyEditor() {
 	const { store } = useStore();
+	const messages = useMessages();
 	const componentEditorStore = useComponentEditorStore();
 	const target = componentEditorStore((s) => s.nodePinPropertyEditorTarget);
 	const setTarget = componentEditorStore(
@@ -87,7 +89,7 @@ export function CCComponentEditorNodePinPropertyEditor() {
 				{componentPin.name} ({component.name})
 			</Typography>
 			<Typography variant="caption" color="text.secondary">
-				Specify the bit width to assign to the pin.
+				{messages.editor.nodePinBitWidth.description}
 			</Typography>
 			<form
 				onSubmit={(e) => {
@@ -159,7 +161,7 @@ export function CCComponentEditorNodePinPropertyEditor() {
 										setNewBitWidthList([...bitWidthList, 1]);
 									}}
 								>
-									Add
+									{messages.editor.nodePinBitWidth.add}
 								</Button>
 								<Button
 									type="button"
@@ -170,7 +172,7 @@ export function CCComponentEditorNodePinPropertyEditor() {
 										setNewBitWidthList(bitWidthList.slice(0, -1));
 									}}
 								>
-									Remove
+									{messages.editor.nodePinBitWidth.remove}
 								</Button>
 							</>
 						)}
@@ -181,7 +183,7 @@ export function CCComponentEditorNodePinPropertyEditor() {
 						sx={{ ml: "auto" }}
 						disabled={!isTouched || !isValid}
 					>
-						Apply
+						{messages.common.apply}
 					</Button>
 				</Stack>
 			</form>

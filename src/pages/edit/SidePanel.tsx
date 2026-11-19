@@ -3,6 +3,7 @@ import { Box, InputAdornment, TextField } from "@mui/material";
 import { useState } from "react";
 import invariant from "tiny-invariant";
 import { setDataTransferAsComponent } from "../../common/serialization";
+import { useMessages } from "../../i18n";
 import { type CCComponentId, isIncluding } from "../../store/component";
 import { ccPinTypes } from "../../store/componentPin";
 import { useStore } from "../../store/react";
@@ -15,12 +16,13 @@ export type SidePanelProps = {
 
 function ComponentRenderer({ componentId }: { componentId: CCComponentId }) {
 	const { store } = useStore();
+	const messages = useMessages();
 	const component = store.components.get(componentId);
 	invariant(component);
 	const pins = store.componentPins.getManyByComponentId(componentId);
 
 	return (
-		<div aria-label="Component" role="img">
+		<div aria-label={messages.sidePanel.component} role="img">
 			<div>{component.name}</div>
 			<div
 				style={{
@@ -88,6 +90,7 @@ function ComponentRenderer({ componentId }: { componentId: CCComponentId }) {
 export default function SidePanel(sidePanelProps: SidePanelProps) {
 	const { editedComponentId } = sidePanelProps;
 	const { store } = useStore();
+	const messages = useMessages();
 	const components = useComponents();
 	const [searchText, setSearchText] = useState("");
 
@@ -96,7 +99,9 @@ export default function SidePanel(sidePanelProps: SidePanelProps) {
 			<TextField
 				size="small"
 				sx={{ m: 1 }}
+				placeholder={messages.sidePanel.search}
 				slotProps={{
+					htmlInput: { "aria-label": messages.sidePanel.search },
 					input: {
 						startAdornment: (
 							<InputAdornment position="start">

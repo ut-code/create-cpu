@@ -1,5 +1,6 @@
 import { chunk } from "es-toolkit";
 import invariant from "tiny-invariant";
+import type { Messages } from "../../../../../i18n/messages";
 import type { CCIntrinsicComponentConstSpecConfigViewMode as Mode } from "../../../../../store/intrinsics/types";
 import type { SimulationValue } from "../../../../../store/simulation";
 
@@ -127,14 +128,16 @@ export function parseSimulationValueDraft(
 
 export function describeSimulationValueDraftError(
 	error: SimulationValueDraftError,
+	messages: Messages,
 ): string {
+	const texts = messages.editor.valueEditor;
 	switch (error.type) {
 		case "empty":
-			return "Enter a value";
+			return texts.empty;
 		case "invalid":
-			return `Not a valid ${error.mode} value`;
+			return texts.invalid(error.mode);
 		case "tooWide":
-			return `Needs ${error.requiredBitWidth} bits, but the width is ${error.bitWidth}`;
+			return texts.tooWide(error.requiredBitWidth, error.bitWidth);
 	}
 }
 

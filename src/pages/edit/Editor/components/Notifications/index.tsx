@@ -1,9 +1,9 @@
 import { Alert, Grow, Stack } from "@mui/material";
 import { useEffect } from "react";
+import { useLanguage, useMessages } from "../../../../../i18n";
 import { useStore } from "../../../../../store/react";
 import { useComponentEditorStore } from "../../store";
 import { describeConnectionRejection } from "./connectionRejection";
-import { describeInputValueReset } from "./inputValueReset";
 
 const CONNECTION_REJECTION_DURATION_MS = 4000;
 
@@ -11,6 +11,8 @@ const CONNECTION_REJECTION_DURATION_MS = 4000;
 // its notice hides itself
 export default function CCComponentEditorNotifications() {
 	const { store } = useStore();
+	const { language } = useLanguage();
+	const messages = useMessages();
 	const componentEditorState = useComponentEditorStore()();
 	const {
 		connectionRejectionNotice,
@@ -55,7 +57,10 @@ export default function CCComponentEditorNotifications() {
 						sx={{ maxWidth: "600px", pointerEvents: "auto" }}
 						onClose={dismissConnectionRejectionNotice}
 					>
-						{describeConnectionRejection(connectionRejectionNotice.rejection)}
+						{describeConnectionRejection(
+							connectionRejectionNotice.rejection,
+							messages,
+						)}
 					</Alert>
 				</Grow>
 			)}
@@ -66,7 +71,7 @@ export default function CCComponentEditorNotifications() {
 					sx={{ maxWidth: "600px", pointerEvents: "auto" }}
 					onClose={dismissInputValueResetNotice}
 				>
-					{describeInputValueReset(inputValueResetNotice)}
+					{messages.editor.inputValueReset(inputValueResetNotice.inputs)}
 				</Alert>
 			)}
 			{simulationError !== null && (
@@ -76,7 +81,7 @@ export default function CCComponentEditorNotifications() {
 					sx={{ maxWidth: "600px", pointerEvents: "auto" }}
 					onClose={dismissSimulationError}
 				>
-					{simulationError.message}
+					{simulationError.messageByLanguage[language]}
 				</Alert>
 			)}
 		</Stack>

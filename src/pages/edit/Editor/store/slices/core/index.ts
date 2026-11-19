@@ -1,5 +1,7 @@
+import { mapValues } from "es-toolkit";
 import nullthrows from "nullthrows";
 import invariant from "tiny-invariant";
+import { messagesByLanguage } from "../../../../../../i18n/messages";
 import type { CCComponentPinId } from "../../../../../../store/componentPin";
 import {
 	type CCConnectionId,
@@ -315,7 +317,13 @@ export const createComponentEditorStoreCoreSlice: ComponentEditorSliceCreator<
 						playbackMode: "manual",
 						timeStep: 0,
 						simulationError: {
-							message: error instanceof Error ? error.message : String(error),
+							messageByLanguage: mapValues(messagesByLanguage, (messages) =>
+								error instanceof SimulationNodeError
+									? error.describe(store, messages.simulation)
+									: error instanceof Error
+										? error.message
+										: String(error),
+							),
 							nodeIds: new Set(
 								error instanceof SimulationNodeError
 									? error.nodePaths.flatMap((path) => path.slice(0, 1))

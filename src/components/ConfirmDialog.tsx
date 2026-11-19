@@ -7,6 +7,7 @@ import {
 	DialogTitle,
 } from "@mui/material";
 import type { ReactNode } from "react";
+import { useMessages } from "../i18n";
 
 export type ConfirmDialogProps = {
 	title: string;
@@ -23,6 +24,7 @@ export function ConfirmDialog({
 	onConfirm,
 	onCancel,
 }: ConfirmDialogProps) {
+	const messages = useMessages();
 	return (
 		<Dialog maxWidth="xs" fullWidth open onClose={onCancel}>
 			<DialogTitle>{title}</DialogTitle>
@@ -31,7 +33,7 @@ export function ConfirmDialog({
 			</DialogContent>
 			<DialogActions>
 				<Button onClick={onCancel} color="inherit" autoFocus>
-					Cancel
+					{messages.common.cancel}
 				</Button>
 				<Button onClick={onConfirm} color="error" variant="contained">
 					{confirmLabel}

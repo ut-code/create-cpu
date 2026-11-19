@@ -1,5 +1,6 @@
 import nullthrows from "nullthrows";
 import { describe, expect, it } from "vitest";
+import { en } from "../../../../../i18n/en";
 import { testBits } from "../../../../../store/testUtils";
 import {
 	changeSimulationValueDraftMode,
@@ -70,9 +71,9 @@ describe("SimulationValueDraft", () => {
 			requiredBitWidth: 4,
 			bitWidth: 3,
 		});
-		expect(describeSimulationValueDraftError(nullthrows(tooWide.error))).toBe(
-			"Needs 4 bits, but the width is 3",
-		);
+		expect(
+			describeSimulationValueDraftError(nullthrows(tooWide.error), en),
+		).toBe("Needs 4 bits, but the width is 3");
 	});
 
 	it("names the view mode of an invalid text, and asks for a value if empty", () => {
@@ -83,7 +84,7 @@ describe("SimulationValueDraft", () => {
 			["", "utf-8", "Enter a value"],
 		] as const) {
 			const { error } = parseSimulationValueDraft(text, mode);
-			expect(describeSimulationValueDraftError(nullthrows(error))).toBe(
+			expect(describeSimulationValueDraftError(nullthrows(error), en)).toBe(
 				expected,
 			);
 		}

@@ -7,6 +7,7 @@ import {
 	Typography,
 } from "@mui/material";
 import { useId, useState } from "react";
+import { useMessages } from "../../../../../i18n";
 import type { CCIntrinsicComponentConstSpecConfigViewMode as Mode } from "../../../../../store/intrinsics/types";
 import type { SimulationValue } from "../../../../../store/simulation";
 import {
@@ -46,6 +47,7 @@ type Props = {
 
 export function CCComponentEditorValueEditor(props: Props) {
 	const bitWidthId = useId();
+	const messages = useMessages();
 	const [readOnlyMode, setReadOnlyMode] = useState(props.mode);
 	const mode = props.readOnly ? readOnlyMode : props.mode;
 	// Formatted text does not always parse back to the same value, so a mode change formats
@@ -95,7 +97,7 @@ export function CCComponentEditorValueEditor(props: Props) {
 						onClick={() => newValue && props.onChange(newValue)}
 						sx={{ py: 0.25 }}
 					>
-						Apply
+						{messages.common.apply}
 					</Button>
 				)}
 			</Stack>
@@ -120,9 +122,8 @@ export function CCComponentEditorValueEditor(props: Props) {
 				sx={{ alignSelf: "flex-end", minHeight: "1.66em" }}
 			>
 				{error
-					? describeSimulationValueDraftError(error)
-					: newValue &&
-						`${newValue.length} ${newValue.length === 1 ? "bit" : "bits"}`}
+					? describeSimulationValueDraftError(error, messages)
+					: newValue && messages.editor.valueEditor.bits(newValue.length)}
 			</Typography>
 		</Stack>
 	);

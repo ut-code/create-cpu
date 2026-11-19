@@ -5,6 +5,7 @@ import {
 	MenuList,
 	Paper,
 } from "@mui/material";
+import { useMessages } from "../../../../i18n";
 import type { CCComponentId } from "../../../../store/component";
 import { extractNodesIntoNewComponent } from "../../../../store/extractComponent";
 import { useStore } from "../../../../store/react";
@@ -24,6 +25,7 @@ export default function CCComponentEditorContextMenu({
 	onComponentCreated,
 }: CCComponentEditorContextMenuProps) {
 	const { store } = useStore();
+	const messages = useMessages();
 	const componentEditorState = useComponentEditorStore()();
 
 	if (!componentEditorState.contextMenuState) return null;
@@ -46,7 +48,7 @@ export default function CCComponentEditorContextMenu({
 					position: "absolute",
 					top: `${componentEditorState.contextMenuState.position.y}px`,
 					left: `${componentEditorState.contextMenuState.position.x}px`,
-					width: "200px",
+					minWidth: "200px",
 				}}
 			>
 				{/* <MenuItem onClick={componentEditorState.closeContextMenu}>
@@ -59,12 +61,12 @@ export default function CCComponentEditorContextMenu({
 							const newComponent = await extractNodesIntoNewComponent(
 								store,
 								selectedNodeIds,
-								"New Component",
+								messages.common.newComponentName,
 							);
 							onComponentCreated(newComponent.id);
 						}}
 					>
-						Create a new component...
+						{messages.editor.contextMenu.createComponent}
 					</MenuItem>
 				)}
 				{canDelete && (
@@ -78,7 +80,7 @@ export default function CCComponentEditorContextMenu({
 							componentEditorState.closeContextMenu();
 						}}
 					>
-						Delete
+						{messages.common.delete}
 					</MenuItem>
 				)}
 				{componentToEdit && (canExtract || canDelete) && <Divider />}
@@ -89,7 +91,7 @@ export default function CCComponentEditorContextMenu({
 							onEditComponent(componentToEdit.id);
 						}}
 					>
-						Edit...
+						{messages.editor.contextMenu.edit}
 					</MenuItem>
 				)}
 			</MenuList>

@@ -186,7 +186,12 @@ describe("simulation errors", () => {
 
 		const { editorMode, simulationError } = editorStore.getState();
 		expect(editorMode).toBe("edit");
-		expect(simulationError?.message).toMatch(/^The outlined nodes form a loop/);
+		expect(simulationError?.messageByLanguage.en).toMatch(
+			/^The outlined nodes form a loop/,
+		);
+		expect(simulationError?.messageByLanguage.ja).toMatch(
+			/^赤い枠のノードがループになっていて/,
+		);
 		expect(simulationError?.nodeIds).toEqual(new Set([first.id, second.id]));
 	});
 });
