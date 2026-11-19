@@ -5,10 +5,9 @@
 }
 
 :root {
-	/* MUI's default Latin fonts first, then Japanese */
-	--font-family:
-		"Roboto", "Helvetica", "Arial", "Noto Sans JP", "Hiragino Sans",
-		"Yu Gothic UI", Meiryo, sans-serif;
+	--latin-fonts: "Roboto", "Helvetica", "Arial";
+	--japanese-fonts: "Noto Sans JP", "Hiragino Sans", "Yu Gothic UI", Meiryo;
+	--font-family: var(--latin-fonts), var(--japanese-fonts), sans-serif;
 	font-family: var(--font-family);
 
 	/* Keep in sync with the colors in style.ts */
@@ -25,11 +24,9 @@
 	--color-tutorial-background: #fff3e0;
 }
 
-/* Chrome misses some characters of a font split into ranges when it is not the first */
+/* Chrome skips some characters of a split font placed after an installed one */
 :root:lang(ja) {
-	--font-family:
-		"Noto Sans JP", "Roboto", "Helvetica", "Arial", "Hiragino Sans",
-		"Yu Gothic UI", Meiryo, sans-serif;
+	--font-family: var(--japanese-fonts), var(--latin-fonts), sans-serif;
 }
 
 :root,
