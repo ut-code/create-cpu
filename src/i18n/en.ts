@@ -59,7 +59,7 @@ const stageTexts: Record<TutorialStageId, StageTexts> = {
 		goal: "After pressing the play button, a number with an arrow button on each side appears at the bottom. The number is called the time step, and the right arrow goes to the next one. The circuit runs one time step at a time. Make Count go up by 1 at each time step, and go back to 0000 after 1111. 0000 to 1111 are 0 to F in hexadecimal.",
 		steps: [
 			"Place a FlipFlop. A FlipFlop outputs what it received at the time step before, and 0 at the first time step. Connect its output to Count and to the 7seg at the top right.",
-			'Place a Const. A Const always outputs the value written in it. Change 00000000 in its box to 0001 and press Apply. Write four digits, as many as B of "Adding four digits" has: a wire cannot connect pins with different numbers of digits.',
+			"Place a Const. A Const always outputs the value written in it. Change 00000000 in its box to 0001 and press Apply (four digits, to match the B it connects to).",
 			'Place "Adding four digits". Connect the output of the FlipFlop to its A, the Const to its B, and its S to the input of the FlipFlop. Then the number the FlipFlop outputs plus 1 comes out of the FlipFlop at the next time step. C is not used.',
 			'Press the play button and go through the time steps with the right arrow. Press "Auto" to go on by itself, one time step a second. The circuit works when the Display at the top right shows 0 to F in turn.',
 		],
