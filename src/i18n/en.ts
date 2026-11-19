@@ -35,7 +35,7 @@ const stageTexts: Record<TutorialStageId, StageTexts> = {
 	},
 	"half-adder": {
 		title: "Adding one digit",
-		goal: "Think of ON as 1 and OFF as 0. Then A + B is 0, 1 or 2. Binary writes numbers with only 0 and 1: just as 9 + 1 carries over to 10 in everyday numbers, 1 + 1 carries over to 10 in binary. So 0, 1 and 2 are 00, 01 and 10 in two digits. Output the twos digit to C and the ones digit to S. C is called the carry and S the sum, and this circuit is called a half adder.",
+		goal: "From here on, think of ON as 1 and OFF as 0, and the tables write them that way too. Then A + B is 0, 1 or 2. Binary writes numbers with only 0 and 1: just as 9 + 1 carries over to 10 in everyday numbers, 1 + 1 carries over to 10 in binary. So 0, 1 and 2 are 00, 01 and 10 in two digits. Output the twos digit to C and the ones digit to S. C is called the carry and S the sum, and this circuit is called a half adder.",
 		steps: [],
 	},
 	"full-adder": {
