@@ -174,7 +174,7 @@ function StageView({ stage }: { stage: TutorialStage }) {
 					</Typography>
 				</div>
 				<div>
-					<SectionHeading>{texts.goal}</SectionHeading>
+					<SectionHeading>{texts.goalHeading}</SectionHeading>
 					<Typography>{texts.stageTexts[stage.id].goal}</Typography>
 					{goalTable && (
 						<Box sx={{ mt: 1 }}>
