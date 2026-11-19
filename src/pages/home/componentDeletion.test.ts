@@ -42,4 +42,17 @@ describe("describeComponentDeletion", () => {
 			/^It is used 2 times in ALU, ALU\./,
 		);
 	});
+
+	it("names a few places in order and counts the rest", () => {
+		const store = createTestStore();
+		const adder = registerTestComponent(store, "Adder");
+		for (const name of ["E", "B", "D", "A", "C"]) {
+			const place = registerTestComponent(store, name);
+			registerTestNode(store, place.id, adder.id);
+		}
+
+		expect(describeComponentDeletion(store, adder.id)).toBe(
+			"It is used 5 times in A, B, C and 2 other components. Deleting it also removes those nodes and their connections. This cannot be undone.",
+		);
+	});
 });
