@@ -22,6 +22,8 @@ type CheckPins = {
 export type CombinationalCheck = CheckPins & {
 	kind: "combinational";
 	expected(inputs: PinValues): PinValues;
+	/** Inputs the goal shows when every combination of them is too many */
+	examples?: readonly PinValues[];
 };
 
 export type StepValues = { inputs: PinValues; outputs: PinValues };
@@ -30,6 +32,8 @@ export type StepValues = { inputs: PinValues; outputs: PinValues };
 export type SequentialCheck = CheckPins & {
 	kind: "sequential";
 	steps: readonly StepValues[];
+	/** The steps the goal shows, counted from 1 */
+	shownStepNumbers: readonly number[];
 };
 
 export type CircuitCheck = CombinationalCheck | SequentialCheck;
@@ -45,6 +49,7 @@ export function sequentialCheck<State>(
 	pins: CheckPins,
 	model: SequentialModel<State>,
 	inputSteps: readonly PinValues[],
+	shownStepNumbers: readonly number[],
 ): SequentialCheck {
 	let state = model.initialState;
 	const steps = inputSteps.map((inputs) => {
@@ -69,7 +74,16 @@ export function sequentialCheck<State>(
 			);
 		}
 	}
-	return { ...pins, kind: "sequential", steps };
+	invariant(
+		shownStepNumbers.every(
+			(number, index) =>
+				number >= 1 &&
+				number <= steps.length &&
+				number > (shownStepNumbers[index - 1] ?? 0),
+		),
+		"The steps shown must be checked steps, in order",
+	);
+	return { ...pins, kind: "sequential", steps, shownStepNumbers };
 }
 
 export type CheckResult =
@@ -121,29 +135,39 @@ function expectedValueOf(expected: PinValues, name: string) {
 }
 
 /**
- * Every combination of the inputs when each is one bit, or else the given examples,
- * with what the outputs should be; null when there is nothing to show
+ * What the outputs should be for every combination of the inputs when each is one bit,
+ * or else for the examples or at the steps the check shows; null when there is nothing
+ * to show
  */
-export function goalTableOf(
-	check: CircuitCheck,
-	examples: readonly PinValues[],
-): TruthTable | null {
-	// TODO: show the first steps as the goal of a check over time
-	if (check.kind === "sequential") return null;
-	const rows = check.inputs.every(({ bitWidth }) => bitWidth === 1)
-		? [...inputCombinations(check.inputs)]
-		: examples;
-	if (rows.length === 0) return null;
-	return {
+export function goalTableOf(check: CircuitCheck): TruthTable | null {
+	const names = {
 		inputs: check.inputs.map(({ name }) => name),
 		outputs: [...check.outputs],
-		rows: rows.map((inputs) => {
-			const expected = check.expected(inputs);
-			return {
-				inputs: check.inputs.map(({ name }) => nullthrows(inputs[name])),
-				outputs: check.outputs.map((name) => expectedValueOf(expected, name)),
-			};
-		}),
+	};
+	const rowOf = ({ inputs, outputs }: StepValues) => ({
+		inputs: check.inputs.map(({ name }) => nullthrows(inputs[name])),
+		outputs: check.outputs.map((name) => expectedValueOf(outputs, name)),
+	});
+	if (check.kind === "sequential") {
+		const { shownStepNumbers } = check;
+		if (shownStepNumbers.length === 0) return null;
+		return {
+			...names,
+			rows: shownStepNumbers.map((number) =>
+				rowOf(nullthrows(check.steps[number - 1])),
+			),
+			stepNumbers: [...shownStepNumbers],
+		};
+	}
+	const rows = check.inputs.every(({ bitWidth }) => bitWidth === 1)
+		? [...inputCombinations(check.inputs)]
+		: (check.examples ?? []);
+	if (rows.length === 0) return null;
+	return {
+		...names,
+		rows: rows.map((inputs) =>
+			rowOf({ inputs, outputs: check.expected(inputs) }),
+		),
 	};
 }
 

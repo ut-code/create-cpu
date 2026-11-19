@@ -7,6 +7,8 @@ export type TruthTable = {
 	inputs: string[];
 	outputs: string[];
 	rows: { inputs: SimulationValue[]; outputs: SimulationValue[] }[];
+	/** For a table over time, the time step of each row, counted from 1 */
+	stepNumbers?: number[];
 };
 
 const maxInputCount = 2;

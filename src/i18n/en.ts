@@ -54,6 +54,16 @@ const stageTexts: Record<TutorialStageId, StageTexts> = {
 			"While playing, click a digit of A or B to switch it between 0 and 1. The sum S is shown as one character on the Display at the top right. The 7seg before it turns the binary number into the shape of a numeral. To write 10 to 15 with one character, A (10), b (11), C (12), d (13), E (14) and F (15) are used. This way of writing is called hexadecimal.",
 		],
 	},
+	counter: {
+		title: "Counter",
+		goal: "The circuit runs in time steps. Make Count go up by 1 at each time step, and go back to 0000 after 1111. 0000 to 1111 are 0 to F in hexadecimal.",
+		steps: [
+			"Place a FlipFlop. A FlipFlop outputs what it received at the time step before, and 0 at the first time step. Connect its output to Count and to the 7seg at the top right.",
+			"Place a Const. A Const always outputs the value written in it. Change 00000000 in its box to 0001 and press Apply.",
+			'Place "Adding four digits". Connect the output of the FlipFlop to its A, the Const to its B, and its S to the input of the FlipFlop. Then the number the FlipFlop outputs plus 1 comes out of the FlipFlop at the next time step. C is not used.',
+			'After pressing the play button, a number with an arrow button on each side appears at the bottom. The number is the current time step, and the right arrow goes to the next one. "Auto" goes on by itself, one time step a second. The circuit works when the Display at the top right shows 0 to F in turn.',
+		],
+	},
 };
 
 export const en = {
@@ -77,6 +87,9 @@ export const en = {
 				"Splits a number of several digits, from the highest digit down",
 			AGGREGATE:
 				"Joins values into one number, the upper pins as the higher digits",
+			FLIPFLOP:
+				"Outputs what it received at the time step before (0 at the first time step)",
+			CONST: "Always outputs the value written in it",
 		},
 		about: (name: string) => `About ${name}`,
 		ofStage: "Available parts",
@@ -161,6 +174,7 @@ export const en = {
 		goalHeading: "Goal",
 		stepsHeading: "Steps",
 		digitsLegend: "In the tables, 1 is ON and 0 is OFF.",
+		timeStepColumn: "Time step",
 		check: "Check",
 		passed: "Cleared! The circuit works for every combination of the inputs.",
 		passedSteps: (count: number) =>

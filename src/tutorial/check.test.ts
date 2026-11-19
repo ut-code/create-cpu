@@ -81,7 +81,7 @@ describe("inputCombinations", () => {
 
 describe("goalTableOf", () => {
 	it("lists what the stage asks for, in the order the check tries the inputs", () => {
-		expect(goalTableOf(xorStage.check, [])).toEqual({
+		expect(goalTableOf(xorStage.check)).toEqual({
 			inputs: ["A", "B"],
 			outputs: ["Out"],
 			rows: [
@@ -96,7 +96,7 @@ describe("goalTableOf", () => {
 	it("lists several outputs in the order the stage names them", () => {
 		const halfAdder = nullthrows(findTutorialStage("half-adder"));
 
-		expect(goalTableOf(halfAdder.check, [])?.rows).toEqual([
+		expect(goalTableOf(halfAdder.check)?.rows).toEqual([
 			{ inputs: [[false], [false]], outputs: [[false], [false]] },
 			{ inputs: [[false], [true]], outputs: [[false], [true]] },
 			{ inputs: [[true], [false]], outputs: [[false], [true]] },
@@ -112,10 +112,36 @@ describe("goalTableOf", () => {
 			expected: (values) => ({ Out: [...nullthrows(values.A)].reverse() }),
 		};
 
-		expect(goalTableOf(wide, [])).toBeNull();
-		expect(goalTableOf(wide, [{ A: [true, false] }])?.rows).toEqual([
-			{ inputs: [[true, false]], outputs: [[false, true]] },
-		]);
+		expect(goalTableOf(wide)).toBeNull();
+		expect(
+			goalTableOf({ ...wide, examples: [{ A: [true, false] }] })?.rows,
+		).toEqual([{ inputs: [[true, false]], outputs: [[false, true]] }]);
+	});
+
+	it("shows the steps a check over time picks, with their numbers", () => {
+		const counting = sequentialCheck(
+			{ inputs: [{ name: "Up", bitWidth: 1 }], outputs: ["Odd"] },
+			{
+				initialState: false,
+				step: (isOdd, { Up }) => ({
+					outputs: { Odd: [isOdd] },
+					next: nullthrows(Up?.[0]) !== isOdd,
+				}),
+			},
+			[[true], [false], [true], [true]].map((Up) => ({ Up })),
+			[1, 3, 4],
+		);
+
+		expect(goalTableOf(counting)).toEqual({
+			inputs: ["Up"],
+			outputs: ["Odd"],
+			rows: [
+				{ inputs: [[true]], outputs: [[false]] },
+				{ inputs: [[true]], outputs: [[true]] },
+				{ inputs: [[true]], outputs: [[false]] },
+			],
+			stepNumbers: [1, 3, 4],
+		});
 	});
 
 	it("refuses a check that gives no value for an output", () => {
@@ -126,7 +152,7 @@ describe("goalTableOf", () => {
 			expected: () => ({}),
 		};
 
-		expect(() => goalTableOf(check, [])).toThrow("Out");
+		expect(() => goalTableOf(check)).toThrow("Out");
 	});
 });
 
@@ -335,6 +361,7 @@ describe("sequentialCheck", () => {
 				}),
 			},
 			[[true], [false], [true]].map((Up) => ({ Up })),
+			[],
 		);
 
 		expect(check.steps.map(({ outputs }) => outputs)).toEqual([
@@ -354,11 +381,26 @@ describe("sequentialCheck refuses steps that do not fit the pins", () => {
 			step: () => ({ outputs: { Count: [false] }, next: null }),
 		};
 
-		expect(() => sequentialCheck(pins, model, [{ Up: [true, false] }])).toThrow(
-			"Step 1",
+		expect(() =>
+			sequentialCheck(pins, model, [{ Up: [true, false] }], []),
+		).toThrow("Step 1");
+		expect(() =>
+			sequentialCheck(pins, model, [{ Up: [true] }, {}], []),
+		).toThrow("Step 2");
+	});
+
+	it("refuses shown steps that are not checked, or out of order", () => {
+		const model = {
+			initialState: null,
+			step: () => ({ outputs: { Count: [false] }, next: null }),
+		};
+		const twoSteps = [{ Up: [true] }, { Up: [true] }];
+
+		expect(() => sequentialCheck(pins, model, twoSteps, [3])).toThrow(
+			"steps shown",
 		);
-		expect(() => sequentialCheck(pins, model, [{ Up: [true] }, {}])).toThrow(
-			"Step 2",
+		expect(() => sequentialCheck(pins, model, twoSteps, [2, 1])).toThrow(
+			"steps shown",
 		);
 	});
 
@@ -372,7 +414,7 @@ describe("sequentialCheck refuses steps that do not fit the pins", () => {
 		};
 
 		expect(() =>
-			sequentialCheck(pins, model, [{ Up: [true] }, { Up: [true] }]),
+			sequentialCheck(pins, model, [{ Up: [true] }, { Up: [true] }], []),
 		).toThrow("Step 2");
 	});
 });
@@ -392,6 +434,7 @@ describe("checkCircuit over time", () => {
 				}),
 			},
 			inputSteps,
+			[],
 		);
 
 	function registerPassThrough(throughFlipFlop: boolean) {
@@ -484,6 +527,7 @@ describe("checkCircuit over time", () => {
 				step: (isOn) => ({ outputs: { Out: [isOn] }, next: !isOn }),
 			},
 			new Array<PinValues>(4).fill({}),
+			[],
 		);
 
 		expect(checkCircuit(store, component.id, blink)).toEqual({

@@ -11,9 +11,11 @@ import type { CCComponentPin } from "../store/componentPin";
 import {
 	aggregate,
 	and,
+	const_,
 	decompose,
 	display,
 	false_,
+	flipflop,
 	input,
 	not,
 	or,
@@ -22,7 +24,13 @@ import {
 	xor,
 } from "../store/intrinsics/definitions";
 import { type CCNodeId, CCNodeStore } from "../store/node";
-import type { CircuitCheck, CombinationalCheck, PinValues } from "./check";
+import type { CCNodePinId } from "../store/nodePin";
+import {
+	type CircuitCheck,
+	type CombinationalCheck,
+	type PinValues,
+	sequentialCheck,
+} from "./check";
 import { StageCircuit } from "./circuit";
 
 export const tutorialStageIds = [
@@ -32,6 +40,7 @@ export const tutorialStageIds = [
 	"half-adder",
 	"full-adder",
 	"four-bit-adder",
+	"counter",
 ] as const;
 export type TutorialStageId = (typeof tutorialStageIds)[number];
 export type StageTitleOf = (id: TutorialStageId) => string;
@@ -48,8 +57,6 @@ export type TutorialStage = {
 	tableNotation: BitNotation;
 	/** also the input and output pins the stage starts with */
 	check: CircuitCheck;
-	/** inputs the goal shows when every combination of them is too many */
-	examples: readonly PinValues[];
 	/** how far left and right of the middle the input and output pins sit */
 	pinDistance: number;
 	/**
@@ -71,12 +78,7 @@ const oneBitInputs = (...names: string[]) =>
 type Solving = { solve(circuit: StageCircuit): void };
 
 type StageDefinition = Pick<TutorialStage, "parts" | "check"> &
-	Partial<
-		Pick<
-			TutorialStage,
-			"givenParts" | "tableNotation" | "pinDistance" | "examples"
-		>
-	> &
+	Partial<Pick<TutorialStage, "givenParts" | "tableNotation" | "pinDistance">> &
 	(Pick<TutorialStage, "layOut"> | Solving);
 
 function defineStage(
@@ -89,7 +91,6 @@ function defineStage(
 		givenParts = [],
 		tableNotation = "onOff",
 		pinDistance = 300,
-		examples = [],
 	} = definition;
 	return {
 		id,
@@ -99,7 +100,6 @@ function defineStage(
 		givenParts,
 		tableNotation,
 		pinDistance,
-		examples,
 		allowsNewComponents: false,
 		layOut:
 			"layOut" in definition
@@ -259,6 +259,21 @@ const fullAdderStage = defineStage("full-adder", {
 
 const digitCount = 4;
 
+/** A 7seg showing a number on a Display at the top right; returns the 7seg's input */
+function placeNumeral(circuit: StageCircuit): CCNodePinId {
+	const digit = circuit.place(seven_segment.component.id, { x: 290, y: -250 });
+	const screen = circuit.place(
+		display.component.id,
+		{ x: 430, y: -250 },
+		{ resolution: { x: 4, y: 7 }, pixelOrder: "row-major" },
+	);
+	circuit.connect(
+		circuit.pinOf(digit, seven_segment.outputPin.Out),
+		circuit.pinOf(screen, display.inputPin.Pixels),
+	);
+	return circuit.pinOf(digit, seven_segment.inputPin.In);
+}
+
 const fourBitAdderStage = defineStage("four-bit-adder", {
 	parts: [decompose, aggregate, false_].map((part) => part.component.id),
 	givenParts: ["full-adder"],
@@ -279,15 +294,15 @@ const fourBitAdderStage = defineStage("four-bit-adder", {
 				S: bitsOf(total % 2 ** digitCount, digitCount),
 			};
 		},
+		examples: [
+			[3, 5],
+			[6, 7],
+			[9, 8],
+		].map(([a, b]) => ({
+			A: bitsOf(nullthrows(a), digitCount),
+			B: bitsOf(nullthrows(b), digitCount),
+		})),
 	},
-	examples: [
-		[3, 5],
-		[6, 7],
-		[9, 8],
-	].map(([a, b]) => ({
-		A: bitsOf(nullthrows(a), digitCount),
-		B: bitsOf(nullthrows(b), digitCount),
-	})),
 	layOut(circuit, { decorate }) {
 		const single = new Array<number>(digitCount).fill(1);
 		const splitA = circuit.place(decompose.component.id, { x: -250, y: -170 });
@@ -306,22 +321,7 @@ const fourBitAdderStage = defineStage("four-bit-adder", {
 		);
 		const sum = circuit.pinOf(joined, aggregate.outputPin.Out);
 		circuit.connect(sum, circuit.pin("S"));
-		if (decorate) {
-			const digit = circuit.place(seven_segment.component.id, {
-				x: 290,
-				y: -250,
-			});
-			const screen = circuit.place(
-				display.component.id,
-				{ x: 430, y: -250 },
-				{ resolution: { x: 4, y: 7 }, pixelOrder: "row-major" },
-			);
-			circuit.connect(sum, circuit.pinOf(digit, seven_segment.inputPin.In));
-			circuit.connect(
-				circuit.pinOf(digit, seven_segment.outputPin.Out),
-				circuit.pinOf(screen, display.inputPin.Pixels),
-			);
-		}
+		if (decorate) circuit.connect(sum, placeNumeral(circuit));
 		return () => {
 			const adders = Array.from({ length: digitCount }, (_, index) =>
 				circuit.place(fullAdderStage.componentId, {
@@ -359,6 +359,52 @@ const fourBitAdderStage = defineStage("four-bit-adder", {
 	},
 });
 
+const counterStage = defineStage("counter", {
+	parts: [flipflop, const_].map((part) => part.component.id),
+	givenParts: ["four-bit-adder"],
+	tableNotation: "digits",
+	pinDistance: 420,
+	check: sequentialCheck(
+		{ inputs: [], outputs: ["Count"] },
+		{
+			initialState: 0,
+			step: (count) => ({
+				outputs: { Count: bitsOf(count, digitCount) },
+				next: (count + 1) % 2 ** digitCount,
+			}),
+		},
+		new Array<PinValues>(2 * 2 ** digitCount).fill({}),
+		[1, 2, 3, 16, 17],
+	),
+	layOut(circuit, { decorate }) {
+		const numeral = decorate ? placeNumeral(circuit) : null;
+		return () => {
+			const memory = circuit.place(flipflop.component.id, { x: 150, y: 0 });
+			const adder = circuit.place(fourBitAdderStage.componentId, {
+				x: -100,
+				y: 0,
+			});
+			const one = circuit.place(
+				const_.component.id,
+				{ x: -450, y: 150 },
+				{ mode: "binary", data: bitsOf(1, digitCount) },
+			);
+			const count = circuit.pinOf(memory, flipflop.outputPin.Out);
+			circuit.connect(count, circuit.pin("Count"));
+			if (numeral) circuit.connect(count, numeral);
+			circuit.connect(count, circuit.pinOf(adder, "A"));
+			circuit.connect(
+				circuit.pinOf(one, const_.outputPin.Out),
+				circuit.pinOf(adder, "B"),
+			);
+			circuit.connect(
+				circuit.pinOf(adder, "S"),
+				circuit.pinOf(memory, flipflop.inputPin.In),
+			);
+		};
+	},
+});
+
 export const tutorialStages: readonly TutorialStage[] = [
 	andStage,
 	aOnlyStage,
@@ -366,6 +412,7 @@ export const tutorialStages: readonly TutorialStage[] = [
 	halfAdderStage,
 	fullAdderStage,
 	fourBitAdderStage,
+	counterStage,
 ];
 
 export function findTutorialStage(id: string | undefined) {

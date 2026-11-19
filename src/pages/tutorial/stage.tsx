@@ -71,7 +71,7 @@ function StageView({ stage }: { stage: TutorialStage }) {
 	const stageIndex = tutorialStages.indexOf(stage);
 	const nextStage = tutorialStages[stageIndex + 1];
 	const titleOf: StageTitleOf = (id) => texts.stageTexts[id].title;
-	const goalTable = goalTableOf(stage.check, stage.examples);
+	const goalTable = goalTableOf(stage.check);
 	const stageTexts = texts.stageTexts[stage.id];
 
 	const [store, setStore] = useState(() =>
@@ -199,7 +199,7 @@ function StageView({ stage }: { stage: TutorialStage }) {
 											key={given.id}
 											name={titleOf(given.id)}
 											summary={null}
-											table={goalTableOf(given.check, given.examples)}
+											table={goalTableOf(given.check)}
 										/>
 									))}
 							</Stack>
