@@ -9,7 +9,7 @@ import {
 	Typography,
 } from "@mui/material";
 import nullthrows from "nullthrows";
-import { useEffect, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import {
 	Navigate,
 	Link as RouterLink,
@@ -75,6 +75,19 @@ function describeFailure(
 						: String(result.error),
 			);
 	}
+}
+
+function SectionHeading({ children }: { children: ReactNode }) {
+	return (
+		<Typography
+			variant="h3"
+			typography="h6"
+			sx={{ fontWeight: "bold" }}
+			gutterBottom
+		>
+			{children}
+		</Typography>
+	);
 }
 
 function StageView({ stage }: { stage: TutorialStage }) {
@@ -156,16 +169,14 @@ function StageView({ stage }: { stage: TutorialStage }) {
 					<Typography color="textSecondary" variant="body2">
 						{texts.stageNumber(stageIndex + 1)}
 					</Typography>
-					<Typography variant="h2" typography="h5">
+					<Typography variant="h2" typography="h5" sx={{ fontWeight: "bold" }}>
 						{texts.stageTexts[stage.id].title}
 					</Typography>
 				</div>
 				<Typography>{texts.stageTexts[stage.id].goal}</Typography>
 				{goalTable && (
 					<div>
-						<Typography color="textSecondary" variant="body2" gutterBottom>
-							{texts.goalTable}
-						</Typography>
+						<SectionHeading>{texts.goalTable}</SectionHeading>
 						<TruthTableView table={goalTable} />
 					</div>
 				)}
@@ -194,9 +205,7 @@ function StageView({ stage }: { stage: TutorialStage }) {
 					</Alert>
 				)}
 				<div>
-					<Typography color="textSecondary" variant="body2" gutterBottom>
-						{messages.parts.ofStage}
-					</Typography>
+					<SectionHeading>{messages.parts.ofStage}</SectionHeading>
 					<Stack spacing={1.5}>
 						{stage.parts.map((partId) => (
 							<PartDescription
