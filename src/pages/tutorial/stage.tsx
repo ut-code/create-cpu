@@ -41,6 +41,7 @@ import {
 } from "../../tutorial/stageStore";
 import {
 	findTutorialStage,
+	isStageComponent,
 	isStagePart,
 	isStagePinNode,
 	type StageTitleOf,
@@ -268,7 +269,8 @@ function StageView({ stage }: { stage: TutorialStage }) {
 						isProtectedNode: (nodeId) => isStagePinNode(store, stage, nodeId),
 						isOffered,
 						canCreateComponents: stage.allowsNewComponents,
-						hasProperties: (componentId) => componentId !== stage.componentId,
+						hasProperties: (componentId) =>
+							!isStageComponent(stage, componentId),
 					}}
 					onEditComponent={setEditedComponentId}
 					onClose={() => {

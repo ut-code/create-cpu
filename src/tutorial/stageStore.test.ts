@@ -20,7 +20,9 @@ import {
 } from "./stages";
 
 const [firstStage, secondStage] = tutorialStages;
-if (!firstStage || !secondStage) throw new Error("Two stages are expected");
+if (!firstStage || !secondStage) throw new Error("No stages");
+const xorStage = nullthrows(findTutorialStage("xor"));
+const aOnlyStage = nullthrows(findTutorialStage("a-only"));
 const firstKey = `ccTutorialStage:${firstStage.id}`;
 const titleOf = (id: TutorialStageId) => `Stage ${id}`;
 
@@ -83,17 +85,29 @@ describe("getTutorialStageStore", () => {
 		});
 	});
 
-	it("starts a stage over when what was saved lacks a part it hands over", async () => {
-		const stage = nullthrows(findTutorialStage("xor"));
-		const given = nullthrows(findTutorialStage(stage.givenParts[0]));
+	it("brings back a stage with the parts it hands over as saved", async () => {
+		const earlier = getTutorialStageStore(xorStage, titleOf);
+		registerTestComponent(earlier, "Mine");
+		vi.advanceTimersByTime(2000);
+		const json = earlier.toJSON();
+		earlier.autoSaver.unwatch();
+		vi.resetModules();
+
+		const { getTutorialStageStore: fresh } = await import("./stageStore");
+		expect(fresh(xorStage, titleOf).toJSON()).toBe(json);
+	});
+
+	it("adds a part handed over to a save made before, keeping the player's circuit", async () => {
 		const earlier = createTestStore();
-		setUpTutorialStage(earlier, stage, titleOf);
-		await earlier.components.unregister(given.componentId);
-		saved.set(`ccTutorialStage:${stage.id}`, earlier.toJSON());
+		setUpTutorialStage(earlier, xorStage, titleOf);
+		await earlier.components.unregister(aOnlyStage.componentId);
+		const mine = registerTestComponent(earlier, "Mine");
+		saved.set(`ccTutorialStage:${xorStage.id}`, earlier.toJSON());
 
-		const store = getTutorialStageStore(stage, titleOf);
+		const store = getTutorialStageStore(xorStage, titleOf);
 
-		expect(store.components.get(given.componentId)).toBeDefined();
+		expect(store.components.get(aOnlyStage.componentId)).toBeDefined();
+		expect(store.components.get(mine.id)).toBeDefined();
 	});
 
 	it("starts a stage over when what was saved is broken", () => {

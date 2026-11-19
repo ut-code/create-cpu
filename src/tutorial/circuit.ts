@@ -3,6 +3,7 @@ import invariant from "tiny-invariant";
 import type { Vector2 } from "../common/vector2";
 import type CCStore from "../store";
 import type { CCComponentId } from "../store/component";
+import type { CCComponentPin } from "../store/componentPin";
 import { CCConnectionStore } from "../store/connection";
 import { type CCNode, CCNodeStore } from "../store/node";
 import type { CCNodePinId } from "../store/nodePin";
@@ -35,14 +36,16 @@ export class StageCircuit {
 		return node;
 	}
 
-	pinOf(node: CCNode, name: string): CCNodePinId {
+	/** By name only on a stage's component, as intrinsic pins are named for display */
+	pinOf(node: CCNode, pin: CCComponentPin | string): CCNodePinId {
 		const nodePin = this.store.nodePins
 			.getManyByNodeId(node.id)
-			.find(
-				(pin) =>
-					this.store.componentPins.get(pin.componentPinId)?.name === name,
+			.find((nodePin) =>
+				typeof pin === "string"
+					? this.store.componentPins.get(nodePin.componentPinId)?.name === pin
+					: nodePin.componentPinId === pin.id,
 			);
-		return nullthrows(nodePin, `The node has no pin named ${name}`).id;
+		return nullthrows(nodePin, "The node has no such pin").id;
 	}
 
 	connect(from: CCNodePinId, to: CCNodePinId): void {

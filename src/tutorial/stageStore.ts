@@ -3,7 +3,7 @@ import { CCStoreAutoSaver } from "../store/autoSaver";
 import { importStoreJson } from "../store/savedStore";
 import { forgetClearedStages } from "./progress";
 import {
-	hasStageComponents,
+	registerGivenParts,
 	type StageTitleOf,
 	setUpTutorialStage,
 	type TutorialStage,
@@ -25,7 +25,10 @@ function createStageStore(stage: TutorialStage, titleOf: StageTitleOf) {
 	return store;
 }
 
-function restoreStageStore(stage: TutorialStage): CCStore | null {
+function restoreStageStore(
+	stage: TutorialStage,
+	titleOf: StageTitleOf,
+): CCStore | null {
 	const json = CCStoreAutoSaver.readSaved(storageKeyOf(stage));
 	if (!json) return null;
 	let store: CCStore;
@@ -37,8 +40,10 @@ function restoreStageStore(stage: TutorialStage): CCStore | null {
 		console.warn(`The saved tutorial stage ${stage.id} is broken`, error);
 		return null;
 	}
-	if (!hasStageComponents(store, stage)) return null;
+	if (!store.components.get(stage.componentId)) return null;
 	store.mount();
+	// A save from before the stage handed a part over keeps the player's circuit
+	registerGivenParts(store, stage, titleOf);
 	store.autoSaver.watch();
 	return store;
 }
@@ -53,7 +58,8 @@ export function getTutorialStageStore(
 ): CCStore {
 	let store = storeByStageId.get(stage.id);
 	if (!store) {
-		store = restoreStageStore(stage) ?? createStageStore(stage, titleOf);
+		store =
+			restoreStageStore(stage, titleOf) ?? createStageStore(stage, titleOf);
 		storeByStageId.set(stage.id, store);
 	}
 	return store;
