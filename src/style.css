@@ -25,6 +25,13 @@
 	--color-tutorial-background: #fff3e0;
 }
 
+/* Chrome misses some characters of a font split into ranges when it is not the first */
+:root:lang(ja) {
+	--font-family:
+		"Noto Sans JP", "Roboto", "Helvetica", "Arial", "Hiragino Sans",
+		"Yu Gothic UI", Meiryo, sans-serif;
+}
+
 :root,
 body,
 #root {
