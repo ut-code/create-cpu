@@ -19,6 +19,7 @@ import {
 } from "@mui/material";
 import { type ChangeEvent, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router";
+import { downloadJson } from "../../common/downloadJson";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
 import { useMessages } from "../../i18n";
 import {
@@ -44,18 +45,6 @@ export default function HomePage() {
 	const components = useComponents().filter(
 		(component) => !component.intrinsicType,
 	);
-	const downloadStore = () => {
-		const storeJSON = store.toJSON();
-		const blob = new Blob([storeJSON], {
-			type: "application/json",
-		});
-		const url = URL.createObjectURL(blob);
-		const a = document.createElement("a");
-		a.href = url;
-		a.download = "store.json";
-		a.click();
-		URL.revokeObjectURL(url);
-	};
 
 	const [pendingAction, setPendingAction] = useState<PendingAction | null>(
 		null,
@@ -145,7 +134,7 @@ export default function HomePage() {
 					<Button
 						variant="outlined"
 						color="inherit"
-						onClick={downloadStore}
+						onClick={() => downloadJson(store.toJSON(), "store.json")}
 						startIcon={<DownloadIcon />}
 					>
 						{messages.home.export}
