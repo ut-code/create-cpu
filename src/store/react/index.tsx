@@ -16,9 +16,17 @@ import {
 	replaceSavedStore,
 } from "../savedStore";
 
-function useContextValue(initialStore: CCStore) {
-	const [store, setStore] = useState(initialStore);
+const storeContext = createContext<{ store: CCStore } | null>(null);
+const resetStoreContext = createContext<((json?: string) => void) | null>(null);
 
+/** Make `store` the one the components below edit */
+export function StoreScope({
+	store,
+	children,
+}: {
+	store: CCStore;
+	children: ReactNode;
+}) {
 	// For debugging
 	useEffect(() => {
 		// biome-ignore lint/suspicious/noExplicitAny: We need to use `any` here to assign the property to the window object.
@@ -28,29 +36,30 @@ function useContextValue(initialStore: CCStore) {
 			delete (window as any)._store;
 		};
 	}, [store]);
-
-	const storeRef = useRef(store);
-	const resetStore = useCallback((json?: string) => {
-		const newStore = replaceSavedStore(storeRef.current, json);
-		storeRef.current = newStore;
-		setStore(newStore);
-	}, []);
-	return useMemo(() => ({ store, resetStore }), [store, resetStore]);
+	const value = useMemo(() => ({ store }), [store]);
+	return (
+		<storeContext.Provider value={value}>{children}</storeContext.Provider>
+	);
 }
 
-const context = createContext<ReturnType<typeof useContextValue> | null>(null);
-
-function ReadyStoreProvider({
+function SavedStoreProvider({
 	initialStore,
 	children,
 }: {
 	initialStore: CCStore;
 	children: ReactNode;
 }) {
+	const [store, setStore] = useState(initialStore);
+	const storeRef = useRef(store);
+	const resetStore = useCallback((json?: string) => {
+		const newStore = replaceSavedStore(storeRef.current, json);
+		storeRef.current = newStore;
+		setStore(newStore);
+	}, []);
 	return (
-		<context.Provider value={useContextValue(initialStore)}>
-			{children}
-		</context.Provider>
+		<resetStoreContext.Provider value={resetStore}>
+			<StoreScope store={store}>{children}</StoreScope>
+		</resetStoreContext.Provider>
 	);
 }
 
@@ -86,14 +95,21 @@ export function StoreProvider({
 		});
 	}
 	return (
-		<ReadyStoreProvider initialStore={restored.store}>
+		<SavedStoreProvider initialStore={restored.store}>
 			{children}
-		</ReadyStoreProvider>
+		</SavedStoreProvider>
 	);
 }
 
 export function useStore() {
-	const store = useContext(context);
-	invariant(store);
-	return store;
+	const value = useContext(storeContext);
+	invariant(value, "useStore must be used within a StoreScope");
+	return value;
+}
+
+/** Replace the store saved in this browser with the one of `json`, or with the sample */
+export function useResetStore() {
+	const resetStore = useContext(resetStoreContext);
+	invariant(resetStore, "useResetStore must be used within a StoreProvider");
+	return resetStore;
 }

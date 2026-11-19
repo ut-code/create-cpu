@@ -230,6 +230,7 @@ export function stubLocalStorage(
 			getItem: (key: string) => saved.get(key) ?? null,
 			setItem:
 				setItem ?? ((key: string, value: string) => saved.set(key, value)),
+			removeItem: (key: string) => saved.delete(key),
 		},
 	});
 	return saved;

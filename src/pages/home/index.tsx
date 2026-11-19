@@ -28,7 +28,7 @@ import {
 	type CCComponentId,
 	CCComponentStore,
 } from "../../store/component";
-import { useStore } from "../../store/react";
+import { useResetStore, useStore } from "../../store/react";
 import { useComponents } from "../../store/react/selectors";
 import { importStoreJson } from "../../store/savedStore";
 import { describeComponentDeletion } from "./componentDeletion";
@@ -40,7 +40,8 @@ type PendingAction =
 	| { type: "delete"; componentId: CCComponentId };
 
 export default function HomePage() {
-	const { store, resetStore } = useStore();
+	const { store } = useStore();
+	const resetStore = useResetStore();
 	const messages = useMessages();
 	const navigate = useNavigate();
 	const components = useComponents().filter(

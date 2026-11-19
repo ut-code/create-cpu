@@ -89,18 +89,16 @@ export default class CCStore implements CCObjectStores {
 	}
 
 	/**
-	 * Constructor of CCStore
-	 * @param rootComponent root component
-	 * @param props properties of store from JSON used when restoring store from JSON
+	 * @param options.storageKey where the auto saver keeps the store in the local storage
 	 */
-	constructor() {
+	constructor(options: { storageKey?: string } = {}) {
 		this.components = new CCComponentStore(this);
 		this.nodes = new CCNodeStore(this);
 		this.componentPins = new CCComponentPinStore(this);
 		this.nodePins = new CCNodePinStore(this);
 		this.connections = new CCConnectionStore(this);
 		this.transactionManager = new TransactionManager();
-		this.autoSaver = new CCStoreAutoSaver(this);
+		this.autoSaver = new CCStoreAutoSaver(this, options.storageKey);
 
 		for (const definition of Object.values(intrinsics.definitions)) {
 			this.components.register(definition.component);
