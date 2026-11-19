@@ -142,7 +142,6 @@ function tutorialStageById(id: TutorialStageId): TutorialStage {
 	return nullthrows(findTutorialStage(id), `No stage ${id}`);
 }
 
-/** `stage` and the stages it hands over, down to the ones those hand over */
 function stagesBuiltIn(stage: TutorialStage): TutorialStage[] {
 	return [
 		stage,
@@ -150,7 +149,6 @@ function stagesBuiltIn(stage: TutorialStage): TutorialStage[] {
 	];
 }
 
-/** The stage whose component `componentId` is, among those `stage` lays out */
 function stageOwning(stage: TutorialStage, componentId: CCComponentId) {
 	return stagesBuiltIn(stage).find((s) => s.componentId === componentId);
 }
@@ -168,8 +166,15 @@ export function isStagePart(
 	component: CCComponent,
 	editedComponentId: CCComponentId,
 ) {
-	if (!component.intrinsicType) return true;
 	const owner = stageOwning(stage, editedComponentId);
+	if (owner && owner !== stage) {
+		return component.intrinsicType
+			? owner.parts.includes(component.id)
+			: owner.givenParts.some(
+					(id) => tutorialStageById(id).componentId === component.id,
+				);
+	}
+	if (!component.intrinsicType) return true;
 	if (owner) return owner.parts.includes(component.id);
 	// A component of the player's own gets its pins from Input and Output nodes
 	return (
@@ -244,7 +249,7 @@ function registerStageComponent(
 	place(output.component.id, output.inputPin.In, stage.check.outputs, 300);
 }
 
-/** Lay out the components `stage` hands over that `store` lacks, with their solutions */
+/** Skips the parts `store` already has, as a save from before may lack only some */
 export function registerGivenParts(
 	store: CCStore,
 	stage: TutorialStage,

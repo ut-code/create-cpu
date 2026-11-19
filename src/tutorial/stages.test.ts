@@ -17,7 +17,6 @@ import { checkCombinational } from "./check";
 import { StageCircuit } from "./circuit";
 import {
 	findTutorialStage,
-	isStageComponent,
 	isStagePart,
 	isStagePinNode,
 	setUpTutorialStage,
@@ -75,7 +74,6 @@ describe("setUpTutorialStage", () => {
 
 		setUpTutorialStage(store, xorStage, titleOf);
 
-		expect(isStageComponent(xorStage, aOnlyStage.componentId)).toBe(true);
 		expect(store.components.get(aOnlyStage.componentId)?.name).toBe(
 			"Stage a-only",
 		);
@@ -155,5 +153,18 @@ describe("isStagePart", () => {
 		expect(inGiven(or.component)).toBe(true);
 		expect(inGiven(xor.component)).toBe(false);
 		expect(inGiven(input.component)).toBe(false);
+	});
+
+	it("offers inside a part handed over none of the components outside it", () => {
+		const store = createTestStore();
+		const own = registerTestComponent(store, "Mine");
+		setUpTutorialStage(store, xorStage, titleOf);
+		const xorComponent = nullthrows(store.components.get(xorStage.componentId));
+
+		expect(isStagePart(xorStage, own, aOnlyStage.componentId)).toBe(false);
+		expect(isStagePart(xorStage, xorComponent, aOnlyStage.componentId)).toBe(
+			false,
+		);
+		expect(isStagePart(xorStage, own, xorStage.componentId)).toBe(true);
 	});
 });

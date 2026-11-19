@@ -45,7 +45,10 @@ export class StageCircuit {
 					? this.store.componentPins.get(nodePin.componentPinId)?.name === pin
 					: nodePin.componentPinId === pin.id,
 			);
-		return nullthrows(nodePin, "The node has no such pin").id;
+		return nullthrows(
+			nodePin,
+			`The node has no pin ${typeof pin === "string" ? pin : pin.name}`,
+		).id;
 	}
 
 	connect(from: CCNodePinId, to: CCNodePinId): void {
