@@ -9,7 +9,7 @@ import {
 	Typography,
 } from "@mui/material";
 import nullthrows from "nullthrows";
-import { useEffect, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import {
 	Navigate,
 	Link as RouterLink,
@@ -19,13 +19,18 @@ import {
 import { valueLabel } from "../../common/bitLabel";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
 import { PartDescription } from "../../components/PartDescription";
+import { TruthTableView } from "../../components/TruthTableView";
 import { type Messages, useMessages } from "../../i18n";
 import type CCStore from "../../store";
 import { definitionByComponentId } from "../../store/intrinsics/definitions";
 import { SimulationNodeError } from "../../store/netlist";
 import { StoreScope } from "../../store/react";
 import { theme } from "../../style";
-import { type CheckResult, checkCombinational } from "../../tutorial/check";
+import {
+	type CheckResult,
+	checkCombinational,
+	truthTableOfCheck,
+} from "../../tutorial/check";
 import { markStageCleared } from "../../tutorial/progress";
 import {
 	getTutorialStageStore,
@@ -72,6 +77,19 @@ function describeFailure(
 	}
 }
 
+function SectionHeading({ children }: { children: ReactNode }) {
+	return (
+		<Typography
+			variant="h3"
+			typography="h6"
+			sx={{ fontWeight: "bold" }}
+			gutterBottom
+		>
+			{children}
+		</Typography>
+	);
+}
+
 function StageView({ stage }: { stage: TutorialStage }) {
 	const messages = useMessages();
 	const texts = messages.tutorial;
@@ -79,6 +97,7 @@ function StageView({ stage }: { stage: TutorialStage }) {
 	const stageIndex = tutorialStages.indexOf(stage);
 	const nextStage = tutorialStages[stageIndex + 1];
 	const componentName = texts.stageTexts[stage.id].title;
+	const goalTable = truthTableOfCheck(stage.check);
 
 	const [store, setStore] = useState(() =>
 		getTutorialStageStore(stage, componentName),
@@ -150,11 +169,19 @@ function StageView({ stage }: { stage: TutorialStage }) {
 					<Typography color="textSecondary" variant="body2">
 						{texts.stageNumber(stageIndex + 1)}
 					</Typography>
-					<Typography variant="h2" typography="h5">
+					<Typography variant="h2" typography="h5" sx={{ fontWeight: "bold" }}>
 						{texts.stageTexts[stage.id].title}
 					</Typography>
 				</div>
-				<Typography>{texts.stageTexts[stage.id].goal}</Typography>
+				<div>
+					<SectionHeading>{texts.goalHeading}</SectionHeading>
+					<Typography>{texts.stageTexts[stage.id].goal}</Typography>
+					{goalTable && (
+						<Box sx={{ mt: 1 }}>
+							<TruthTableView table={goalTable} />
+						</Box>
+					)}
+				</div>
 				<Button
 					variant="contained"
 					onClick={check}
@@ -180,9 +207,7 @@ function StageView({ stage }: { stage: TutorialStage }) {
 					</Alert>
 				)}
 				<div>
-					<Typography color="textSecondary" variant="body2" gutterBottom>
-						{messages.parts.ofStage}
-					</Typography>
+					<SectionHeading>{messages.parts.ofStage}</SectionHeading>
 					<Stack spacing={1.5}>
 						{stage.parts.map((partId) => (
 							<PartDescription

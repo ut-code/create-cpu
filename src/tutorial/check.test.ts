@@ -7,7 +7,12 @@ import {
 	registerTestNode,
 	testNodePin,
 } from "../store/testUtils";
-import { checkCombinational, inputCombinations } from "./check";
+import {
+	type CombinationalCheck,
+	checkCombinational,
+	inputCombinations,
+	truthTableOfCheck,
+} from "./check";
 import {
 	setUpTutorialStage,
 	type TutorialStage,
@@ -56,6 +61,47 @@ describe("inputCombinations", () => {
 		expect(combinations[1]).toEqual({ A: [false, false], B: [true] });
 		expect(combinations[2]).toEqual({ A: [false, true], B: [false] });
 		expect(combinations[7]).toEqual({ A: [true, true], B: [true] });
+	});
+});
+
+describe("truthTableOfCheck", () => {
+	it("lists what the stage asks for, in the order the check tries the inputs", () => {
+		expect(truthTableOfCheck(xorStage.check)).toEqual({
+			inputs: ["A", "B"],
+			outputs: ["Out"],
+			rows: [
+				{ inputs: [false, false], outputs: [false] },
+				{ inputs: [false, true], outputs: [true] },
+				{ inputs: [true, false], outputs: [true] },
+				{ inputs: [true, true], outputs: [false] },
+			],
+		});
+	});
+
+	it("gives no table when a pin carries more than one bit", () => {
+		const wideInput: CombinationalCheck = {
+			inputs: [{ name: "A", bitWidth: 2 }],
+			outputs: ["Out"],
+			expected: () => ({ Out: [false] }),
+		};
+		const wideOutput: CombinationalCheck = {
+			inputs: [{ name: "A", bitWidth: 1 }],
+			outputs: ["Out"],
+			expected: () => ({ Out: [false, false] }),
+		};
+
+		expect(truthTableOfCheck(wideInput)).toBeNull();
+		expect(truthTableOfCheck(wideOutput)).toBeNull();
+	});
+
+	it("refuses a check that gives no value for an output", () => {
+		const check: CombinationalCheck = {
+			inputs: [{ name: "A", bitWidth: 1 }],
+			outputs: ["Out"],
+			expected: () => ({}),
+		};
+
+		expect(() => truthTableOfCheck(check)).toThrow("Out");
 	});
 });
 
