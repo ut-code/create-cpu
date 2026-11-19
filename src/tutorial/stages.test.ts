@@ -13,7 +13,7 @@ import {
 	registerTestComponent,
 	registerTestNode,
 } from "../store/testUtils";
-import { checkCombinational } from "./check";
+import { checkCircuit } from "./check";
 import {
 	findTutorialStage,
 	isStagePart,
@@ -63,9 +63,9 @@ describe("tutorialStages", () => {
 
 			solve();
 
-			expect(
-				checkCombinational(store, solved.componentId, solved.check),
-			).toEqual({ type: "passed" });
+			expect(checkCircuit(store, solved.componentId, solved.check)).toEqual({
+				type: "passed",
+			});
 			const placed = store.nodes
 				.getManyByParentComponentId(solved.componentId)
 				.filter((node) => !laidOut.has(node.id))
@@ -92,7 +92,7 @@ describe("setUpTutorialStage", () => {
 			"Stage a-only",
 		);
 		expect(
-			checkCombinational(store, aOnlyStage.componentId, aOnlyStage.check),
+			checkCircuit(store, aOnlyStage.componentId, aOnlyStage.check),
 		).toEqual({ type: "passed" });
 	});
 });

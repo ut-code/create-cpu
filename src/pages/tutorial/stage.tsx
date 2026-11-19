@@ -29,7 +29,7 @@ import { StoreScope } from "../../store/react";
 import { theme } from "../../style";
 import {
 	type CheckResult,
-	checkCombinational,
+	checkCircuit,
 	goalTableOf,
 } from "../../tutorial/check";
 import { describeFailure } from "../../tutorial/failure";
@@ -96,7 +96,7 @@ function StageView({ stage }: { stage: TutorialStage }) {
 	}, [store]);
 
 	const check = () => {
-		const checked = checkCombinational(store, stage.componentId, stage.check);
+		const checked = checkCircuit(store, stage.componentId, stage.check);
 		if (checked.type === "checkFailed") console.error(checked.error);
 		setResult(checked);
 		if (checked.type === "passed") markStageCleared(stage.id);
@@ -228,7 +228,11 @@ function StageView({ stage }: { stage: TutorialStage }) {
 						</Button>
 						{result?.type === "passed" && (
 							<>
-								<Alert severity="success">{texts.passed}</Alert>
+								<Alert severity="success">
+									{stage.check.kind === "sequential"
+										? texts.passedSteps(stage.check.steps.length)
+										: texts.passed}
+								</Alert>
 								<Button
 									variant="outlined"
 									component={RouterLink}

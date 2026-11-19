@@ -108,6 +108,8 @@ export const ja: Messages = {
 		digitsLegend: "表の 1 は ON、0 は OFF です。",
 		check: "確かめる",
 		passed: "クリア！どの入力の組み合わせでも正しく動きます。",
+		passedSteps: (count) =>
+			`クリア！${count} ステップ目まで、どのステップでも正しく動きます。`,
 		next: "次の課題へ",
 		backToStages: "課題の一覧へ",
 		missingPin: (pinType, pinName) =>
@@ -116,6 +118,8 @@ export const ja: Messages = {
 			`${pinName} は ${expected}桁のはずですが、${actual}桁になっています。つないだ先を確かめてください。`,
 		wrongOutput: (inputs, pinName, expected, actual) =>
 			`${inputs.map(({ name, value }) => `${name} が ${value}`).join("、")} のとき、${pinName} は ${expected} になるはずが、${actual === null ? "値がありませんでした" : `${actual} でした`}。`,
+		wrongOutputAtStep: (stepNumber, inputs, pinName, expected, actual) =>
+			`${stepNumber} ステップ目${inputs.length > 0 ? `（${inputs.map(({ name, value }) => `${name} が ${value}`).join("、")}）` : ""}に、${pinName} が ${expected} のはずが${actual === null ? "、値がありませんでした" : ` ${actual} でした`}。`,
 		checkFailed:
 			"確かめる途中で問題が起きました。回路を少し変えてから、もう一度押してください。",
 		simulationFailed: (detail) =>

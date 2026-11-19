@@ -1,7 +1,14 @@
 import nullthrows from "nullthrows";
 import { describe, expect, it } from "vitest";
 import { extractNodesIntoNewComponent } from "../store/extractComponent";
-import { aggregate, and, decompose, or } from "../store/intrinsics/definitions";
+import {
+	aggregate,
+	and,
+	decompose,
+	flipflop,
+	not,
+	or,
+} from "../store/intrinsics/definitions";
 import {
 	connectTestNodePins,
 	createTestStore,
@@ -15,9 +22,11 @@ import {
 } from "../store/testUtils";
 import {
 	type CombinationalCheck,
-	checkCombinational,
+	checkCircuit,
 	goalTableOf,
 	inputCombinations,
+	type PinValues,
+	sequentialCheck,
 } from "./check";
 import {
 	findTutorialStage,
@@ -97,6 +106,7 @@ describe("goalTableOf", () => {
 
 	it("shows only the examples when an input has several bits", () => {
 		const wide: CombinationalCheck = {
+			kind: "combinational",
 			inputs: [{ name: "A", bitWidth: 2 }],
 			outputs: ["Out"],
 			expected: (values) => ({ Out: [...nullthrows(values.A)].reverse() }),
@@ -110,6 +120,7 @@ describe("goalTableOf", () => {
 
 	it("refuses a check that gives no value for an output", () => {
 		const check: CombinationalCheck = {
+			kind: "combinational",
 			inputs: [{ name: "A", bitWidth: 1 }],
 			outputs: ["Out"],
 			expected: () => ({}),
@@ -119,13 +130,11 @@ describe("goalTableOf", () => {
 	});
 });
 
-describe("checkCombinational", () => {
+describe("checkCircuit", () => {
 	it("passes a circuit that outputs what the stage asks for", () => {
 		const store = wireGate(andStage, and);
 
-		expect(
-			checkCombinational(store, andStage.componentId, andStage.check),
-		).toEqual({
+		expect(checkCircuit(store, andStage.componentId, andStage.check)).toEqual({
 			type: "passed",
 		});
 	});
@@ -147,9 +156,7 @@ describe("checkCombinational", () => {
 				.getManyByParentComponentId(andStage.componentId)
 				.some((node) => node.componentId === and.component.id),
 		).toBe(false);
-		expect(
-			checkCombinational(store, andStage.componentId, andStage.check),
-		).toEqual({
+		expect(checkCircuit(store, andStage.componentId, andStage.check)).toEqual({
 			type: "passed",
 		});
 	});
@@ -157,9 +164,7 @@ describe("checkCombinational", () => {
 	it("tells the first inputs for which an output is wrong", () => {
 		const store = wireGate(andStage, or);
 
-		expect(
-			checkCombinational(store, andStage.componentId, andStage.check),
-		).toEqual({
+		expect(checkCircuit(store, andStage.componentId, andStage.check)).toEqual({
 			type: "wrongOutput",
 			inputs: [
 				{ name: "A", value: [false] },
@@ -176,8 +181,9 @@ describe("checkCombinational", () => {
 		const error = new Error("broken");
 
 		expect(
-			checkCombinational(store, andStage.componentId, {
+			checkCircuit(store, andStage.componentId, {
 				...andStage.check,
+				kind: "combinational",
 				expected: () => {
 					throw error;
 				},
@@ -189,7 +195,7 @@ describe("checkCombinational", () => {
 		const { store } = stageStore(andStage);
 
 		expect(
-			checkCombinational(store, andStage.componentId, andStage.check),
+			checkCircuit(store, andStage.componentId, andStage.check),
 		).toMatchObject({ type: "simulationFailed" });
 	});
 
@@ -201,9 +207,7 @@ describe("checkCombinational", () => {
 		if (!pinB) throw new Error("No pin B");
 		store.componentPins.update(pinB.id, { name: "C" });
 
-		expect(
-			checkCombinational(store, andStage.componentId, andStage.check),
-		).toEqual({
+		expect(checkCircuit(store, andStage.componentId, andStage.check)).toEqual({
 			type: "missingPin",
 			pinType: "input",
 			pinName: "B",
@@ -211,8 +215,9 @@ describe("checkCombinational", () => {
 	});
 });
 
-describe("checkCombinational on pins of several bits", () => {
+describe("checkCircuit on pins of several bits", () => {
 	const twoBitCheck: CombinationalCheck = {
+		kind: "combinational",
 		inputs: [{ name: "A", bitWidth: 2 }],
 		outputs: ["Out"],
 		expected: (values) => ({ Out: [...nullthrows(values.A)] }),
@@ -224,7 +229,7 @@ describe("checkCombinational on pins of several bits", () => {
 		registerTestInputNode(store, component.id, "A");
 		registerTestOutputNode(store, component.id, "Out");
 
-		expect(checkCombinational(store, component.id, twoBitCheck)).toEqual({
+		expect(checkCircuit(store, component.id, twoBitCheck)).toEqual({
 			type: "wrongBitWidth",
 			pinName: "A",
 			expected: 2,
@@ -246,7 +251,7 @@ describe("checkCombinational on pins of several bits", () => {
 			testNodePin(store, split, decompose.inputPin.In),
 		);
 
-		expect(checkCombinational(store, component.id, twoBitCheck)).toMatchObject({
+		expect(checkCircuit(store, component.id, twoBitCheck)).toMatchObject({
 			type: "simulationFailed",
 		});
 	});
@@ -278,7 +283,7 @@ describe("checkCombinational on pins of several bits", () => {
 		);
 
 		expect(store.nodePins.isInBitWidthConflict(a.out)).toBe(true);
-		expect(checkCombinational(store, component.id, twoBitCheck)).toMatchObject({
+		expect(checkCircuit(store, component.id, twoBitCheck)).toMatchObject({
 			type: "simulationFailed",
 		});
 	});
@@ -309,11 +314,130 @@ describe("checkCombinational on pins of several bits", () => {
 			out.in,
 		);
 
-		expect(checkCombinational(store, component.id, twoBitCheck)).toEqual({
+		expect(checkCircuit(store, component.id, twoBitCheck)).toEqual({
 			type: "wrongBitWidth",
 			pinName: "Out",
 			expected: 2,
 			actual: 3,
+		});
+	});
+});
+
+describe("sequentialCheck", () => {
+	it("works out each step's outputs from the model, carrying its state on", () => {
+		const check = sequentialCheck(
+			{ inputs: [{ name: "Up", bitWidth: 1 }], outputs: ["Count"] },
+			{
+				initialState: 0,
+				step: (count, { Up }) => ({
+					outputs: { Count: [count === 1] },
+					next: nullthrows(Up?.[0]) ? count + 1 : count,
+				}),
+			},
+			[[true], [false], [true]].map((Up) => ({ Up })),
+		);
+
+		expect(check.steps.map(({ outputs }) => outputs)).toEqual([
+			{ Count: [false] },
+			{ Count: [true] },
+			{ Count: [true] },
+		]);
+	});
+});
+
+describe("checkCircuit over time", () => {
+	const onOff = (...bits: boolean[]): PinValues[] =>
+		bits.map((A) => ({ A: [A] }));
+	/** Out is what A was a step before, starting from OFF */
+	const delayCheck = (inputSteps: readonly PinValues[]) =>
+		sequentialCheck(
+			{ inputs: [{ name: "A", bitWidth: 1 }], outputs: ["Out"] },
+			{
+				initialState: false,
+				step: (previous, { A }) => ({
+					outputs: { Out: [previous] },
+					next: nullthrows(A?.[0]),
+				}),
+			},
+			inputSteps,
+		);
+
+	function registerPassThrough(throughFlipFlop: boolean) {
+		const store = createTestStore();
+		const component = registerTestComponent(store, "Delay");
+		const a = registerTestInputNode(store, component.id, "A");
+		const out = registerTestOutputNode(store, component.id, "Out");
+		if (throughFlipFlop) {
+			const ff = registerTestNode(store, component.id, flipflop.component.id);
+			const connect = (
+				from: Parameters<typeof connectTestNodePins>[2],
+				to: typeof from,
+			) => connectTestNodePins(store, component.id, from, to);
+			connect(a.out, testNodePin(store, ff, flipflop.inputPin.In));
+			connect(testNodePin(store, ff, flipflop.outputPin.Out), out.in);
+		} else {
+			connectTestNodePins(store, component.id, a.out, out.in);
+		}
+		return { store, componentId: component.id };
+	}
+
+	it("feeds each step what the flip-flops held from the step before", () => {
+		const { store, componentId } = registerPassThrough(true);
+
+		expect(
+			checkCircuit(
+				store,
+				componentId,
+				delayCheck(onOff(false, true, true, false, true)),
+			),
+		).toEqual({ type: "passed" });
+	});
+
+	it("tells the first step at which an output is wrong, with the inputs then", () => {
+		const { store, componentId } = registerPassThrough(false);
+
+		expect(
+			checkCircuit(store, componentId, delayCheck(onOff(false, false, true))),
+		).toEqual({
+			type: "wrongOutputAtStep",
+			stepNumber: 3,
+			inputs: [{ name: "A", value: [true] }],
+			pinName: "Out",
+			expected: [false],
+			actual: [true],
+		});
+	});
+
+	it("checks a circuit without inputs that changes by itself", () => {
+		const store = createTestStore();
+		const component = registerTestComponent(store, "Blink");
+		const out = registerTestOutputNode(store, component.id, "Out");
+		const ff = registerTestNode(store, component.id, flipflop.component.id);
+		const invert = registerTestNode(store, component.id, not.component.id);
+		const connect = (
+			from: Parameters<typeof connectTestNodePins>[2],
+			to: typeof from,
+		) => connectTestNodePins(store, component.id, from, to);
+		connect(
+			testNodePin(store, ff, flipflop.outputPin.Out),
+			testNodePin(store, invert, not.inputPin.In),
+		);
+		connect(
+			testNodePin(store, invert, not.outputPin.Out),
+			testNodePin(store, ff, flipflop.inputPin.In),
+		);
+		connect(testNodePin(store, ff, flipflop.outputPin.Out), out.in);
+		const blink = sequentialCheck(
+			{ inputs: [], outputs: ["Out"] },
+			{
+				initialState: false,
+				step: (isOn) => ({ outputs: { Out: [isOn] }, next: !isOn }),
+			},
+			new Array<PinValues>(4).fill({}),
+		);
+
+		expect(checkCircuit(store, component.id, blink)).toEqual({
+			type: "passed",
 		});
 	});
 });

@@ -22,7 +22,7 @@ import {
 	xor,
 } from "../store/intrinsics/definitions";
 import { type CCNodeId, CCNodeStore } from "../store/node";
-import type { CombinationalCheck, PinValues } from "./check";
+import type { CircuitCheck, CombinationalCheck, PinValues } from "./check";
 import { StageCircuit } from "./circuit";
 
 export const tutorialStageIds = [
@@ -47,7 +47,7 @@ export type TutorialStage = {
 	allowsNewComponents: boolean;
 	tableNotation: BitNotation;
 	/** also the input and output pins the stage starts with */
-	check: CombinationalCheck;
+	check: CircuitCheck;
 	/** inputs the goal shows when every combination of them is too many */
 	examples: readonly PinValues[];
 	/** how far left and right of the middle the input and output pins sit */
@@ -118,6 +118,7 @@ function twoSwitchesStage(
 	return defineStage(id, {
 		...definition,
 		check: {
+			kind: "combinational",
 			inputs: oneBitInputs("A", "B"),
 			outputs: ["Out"],
 			expected: (values) => ({
@@ -129,6 +130,7 @@ function twoSwitchesStage(
 
 function addingCheck(...inputNames: string[]): CombinationalCheck {
 	return {
+		kind: "combinational",
 		inputs: oneBitInputs(...inputNames),
 		outputs: ["C", "S"],
 		expected: (values) => {
@@ -263,6 +265,7 @@ const fourBitAdderStage = defineStage("four-bit-adder", {
 	tableNotation: "digits",
 	pinDistance: 420,
 	check: {
+		kind: "combinational",
 		inputs: [
 			{ name: "A", bitWidth: digitCount },
 			{ name: "B", bitWidth: digitCount },

@@ -1,4 +1,5 @@
 import nullthrows from "nullthrows";
+import invariant from "tiny-invariant";
 import type CCStore from "../store";
 import type { CCComponentId } from "../store/component";
 import type { CCComponentPinId } from "../store/componentPin";
@@ -12,12 +13,48 @@ import simulateComponent, {
 
 export type PinValues = Readonly<Record<string, SimulationValue>>;
 
-/** What a combinational circuit has to output for every combination of its inputs */
-export type CombinationalCheck = {
+type CheckPins = {
 	inputs: readonly { name: string; bitWidth: number }[];
 	outputs: readonly string[];
+};
+
+/** What a combinational circuit has to output for every combination of its inputs */
+export type CombinationalCheck = CheckPins & {
+	kind: "combinational";
 	expected(inputs: PinValues): PinValues;
 };
+
+export type StepValues = { inputs: PinValues; outputs: PinValues };
+
+/** What a circuit has to output at each time step, from the first, as it is fed inputs */
+export type SequentialCheck = CheckPins & {
+	kind: "sequential";
+	steps: readonly StepValues[];
+};
+
+export type CircuitCheck = CombinationalCheck | SequentialCheck;
+
+/** How the circuit of a sequential check should behave */
+export type SequentialModel<State> = {
+	initialState: State;
+	/** The outputs at a step, and the state the next step starts from */
+	step(state: State, inputs: PinValues): { outputs: PinValues; next: State };
+};
+
+export function sequentialCheck<State>(
+	pins: CheckPins,
+	model: SequentialModel<State>,
+	inputSteps: readonly PinValues[],
+): SequentialCheck {
+	let state = model.initialState;
+	const steps = inputSteps.map((inputs) => {
+		const { outputs, next } = model.step(state, inputs);
+		state = next;
+		return { inputs, outputs };
+	});
+	invariant(steps.length > 0, "A sequential check needs a step");
+	return { ...pins, kind: "sequential", steps };
+}
 
 export type CheckResult =
 	| { type: "passed" }
@@ -30,17 +67,20 @@ export type CheckResult =
 	  }
 	| { type: "simulationFailed"; error: unknown }
 	| { type: "checkFailed"; error: unknown }
-	| {
-			type: "wrongOutput";
-			inputs: readonly { name: string; value: SimulationValue }[];
-			pinName: string;
-			expected: SimulationValue;
-			actual: SimulationValue | undefined;
-	  };
+	| ({ type: "wrongOutput" } & WrongOutput)
+	/** `stepNumber` counts from 1, as the editor shows the time step */
+	| ({ type: "wrongOutputAtStep"; stepNumber: number } & WrongOutput);
+
+type WrongOutput = {
+	inputs: readonly { name: string; value: SimulationValue }[];
+	pinName: string;
+	expected: SimulationValue;
+	actual: SimulationValue | undefined;
+};
 
 /** Every combination of the inputs, counting up with the first input as the high bits */
 export function* inputCombinations(
-	inputs: CombinationalCheck["inputs"],
+	inputs: CheckPins["inputs"],
 ): Generator<PinValues> {
 	const totalBits = inputs.reduce((sum, input) => sum + input.bitWidth, 0);
 	for (let n = 0; n < 2 ** totalBits; n += 1) {
@@ -66,9 +106,11 @@ function expectedValueOf(expected: PinValues, name: string) {
  * with what the outputs should be; null when there is nothing to show
  */
 export function goalTableOf(
-	check: CombinationalCheck,
+	check: CircuitCheck,
 	examples: readonly PinValues[],
 ): TruthTable | null {
+	// TODO: show the first steps as the goal of a check over time
+	if (check.kind === "sequential") return null;
 	const rows = check.inputs.every(({ bitWidth }) => bitWidth === 1)
 		? [...inputCombinations(check.inputs)]
 		: examples;
@@ -94,22 +136,33 @@ function isSameValue(a: SimulationValue, b: SimulationValue | undefined) {
 	);
 }
 
-export function checkCombinational(
+/** The inputs to try in turn, with what the outputs should be */
+function* casesOf(check: CircuitCheck): Generator<StepValues> {
+	if (check.kind === "sequential") {
+		yield* check.steps;
+		return;
+	}
+	for (const inputs of inputCombinations(check.inputs)) {
+		yield { inputs, outputs: check.expected(inputs) };
+	}
+}
+
+export function checkCircuit(
 	store: CCStore,
 	componentId: CCComponentId,
-	check: CombinationalCheck,
+	check: CircuitCheck,
 ): CheckResult {
 	try {
-		return checkCircuit(store, componentId, check);
+		return runCheck(store, componentId, check);
 	} catch (error) {
 		return { type: "checkFailed", error };
 	}
 }
 
-function checkCircuit(
+function runCheck(
 	store: CCStore,
 	componentId: CCComponentId,
-	check: CombinationalCheck,
+	check: CircuitCheck,
 ): CheckResult {
 	const pins = store.componentPins.getManyByComponentId(componentId);
 	const findPin = (pinType: "input" | "output", pinName: string) =>
@@ -138,9 +191,7 @@ function checkCircuit(
 		if (status.isFixed) return status.bitWidth;
 		return pinType === "input" ? DEFAULT_SIMULATION_BIT_WIDTH : null;
 	};
-	const someExpected = check.expected(
-		nullthrows(inputCombinations(check.inputs).next().value),
-	);
+	const someExpected = nullthrows(casesOf(check).next().value).outputs;
 	const expectedBitWidths = [
 		...check.inputs.map(({ name, bitWidth }) => ({
 			name,
@@ -170,26 +221,28 @@ function checkCircuit(
 		}
 	}
 
-	for (const inputs of inputCombinations(check.inputs)) {
+	// Each combination starts afresh, while each step goes on from the one before
+	let previousFrame: SimulationFrame | null = null;
+	let stepNumber = 0;
+	for (const { inputs, outputs: expected } of casesOf(check)) {
+		stepNumber += 1;
 		const inputValues = new Map<CCComponentPinId, SimulationValue>();
 		for (const [name, pinId] of inputPinIds) {
 			inputValues.set(pinId, nullthrows(inputs[name]));
 		}
 		let frame: SimulationFrame;
 		try {
-			frame = simulateComponent(store, componentId, inputValues);
+			frame = simulateComponent(store, componentId, inputValues, previousFrame);
 		} catch (error) {
 			return { type: "simulationFailed", error };
 		}
-		const expected = check.expected(inputs);
 		for (const name of check.outputs) {
 			const expectedValue = expectedValueOf(expected, name);
 			const actual = frame.getNodePinValue(
 				nullthrows(outputNodePinIds.get(name)),
 			);
 			if (!isSameValue(expectedValue, actual)) {
-				return {
-					type: "wrongOutput",
+				const wrongOutput = {
 					inputs: check.inputs.map(({ name: inputName }) => ({
 						name: inputName,
 						value: nullthrows(inputs[inputName]),
@@ -198,8 +251,12 @@ function checkCircuit(
 					expected: expectedValue,
 					actual,
 				};
+				return check.kind === "sequential"
+					? { type: "wrongOutputAtStep", stepNumber, ...wrongOutput }
+					: { type: "wrongOutput", ...wrongOutput };
 			}
 		}
+		if (check.kind === "sequential") previousFrame = frame;
 	}
 	return { type: "passed" };
 }

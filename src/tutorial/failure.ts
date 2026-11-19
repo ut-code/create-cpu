@@ -29,6 +29,17 @@ export function describeFailure(
 				valueLabel(result.expected),
 				result.actual ? valueLabel(result.actual) : null,
 			);
+		case "wrongOutputAtStep":
+			return texts.wrongOutputAtStep(
+				result.stepNumber,
+				result.inputs.map(({ name, value }) => ({
+					name,
+					value: valueLabel(value),
+				})),
+				result.pinName,
+				valueLabel(result.expected),
+				result.actual ? valueLabel(result.actual) : null,
+			);
 		case "checkFailed":
 			return texts.checkFailed;
 		case "simulationFailed":
