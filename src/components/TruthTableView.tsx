@@ -1,12 +1,11 @@
 import { Box, type Theme } from "@mui/material";
-import { createContext, useContext } from "react";
-import { type BitNotation, bitDigit, bitLabel } from "../common/bitLabel";
+import { useContext } from "react";
+import { bitDigit, bitLabel } from "../common/bitLabel";
 import type { TruthTable } from "../store/intrinsics/truthTable";
 import { theme } from "../style";
+import { BitNotationContext } from "./bitNotation";
 
-const divider = (theme: Theme) => `1px solid ${theme.palette.divider}`;
-
-export const BitNotationContext = createContext<BitNotation>("onOff");
+const divider = (muiTheme: Theme) => `1px solid ${muiTheme.palette.divider}`;
 
 export function TruthTableView({ table }: { table: TruthTable }) {
 	const labelOf =

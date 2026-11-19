@@ -100,6 +100,38 @@ describe("Japanese messages", () => {
 	});
 });
 
+describe("the message on a wrong output", () => {
+	const inputs = [
+		{ name: "A", value: "ON" },
+		{ name: "B", value: "OFF" },
+		{ name: "Cin", value: "ON" },
+	];
+
+	it("lists the inputs as a sentence in English", () => {
+		expect(
+			messagesByLanguage.en.tutorial.wrongOutput(inputs, "C", "ON", "OFF"),
+		).toBe(
+			"When A is ON, B is OFF and Cin is ON, C should be ON, but it is OFF.",
+		);
+		expect(
+			messagesByLanguage.en.tutorial.wrongOutput(
+				inputs.slice(0, 2),
+				"C",
+				"ON",
+				null,
+			),
+		).toBe("When A is ON and B is OFF, C should be ON, but it has no value.");
+	});
+
+	it("lists the inputs in Japanese", () => {
+		expect(
+			messagesByLanguage.ja.tutorial.wrongOutput(inputs, "C", "ON", "OFF"),
+		).toBe(
+			"A が ON、B が OFF、Cin が ON のとき、C は ON になるはずが、OFF でした。",
+		);
+	});
+});
+
 describe("English messages", () => {
 	it("lists the inputs reset with their bit widths", () => {
 		expect(

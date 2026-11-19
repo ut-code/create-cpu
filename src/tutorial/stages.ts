@@ -86,7 +86,6 @@ function twoSwitchesStage(
 	});
 }
 
-/** Adds up the inputs that are ON, and outputs the total as two binary digits C and S */
 function addingCheck(...inputNames: string[]): CombinationalCheck {
 	return {
 		inputs: oneBitInputs(...inputNames),

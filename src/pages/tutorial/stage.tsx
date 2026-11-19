@@ -17,15 +17,13 @@ import {
 	useParams,
 } from "react-router";
 import { valueLabel } from "../../common/bitLabel";
+import { BitNotationContext } from "../../components/bitNotation";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
 import {
 	PartDescription,
 	PartDescriptionView,
 } from "../../components/PartDescription";
-import {
-	BitNotationContext,
-	TruthTableView,
-} from "../../components/TruthTableView";
+import { TruthTableView } from "../../components/TruthTableView";
 import { type Messages, useMessages } from "../../i18n";
 import type CCStore from "../../store";
 import { definitionByComponentId } from "../../store/intrinsics/definitions";
