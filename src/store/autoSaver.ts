@@ -56,13 +56,7 @@ export class CCStoreAutoSaver {
 		);
 	}
 
-	tryRestore(): boolean {
-		const json = window.localStorage.getItem(CCStoreAutoSaver.localStorageKey);
-		if (json) {
-			this.#store.importJson(json);
-			return true;
-		} else {
-			return false;
-		}
+	static readSaved(): string | null {
+		return window.localStorage.getItem(CCStoreAutoSaver.localStorageKey);
 	}
 }

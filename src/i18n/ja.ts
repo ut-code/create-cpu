@@ -51,6 +51,22 @@ export const ja: Messages = {
 				`${componentName} を削除できませんでした。`,
 		},
 	},
+	recovery: {
+		title: "保存したコンポーネントを読み込めませんでした",
+		body: "このブラウザに保存されたコンポーネントが壊れているか、このバージョンでは読めない形式で保存されています。やり直すまでは上書きしないので、残したい場合は先にダウンロードしてください。",
+		download: "保存データをダウンロード",
+		startOver: "サンプルからやり直す",
+		startOverDialog: {
+			title: "サンプルからやり直しますか？",
+			body: "保存したコンポーネントはサンプルに置き換わり、元に戻せません。残したい場合は先にダウンロードしてください。",
+			confirm: "やり直す",
+		},
+		errors: {
+			storageFull:
+				"ブラウザの保存領域がいっぱいのため、サンプルを保存できませんでした。",
+			startOverFailed: "やり直せませんでした。",
+		},
+	},
 	componentProperties: {
 		title: (componentName) => `${componentName} のプロパティ`,
 		name: "名前",

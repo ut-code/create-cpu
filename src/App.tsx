@@ -1,8 +1,9 @@
 import { Box } from "@mui/material";
+import type { ReactNode } from "react";
 import { Outlet } from "react-router";
 import GlobalHeader from "./components/GlobalHeader";
 
-export default function App() {
+export function AppLayout({ children }: { children: ReactNode }) {
 	return (
 		<Box
 			sx={{
@@ -12,7 +13,15 @@ export default function App() {
 			}}
 		>
 			<GlobalHeader style={{ gridColumn: "1 / -1" }} />
-			<Outlet />
+			{children}
 		</Box>
+	);
+}
+
+export default function App() {
+	return (
+		<AppLayout>
+			<Outlet />
+		</AppLayout>
 	);
 }

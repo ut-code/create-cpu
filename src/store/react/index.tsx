@@ -1,5 +1,6 @@
 import {
 	createContext,
+	type ReactNode,
 	useCallback,
 	useContext,
 	useEffect,
@@ -8,19 +9,15 @@ import {
 	useState,
 } from "react";
 import invariant from "tiny-invariant";
-import CCStore from "..";
-import { setupDefaultSample } from "../samples/default";
-import { replaceSavedStore } from "../savedStore";
+import type CCStore from "..";
+import {
+	createSavedStore,
+	type RestoredStore,
+	replaceSavedStore,
+} from "../savedStore";
 
-function useContextValue() {
-	const [store, setStore] = useState(() => {
-		const tempStore = new CCStore();
-		const isRestored = tempStore.autoSaver.tryRestore();
-		tempStore.mount();
-		if (!isRestored) setupDefaultSample(tempStore);
-		tempStore.autoSaver.watch();
-		return tempStore;
-	});
+function useContextValue(initialStore: CCStore) {
+	const [store, setStore] = useState(initialStore);
 
 	// For debugging
 	useEffect(() => {
@@ -43,9 +40,55 @@ function useContextValue() {
 
 const context = createContext<ReturnType<typeof useContextValue> | null>(null);
 
-export function StoreProvider({ children }: { children: React.ReactNode }) {
+function ReadyStoreProvider({
+	initialStore,
+	children,
+}: {
+	initialStore: CCStore;
+	children: ReactNode;
+}) {
 	return (
-		<context.Provider value={useContextValue()}>{children}</context.Provider>
+		<context.Provider value={useContextValue(initialStore)}>
+			{children}
+		</context.Provider>
+	);
+}
+
+export type UnrestorableSavedStore = {
+	json: string;
+	/**
+	 * Replace the saved store with the sample and start editing it
+	 * @throws if the sample cannot be saved
+	 */
+	startOver(): void;
+};
+
+/**
+ * Until the store saved in this browser is one the editor can work on, `recovery` takes
+ * the place of `children`, and nothing is saved over it
+ * @param initial restored outside rendering, as it saves and React may render twice
+ */
+export function StoreProvider({
+	initial,
+	children,
+	recovery,
+}: {
+	initial: RestoredStore;
+	children: ReactNode;
+	recovery: (saved: UnrestorableSavedStore) => ReactNode;
+}) {
+	const [restored, setRestored] = useState(initial);
+	if (restored.type === "unrestorable") {
+		return recovery({
+			json: restored.json,
+			startOver: () =>
+				setRestored({ type: "ready", store: createSavedStore() }),
+		});
+	}
+	return (
+		<ReadyStoreProvider initialStore={restored.store}>
+			{children}
+		</ReadyStoreProvider>
 	);
 }
 

@@ -1,4 +1,5 @@
 import CCStore, { CCStoreJsonError } from ".";
+import { CCStoreAutoSaver } from "./autoSaver";
 import { setupDefaultSample } from "./samples/default";
 
 /**
@@ -34,6 +35,29 @@ export function createSavedStore(json?: string): CCStore {
 	store.autoSaver.watch();
 	store.autoSaver.save();
 	return store;
+}
+
+export type RestoredStore =
+	| { type: "ready"; store: CCStore }
+	| { type: "unrestorable"; json: string; error: CCStoreJsonError };
+
+/**
+ * The store saved in this browser, or the sample on the first visit. A saved store the
+ * editor cannot work on is left as it is and not watched, so that it can still be kept.
+ */
+export function restoreSavedStore(): RestoredStore {
+	const json = CCStoreAutoSaver.readSaved();
+	if (!json) return { type: "ready", store: createSavedStore() };
+	let store: CCStore;
+	try {
+		store = importStoreJson(json);
+	} catch (error) {
+		if (!(error instanceof CCStoreJsonError)) throw error;
+		return { type: "unrestorable", json, error };
+	}
+	store.mount();
+	store.autoSaver.watch();
+	return { type: "ready", store };
 }
 
 /**
