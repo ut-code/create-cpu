@@ -11,6 +11,7 @@ import {
 import { useState } from "react";
 import { Link } from "react-router";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
+import { visuallyHiddenSx } from "../../components/visuallyHidden";
 import { useMessages } from "../../i18n";
 import { theme } from "../../style";
 import { readClearedStages } from "../../tutorial/progress";
@@ -69,14 +70,33 @@ export default function TutorialPage() {
 										gap: 2,
 									}}
 								>
-									<Box sx={{ flexGrow: 1 }}>
-										<Typography color="textSecondary" variant="body2">
-											{texts.stageNumber(index + 1)}
-										</Typography>
-										<Typography variant="h3" typography="h6">
-											{texts.stageTexts[stage.id].title}
-										</Typography>
+									{/* Large, as the grid alone does not tell the order */}
+									<Box component="span" sx={visuallyHiddenSx}>
+										{texts.stageNumber(index + 1)}
 									</Box>
+									<Box
+										component="span"
+										aria-hidden
+										sx={{
+											display: "flex",
+											justifyContent: "center",
+											alignItems: "center",
+											flexShrink: 0,
+											width: 40,
+											height: 40,
+											borderRadius: "50%",
+											border: 2,
+											borderColor: theme.colors.tutorial,
+											color: theme.colors.tutorial,
+											fontSize: "1.25rem",
+											fontWeight: "bold",
+										}}
+									>
+										{index + 1}
+									</Box>
+									<Typography variant="h3" typography="h6" sx={{ flexGrow: 1 }}>
+										{texts.stageTexts[stage.id].title}
+									</Typography>
 									{clearedStages.has(stage.id) && (
 										<Box
 											sx={{
