@@ -45,15 +45,29 @@ export default function TutorialPage() {
 				<Typography color="textSecondary">{texts.lead}</Typography>
 				<Box
 					component="ol"
-					sx={{ listStyle: "none", p: 0, mt: 3, display: "grid", gap: 2 }}
+					sx={{
+						listStyle: "none",
+						p: 0,
+						mt: 3,
+						display: "grid",
+						// Three in a row on a wide window, fewer on a narrow one
+						gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
+						gap: 2,
+					}}
 				>
 					{tutorialStages.map((stage, index) => (
 						<li key={stage.id}>
-							<Card variant="outlined">
+							<Card variant="outlined" sx={{ height: "100%" }}>
 								<CardActionArea
 									component={Link}
 									to={`/tutorial/${stage.id}`}
-									sx={{ p: 2, display: "flex", alignItems: "center", gap: 2 }}
+									sx={{
+										p: 2,
+										height: "100%",
+										display: "flex",
+										alignItems: "center",
+										gap: 2,
+									}}
 								>
 									<Box sx={{ flexGrow: 1 }}>
 										<Typography color="textSecondary" variant="body2">
