@@ -39,7 +39,8 @@ export default function TutorialPage() {
 
 	return (
 		<div style={{ overflowY: "auto" }}>
-			<Container sx={{ px: 2, py: 6 }} maxWidth="md">
+			{/* Wide enough for the longest title on one line in three columns */}
+			<Container sx={{ px: 2, py: 6, maxWidth: 960 }} maxWidth={false}>
 				<Typography variant="h2" typography="h4" gutterBottom>
 					{messages.header.modes.tutorial}
 				</Typography>
@@ -51,8 +52,8 @@ export default function TutorialPage() {
 						p: 0,
 						mt: 3,
 						display: "grid",
-						// Three in a row on a wide window, fewer on a narrow one
 						gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
+						gridAutoRows: "1fr",
 						gap: 2,
 					}}
 				>
@@ -108,7 +109,6 @@ export default function TutorialPage() {
 										<Typography
 											variant="h3"
 											typography="h6"
-											// A Japanese title wraps between phrases, not inside a word
 											sx={{ wordBreak: "auto-phrase" }}
 										>
 											{texts.stageTexts[stage.id].title}
