@@ -62,7 +62,7 @@ const stageTexts: Record<TutorialStageId, StageTexts> = {
 			'Output {A} + {B} + {Cin} as a two-digit binary number to {C} and {S}. {Cin} is the carry coming up from the next lower digit. The answer is 0 to 3, and 3 is [11] in binary. "{Adding one digit}" is ready to use as a component. This circuit is called a full adder.',
 		],
 		steps: [
-			'Add {A} and {B} with one "{Adding one digit}", then add {Cin} to its {S} with another and output that {S} to {S}. Join the two {C}s with an {Or} and output it to {C}.',
+			'Add {A} and {B} with one "{Adding one digit}", and add its {S} and {Cin} with another. Connect the {S} of the one adding {Cin} to the output {S} on the right. Join the two {C}s with an {Or} and connect it to the output {C} on the right.',
 		],
 	},
 	"four-bit-adder": {
@@ -74,7 +74,7 @@ const stageTexts: Record<TutorialStageId, StageTexts> = {
 		steps: [
 			'Place four "{Adding with a carry}". From the top, the pins on the right of {Decompose} and on the left of {Aggregate} are the eights, fours, twos and ones digits.',
 			"For each digit, connect that digit's pin on the upper {Decompose}, which {A} goes into, and on the lower one, which {B} goes into, to the {A} and {B} of one \"{Adding with a carry}\". Connect the {S} of that adder to the same digit's pin of {Aggregate}.",
-			"Connect the {C} of each digit's adder to the {Cin} of the adder one digit up. The ones digit's adder gets {False} on its {Cin}, and the {C} of the eights digit's adder goes to the output {C} on the right.",
+			"Connect the {C} of each digit's adder to the {Cin} of the adder one digit up. Connect a {False} to the {Cin} of the ones digit's adder, and the {C} of the eights digit's adder to the output {C} on the right.",
 		],
 	},
 	counter: {
@@ -85,7 +85,7 @@ const stageTexts: Record<TutorialStageId, StageTexts> = {
 		],
 		steps: [
 			"Place a {FlipFlop}. A {FlipFlop} outputs what it received at the time step before, and [0000] at the first time step. Connect its output to {Count} and to the {7seg} at the top right.",
-			'Place a {Const}. A {Const} always outputs the value set in its box. Change [00000000] in its box to [0001] and press <constApply> (four bits, to match the {B} it connects to). The "4 bits" below the box is the number of bits of the value.',
+			'Place a {Const}. A {Const} always outputs the same value. Change [00000000] in its box to [0001] and press <constApply> (four bits, to match the {B} it connects to). The "4 bits" below the box is the number of bits of the value.',
 			'Place "{Adding four digits}". Connect the output of the {FlipFlop} to its {A}, the {Const} to its {B}, and its {S} to the input of the {FlipFlop}. Then the number the {FlipFlop} outputs plus 1 comes out of the {FlipFlop} at the next time step. {C} is not used.',
 			"Press the play button <play> and go through the time steps with the right arrow <nextStep>. Press <auto> to go on by itself, one time step a second. The circuit works when the {Display} at the top right shows 0 to F in turn.",
 		],
@@ -145,7 +145,7 @@ export const en = {
 			FLIPFLOP:
 				"Outputs what it received at the time step before. At the first time step, it outputs [OFF], or a value of all [0] bits if its output has two or more bits.",
 			CONST:
-				"Always outputs the value set in its box. To change it, change the value in the box while editing and press <constApply>. The output has as many bits as shown below the box.",
+				"Always outputs the same value. To change it, change the value in the box while editing and press <constApply>. The output has as many bits as shown below the box.",
 			BROADCAST: "Repeats a one-bit value over two or more bits.",
 			ANDN: "[ON] only when every bit of {In} is [1].",
 			ORN: "[ON] when any bit of {In} is [1].",
