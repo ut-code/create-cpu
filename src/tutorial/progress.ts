@@ -1,4 +1,8 @@
-import { isTutorialStageId, type TutorialStageId } from "./stages";
+import {
+	isTutorialStageId,
+	type TutorialStageId,
+	tutorialStageIds,
+} from "./stages";
 
 const progressStorageKey = "ccTutorialProgress";
 
@@ -36,4 +40,10 @@ export function forgetClearedStages(): void {
 	} catch (error) {
 		console.warn("Could not forget the tutorial progress", error);
 	}
+}
+
+export function nextStageOf(
+	cleared: ReadonlySet<TutorialStageId>,
+): TutorialStageId | undefined {
+	return tutorialStageIds.find((id) => !cleared.has(id));
 }

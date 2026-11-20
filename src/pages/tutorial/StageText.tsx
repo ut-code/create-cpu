@@ -14,6 +14,7 @@ import {
 	withLookSx,
 } from "../../components/controlLooks";
 import { ValueView } from "../../components/ValueView";
+import { visuallyHiddenSx } from "../../components/visuallyHidden";
 import { useMessages } from "../../i18n";
 import {
 	parseStageText,
@@ -33,15 +34,6 @@ const inlineSx = {
 	verticalAlign: "baseline",
 	boxShadow: "none",
 	pointerEvents: "none",
-} as const;
-
-const visuallyHiddenSx = {
-	position: "absolute",
-	width: "1px",
-	height: "1px",
-	overflow: "hidden",
-	clip: "rect(0 0 0 0)",
-	whiteSpace: "nowrap",
 } as const;
 
 const iconSx = {
