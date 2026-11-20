@@ -62,7 +62,7 @@ const stageTexts: Record<TutorialStageId, StageTexts> = {
 			'Output {A} + {B} + {Cin} as a two-digit binary number to {C} and {S}. {Cin} is the carry coming up from the next lower digit. The answer is 0 to 3, and 3 is [11] in binary. "{Adding one digit}" is ready to use as a component. This circuit is called a full adder.',
 		],
 		steps: [
-			'Add {A} and {B} with one "{Adding one digit}", then add {Cin} to its {S} with another and output that {S} to {S}. Join the two {C}s with an {Or} and output it to {C}.',
+			'Add {A} and {B} with one "{Adding one digit}", then add {Cin} to its {S} with another and connect that {S} to {S}. Join the two {C}s with an {Or} and connect it to {C}.',
 		],
 	},
 	"four-bit-adder": {
