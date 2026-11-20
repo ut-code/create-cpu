@@ -14,11 +14,10 @@ export type SimulationErrorTexts = {
 export const englishSimulationErrorTexts: SimulationErrorTexts = {
 	nodeName: (outerToInner) => outerToInner.toReversed().join(" in "),
 	sentences: (sentences) => sentences.join(" "),
-	loop: "The outlined nodes form a loop, so their values cannot be determined. Fix the connections in the loop, or add a FlipFlop to it if the value should feed back.",
+	loop: "The output of each part outlined in red comes back to its own input along the wires. Its output would need itself to be worked out, so this cannot run. Reconnect a wire, or put a FlipFlop on the way back.",
 	loopInside: (place, component) =>
-		`There is a loop inside ${place}, so the values in it cannot be determined. Open ${component} to fix the connections, or add a FlipFlop to the loop if the value should feed back.`,
-	unconnectedPin: (pin, node) =>
-		`Input pin ${pin} of ${node} is not connected.`,
+		`Inside ${place}, the output of some parts comes back to their own input along the wires. Their output would need itself to be worked out, so this cannot run. Open ${component} to reconnect a wire, or put a FlipFlop on the way back.`,
+	unconnectedPin: (pin, node) => `Pin ${pin} of ${node} is not connected.`,
 	unconnectedNode: (node) => `${node} is not connected.`,
 	openToConnect: (component) => `Open ${component} to connect it.`,
 	bitWidthConflict: (component) =>

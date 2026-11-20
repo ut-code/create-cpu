@@ -144,7 +144,8 @@ function nameOfNode(store: CCStore, nodeId: CCNodeId): string {
 		.getManyByNodeId(nodeId)
 		.map((nodePin) => store.componentPins.getByImplementation(nodePin.id))
 		.find((componentPin) => componentPin !== undefined);
-	return exposedPin ? `${componentName} ${exposedPin.name}` : componentName;
+	// Input and Output nodes show only the name of their pin
+	return exposedPin ? exposedPin.name : componentName;
 }
 
 export function describeNodePath(
@@ -184,6 +185,11 @@ export class SimulationNodeError extends Error {
 	 */
 	describe(_store: CCStore, _texts: SimulationErrorTexts): string {
 		return this.message;
+	}
+
+	/** The nodes of the simulated component itself that the error is in or under */
+	get outlinedNodeIds(): ReadonlySet<CCNodeId> {
+		return new Set(this.nodePaths.flatMap((path) => path.slice(0, 1)));
 	}
 }
 

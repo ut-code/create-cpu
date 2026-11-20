@@ -1,9 +1,6 @@
 import type { Messages } from "./en";
 
 const bitWidths = (widths: readonly number[]) => `${widths.join("/")} ビット`;
-const fixOrFeedBack =
-	"線をつなぎ直すか、値をフィードバックさせたい場合はループに FlipFlop を入れてください。";
-
 export const ja: Messages = {
 	languageName: "日本語",
 	common: {
@@ -132,7 +129,7 @@ export const ja: Messages = {
 		next: "次の課題へ",
 		backToStages: "課題の一覧へ",
 		missingPin: (pinType, pinName) =>
-			`${pinName} という名前の${pinType === "input" ? "入力" : "出力"}ピンが見つかりません。「この課題をやり直す」で最初の状態に戻せます。`,
+			`${pinType === "input" ? "左の入力" : "右の出力"} ${pinName} が見つかりません。この課題を最初の状態に戻してください。`,
 		wrongBitWidth: (pinName, expected, actual) =>
 			`${pinName} は ${expected}ビットのはずですが、${actual}ビットになっています。つないだ先を確かめてください。`,
 		wrongOutput: (inputs, pinName, expected, actual) =>
@@ -141,8 +138,7 @@ export const ja: Messages = {
 			`${stepNumber} ステップ目${inputs.length > 0 ? `（${inputs.map(({ name, value }) => `${name} が ${value}`).join("、")}）` : ""}に、${pinName} が ${expected} のはずが${actual === null ? "、値がありませんでした" : ` ${actual} でした`}。`,
 		checkFailed:
 			"確かめる途中で問題が起きました。回路を少し変えてから、もう一度押してください。",
-		simulationFailed: (detail) =>
-			`回路をシミュレーションできませんでした。${detail}`,
+		simulationFailed: (detail) => `回路を動かせません。${detail}`,
 		resetStage: "この課題をやり直す",
 		resetStageDialog: {
 			title: "この課題をやり直しますか？",
@@ -294,11 +290,11 @@ export const ja: Messages = {
 	simulation: {
 		nodeName: (outerToInner) => outerToInner.join(" 内の "),
 		sentences: (sentences) => sentences.join(""),
-		loop: `赤い枠のノードがループになっていて、値が決まりません。ループの${fixOrFeedBack}`,
+		loop: "赤い枠の部品は、自分の出力が線をたどって自分の入力に戻ってきます。出力を決めるのにその出力自身が要るので、このままでは動きません。線をつなぎ直すか、戻る途中に FlipFlop を入れてください。",
 		loopInside: (place, component) =>
-			`${place} の中にループがあり、値が決まりません。${component} を開いて${fixOrFeedBack}`,
+			`${place} の中に、自分の出力が線をたどって自分の入力に戻ってくる部品があります。出力を決めるのにその出力自身が要るので、このままでは動きません。${component} を開いて線をつなぎ直すか、戻る途中に FlipFlop を入れてください。`,
 		unconnectedPin: (pin, node) =>
-			`${node} の入力ピン ${pin} がつながっていません。`,
+			`${node} の ${pin} のピンがつながっていません。`,
 		unconnectedNode: (node) => `${node} がつながっていません。`,
 		openToConnect: (component) => `${component} を開いてつないでください。`,
 		bitWidthConflict: (component) =>

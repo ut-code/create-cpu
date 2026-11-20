@@ -31,6 +31,8 @@ import {
 import { TruthTableView } from "../../components/TruthTableView";
 import { useMessages } from "../../i18n";
 import { definitionByComponentId } from "../../store/intrinsics/definitions";
+import { SimulationNodeError } from "../../store/netlist";
+import type { CCNodeId } from "../../store/node";
 import { StoreScope, useStore } from "../../store/react";
 import { useComponents } from "../../store/react/selectors";
 import { theme } from "../../style";
@@ -59,6 +61,7 @@ import {
 	tutorialStages,
 } from "../../tutorial/stages";
 import CCComponentEditor from "../edit/Editor";
+import { OutlinedNodeIdsContext } from "../edit/Editor/outlinedNodes";
 import type { OffersComponent } from "../edit/placement";
 import SidePanel from "../edit/SidePanel";
 
@@ -77,16 +80,35 @@ function SectionHeading({ children }: { children: ReactNode }) {
 
 function CheckFailure({
 	result,
+	onReset,
 }: {
 	result: Exclude<CheckResult, { type: "passed" }>;
+	onReset: () => void;
 }) {
 	const { store } = useStore();
 	const messages = useMessages();
 	// The message may name a part, which is renamed when the language changes
 	useComponents();
 	return (
-		<Alert severity="error">{describeFailure(result, store, messages)}</Alert>
+		<Alert severity="error">
+			{describeFailure(result, store, messages)}
+			{/* The reset button at the end of the stage text may be out of view */}
+			{result.type === "missingPin" && (
+				<Box sx={{ mt: 1, textAlign: "end" }}>
+					<Button color="error" size="small" onClick={onReset}>
+						{messages.tutorial.resetStage}
+					</Button>
+				</Box>
+			)}
+		</Alert>
 	);
+}
+
+function outlinedNodeIdsOf(result: CheckResult | null): ReadonlySet<CCNodeId> {
+	return result?.type === "simulationFailed" &&
+		result.error instanceof SimulationNodeError
+		? result.error.outlinedNodeIds
+		: new Set();
 }
 
 function StageView({ stage }: { stage: TutorialStage }) {
@@ -306,7 +328,10 @@ function StageView({ stage }: { stage: TutorialStage }) {
 								</>
 							)}
 							{result && result.type !== "passed" && (
-								<CheckFailure result={result} />
+								<CheckFailure
+									result={result}
+									onReset={() => setIsConfirmingReset(true)}
+								/>
 							)}
 						</Stack>
 					</Box>
@@ -325,27 +350,38 @@ function StageView({ stage }: { stage: TutorialStage }) {
 						/>
 					</Box>
 					<Divider orientation="vertical" />
-					<CCComponentEditor
-						key={`${resetCount}:${shownComponentId}`}
-						componentId={shownComponentId}
-						options={{
-							isProtectedNode: (nodeId) => isStagePinNode(store, stage, nodeId),
-							isOffered,
-							canCreateComponents: stage.allowsNewComponents,
-							fitsNodesInView: true,
-							areaToFit:
-								shownComponentId === stage.componentId
-									? stageAreaOf(stage)
-									: null,
-							hasProperties: (componentId) =>
-								!isStageComponent(stage, componentId),
-						}}
-						onEditComponent={setEditedComponentId}
-						onClose={() => {
-							if (shownComponentId === stage.componentId) navigate("/tutorial");
-							else setEditedComponentId(stage.componentId);
-						}}
-					/>
+					<OutlinedNodeIdsContext
+						value={
+							// The paths of the error start from the stage's own component
+							shownComponentId === stage.componentId
+								? outlinedNodeIdsOf(result)
+								: new Set()
+						}
+					>
+						<CCComponentEditor
+							key={`${resetCount}:${shownComponentId}`}
+							componentId={shownComponentId}
+							options={{
+								isProtectedNode: (nodeId) =>
+									isStagePinNode(store, stage, nodeId),
+								isOffered,
+								canCreateComponents: stage.allowsNewComponents,
+								fitsNodesInView: true,
+								areaToFit:
+									shownComponentId === stage.componentId
+										? stageAreaOf(stage)
+										: null,
+								hasProperties: (componentId) =>
+									!isStageComponent(stage, componentId),
+							}}
+							onEditComponent={setEditedComponentId}
+							onClose={() => {
+								if (shownComponentId === stage.componentId)
+									navigate("/tutorial");
+								else setEditedComponentId(stage.componentId);
+							}}
+						/>
+					</OutlinedNodeIdsContext>
 					{isConfirmingReset && (
 						<ConfirmDialog
 							title={texts.resetStageDialog.title}

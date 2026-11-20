@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import { useState } from "react";
+import { useContext, useState } from "react";
 import { vector2 } from "../../../../../common/vector2";
 import {
 	type CCIntrinsicComponentType,
@@ -8,6 +8,7 @@ import {
 import type { CCNodeId } from "../../../../../store/node";
 import { useStore } from "../../../../../store/react";
 import { useComponent, useNode } from "../../../../../store/react/selectors";
+import { OutlinedNodeIdsContext } from "../../outlinedNodes";
 import { useComponentEditorStore } from "../../store";
 import CCComponentEditorRendererNodePin from "../NodePin";
 import { CCComponentEditorRendererNodeConstRenderer } from "./components/Const";
@@ -49,6 +50,7 @@ export default function CCComponentEditorRendererNode({
 	const node = useNode(nodeId);
 	const component = useComponent(node?.componentId);
 	const componentEditorState = useComponentEditorStore()();
+	const outlinedNodeIds = useContext(OutlinedNodeIdsContext);
 	const [dragging, setDragging] = useState(false);
 	const [dragStartPosition, setDragStartPosition] = useState(vector2.zero);
 	const [previousNodePosition, setPreviousNodePosition] = useState(
@@ -108,7 +110,8 @@ export default function CCComponentEditorRendererNode({
 				className={clsx(
 					styles.node,
 					isSelected && styles.selected,
-					componentEditorState.simulationError?.nodeIds.has(nodeId) &&
+					(componentEditorState.simulationError?.nodeIds.has(nodeId) ||
+						outlinedNodeIds.has(nodeId)) &&
 						styles.simulationError,
 				)}
 				onPointerDown={handlePointerDown}

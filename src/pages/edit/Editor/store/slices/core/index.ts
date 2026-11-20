@@ -325,11 +325,10 @@ export const createComponentEditorStoreCoreSlice: ComponentEditorSliceCreator<
 										? error.message
 										: String(error),
 							),
-							nodeIds: new Set(
+							nodeIds:
 								error instanceof SimulationNodeError
-									? error.nodePaths.flatMap((path) => path.slice(0, 1))
-									: [],
-							),
+									? error.outlinedNodeIds
+									: new Set(),
 						},
 					}));
 					return;

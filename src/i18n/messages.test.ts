@@ -69,7 +69,7 @@ describe("Japanese messages", () => {
 		);
 
 		expect(error.describe(store, ja.simulation)).toBe(
-			"Half 内の And の入力ピン B がつながっていません。Half を開いてつないでください。",
+			"Half 内の And の B のピンがつながっていません。Half を開いてつないでください。",
 		);
 	});
 
