@@ -44,7 +44,11 @@ export default function TutorialPage() {
 				<Typography variant="h2" typography="h4" gutterBottom>
 					{messages.header.modes.tutorial}
 				</Typography>
-				<Typography color="textSecondary">{texts.lead}</Typography>
+				{texts.lead.map((sentence) => (
+					<Typography key={sentence} color="textSecondary">
+						{sentence}
+					</Typography>
+				))}
 				<Box
 					component="ol"
 					sx={{
