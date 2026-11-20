@@ -20,7 +20,7 @@ type StageTexts = {
 
 const stageTexts: Record<TutorialStageId, StageTexts> = {
 	and: {
-		title: "Both switches",
+		title: "ON when both are ON",
 		goal: [
 			"Make the lamp {Out} turn [ON] only when both switches {A} and {B} are [ON]. The stage is cleared when the circuit works as in the table below.",
 		],
@@ -33,16 +33,16 @@ const stageTexts: Record<TutorialStageId, StageTexts> = {
 		],
 	},
 	"a-only": {
-		title: "Only switch A",
+		title: "ON when only A is ON",
 		goal: [
 			"Make the lamp {Out} turn [ON] only when switch {A} is [ON] and {B} is [OFF]. This time, one part alone is not enough.",
 		],
 		steps: [],
 	},
 	xor: {
-		title: "Only one switch",
+		title: "ON when just one is ON",
 		goal: [
-			'Make the lamp {Out} turn [ON] when exactly one of the switches {A} and {B} is [ON]. It stays [OFF] when both are [ON]. "{Only switch A}" is ready to use as a part.',
+			'Make the lamp {Out} turn [ON] when exactly one of the switches {A} and {B} is [ON]. It stays [OFF] when both are [ON]. "{ON when only A is ON}" is ready to use as a part.',
 		],
 		steps: [],
 	},
@@ -87,7 +87,7 @@ const stageTexts: Record<TutorialStageId, StageTexts> = {
 		],
 	},
 	"decimal-digit": {
-		title: "One decimal digit",
+		title: "0–9 counter",
 		goal: [
 			"Writing numbers with 0 to 9, carrying over after 9 as everyday numbers do, is called decimal.",
 			"Make {Count} go up by 1 only at the time steps when {Up} is [ON], and go back to [0000] after [1001]. [1001] is 9, 8 plus 1. At a time step when {Count} is [1001] and {Up} is [ON], make {Carry} turn [ON]: it tells the digit above to go up.",
@@ -109,8 +109,8 @@ const stageTexts: Record<TutorialStageId, StageTexts> = {
 			"<check> keeps {Start} [ON] until 59:59 has gone back to 00:00, then turns it [OFF] for two time steps to see that the stopwatch stops, and [ON] again to see that it goes on.",
 		],
 		steps: [
-			'Place two "{One base-6 digit}" and two "{One decimal digit}". "{One base-6 digit}" is built like "{One decimal digit}", but counts 0 to 5 and carries over after 5, as decimal does after 9.',
-			'Give each of the four parts one of {M10}, {M1}, {S10} and {S1}: "{One base-6 digit}" for {M10} and {S10}, and "{One decimal digit}" for {M1} and {S1}. Connect the {Count} of each to the output on the right named after its digit, and to the {7seg} of that digit. The {7seg}s are, from the top, for {M10}, {M1}, {S10} and {S1}.',
+			'Place two "{0–5 counter}" and two "{0–9 counter}". "{0–5 counter}" is built like "{0–9 counter}", but goes back to 0 and carries over after 5 instead of 9.',
+			'Give each of the four parts one of {M10}, {M1}, {S10} and {S1}: "{0–5 counter}" for {M10} and {S10}, and "{0–9 counter}" for {M1} and {S1}. Connect the {Count} of each to the output on the right named after its digit, and to the {7seg} of that digit. The {7seg}s are, from the top, for {M10}, {M1}, {S10} and {S1}.',
 			"Connect {Start} to {Up} of the part connected to {S1}. Then connect {Carry} of the part for {S1} to {Up} of the part for {S10}, {Carry} for {S10} to {Up} for {M1}, and {Carry} for {M1} to {Up} for {M10}. A digit then goes on only when the digit one lower goes back to 0.",
 			"Press the play button <play>. If {Start} is [OFF] at the first time step, click it to turn it [ON]. Press <auto>, and the {Display} goes on like a clock, one time step a second. To see what comes after 59:59, stop <auto>, click the number at the bottom, enter 3600 and press the <enter> key. It goes to that time step at once and shows 59:59, and the right arrow <nextStep> shows 00:00.",
 		],
@@ -288,7 +288,7 @@ export const en = {
 		},
 		resetStageFailed: "Could not reset the stage.",
 		stageTexts,
-		partTitles: { "senary-digit": "One base-6 digit" } satisfies Record<
+		partTitles: { "senary-digit": "0–5 counter" } satisfies Record<
 			TutorialPartId,
 			string
 		>,
