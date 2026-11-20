@@ -62,7 +62,7 @@ const stageTexts: Record<TutorialStageId, StageTexts> = {
 			'Output {A} + {B} + {Cin} as a two-digit binary number to {C} and {S}. {Cin} is the carry coming up from the next lower digit. The answer is 0 to 3, and 3 is [11] in binary. "{Adding one digit}" is ready to use as a component. This circuit is called a full adder.',
 		],
 		steps: [
-			'Add {A} and {B} with one "{Adding one digit}", then add {Cin} to its {S} with another and connect that {S} to {S}. Join the two {C}s with an {Or} and connect it to {C}.',
+			'Add {A} and {B} with one "{Adding one digit}", and add its {S} and {Cin} with another. Connect the {S} of the one adding {Cin} to the output {S} on the right, and join the two {C}s with an {Or} and connect it to the output {C} on the right.',
 		],
 	},
 	"four-bit-adder": {
@@ -74,7 +74,7 @@ const stageTexts: Record<TutorialStageId, StageTexts> = {
 		steps: [
 			'Place four "{Adding with a carry}". From the top, the pins on the right of {Decompose} and on the left of {Aggregate} are the eights, fours, twos and ones digits.',
 			"For each digit, connect that digit's pin on the upper {Decompose}, which {A} goes into, and on the lower one, which {B} goes into, to the {A} and {B} of one \"{Adding with a carry}\". Connect the {S} of that adder to the same digit's pin of {Aggregate}.",
-			"Connect the {C} of each digit's adder to the {Cin} of the adder one digit up. The ones digit's adder gets {False} on its {Cin}, and the {C} of the eights digit's adder goes to the output {C} on the right.",
+			"Connect the {C} of each digit's adder to the {Cin} of the adder one digit up. Connect a {False} to the {Cin} of the ones digit's adder, and the {C} of the eights digit's adder to the output {C} on the right.",
 		],
 	},
 	counter: {
