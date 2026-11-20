@@ -94,8 +94,8 @@ export const en = {
 			XOR: "ON when exactly one input is ON",
 			TRUE: "Always ON",
 			FALSE: "Always OFF",
-			DECOMPOSE: "Splits a value of several bits, from the highest bit down",
-			AGGREGATE: "Joins values into one, the upper pins as the higher bits",
+			DECOMPOSE: "Splits a value of several bits, from the highest digit down",
+			AGGREGATE: "Joins values into one, the upper pins as the higher digits",
 			FLIPFLOP:
 				"Outputs what it received at the time step before (0 at the first time step)",
 			CONST: "Always outputs the value written in it",
