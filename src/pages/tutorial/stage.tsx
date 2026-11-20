@@ -9,7 +9,13 @@ import {
 	Typography,
 } from "@mui/material";
 import nullthrows from "nullthrows";
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import {
+	type ReactNode,
+	useCallback,
+	useEffect,
+	useRef,
+	useState,
+} from "react";
 import {
 	Navigate,
 	Link as RouterLink,
@@ -36,6 +42,7 @@ import { describeFailure } from "../../tutorial/failure";
 import { markStageCleared } from "../../tutorial/progress";
 import {
 	getTutorialStageStore,
+	nameTutorialStage,
 	resetTutorialStage,
 } from "../../tutorial/stageStore";
 import {
@@ -73,8 +80,11 @@ function StageView({ stage }: { stage: TutorialStage }) {
 	const navigate = useNavigate();
 	const stageIndex = tutorialStages.indexOf(stage);
 	const nextStage = tutorialStages[stageIndex + 1];
-	const titleOf: StageTitleOf = (id) =>
-		isTutorialStageId(id) ? texts.stageTexts[id].title : texts.partTitles[id];
+	const titleOf = useCallback<StageTitleOf>(
+		(id) =>
+			isTutorialStageId(id) ? texts.stageTexts[id].title : texts.partTitles[id],
+		[texts],
+	);
 	const goalTable = goalTableOf(stage.check);
 	const stageTexts = texts.stageTexts[stage.id];
 
@@ -88,6 +98,10 @@ function StageView({ stage }: { stage: TutorialStage }) {
 	const [hasResetFailed, setHasResetFailed] = useState(false);
 	// The editor keeps state of the store it was made with, so it starts anew on a reset
 	const [resetCount, setResetCount] = useState(0);
+
+	useEffect(() => {
+		nameTutorialStage(store, stage, titleOf);
+	}, [store, stage, titleOf]);
 
 	// A result about a circuit that has since changed would mislead
 	useEffect(() => {
