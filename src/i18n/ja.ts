@@ -112,6 +112,7 @@ export const ja: Messages = {
 		],
 		stageNumber: (number) => `課題 ${number}`,
 		cleared: "クリア",
+		upNext: "次の課題",
 		startOver: "最初からやり直す",
 		startOverDialog: {
 			title: "チュートリアルを最初からやり直しますか？",

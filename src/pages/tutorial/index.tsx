@@ -1,4 +1,4 @@
-import { CheckCircle } from "@mui/icons-material";
+import { ArrowForward, CheckCircle } from "@mui/icons-material";
 import {
 	Alert,
 	Box,
@@ -8,20 +8,41 @@ import {
 	Container,
 	Typography,
 } from "@mui/material";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import { Link } from "react-router";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
 import { useMessages } from "../../i18n";
 import { theme } from "../../style";
-import { readClearedStages } from "../../tutorial/progress";
+import { nextStageOf, readClearedStages } from "../../tutorial/progress";
 import { resetTutorial } from "../../tutorial/stageStore";
 import { tutorialStages } from "../../tutorial/stages";
 import { StageNumber } from "./StageNumber";
+
+function StageStatus({
+	icon,
+	label,
+	color,
+}: {
+	icon: ReactNode;
+	label: string;
+	color: string;
+}) {
+	return (
+		<Typography
+			variant="body2"
+			sx={{ display: "flex", alignItems: "center", gap: 0.5, color }}
+		>
+			{icon}
+			{label}
+		</Typography>
+	);
+}
 
 export default function TutorialPage() {
 	const messages = useMessages();
 	const texts = messages.tutorial;
 	const [clearedStages, setClearedStages] = useState(readClearedStages);
+	const nextStage = nextStageOf(clearedStages);
 	const [isConfirming, setIsConfirming] = useState(false);
 	const [hasFailed, setHasFailed] = useState(false);
 
@@ -63,7 +84,17 @@ export default function TutorialPage() {
 				>
 					{tutorialStages.map((stage, index) => (
 						<li key={stage.id}>
-							<Card variant="outlined" sx={{ height: "100%" }}>
+							<Card
+								variant="outlined"
+								sx={{
+									height: "100%",
+									...(stage.id === nextStage && {
+										borderColor: theme.colors.tutorial,
+										// A second pixel of border that does not move the content
+										boxShadow: `inset 0 0 0 1px ${theme.colors.tutorial}`,
+									}),
+								}}
+							>
 								<CardActionArea
 									component={Link}
 									to={`/tutorial/${stage.id}`}
@@ -87,18 +118,18 @@ export default function TutorialPage() {
 											{texts.stageTexts[stage.id].title}
 										</Typography>
 										{clearedStages.has(stage.id) && (
-											<Typography
-												variant="body2"
-												sx={{
-													display: "flex",
-													alignItems: "center",
-													gap: 0.5,
-													color: theme.colors.primary,
-												}}
-											>
-												<CheckCircle fontSize="inherit" />
-												{texts.cleared}
-											</Typography>
+											<StageStatus
+												icon={<CheckCircle fontSize="inherit" />}
+												label={texts.cleared}
+												color={theme.colors.primary}
+											/>
+										)}
+										{stage.id === nextStage && (
+											<StageStatus
+												icon={<ArrowForward fontSize="inherit" />}
+												label={texts.upNext}
+												color={theme.colors.tutorial}
+											/>
 										)}
 									</Box>
 								</CardActionArea>

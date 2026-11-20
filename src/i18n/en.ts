@@ -231,6 +231,7 @@ export const en = {
 		],
 		stageNumber: (number: number) => `Stage ${number}`,
 		cleared: "Cleared",
+		upNext: "Next stage",
 		startOver: "Start over from the beginning",
 		startOverDialog: {
 			title: "Start the tutorial over?",
