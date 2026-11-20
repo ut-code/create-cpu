@@ -257,6 +257,8 @@ export const en = {
 		stages: "Stages",
 		goalHeading: "Goal",
 		stepsHeading: "Steps",
+		stepsClosed:
+			"Open this when you are stuck. It tells how to build the circuit.",
 		digitsLegend:
 			"The tables of the stages' circuits write ON as 1 and OFF as 0.",
 		check: "Check",

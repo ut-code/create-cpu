@@ -95,13 +95,16 @@ function StepsSection({
 	const texts = useMessages().tutorial;
 	const [isOpen, setIsOpen] = useState(isOpenAtFirst);
 	const stepsId = useId();
+	const noteId = useId();
+	const toggle = () => setIsOpen((open) => !open);
 	return (
 		<div>
 			<SectionHeading>
 				<ButtonBase
 					aria-expanded={isOpen}
 					aria-controls={stepsId}
-					onClick={() => setIsOpen((open) => !open)}
+					aria-describedby={isOpen ? undefined : noteId}
+					onClick={toggle}
 					focusRipple
 					sx={{
 						font: "inherit",
@@ -120,6 +123,19 @@ function StepsSection({
 					{texts.stepsHeading}
 				</ButtonBase>
 			</SectionHeading>
+			{!isOpen && (
+				// Also opens the steps, as the note is where the eye goes; the button
+				// above reads it out
+				<Typography
+					id={noteId}
+					variant="body2"
+					color="text.secondary"
+					onClick={toggle}
+					sx={{ cursor: "pointer" }}
+				>
+					{texts.stepsClosed}
+				</Typography>
+			)}
 			<Collapse in={isOpen} id={stepsId}>
 				<Box component="ol" sx={{ m: 0, pl: 3 }}>
 					{steps.map((step) => (

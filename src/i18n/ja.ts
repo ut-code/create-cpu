@@ -135,6 +135,8 @@ export const ja: Messages = {
 		stages: "課題の一覧",
 		goalHeading: "目標",
 		stepsHeading: "手順",
+		stepsClosed:
+			"考えてもわからないときに開いてください。作り方が書いてあります。",
 		digitsLegend: "課題の回路の表では、ON を 1、OFF を 0 と書いています。",
 		check: "確かめる",
 		checking: "確かめています…",
