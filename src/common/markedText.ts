@@ -6,6 +6,8 @@ export const markedTextControls = [
 	"check",
 	"constApply",
 	"pinApply",
+	"pinAdd",
+	"pinRemove",
 	"auto",
 	"play",
 	"edit",

@@ -24,6 +24,12 @@ export const pinApplyButtonLook = {
 	size: "small",
 } as const satisfies ButtonProps;
 
+/** Of "Add" and "Remove", which change how many fields the pin editor has */
+export const pinFieldButtonLook = {
+	variant: "outlined",
+	size: "small",
+} as const satisfies ButtonProps;
+
 export const autoToggleButtonLook = {
 	size: "small",
 } as const satisfies Partial<ToggleButtonProps>;

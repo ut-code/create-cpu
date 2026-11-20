@@ -16,6 +16,7 @@ import {
 	autoToggleButtonLook,
 	checkButtonLook,
 	pinApplyButtonLook,
+	pinFieldButtonLook,
 	valueApplyButtonLook,
 	withLookSx,
 } from "./controlLooks";
@@ -127,6 +128,20 @@ function ControlView({ control }: { control: MarkedTextControl }) {
 		case "pinApply":
 			return (
 				<InlineButton look={pinApplyButtonLook} label={messages.common.apply} />
+			);
+		case "pinAdd":
+			return (
+				<InlineButton
+					look={pinFieldButtonLook}
+					label={messages.editor.nodePinBitWidth.add}
+				/>
+			);
+		case "pinRemove":
+			return (
+				<InlineButton
+					look={pinFieldButtonLook}
+					label={messages.editor.nodePinBitWidth.remove}
+				/>
 			);
 		case "auto":
 			return (

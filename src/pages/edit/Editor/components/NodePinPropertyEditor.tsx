@@ -6,6 +6,7 @@ import invariant from "tiny-invariant";
 import { rect } from "../../../../common/rect";
 import {
 	pinApplyButtonLook,
+	pinFieldButtonLook,
 	withLookSx,
 } from "../../../../components/controlLooks";
 import { useMessages } from "../../../../i18n";
@@ -158,9 +159,8 @@ export function CCComponentEditorNodePinPropertyEditor() {
 						componentPinAttributes.bitWidthPolicy.isSplittable && (
 							<>
 								<Button
+									{...pinFieldButtonLook}
 									type="button"
-									variant="outlined"
-									size="small"
 									onClick={() => {
 										setNewBitWidthList([...bitWidthList, 1]);
 									}}
@@ -168,9 +168,8 @@ export function CCComponentEditorNodePinPropertyEditor() {
 									{messages.editor.nodePinBitWidth.add}
 								</Button>
 								<Button
+									{...pinFieldButtonLook}
 									type="button"
-									variant="outlined"
-									size="small"
 									disabled={bitWidthList.length <= 1}
 									onClick={() => {
 										setNewBitWidthList(bitWidthList.slice(0, -1));
