@@ -341,6 +341,8 @@ describe("the stopwatch stage", () => {
 		).toEqual([
 			[1, true, "00:00"],
 			[2, true, "00:01"],
+			[60, true, "00:59"],
+			[61, true, "01:00"],
 			[3600, true, "59:59"],
 			[3601, true, "00:00"],
 			[3602, false, "00:01"],

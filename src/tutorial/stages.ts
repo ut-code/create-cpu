@@ -652,7 +652,13 @@ const stopwatchStage = defineStage("stopwatch", {
 		Array.from({ length: secondsInHour + 5 }, (_, index) => ({
 			Start: bit(!stopwatchOffSteps.includes(index + 1)),
 		})),
-		[1, 2, ...Array.from({ length: 6 }, (_, index) => secondsInHour + index)],
+		[
+			1,
+			2,
+			60,
+			61,
+			...Array.from({ length: 6 }, (_, index) => secondsInHour + index),
+		],
 	),
 	layOut(circuit, { decorate }) {
 		const numerals = stopwatchDigits.map(({ numeralY }) =>
