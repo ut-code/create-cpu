@@ -115,7 +115,7 @@ export const en = {
 			ANDN: "ON only when every bit of In is 1.",
 			ORN: "ON when any bit of In is 1.",
 			SEVEN_SEGMENT:
-				"Turns the 4-bit value of In into the shape of a hexadecimal character, 0 to F. Connect Out to a Display of resolution 4x7, and give both the same pixel order with their gear buttons.",
+				"Turns the 4-bit value of In into the shape of a hexadecimal character, 0 to F. Out is a 28-bit value of a picture 4 pixels wide and 7 high, with 1 for the character. The gear button sets its pixel order.",
 			DISPLAY:
 				"While playing, shows the value of Pixels as a picture, one bit per pixel (1 is black, 0 is white). From the highest digit, the pixels go from the top left row by row in row-major order, or column by column in column-major order. The gear button sets the resolution and the pixel order.",
 			INPUT:
