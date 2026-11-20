@@ -6,7 +6,7 @@ const listOf = (names: readonly string[]) =>
 	names.length < 2
 		? names.join("")
 		: `${names.slice(0, -1).join(", ")} and ${names.at(-1)}`;
-const digits = (count: number) => (count === 1 ? "1 digit" : `${count} digits`);
+const bitCount = (count: number) => (count === 1 ? "1 bit" : `${count} bits`);
 const themOf = (names: readonly string[]) =>
 	names.length === 1 ? "it" : "them";
 
@@ -36,7 +36,7 @@ const stageTexts: Record<TutorialStageId, StageTexts> = {
 	},
 	"half-adder": {
 		title: "Adding one digit",
-		goal: "From here on, think of ON as 1 and OFF as 0, and the tables write them that way too. Then A + B is 0, 1 or 2. Binary writes numbers with only 0 and 1: just as 9 + 1 carries over and becomes 10 in everyday numbers, 1 + 1 carries over and becomes 10 in binary. So 0, 1 and 2 are 00, 01 and 10 in two digits. Output the left digit (the twos digit) to C and the right digit (the ones digit) to S. C is called the carry and S the sum, and this circuit is called a half adder.",
+		goal: "From here on, think of ON as 1 and OFF as 0, and the tables write them that way too. Then A + B is 0, 1 or 2. Binary writes numbers with only 0 and 1: just as 9 + 1 carries over and becomes 10 in everyday numbers, 1 + 1 carries over and becomes 10 in binary. So 0, 1 and 2 are 00, 01 and 10 in two digits. A digit of a binary number is called a bit. Output the left digit (the twos digit) to C and the right digit (the ones digit) to S. C is called the carry and S the sum, and this circuit is called a half adder.",
 		steps: [],
 	},
 	"full-adder": {
@@ -59,7 +59,7 @@ const stageTexts: Record<TutorialStageId, StageTexts> = {
 		goal: "After pressing the play button, a number with an arrow button on each side appears at the bottom. The number is called the time step, and the right arrow goes to the next one. The circuit runs one time step at a time. Make Count go up by 1 at each time step, and go back to 0000 after 1111. 0000 to 1111 are 0 to F in hexadecimal.",
 		steps: [
 			"Place a FlipFlop. A FlipFlop outputs what it received at the time step before, and 0 at the first time step. Connect its output to Count and to the 7seg at the top right.",
-			'Place a Const. A Const always outputs the value written in it. Change 00000000 in its box to 0001 and press Apply (four digits, to match the B it connects to). The "4 bits" below the box is the number of digits: a digit of a binary number is called a bit.',
+			'Place a Const. A Const always outputs the value written in it. Change 00000000 in its box to 0001 and press Apply (four bits, to match the B it connects to). The "4 bits" below the box is the number of bits of the value.',
 			'Place "Adding four digits". Connect the output of the FlipFlop to its A, the Const to its B, and its S to the input of the FlipFlop. Then the number the FlipFlop outputs plus 1 comes out of the FlipFlop at the next time step. C is not used.',
 			'Press the play button and go through the time steps with the right arrow. Press "Auto" to go on by itself, one time step a second. The circuit works when the Display at the top right shows 0 to F in turn.',
 		],
@@ -94,10 +94,8 @@ export const en = {
 			XOR: "ON when exactly one input is ON",
 			TRUE: "Always ON",
 			FALSE: "Always OFF",
-			DECOMPOSE:
-				"Splits a number of several digits, from the highest digit down",
-			AGGREGATE:
-				"Joins values into one number, the upper pins as the higher digits",
+			DECOMPOSE: "Splits a value of several bits, from the highest bit down",
+			AGGREGATE: "Joins values into one, the upper pins as the higher bits",
 			FLIPFLOP:
 				"Outputs what it received at the time step before (0 at the first time step)",
 			CONST: "Always outputs the value written in it",
@@ -198,7 +196,7 @@ export const en = {
 		missingPin: (pinType: "input" | "output", pinName: string) =>
 			`There is no ${pinType} pin named ${pinName}. "Reset this stage" brings back how the stage started.`,
 		wrongBitWidth: (pinName: string, expected: number, actual: number) =>
-			`${pinName} should have ${digits(expected)}, but it has ${digits(actual)}. Check what it is connected to.`,
+			`${pinName} should have ${bitCount(expected)}, but it has ${bitCount(actual)}. Check what it is connected to.`,
 		wrongOutput: (
 			inputs: readonly { name: string; value: string }[],
 			pinName: string,
