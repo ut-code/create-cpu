@@ -25,7 +25,7 @@ const stageTexts: Record<TutorialStageId, StageTexts> = {
 			"Make the lamp {Out} turn [ON] only when both switches {A} and {B} are [ON]. The stage is cleared when the circuit works as in the table below.",
 		],
 		steps: [
-			"Pick a component in the Components list and drag it onto the editor on the right.",
+			"The pieces a circuit is built from are called components. Pick one in the Components list and drag it onto the editor on the right.",
 			"The small squares on the edges of a component are its pins. A pin on the left side is an input, which receives [ON] or [OFF], and a pin on the right side is an output, which sends [ON] or [OFF]. Drag between an output pin and an input pin to connect them with a wire.",
 			"Once {Out} and every input pin of the components you placed are connected, the play button <play> at the bottom right can be pressed. It cannot be pressed while a component has a free input pin.",
 			"After pressing the play button <play>, click the switches {A} and {B} to turn them [ON] and [OFF], and watch the lamp {Out}. To fix the circuit, the pencil button <edit> in the same place takes you back to editing.",
@@ -150,9 +150,9 @@ export const en = {
 			DISPLAY:
 				"While playing, shows the value of {Pixels} as a picture, one bit per pixel ([1] is black, [0] is white). From the highest digit, the pixels go from the top left row by row in row-major order, or column by column in column-major order. While editing, the gear button sets the resolution and the pixel order.",
 			INPUT:
-				"Adds an input to the component it is placed in. Where that component is placed, the input is a pin on its left. While playing, its value can be changed on the placed {Input}.",
+				"Adds an input to the component it is placed in. Where that component is placed in another one, the input is a pin on its left. While playing, its value can be changed on the placed {Input}.",
 			OUTPUT:
-				"Adds an output to the component it is placed in. Where that component is placed, the output is a pin on its right. While playing, it shows the value it receives.",
+				"Adds an output to the component it is placed in. Where that component is placed in another one, the output is a pin on its right. While playing, it shows the value it receives.",
 		} satisfies Record<CCIntrinsicComponentType, string>,
 		pinBitWidth: (pinName: string, canAddPins: boolean) =>
 			canAddPins
@@ -203,7 +203,7 @@ export const en = {
 			title: (componentName: string) => `Delete ${componentName}?`,
 			unused: "This cannot be undone.",
 			used: (count: number, places: readonly string[], otherCount: number) =>
-				`It is used ${count === 1 ? "once" : `${count} times`} in ${places.join(", ")}${otherCount > 0 ? ` and ${otherCount} other ${otherCount === 1 ? "component" : "components"}` : ""}. Deleting it also removes it from those places, with its connections. This cannot be undone.`,
+				`It is used ${count === 1 ? "once" : `${count} times`} in ${places.join(", ")}${otherCount > 0 ? ` and ${otherCount} other ${otherCount === 1 ? "component" : "components"}` : ""}. Deleting it also removes it from those components, along with the wires connected to it. This cannot be undone.`,
 		},
 		errors: {
 			read: (fileName: string) => `Could not read ${fileName}.`,
@@ -350,7 +350,7 @@ export const en = {
 		},
 		connectionRejection: {
 			sameDirection: "Cannot connect two input pins or two output pins",
-			sameNode: "Cannot connect two pins of one placed component",
+			sameNode: "Cannot connect a component's output to its own input",
 			differentParentComponent:
 				"Cannot connect pins placed in different components",
 			inputAlreadyConnected: "This input pin is already connected",
