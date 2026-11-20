@@ -442,8 +442,7 @@ const decimalDigitStage = defineStage("decimal-digit", {
 		[1, 2, 10, 11, 12, 13],
 	),
 	layOut(circuit, { decorate }) {
-		// Every wire placed runs left to right, so none crosses a node; only the wire
-		// from S back to the FlipFlop, which the player draws, runs back
+		// Every wire placed here runs left to right, so that none crosses a node
 		const memory = circuit.place(flipflop.component.id, { x: -150, y: -150 });
 		const adder = circuit.place(fourBitAdderStage.componentId, {
 			x: 100,
@@ -494,7 +493,7 @@ const decimalDigitStage = defineStage("decimal-digit", {
 				x: 380,
 				y: -30,
 			});
-			const kept = circuit.place(and.component.id, { x: -320, y: -150 });
+			const kept = circuit.place(and.component.id, { x: -320, y: -120 });
 			circuit.setBitWidth(spreadStays, broadcast.outputPin.Out, digitCount);
 			const digit = (index: number) =>
 				circuit.pinOf(digits, decompose.outputPin.Out, index);

@@ -1,6 +1,10 @@
 import nullthrows from "nullthrows";
 import { describe, expect, it } from "vitest";
-import { pointsOnConnection } from "../pages/edit/Editor/renderer/Connection/path";
+import {
+	connectionStraightGap,
+	pointsOnConnection,
+} from "../pages/edit/Editor/renderer/Connection/path";
+import { nodeTitleHeight } from "../pages/edit/Editor/renderer/Node/components/Default/geometry";
 import { getCCComponentEditorRendererNodeGeometry } from "../pages/edit/Editor/renderer/Node/geometry";
 import type { CCComponentId } from "../store/component";
 import {
@@ -91,16 +95,23 @@ describe("tutorialStages", () => {
 
 describe("the layout of every stage", () => {
 	it.each(tutorialStages.map((s) => [s.id, s] as const))(
-		"%s places no node over another, also once solved",
+		"%s places no node or its name over another, also once solved",
 		(_, laidOut) => {
 			const store = createTestStore();
 			setUpTutorialStage(store, laidOut, titleOf)();
 			const rects = store.nodes
 				.getManyByParentComponentId(laidOut.componentId)
-				.map((node) => ({
-					name: nullthrows(store.components.get(node.componentId)).name,
-					...getCCComponentEditorRendererNodeGeometry(store, node.id).rect,
-				}));
+				.map((node) => {
+					const { position, size } = getCCComponentEditorRendererNodeGeometry(
+						store,
+						node.id,
+					).rect;
+					return {
+						name: nullthrows(store.components.get(node.componentId)).name,
+						position: { x: position.x, y: position.y - nodeTitleHeight },
+						size: { x: size.x, y: size.y + nodeTitleHeight },
+					};
+				});
 			const overlaps = rects.flatMap((a, i) =>
 				rects
 					.slice(i + 1)
@@ -120,9 +131,8 @@ describe("the layout of every stage", () => {
 });
 
 describe("the wires every stage starts with", () => {
-	// A node's name is written above it
-	const titleHeight = 17;
-	const clearance = 6;
+	// Below the straight part of a wire, which starts that far from its own node
+	const clearance = connectionStraightGap - 4;
 
 	it.each(tutorialStages.map((s) => [s.id, s] as const))(
 		"%s runs no wire over a node or its name",
@@ -162,7 +172,7 @@ describe("the wires every stage starts with", () => {
 								(point) =>
 									point.x > position.x - clearance &&
 									point.x < position.x + size.x + clearance &&
-									point.y > position.y - titleHeight - clearance &&
+									point.y > position.y - nodeTitleHeight - clearance &&
 									point.y < position.y + size.y + clearance,
 							);
 						})

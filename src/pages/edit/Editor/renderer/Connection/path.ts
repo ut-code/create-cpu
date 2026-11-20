@@ -6,7 +6,8 @@ export type CCComponentEditorRendererConnectionEndpoint = {
 	position: Vector2;
 };
 
-const straightGap = 10;
+/** How far a wire runs straight out of a pin before it bends */
+export const connectionStraightGap = 10;
 const polarity: Record<CCComponentPinType, number> = {
 	input: -1,
 	output: 1,
@@ -17,8 +18,8 @@ export function connectionCurve(
 	from: CCComponentEditorRendererConnectionEndpoint,
 	to: CCComponentEditorRendererConnectionEndpoint,
 ): [Vector2, Vector2, Vector2, Vector2] {
-	const fromSide = straightGap * polarity[from.direction];
-	const toSide = straightGap * polarity[to.direction];
+	const fromSide = connectionStraightGap * polarity[from.direction];
+	const toSide = connectionStraightGap * polarity[to.direction];
 	return [
 		{ x: from.position.x + fromSide, y: from.position.y },
 		{ x: from.position.x + 4 * fromSide, y: from.position.y },

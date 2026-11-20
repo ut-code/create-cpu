@@ -2,10 +2,9 @@ import type { Ref } from "react";
 import styles from "../../style.module.css";
 import type { CCComponentEditorRendererNodeRendererProps } from "../../types";
 
-export const CC_COMPONENT_EDITOR_RENDERER_NODE_TITLE = {
-	baselineY: -5,
-	fontSize: 12,
-};
+import { CC_COMPONENT_EDITOR_RENDERER_NODE_TITLE } from "./geometry";
+
+export { CC_COMPONENT_EDITOR_RENDERER_NODE_TITLE };
 
 export function CCComponentEditorRendererNodeDefaultRenderer({
 	title,
