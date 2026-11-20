@@ -159,7 +159,7 @@ function StageView({ stage }: { stage: TutorialStage }) {
 					display: "grid",
 					// Wider on a wide screen, for long texts and tables of many columns
 					gridTemplateColumns:
-						"clamp(300px, 22vw, 400px) max-content 200px max-content 1fr",
+						"clamp(300px, 25vw, 420px) max-content 200px max-content 1fr",
 					minHeight: 0,
 				}}
 			>
