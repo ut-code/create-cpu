@@ -102,7 +102,14 @@ function StepsSection({
 					aria-expanded={isOpen}
 					aria-controls={stepsId}
 					onClick={() => setIsOpen((open) => !open)}
-					sx={{ font: "inherit", gap: 0.5, borderRadius: 1 }}
+					focusRipple
+					sx={{
+						font: "inherit",
+						gap: 0.5,
+						pr: 1,
+						borderRadius: 1,
+						"&:hover": { bgcolor: "action.hover" },
+					}}
 				>
 					<ExpandMore
 						sx={{
