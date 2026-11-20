@@ -49,7 +49,7 @@ const stageTexts: Record<TutorialStageId, StageTexts> = {
 	"half-adder": {
 		title: "Adding one digit",
 		goal: [
-			"From here on, think of [ON] as [1] and [OFF] as [0], and the stage tables write them that way too. Then {A} + {B} is 0, 1 or 2. Binary writes numbers with only 0 and 1: just as 9 + 1 carries over and becomes 10 in everyday numbers, 1 + 1 carries over and becomes 10 in binary. So 0, 1 and 2 are [00], [01] and [10] in two digits. A digit of a binary number is called a bit.",
+			"From here on, think of [ON] as [1] and [OFF] as [0], and the tables of the stages' circuits write them that way too. Then {A} + {B} is 0, 1 or 2. Binary writes numbers with only 0 and 1: just as 9 + 1 carries over and becomes 10 in everyday numbers, 1 + 1 carries over and becomes 10 in binary. So 0, 1 and 2 are [00], [01] and [10] in two digits. A digit of a binary number is called a bit.",
 			"Output the left digit (the twos digit) to {C} and the right digit (the ones digit) to {S}. {C} is called the carry and {S} the sum, and this circuit is called a half adder.",
 		],
 		steps: [],
@@ -81,7 +81,7 @@ const stageTexts: Record<TutorialStageId, StageTexts> = {
 		],
 		steps: [
 			"Place a {FlipFlop}. A {FlipFlop} outputs what it received at the time step before, and [0000] at the first time step. Connect its output to {Count} and to the {7seg} at the top right.",
-			'Place a {Const}. A {Const} always outputs the value written in its box. Change [00000000] in its box to [0001] and press <constApply> (four bits, to match the {B} it connects to). The "4 bits" below the box is the number of bits of the value.',
+			'Place a {Const}. A {Const} always outputs the value set in its box. Change [00000000] in its box to [0001] and press <constApply> (four bits, to match the {B} it connects to). The "4 bits" below the box is the number of bits of the value.',
 			'Place "{Adding four digits}". Connect the output of the {FlipFlop} to its {A}, the {Const} to its {B}, and its {S} to the input of the {FlipFlop}. Then the number the {FlipFlop} outputs plus 1 comes out of the {FlipFlop} at the next time step. {C} is not used.',
 			"Press the play button <play> and go through the time steps with the right arrow <nextStep>. Press <auto> to go on by itself, one time step a second. The circuit works when the {Display} at the top right shows 0 to F in turn.",
 		],
@@ -141,7 +141,7 @@ export const en = {
 			FLIPFLOP:
 				"Outputs what it received at the time step before. At the first time step, it outputs [OFF], or a value of all [0] bits if its output has two or more bits.",
 			CONST:
-				"Always outputs the value written in its box. To change the value, change the box while editing and press <constApply>. The output has as many bits as shown below the box.",
+				"Always outputs the value set in its box. To change it, change the value in the box while editing and press <constApply>. The output has as many bits as shown below the box.",
 			BROADCAST: "Repeats a one-bit value over two or more bits.",
 			ANDN: "[ON] only when every bit of {In} is [1].",
 			ORN: "[ON] when any bit of {In} is [1].",
@@ -156,8 +156,8 @@ export const en = {
 		} satisfies Record<CCIntrinsicComponentType, string>,
 		pinBitWidth: (pinName: string, canAddPins: boolean) =>
 			canAddPins
-				? `The number in an {${pinName}} pin is its number of bits. Click an {${pinName}} pin while editing, and a field for each {${pinName}} pin appears, from the top. <pinAdd> adds a field at the bottom, and <pinRemove> removes the bottom one. Change the numbers in the fields and press <pinApply>, and the {${pinName}} pins follow the fields.`
-				: `The number in the {${pinName}} pin is its number of bits. To change it, click the pin while editing, change the number in the field and press <pinApply>.`,
+				? `The number in an {${pinName}} pin is its number of bits. Click an {${pinName}} pin while editing, and a box for each {${pinName}} pin appears, from the top. <pinAdd> adds a box at the bottom, and <pinRemove> removes the bottom one. Change the numbers in the boxes and press <pinApply>, and the {${pinName}} pins follow the boxes.`
+				: `The number in the {${pinName}} pin is its number of bits. To change it, click the pin while editing, change the number in the box and press <pinApply>.`,
 		about: (name: string) => `About ${name}`,
 		ofStage: "Available parts",
 	},
@@ -254,7 +254,8 @@ export const en = {
 		parts: "Parts",
 		goalHeading: "Goal",
 		stepsHeading: "Steps",
-		digitsLegend: "The stage tables write ON as 1 and OFF as 0.",
+		digitsLegend:
+			"The tables of the stages' circuits write ON as 1 and OFF as 0.",
 		check: "Check",
 		checking: "Checking…",
 		passed: "Cleared! The circuit works for every combination of the inputs.",
