@@ -2,6 +2,7 @@ import { ChevronLeft, ChevronRight } from "@mui/icons-material";
 import { Box, IconButton, Paper, TextField, ToggleButton } from "@mui/material";
 import { useState } from "react";
 import { useInterval } from "react-use";
+import { autoToggleButtonLook } from "../../../../components/controlLooks";
 import { useMessages } from "../../../../i18n";
 import { useComponentEditorStore } from "../store";
 import {
@@ -58,9 +59,9 @@ export default function CCComponentEditorFrameControl() {
 				elevation={3}
 			>
 				<ToggleButton
+					{...autoToggleButtonLook}
 					value="auto"
 					selected={isAutomatic}
-					size="small"
 					aria-label={messages.editor.frameControl.autoPlay}
 					onChange={() => {
 						componentEditorState.setPlaybackMode(

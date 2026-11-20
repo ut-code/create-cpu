@@ -7,6 +7,7 @@ import {
 	Typography,
 } from "@mui/material";
 import { useId, useState } from "react";
+import { valueApplyButtonLook } from "../../../../../components/controlLooks";
 import { useMessages } from "../../../../../i18n";
 import type { CCIntrinsicComponentConstSpecConfigViewMode as Mode } from "../../../../../store/intrinsics/types";
 import type { SimulationValue } from "../../../../../store/simulation";
@@ -91,11 +92,9 @@ export function CCComponentEditorValueEditor(props: Props) {
 				</ToggleButtonGroup>
 				{!props.readOnly && (
 					<Button
-						variant="outlined"
-						size="small"
+						{...valueApplyButtonLook}
 						disabled={!newValue}
 						onClick={() => newValue && props.onChange(newValue)}
-						sx={{ py: 0.25 }}
 					>
 						{messages.common.apply}
 					</Button>

@@ -25,6 +25,7 @@ import {
 } from "react-router";
 import { BitNotationContext } from "../../components/bitNotation";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
+import { checkButtonLook } from "../../components/controlLooks";
 import {
 	PartDescription,
 	PartDescriptionView,
@@ -36,7 +37,6 @@ import { SimulationNodeError } from "../../store/netlist";
 import type { CCNodeId } from "../../store/node";
 import { StoreScope, useStore } from "../../store/react";
 import { useComponents } from "../../store/react/selectors";
-import { theme } from "../../style";
 import {
 	type CheckResult,
 	checkCircuit,
@@ -316,10 +316,9 @@ function StageView({ stage }: { stage: TutorialStage }) {
 						{/* Outside the scrolling, so that Check and its result stay in view */}
 						<Stack spacing={1} sx={{ p: 2 }}>
 							<Button
-								variant="contained"
+								{...checkButtonLook}
 								onClick={check}
 								disabled={isChecking}
-								sx={{ background: theme.colors.tutorial }}
 							>
 								{isChecking ? texts.checking : texts.check}
 							</Button>

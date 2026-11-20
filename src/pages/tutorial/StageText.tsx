@@ -4,30 +4,33 @@ import {
 	Edit,
 	PlayArrow,
 } from "@mui/icons-material";
-import { Box, type SxProps, type Theme } from "@mui/material";
+import { Box, Button, type ButtonProps, ToggleButton } from "@mui/material";
 import type { ReactNode } from "react";
+import {
+	autoToggleButtonLook,
+	checkButtonLook,
+	pinApplyButtonLook,
+	valueApplyButtonLook,
+} from "../../components/controlLooks";
 import { ValueView } from "../../components/ValueView";
 import { useMessages } from "../../i18n";
-import { theme } from "../../style";
 import {
 	parseStageText,
 	type StageTextControl,
 	type StageTextSegment,
 } from "../../tutorial/stageText";
 
-// Smaller than the real controls and not clickable, so that they are not taken for them
-const buttonSx = {
-	display: "inline-block",
+// The real controls with their looks, smaller and inert, so that they are not taken
+// for controls to press
+const inlineSx = {
 	mx: 0.25,
 	px: 0.75,
-	borderRadius: 1,
+	py: 0,
+	minWidth: 0,
 	fontSize: "0.8125em",
-	fontWeight: 500,
 	lineHeight: 1.6,
-	letterSpacing: "0.02857em",
-	textTransform: "uppercase",
-	whiteSpace: "nowrap",
-	userSelect: "none",
+	verticalAlign: "baseline",
+	boxShadow: "none",
 } as const;
 
 const iconSx = {
@@ -36,13 +39,22 @@ const iconSx = {
 	mx: 0.25,
 } as const;
 
+function InlineButton({ look, label }: { look: ButtonProps; label: string }) {
+	return (
+		<Button
+			{...look}
+			component="span"
+			inert
+			disableRipple
+			sx={[inlineSx, ...(Array.isArray(look.sx) ? look.sx : [look.sx])]}
+		>
+			{label}
+		</Button>
+	);
+}
+
 function ControlView({ control }: { control: StageTextControl }) {
 	const messages = useMessages();
-	const button = (label: string, sx: SxProps<Theme>) => (
-		<Box component="span" sx={[buttonSx, ...(Array.isArray(sx) ? sx : [sx])]}>
-			{label}
-		</Box>
-	);
 	const roundIcon = (icon: ReactNode) => (
 		<Box
 			component="span"
@@ -54,9 +66,9 @@ function ControlView({ control }: { control: StageTextControl }) {
 				width: "1.4em",
 				height: "1.4em",
 				borderRadius: "50%",
-				background: theme.colors.primary,
-				color: theme.colors.white,
-				fontSize: "1em",
+				// As the play button, a Fab of the primary color
+				bgcolor: "primary.main",
+				color: "primary.contrastText",
 				"& svg": { fontSize: "1em" },
 			}}
 		>
@@ -78,38 +90,45 @@ function ControlView({ control }: { control: StageTextControl }) {
 	);
 	switch (control) {
 		case "check":
-			return button(messages.tutorial.check, {
-				background: theme.colors.tutorial,
-				color: theme.colors.white,
-			});
+			return (
+				<InlineButton look={checkButtonLook} label={messages.tutorial.check} />
+			);
 		case "constApply":
-			return button(messages.common.apply, {
-				border: 1,
-				borderColor: "primary.main",
-				color: "primary.main",
-			});
+			return (
+				<InlineButton
+					look={valueApplyButtonLook}
+					label={messages.common.apply}
+				/>
+			);
 		case "pinApply":
-			return button(messages.common.apply, {
-				background: theme.colors.primary,
-				color: theme.colors.white,
-			});
+			return (
+				<InlineButton look={pinApplyButtonLook} label={messages.common.apply} />
+			);
 		case "auto":
-			return button(messages.editor.frameControl.auto, {
-				border: 1,
-				borderColor: "divider",
-				color: "action.active",
-			});
+			return (
+				<ToggleButton
+					{...autoToggleButtonLook}
+					value="auto"
+					component="span"
+					inert
+					disableRipple
+					sx={inlineSx}
+				>
+					{messages.editor.frameControl.auto}
+				</ToggleButton>
+			);
 		case "enter":
 			return (
 				<Box
 					component="kbd"
 					sx={{
-						...buttonSx,
-						textTransform: "none",
+						...inlineSx,
+						display: "inline-block",
 						fontFamily: "inherit",
 						border: 1,
 						borderBottomWidth: 2,
 						borderColor: "divider",
+						borderRadius: 1,
 					}}
 				>
 					Enter
