@@ -9,7 +9,7 @@ import {
 	Typography,
 } from "@mui/material";
 import nullthrows from "nullthrows";
-import { type ReactNode, useEffect, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import {
 	Navigate,
 	Link as RouterLink,
@@ -40,9 +40,11 @@ import {
 } from "../../tutorial/stageStore";
 import {
 	findTutorialStage,
+	givenPartById,
 	isStageComponent,
 	isStagePart,
 	isStagePinNode,
+	isTutorialStageId,
 	type StageTitleOf,
 	stageAreaOf,
 	type TutorialStage,
@@ -71,7 +73,8 @@ function StageView({ stage }: { stage: TutorialStage }) {
 	const navigate = useNavigate();
 	const stageIndex = tutorialStages.indexOf(stage);
 	const nextStage = tutorialStages[stageIndex + 1];
-	const titleOf: StageTitleOf = (id) => texts.stageTexts[id].title;
+	const titleOf: StageTitleOf = (id) =>
+		isTutorialStageId(id) ? texts.stageTexts[id].title : texts.partTitles[id];
 	const goalTable = goalTableOf(stage.check);
 	const stageTexts = texts.stageTexts[stage.id];
 
@@ -80,6 +83,7 @@ function StageView({ stage }: { stage: TutorialStage }) {
 	);
 	const [editedComponentId, setEditedComponentId] = useState(stage.componentId);
 	const [result, setResult] = useState<CheckResult | null>(null);
+	const [isChecking, setIsChecking] = useState(false);
 	const [isConfirmingReset, setIsConfirmingReset] = useState(false);
 	const [hasResetFailed, setHasResetFailed] = useState(false);
 	// The editor keeps state of the store it was made with, so it starts anew on a reset
@@ -96,15 +100,39 @@ function StageView({ stage }: { stage: TutorialStage }) {
 		};
 	}, [store]);
 
+	const cancelCheckRef = useRef<(() => void) | null>(null);
+	const cancelCheck = () => {
+		cancelCheckRef.current?.();
+		cancelCheckRef.current = null;
+		setIsChecking(false);
+	};
+	useEffect(() => () => cancelCheckRef.current?.(), []);
+
 	const check = () => {
-		const checked = checkCircuit(store, stage.componentId, stage.check);
-		if (checked.type === "checkFailed") console.error(checked.error);
-		setResult(checked);
-		if (checked.type === "passed") markStageCleared(stage.id);
+		setIsChecking(true);
+		const run = () => {
+			cancelCheckRef.current = null;
+			const checked = checkCircuit(store, stage.componentId, stage.check);
+			if (checked.type === "checkFailed") console.error(checked.error);
+			setResult(checked);
+			if (checked.type === "passed") markStageCleared(stage.id);
+			setIsChecking(false);
+		};
+		// A check over many time steps holds the page for a moment, so the button says
+		// it is checking before the check starts
+		let timeout: ReturnType<typeof setTimeout> | undefined;
+		const frame = requestAnimationFrame(() => {
+			timeout = setTimeout(run);
+		});
+		cancelCheckRef.current = () => {
+			cancelAnimationFrame(frame);
+			clearTimeout(timeout);
+		};
 	};
 
 	const resetStage = () => {
 		setIsConfirmingReset(false);
+		cancelCheck();
 		try {
 			setStore(resetTutorialStage(stage, titleOf));
 			setResetCount((count) => count + 1);
@@ -129,7 +157,9 @@ function StageView({ stage }: { stage: TutorialStage }) {
 			<div
 				style={{
 					display: "grid",
-					gridTemplateColumns: "300px max-content 200px max-content 1fr",
+					// Wider on a wide screen, for long texts and tables of many columns
+					gridTemplateColumns:
+						"clamp(300px, 25vw, 420px) max-content 200px max-content 1fr",
 					minHeight: 0,
 				}}
 			>
@@ -161,7 +191,9 @@ function StageView({ stage }: { stage: TutorialStage }) {
 							<Typography>{stageTexts.goal}</Typography>
 							{goalTable && (
 								<Box sx={{ mt: 1 }}>
-									<TruthTableView table={goalTable} />
+									<Box sx={{ overflowX: "auto" }}>
+										<TruthTableView table={goalTable} />
+									</Box>
 									{stage.tableNotation === "digits" && (
 										<Typography variant="body2" sx={{ mt: 0.5 }}>
 											{texts.digitsLegend}
@@ -193,16 +225,14 @@ function StageView({ stage }: { stage: TutorialStage }) {
 										}
 									/>
 								))}
-								{stage.givenParts
-									.map((id) => nullthrows(findTutorialStage(id)))
-									.map((given) => (
-										<PartDescriptionView
-											key={given.id}
-											name={titleOf(given.id)}
-											summary={null}
-											table={goalTableOf(given.check)}
-										/>
-									))}
+								{stage.givenParts.map(givenPartById).map((given) => (
+									<PartDescriptionView
+										key={given.id}
+										name={titleOf(given.id)}
+										summary={null}
+										table={goalTableOf(given.check)}
+									/>
+								))}
 							</Stack>
 						</div>
 						<Box sx={{ flexGrow: 1 }} />
@@ -223,9 +253,10 @@ function StageView({ stage }: { stage: TutorialStage }) {
 						<Button
 							variant="contained"
 							onClick={check}
+							disabled={isChecking}
 							sx={{ background: theme.colors.tutorial }}
 						>
-							{texts.check}
+							{isChecking ? texts.checking : texts.check}
 						</Button>
 						{result?.type === "passed" && (
 							<>

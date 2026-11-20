@@ -49,7 +49,7 @@ export function PartDescriptionView({
 			</Typography>
 			{summary && <Typography variant="body2">{summary}</Typography>}
 			{table && (
-				<Box sx={{ mt: 0.5 }}>
+				<Box sx={{ mt: 0.5, overflowX: "auto" }}>
 					<TruthTableView table={table} />
 				</Box>
 			)}

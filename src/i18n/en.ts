@@ -1,5 +1,5 @@
 import { englishSimulationErrorTexts } from "../store/simulationErrorTexts";
-import type { TutorialStageId } from "../tutorial/stages";
+import type { TutorialPartId, TutorialStageId } from "../tutorial/stages";
 
 const bitWidths = (widths: readonly number[]) => `${widths.join("/")} bit`;
 const listOf = (names: readonly string[]) =>
@@ -66,13 +66,23 @@ const stageTexts: Record<TutorialStageId, StageTexts> = {
 	},
 	"decimal-digit": {
 		title: "One decimal digit",
-		goal: "Writing numbers with 0 to 9, carrying over after 9 as everyday numbers do, is called decimal. Make Count go up by 1 only at the time steps when Up is ON, and go back to 0000 after 1001. 1001 is 9, 8 plus 1. At a time step when Count is 1001 and Up is ON, make Carry turn ON: it tells the digit above to go up. Check turns Up ON for time steps 1 to 9, OFF for 10 and 11, and ON again from 12.",
+		goal: "Writing numbers with 0 to 9, carrying over after 9 as everyday numbers do, is called decimal. Make Count go up by 1 only at the time steps when Up is ON, and go back to 0000 after 1001. 1001 is 9, 8 plus 1. At a time step when Count is 1001 and Up is ON, make Carry turn ON: it tells the digit above to go up. Check turns Up ON until Count reaches 1001, then OFF for two time steps to see that Count stays at 1001 and Carry stays OFF, and then ON again to see that Count goes back to 0000.",
 		steps: [
 			'The Const, Broadcast and And on the left send 0001 to B of "Adding four digits" when Up is ON, and 0000 when it is OFF. A Broadcast spreads a one-bit value over several bits: 1111 for ON, 0000 for OFF. An And given values of several bits makes each bit 1 only where both are 1.',
 			"Make Carry. From 0000 to 1001, only 1001 has 1 in both the eights and the ones digit. Join the top pin (eights) and the bottom pin (ones) on the right of the Decompose at the bottom with an And, join its output and Up with another And, and connect that to Carry.",
 			"Place a Broadcast and click the pin on its right. The box that appears is the bit width, the number of bits of the output. Change its 1 to 4 and press Apply, and the output has four bits. Do this before connecting it.",
 			"Go back to 0000 when Carry is ON. S is not connected to the FlipFlop yet. Connect the output of the And that goes to Carry to a Not as well to turn it over, spread it to four bits with that Broadcast, join it and S with an And, and connect the And to the input of the FlipFlop.",
 			"While playing, click Up to switch it ON and OFF, and go through the time steps with the right arrow. The circuit works when the number on the Display goes up only while Up is ON, and goes back to 0 after 9.",
+		],
+	},
+	stopwatch: {
+		title: "Stopwatch",
+		goal: "Finally, a stopwatch counting minutes and seconds like 12:34. It goes on by one second at each time step when Start is ON. The Display at the top right shows, from the left, the tens digit of the minutes (M10), the ones digit of the minutes (M1), a colon, the tens digit of the seconds (S10) and the ones digit of the seconds (S1). M10 and S10 count 0 to 5, and M1 and S1 count 0 to 9. After 59:59 it goes back to 00:00. The 7segs, Const, Decompose and Aggregate left of the Display put the four numerals and the colon side by side on that one Display. Check keeps Start ON until 59:59 has gone back to 00:00, then turns it OFF for two time steps to see that the stopwatch stops, and ON again to see that it goes on.",
+		steps: [
+			'Place two "One base-6 digit" and two "One decimal digit". "One base-6 digit" is built like "One decimal digit", but counts 0 to 5 and carries over after 5, as decimal does after 9.',
+			'Give each of the four parts one of M10, M1, S10 and S1: "One base-6 digit" for M10 and S10, and "One decimal digit" for M1 and S1. Connect the Count of each to the output on the right named after its digit, and to the 7seg of that digit. The 7segs are, from the top, for M10, M1, S10 and S1.',
+			"Connect Start to Up of the part connected to S1. Then connect Carry of the part for S1 to Up of the part for S10, Carry for S10 to Up for M1, and Carry for M1 to Up for M10. A digit then goes on only when the digit one lower goes back to 0.",
+			'Press the play button. If Start is OFF at the first time step, click it to turn it ON. Press "Auto", and the Display goes on like a clock, one time step a second. To see what comes after 59:59, stop Auto, click the number at the bottom, enter 3600 and press the Enter key. It goes to that time step at once and shows 59:59, and the right arrow shows 00:00.',
 		],
 	},
 };
@@ -188,6 +198,7 @@ export const en = {
 		stepsHeading: "Steps",
 		digitsLegend: "The tables write ON as 1 and OFF as 0.",
 		check: "Check",
+		checking: "Checking…",
 		passed: "Cleared! The circuit works for every combination of the inputs.",
 		passedSteps: (count: number) =>
 			`Cleared! The circuit works at every time step up to time step ${count}.`,
@@ -224,6 +235,10 @@ export const en = {
 		},
 		resetStageFailed: "Could not reset the stage.",
 		stageTexts,
+		partTitles: { "senary-digit": "One base-6 digit" } satisfies Record<
+			TutorialPartId,
+			string
+		>,
 	},
 	componentProperties: {
 		title: (componentName: string) => `${componentName} Properties`,

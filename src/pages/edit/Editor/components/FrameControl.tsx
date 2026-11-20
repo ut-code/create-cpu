@@ -8,6 +8,7 @@ import {
 	isValidPlaybackSpeed,
 	MAX_PLAYBACK_SPEED,
 	MIN_PLAYBACK_SPEED,
+	parseTimeStepNumber,
 } from "../store/slices/core/types";
 
 export default function CCComponentEditorFrameControl() {
@@ -17,6 +18,7 @@ export default function CCComponentEditorFrameControl() {
 	const [speedInput, setSpeedInput] = useState(
 		String(componentEditorState.playbackSpeed),
 	);
+	const [stepDraft, setStepDraft] = useState<string | null>(null);
 	const isAutomatic = componentEditorState.playbackMode === "auto";
 	const isSpeedValid = isValidPlaybackSpeed(Number(speedInput));
 
@@ -92,12 +94,28 @@ export default function CCComponentEditorFrameControl() {
 							outline: "none",
 							fontSize: "20px",
 						}}
-						value={componentEditorState.timeStep + 1}
-						onChange={(e) => {
-							const value = Number(e.target.value);
-							if (Number.isSafeInteger(value) && value > 0) {
-								componentEditorState.setTimeStep(value - 1);
+						inputMode="numeric"
+						value={stepDraft ?? String(componentEditorState.timeStep + 1)}
+						onFocus={(e) => {
+							const field = e.currentTarget;
+							// After the click, which in WebKit would undo a selection made now
+							requestAnimationFrame(() => field.select());
+						}}
+						onChange={(e) => setStepDraft(e.target.value)}
+						onKeyDown={(e) => {
+							if (e.key === "Enter" && !e.nativeEvent.isComposing) {
+								e.currentTarget.blur();
 							}
+						}}
+						// Every step up to the one entered is simulated, so a step is only
+						// gone to once it is typed in full, not at each key
+						onBlur={() => {
+							const stepNumber =
+								stepDraft === null ? null : parseTimeStepNumber(stepDraft);
+							if (stepNumber !== null) {
+								componentEditorState.setTimeStep(stepNumber - 1);
+							}
+							setStepDraft(null);
 						}}
 					/>
 					<IconButton

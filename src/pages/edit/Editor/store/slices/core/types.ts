@@ -26,6 +26,19 @@ export function isValidPlaybackSpeed(speed: number): boolean {
 	);
 }
 
+/** Every time step up to the one gone to is simulated and kept, so a jump stops here */
+export const MAX_TIME_STEP_NUMBER = 10000;
+
+/**
+ * The time step, counted from 1, that the text typed in the step field asks for, or
+ * null for none. Full-width digits, as typed with a Japanese input method, count.
+ */
+export function parseTimeStepNumber(text: string): number | null {
+	const value = Number(text.normalize("NFKC").trim());
+	if (!Number.isSafeInteger(value) || value < 1) return null;
+	return Math.min(value, MAX_TIME_STEP_NUMBER);
+}
+
 export type RangeSelect = { start: Vector2; end: Vector2 } | null;
 
 export type TimeStep = number;
