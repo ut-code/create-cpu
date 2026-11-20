@@ -45,7 +45,7 @@ const stageTexts: Record<TutorialStageId, StageTexts> = {
 			'Make the lamp {Out} turn [ON] when exactly one of the switches {A} and {B} is [ON]. It stays [OFF] when both are [ON]. "{ON when only A is ON}" is ready to use as a component.',
 		],
 		steps: [
-			'Place two "{ON when only A is ON}", and connect {A} and {B} to one of them the other way round. Join their two {Out}s with an {Or} and connect it to {Out}.',
+			'Place two "{ON when only A is ON}", and connect {A} and {B} to one as they are, and to the other the other way round. Join their two {Out}s with an {Or} and connect it to the lamp {Out}.',
 		],
 	},
 	"half-adder": {
@@ -62,14 +62,14 @@ const stageTexts: Record<TutorialStageId, StageTexts> = {
 			'Output {A} + {B} + {Cin} as a two-digit binary number to {C} and {S}. {Cin} is the carry coming up from the next lower digit. The answer is 0 to 3, and 3 is [11] in binary. "{Adding one digit}" is ready to use as a component. This circuit is called a full adder.',
 		],
 		steps: [
-			'Add {A} and {B} with one "{Adding one digit}", then add {Cin} to its {S} with another. Join the two {C}s with an {Or} and output it to {C}.',
+			'Add {A} and {B} with one "{Adding one digit}", then add {Cin} to its {S} with another and output that {S} to {S}. Join the two {C}s with an {Or} and output it to {C}.',
 		],
 	},
 	"four-bit-adder": {
 		title: "Adding four digits",
 		goal: [
-			"{A} and {B} are four-digit binary numbers. Output {A} + {B} in four digits to {S}, and its fifth digit, the sixteens digit, to {C}: {C} is [1] when {A} + {B} is 16 or more. The table shows some examples.",
-			"While playing, click a digit of {A} or {B} to switch it between [0] and [1]. The sum {S} is shown as one character on the {Display} at the top right. The {7seg} before it turns the binary number into the shape of a numeral. To write 10 to 15 with one character, A (10), b (11), C (12), d (13), E (14) and F (15) are used. This way of writing is called hexadecimal.",
+			"{A} and {B} are four-digit binary numbers. Output {A} + {B} in four digits to {S}, and its fifth digit, the sixteens digit, to {C}: {C} is [1] when {A} + {B} is 16 or more.",
+			"While playing, click a digit of {A} or {B} to switch it between [0] and [1]. The sum {S} is shown as one character on the {Display} at the top right. The {7seg} before it turns the binary number into the shape of a numeral. To write 10 to 15 with one character, A (10), b (11), C (12), d (13), E (14) and F (15) are used. This way of writing is called hexadecimal. The table below shows some examples of {A} + {B}.",
 		],
 		steps: [
 			'Place four "{Adding with a carry}". From the top, the pins on the right of {Decompose} and on the left of {Aggregate} are the eights, fours, twos and ones digits.',
