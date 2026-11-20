@@ -65,6 +65,7 @@ import CCComponentEditor from "../edit/Editor";
 import { OutlinedNodeIdsContext } from "../edit/Editor/outlinedNodes";
 import type { OffersComponent } from "../edit/placement";
 import SidePanel from "../edit/SidePanel";
+import { StageNumber } from "./StageNumber";
 import { StageText } from "./StageText";
 
 function SectionHeading({ children }: { children: ReactNode }) {
@@ -236,10 +237,8 @@ function StageView({ stage }: { stage: TutorialStage }) {
 								<ArrowBack fontSize="small" />
 								{texts.stages}
 							</Link>
-							<div>
-								<Typography color="textSecondary" variant="body2">
-									{texts.stageNumber(stageIndex + 1)}
-								</Typography>
+							<Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+								<StageNumber number={stageIndex + 1} />
 								<Typography
 									variant="h2"
 									typography="h5"
@@ -247,7 +246,7 @@ function StageView({ stage }: { stage: TutorialStage }) {
 								>
 									{stageTexts.title}
 								</Typography>
-							</div>
+							</Box>
 							<div>
 								<SectionHeading>{texts.goalHeading}</SectionHeading>
 								<Stack spacing={1}>
