@@ -67,7 +67,7 @@ export default function TutorialPage() {
 										height: "100%",
 										display: "flex",
 										alignItems: "center",
-										gap: 2,
+										gap: 1.5,
 									}}
 								>
 									{/* Large, as the grid alone does not tell the order */}
@@ -82,35 +82,43 @@ export default function TutorialPage() {
 											justifyContent: "center",
 											alignItems: "center",
 											flexShrink: 0,
-											width: 40,
-											height: 40,
+											width: 32,
+											height: 32,
 											borderRadius: "50%",
 											border: 2,
 											borderColor: theme.colors.tutorial,
 											color: theme.colors.tutorial,
-											fontSize: "1.25rem",
+											fontSize: "1.125rem",
 											fontWeight: "bold",
 										}}
 									>
 										{index + 1}
 									</Box>
-									<Typography variant="h3" typography="h6" sx={{ flexGrow: 1 }}>
-										{texts.stageTexts[stage.id].title}
-									</Typography>
-									{clearedStages.has(stage.id) && (
-										<Box
-											sx={{
-												display: "flex",
-												alignItems: "center",
-												gap: 0.5,
-												color: theme.colors.primary,
-												flexShrink: 0,
-											}}
+									{/* Under the title, which then has the width of the card */}
+									<Box sx={{ flexGrow: 1 }}>
+										<Typography
+											variant="h3"
+											typography="h6"
+											// A Japanese title wraps between phrases, not inside a word
+											sx={{ wordBreak: "auto-phrase" }}
 										>
-											<CheckCircle fontSize="small" />
-											{texts.cleared}
-										</Box>
-									)}
+											{texts.stageTexts[stage.id].title}
+										</Typography>
+										{clearedStages.has(stage.id) && (
+											<Typography
+												variant="body2"
+												sx={{
+													display: "flex",
+													alignItems: "center",
+													gap: 0.5,
+													color: theme.colors.primary,
+												}}
+											>
+												<CheckCircle fontSize="inherit" />
+												{texts.cleared}
+											</Typography>
+										)}
+									</Box>
 								</CardActionArea>
 							</Card>
 						</li>
