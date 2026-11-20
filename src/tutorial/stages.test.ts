@@ -1,5 +1,6 @@
 import nullthrows from "nullthrows";
 import { describe, expect, it } from "vitest";
+import { pointsOnConnection } from "../pages/edit/Editor/renderer/Connection/path";
 import { getCCComponentEditorRendererNodeGeometry } from "../pages/edit/Editor/renderer/Node/geometry";
 import type { CCComponentId } from "../store/component";
 import {
@@ -12,6 +13,8 @@ import {
 	seven_segment,
 	xor,
 } from "../store/intrinsics/definitions";
+import type { CCNodeId } from "../store/node";
+import type { CCNodePinId } from "../store/nodePin";
 import {
 	createTestStore,
 	registerTestComponent,
@@ -112,6 +115,64 @@ describe("the layout of every stage", () => {
 			);
 
 			expect(overlaps).toEqual([]);
+		},
+	);
+});
+
+describe("the wires every stage starts with", () => {
+	// A node's name is written above it
+	const titleHeight = 17;
+	const clearance = 6;
+
+	it.each(tutorialStages.map((s) => [s.id, s] as const))(
+		"%s runs no wire over a node or its name",
+		(_, laidOut) => {
+			const store = createTestStore();
+			setUpTutorialStage(store, laidOut, titleOf);
+			const nodes = store.nodes.getManyByParentComponentId(laidOut.componentId);
+			const nameOf = (nodeId: CCNodeId) =>
+				nullthrows(
+					store.components.get(nullthrows(store.nodes.get(nodeId)).componentId),
+				).name;
+			const endpointOf = (nodePinId: CCNodePinId) => {
+				const nodePin = nullthrows(store.nodePins.get(nodePinId));
+				return {
+					nodeId: nodePin.nodeId,
+					direction: nullthrows(store.componentPins.get(nodePin.componentPinId))
+						.type,
+					position: nullthrows(
+						getCCComponentEditorRendererNodeGeometry(
+							store,
+							nodePin.nodeId,
+						).nodePinPositionById.get(nodePinId),
+					),
+				};
+			};
+			const crossings = store.connections
+				.getManyByParentComponentId(laidOut.componentId)
+				.flatMap((connection) => {
+					const from = endpointOf(connection.from);
+					const to = endpointOf(connection.to);
+					const points = pointsOnConnection(from, to, 100);
+					return nodes
+						.filter((node) => {
+							const { position, size } =
+								getCCComponentEditorRendererNodeGeometry(store, node.id).rect;
+							return points.some(
+								(point) =>
+									point.x > position.x - clearance &&
+									point.x < position.x + size.x + clearance &&
+									point.y > position.y - titleHeight - clearance &&
+									point.y < position.y + size.y + clearance,
+							);
+						})
+						.map(
+							(node) =>
+								`${nameOf(from.nodeId)} to ${nameOf(to.nodeId)} over ${nameOf(node.id)}`,
+						);
+				});
+
+			expect(crossings).toEqual([]);
 		},
 	);
 });

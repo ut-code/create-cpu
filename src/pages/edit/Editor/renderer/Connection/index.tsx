@@ -1,7 +1,5 @@
 import nullthrows from "nullthrows";
 import { useState } from "react";
-import type { Vector2 } from "../../../../../common/vector2";
-import type { CCComponentPinType } from "../../../../../store/componentPin";
 import type { CCConnectionId } from "../../../../../store/connection";
 import { useStore } from "../../../../../store/react";
 import {
@@ -12,12 +10,13 @@ import { theme } from "../../../../../style";
 import { useComponentEditorStore } from "../../store";
 import { stringifySimulationValue } from "../../store/slices/core/index";
 import { getCCComponentEditorRendererNodeGeometry } from "../Node/geometry";
+import {
+	type CCComponentEditorRendererConnectionEndpoint,
+	connectionPathData,
+} from "./path";
 import styles from "./style.module.css";
 
-export type CCComponentEditorRendererConnectionEndpoint = {
-	direction: CCComponentPinType;
-	position: Vector2;
-};
+export type { CCComponentEditorRendererConnectionEndpoint };
 
 export type CCComponentEditorRendererConnectionCoreProps = {
 	from: CCComponentEditorRendererConnectionEndpoint;
@@ -29,13 +28,8 @@ export type CCComponentEditorRendererConnectionCoreProps = {
 	onMouseLeave?: React.MouseEventHandler<SVGPathElement>;
 };
 
-const straightGap = 10;
 const HIT_AREA_STROKE_WIDTH = 12;
 const VALUE_LABEL_SIZE = { x: 200, y: 24 };
-const polarity: Record<CCComponentPinType, number> = {
-	input: -1,
-	output: 1,
-};
 export function CCComponentEditorRendererConnectionCore({
 	from,
 	to,
@@ -46,19 +40,7 @@ export function CCComponentEditorRendererConnectionCore({
 }: CCComponentEditorRendererConnectionCoreProps) {
 	const componentEditorState = useComponentEditorStore()();
 
-	const d = [
-		`M ${from.position.x} ${from.position.y}`,
-		`h ${straightGap * polarity[from.direction]}`,
-		`C ${[
-			from.position.x + 4 * straightGap * polarity[from.direction],
-			from.position.y,
-			to.position.x + 4 * straightGap * polarity[to.direction],
-			to.position.y,
-			to.position.x + straightGap * polarity[to.direction],
-			to.position.y,
-		].join(" ")}`,
-		`h ${straightGap * polarity[from.direction]}`,
-	].join(" ");
+	const d = connectionPathData(from, to);
 
 	return (
 		<>
