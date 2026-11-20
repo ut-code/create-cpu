@@ -287,19 +287,15 @@ const fullAdderStage = defineStage("full-adder", {
 
 const digitCount = 4;
 
-/**
- * A 7seg at `position` showing a number on a Display right of it, raised by
- * `displayRise`; returns the 7seg's input
- */
+/** A 7seg at `position` showing a number on a Display right of it; returns the 7seg's input */
 function placeNumeral(
 	circuit: StageCircuit,
 	position: Vector2 = { x: 290, y: -250 },
-	displayRise = 0,
 ): CCNodePinId {
 	const digit = circuit.place(seven_segment.component.id, position);
 	const screen = circuit.place(
 		display.component.id,
-		{ x: position.x + 140, y: position.y - displayRise },
+		{ x: position.x + 140, y: position.y },
 		{ resolution: { x: 4, y: 7 }, pixelOrder: "row-major" },
 	);
 	circuit.connect(
@@ -593,11 +589,12 @@ const partById = {
 export const tutorialParts: readonly GivenPart[] = Object.values(partById);
 
 const secondsInHour = 3600;
+/** From the left of MM:SS, with where the 7seg of each sits */
 const stopwatchDigits = [
-	{ name: "M10", part: senaryDigitPart },
-	{ name: "M1", part: decimalDigitStage },
-	{ name: "S10", part: senaryDigitPart },
-	{ name: "S1", part: decimalDigitStage },
+	{ name: "M10", part: senaryDigitPart, numeralY: -570 },
+	{ name: "M1", part: decimalDigitStage, numeralY: -495 },
+	{ name: "S10", part: senaryDigitPart, numeralY: -345 },
+	{ name: "S1", part: decimalDigitStage, numeralY: -270 },
 ] as const;
 // Start is OFF for a while only after 59:59 has gone back to 00:00, so that the
 // steps of the goal are those a player reaches with Start ON from the first step
@@ -607,15 +604,16 @@ const numeralHeight = 7;
 const blankColumn = new Array<boolean>(numeralHeight).fill(false);
 // The rows the dots of a colon light, as tall as a 7seg's numeral
 const colonColumn = [false, false, true, false, true, false, false];
-/** The columns between the numerals, from the left: a gap, a gap and a colon, a gap */
-const spacerWidths = [numeralHeight, 3 * numeralHeight, numeralHeight];
-const spacers = [
-	...blankColumn,
-	...blankColumn,
-	...colonColumn,
-	...blankColumn,
-	...blankColumn,
+/** The columns between the numerals: a gap; a gap, the colon and a gap; a gap */
+const spacerColumns = [
+	[blankColumn],
+	[blankColumn, colonColumn, blankColumn],
+	[blankColumn],
 ];
+const spacerWidths = spacerColumns.map(
+	(columns) => columns.length * numeralHeight,
+);
+const spacers = spacerColumns.flat(2);
 
 /** MM:SS, one second a step while Start is ON, back to 00:00 after 59:59 */
 const stopwatchStage = defineStage("stopwatch", {
@@ -657,11 +655,11 @@ const stopwatchStage = defineStage("stopwatch", {
 		[1, 2, ...Array.from({ length: 6 }, (_, index) => secondsInHour + index)],
 	),
 	layOut(circuit, { decorate }) {
-		const numerals = stopwatchDigits.map((_, index) =>
+		const numerals = stopwatchDigits.map(({ numeralY }) =>
 			decorate
 				? circuit.place(
 						seven_segment.component.id,
-						{ x: -150, y: [-570, -495, -345, -270][index] ?? 0 },
+						{ x: -150, y: numeralY },
 						{ pixelOrder: "column-major" },
 					)
 				: null,

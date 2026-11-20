@@ -9,7 +9,7 @@ import {
 	Typography,
 } from "@mui/material";
 import nullthrows from "nullthrows";
-import { type ReactNode, useEffect, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import {
 	Navigate,
 	Link as RouterLink,
@@ -100,23 +100,39 @@ function StageView({ stage }: { stage: TutorialStage }) {
 		};
 	}, [store]);
 
+	const cancelCheckRef = useRef<(() => void) | null>(null);
+	const cancelCheck = () => {
+		cancelCheckRef.current?.();
+		cancelCheckRef.current = null;
+		setIsChecking(false);
+	};
+	useEffect(() => () => cancelCheckRef.current?.(), []);
+
 	const check = () => {
 		setIsChecking(true);
+		const run = () => {
+			cancelCheckRef.current = null;
+			const checked = checkCircuit(store, stage.componentId, stage.check);
+			if (checked.type === "checkFailed") console.error(checked.error);
+			setResult(checked);
+			if (checked.type === "passed") markStageCleared(stage.id);
+			setIsChecking(false);
+		};
 		// A check over many time steps holds the page for a moment, so the button says
 		// it is checking before the check starts
-		requestAnimationFrame(() =>
-			setTimeout(() => {
-				const checked = checkCircuit(store, stage.componentId, stage.check);
-				if (checked.type === "checkFailed") console.error(checked.error);
-				setResult(checked);
-				if (checked.type === "passed") markStageCleared(stage.id);
-				setIsChecking(false);
-			}),
-		);
+		let timeout: ReturnType<typeof setTimeout> | undefined;
+		const frame = requestAnimationFrame(() => {
+			timeout = setTimeout(run);
+		});
+		cancelCheckRef.current = () => {
+			cancelAnimationFrame(frame);
+			clearTimeout(timeout);
+		};
 	};
 
 	const resetStage = () => {
 		setIsConfirmingReset(false);
+		cancelCheck();
 		try {
 			setStore(resetTutorialStage(stage, titleOf));
 			setResetCount((count) => count + 1);
