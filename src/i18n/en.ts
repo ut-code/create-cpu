@@ -1,3 +1,4 @@
+import type { CCIntrinsicComponentType } from "../store/intrinsics/types";
 import { englishSimulationErrorTexts } from "../store/simulationErrorTexts";
 import type { TutorialPartId, TutorialStageId } from "../tutorial/stages";
 
@@ -98,19 +99,32 @@ export const en = {
 	},
 	parts: {
 		summaries: {
-			AND: "ON only when both inputs are ON",
-			OR: "ON when at least one input is ON",
-			NOT: "Turns ON into OFF, and OFF into ON",
-			XOR: "ON when exactly one input is ON",
-			TRUE: "Always ON",
-			FALSE: "Always OFF",
-			DECOMPOSE: "Splits a value of several bits, from the highest digit down",
-			AGGREGATE: "Joins values into one, the upper pins as the higher digits",
+			AND: "ON only when both inputs are ON.",
+			OR: "ON when at least one input is ON.",
+			NOT: "Turns ON into OFF, and OFF into ON.",
+			XOR: "ON when exactly one input is ON.",
+			TRUE: "Always ON.",
+			FALSE: "Always OFF.",
+			DECOMPOSE:
+				"Splits a value of several bits, the higher digits to the upper pins.",
+			AGGREGATE: "Joins values into one, the upper pins as the higher digits.",
 			FLIPFLOP:
-				"Outputs what it received at the time step before (0 at the first time step)",
-			CONST: "Always outputs the value written in it",
-			BROADCAST: "Repeats a one-bit value over several bits",
-		},
+				"Outputs what it received at the time step before (0 at the first time step).",
+			CONST: "Always outputs the value written in it.",
+			BROADCAST: "Repeats a one-bit value over several bits.",
+			ANDN: "ON only when every bit of In is 1.",
+			ORN: "ON when any bit of In is 1.",
+			SEVEN_SEGMENT:
+				"Turns the 4-bit value of In into the shape of a hexadecimal character, 0 to F. Connect Out to a Display of resolution 4x7, and give both the same pixel order with their gear buttons.",
+			DISPLAY:
+				"While playing, shows the value of Pixels as a picture, one bit per pixel (1 is black, 0 is white). From the highest digit, the pixels go from the top left row by row in row-major order, or column by column in column-major order. The gear button sets the resolution and the pixel order.",
+			INPUT:
+				"Adds an input to the component it is placed in. Where that component is placed as a part, the input is a pin on its left. While playing, click it to change its value.",
+			OUTPUT:
+				"Adds an output to the component it is placed in. Where that component is placed as a part, the output is a pin on its right. While playing, it shows the value it receives.",
+		} satisfies Record<CCIntrinsicComponentType, string>,
+		pinBitWidth: (pinName: string, canAddPins: boolean) =>
+			`The number in the ${pinName} pin is its number of bits. Click the pin to change it.${canAddPins ? ` "Add" adds another ${pinName} pin.` : ""}`,
 		about: (name: string) => `About ${name}`,
 		ofStage: "Available parts",
 	},
