@@ -1,5 +1,5 @@
 import { englishSimulationErrorTexts } from "../store/simulationErrorTexts";
-import type { TutorialStageId } from "../tutorial/stages";
+import type { TutorialPartId, TutorialStageId } from "../tutorial/stages";
 
 const bitWidths = (widths: readonly number[]) => `${widths.join("/")} bit`;
 const listOf = (names: readonly string[]) =>
@@ -73,6 +73,16 @@ const stageTexts: Record<TutorialStageId, StageTexts> = {
 			"Place a Broadcast and click the pin on its right. The box that appears is the bit width, the number of bits of the output. Change its 1 to 4 and press Apply, and the output has four bits. Do this before connecting it.",
 			"Go back to 0000 when Carry is ON. S is not connected to the FlipFlop yet. Connect the output of the And that goes to Carry to a Not as well to turn it over, spread it to four bits with that Broadcast, join it and S with an And, and connect the And to the input of the FlipFlop.",
 			"While playing, click Up to switch it ON and OFF, and go through the time steps with the right arrow. The circuit works when the number on the Display goes up only while Up is ON, and goes back to 0 after 9.",
+		],
+	},
+	stopwatch: {
+		title: "Stopwatch",
+		goal: "Finally, a stopwatch counting minutes and seconds as MM:SS. It goes on by one second at each time step when Start is ON. The four Displays at the top are, from the left, the tens of minutes (M10), the minutes (M1), the tens of seconds (S10) and the seconds (S1). M10 and S10 count 0 to 5, and M1 and S1 count 0 to 9. After 59:59 it goes back to 00:00. Check turns Start ON for time steps 1 to 5, OFF for 6 and 7, and ON again from 8, up to time step 3604.",
+		steps: [
+			'Place two "One base-6 digit" and two "One decimal digit". "One base-6 digit" is built like "One decimal digit", but counts 0 to 5 and goes back to 0 after 5. Use "One base-6 digit" for M10 and S10, and "One decimal digit" for M1 and S1.',
+			"Connect Start to Up of the part for S1. Then connect Carry of the part for S1 to Up of the part for S10, Carry for S10 to Up for M1, and Carry for M1 to Up for M10. A digit then goes on only when the digit below it goes back to 0.",
+			"Connect each Count to the output of the same name on the right and to its 7seg below the Displays. The 7segs are, from the left, for M10, M1, S10 and S1.",
+			'Press the play button, click Start to turn it ON at the first time step, and press "Auto": the Displays go on like a clock, one time step a second. To see what comes after 59:59, stop Auto and change the time step at the bottom to 3600. It goes there at once, and the right arrow shows 00:00.',
 		],
 	},
 };
@@ -224,6 +234,10 @@ export const en = {
 		},
 		resetStageFailed: "Could not reset the stage.",
 		stageTexts,
+		partTitles: { "senary-digit": "One base-6 digit" } satisfies Record<
+			TutorialPartId,
+			string
+		>,
 	},
 	componentProperties: {
 		title: (componentName: string) => `${componentName} Properties`,

@@ -14,8 +14,8 @@ import {
 } from "./stageStore";
 import {
 	findTutorialStage,
+	type GivenPartId,
 	setUpTutorialStage,
-	type TutorialStageId,
 	tutorialStages,
 } from "./stages";
 
@@ -24,7 +24,7 @@ if (!firstStage || !secondStage) throw new Error("No stages");
 const xorStage = nullthrows(findTutorialStage("xor"));
 const aOnlyStage = nullthrows(findTutorialStage("a-only"));
 const firstKey = `ccTutorialStage:${firstStage.id}`;
-const titleOf = (id: TutorialStageId) => `Stage ${id}`;
+const titleOf = (id: GivenPartId) => `Stage ${id}`;
 
 let saved: Map<string, string>;
 beforeEach(() => {

@@ -1,4 +1,5 @@
 import nullthrows from "nullthrows";
+import invariant from "tiny-invariant";
 import type { BitNotation } from "../common/bitLabel";
 import { bitsOf, numberOf } from "../common/bits";
 import type { Rect } from "../common/rect";
@@ -45,18 +46,28 @@ export const tutorialStageIds = [
 	"four-bit-adder",
 	"counter",
 	"decimal-digit",
+	"stopwatch",
 ] as const;
 export type TutorialStageId = (typeof tutorialStageIds)[number];
-export type StageTitleOf = (id: TutorialStageId) => string;
 
-export type TutorialStage = {
-	id: TutorialStageId;
+/** Parts handed over that no stage of the list builds */
+export const tutorialPartIds = ["senary-digit"] as const;
+export type TutorialPartId = (typeof tutorialPartIds)[number];
+export type GivenPartId = TutorialStageId | TutorialPartId;
+export type StageTitleOf = (id: GivenPartId) => string;
+
+export function isTutorialStageId(value: unknown): value is TutorialStageId {
+	return tutorialStageIds.some((id) => id === value);
+}
+
+type StageOf<Id extends GivenPartId> = {
+	id: Id;
 	/** the component the player builds, kept under this id so it is found after a reload */
 	componentId: CCComponentId;
 	/** the intrinsic components the side panel offers */
 	parts: readonly CCComponentId[];
-	/** earlier stages whose components the stage hands over, built and ready to use */
-	givenParts: readonly TutorialStageId[];
+	/** earlier stages or parts whose components the stage hands over, built and ready to use */
+	givenParts: readonly GivenPartId[];
 	allowsNewComponents: boolean;
 	tableNotation: BitNotation;
 	/** also the input and output pins the stage starts with */
@@ -69,6 +80,10 @@ export type TutorialStage = {
 	 */
 	layOut(circuit: StageCircuit, options: { decorate: boolean }): () => void;
 };
+
+export type TutorialStage = StageOf<TutorialStageId>;
+/** A stage, or a part that is built like one but not played */
+export type GivenPart = StageOf<GivenPartId>;
 
 const gateParts = [and, or, not].map((gate) => gate.component.id);
 
@@ -85,10 +100,10 @@ type StageDefinition = Pick<TutorialStage, "parts" | "check"> &
 	Partial<Pick<TutorialStage, "givenParts" | "tableNotation" | "pinDistance">> &
 	(Pick<TutorialStage, "layOut"> | Solving);
 
-function defineStage(
-	id: TutorialStageId,
+function defineStage<Id extends GivenPartId>(
+	id: Id,
 	definition: StageDefinition,
-): TutorialStage {
+): StageOf<Id> {
 	const {
 		parts,
 		check,
@@ -263,15 +278,19 @@ const fullAdderStage = defineStage("full-adder", {
 
 const digitCount = 4;
 
-/** A 7seg at `position` showing a number on a Display right of it; returns the 7seg's input */
+/**
+ * A 7seg at `position` showing a number on a Display right of it, raised by
+ * `displayRise`; returns the 7seg's input
+ */
 function placeNumeral(
 	circuit: StageCircuit,
 	position: Vector2 = { x: 290, y: -250 },
+	displayRise = 0,
 ): CCNodePinId {
 	const digit = circuit.place(seven_segment.component.id, position);
 	const screen = circuit.place(
 		display.component.id,
-		{ x: position.x + 140, y: position.y },
+		{ x: position.x + 140, y: position.y - displayRise },
 		{ resolution: { x: 4, y: 7 }, pixelOrder: "row-major" },
 	);
 	circuit.connect(
@@ -412,123 +431,254 @@ const counterStage = defineStage("counter", {
 	},
 });
 
-const decimalDigitCount = 10;
+/**
+ * One digit of base `base`: Count goes up while Up is ON and back to 0 after the
+ * largest digit, and Carry is ON when it goes back. Up is OFF for two steps while
+ * Count stays at that digit, so a Carry that ignores Up is caught.
+ */
+function digitStage<Id extends GivenPartId>(id: Id, base: number) {
+	const largest = base - 1;
+	const offSteps = [base, base + 1];
+	// The digits that are 1 in the largest digit, e.g. eights and ones in 1001
+	const largestOnes = bitsOf(largest, digitCount).flatMap((isOne, index) =>
+		isOne ? [index] : [],
+	);
+	const [firstOne, secondOne] = largestOnes;
+	invariant(
+		largestOnes.length === 2 &&
+			firstOne !== undefined &&
+			secondOne !== undefined,
+		"Carry is told by two digits that are 1",
+	);
+	return defineStage(id, {
+		parts: [flipflop, const_, broadcast, and, not, decompose].map(
+			(part) => part.component.id,
+		),
+		givenParts: ["four-bit-adder"],
+		tableNotation: "digits",
+		pinDistance: 560,
+		check: sequentialCheck(
+			{ inputs: oneBitInputs("Up"), outputs: ["Count", "Carry"] },
+			{
+				initialState: 0,
+				step: (count, { Up }) => {
+					const isUp = isOn(Up);
+					const carries = isUp && count === largest;
+					return {
+						outputs: { Count: bitsOf(count, digitCount), Carry: bit(carries) },
+						next: carries ? 0 : isUp ? count + 1 : count,
+					};
+				},
+			},
+			Array.from({ length: 2 * base + 4 }, (_, index) => ({
+				Up: bit(!offSteps.includes(index + 1)),
+			})),
+			[1, 2, ...offSteps, base + 2, base + 3],
+		),
+		layOut(circuit, { decorate }) {
+			// Every wire placed here runs left to right, so that none crosses a node
+			const memory = circuit.place(flipflop.component.id, { x: -150, y: -150 });
+			const adder = circuit.place(fourBitAdderStage.componentId, {
+				x: 100,
+				y: 0,
+			});
+			const one = circuit.place(
+				const_.component.id,
+				{ x: -400, y: -300 },
+				{ mode: "binary", data: bitsOf(1, digitCount) },
+			);
+			const spreadUp = circuit.place(broadcast.component.id, {
+				x: -400,
+				y: 120,
+			});
+			const step = circuit.place(and.component.id, { x: -150, y: 120 });
+			const digits = circuit.place(decompose.component.id, { x: 0, y: 250 });
+			circuit.setBitWidth(spreadUp, broadcast.outputPin.Out, digitCount);
+			circuit.split(
+				digits,
+				decompose.outputPin.Out,
+				new Array<number>(digitCount).fill(1),
+			);
+			const count = circuit.pinOf(memory, flipflop.outputPin.Out);
+			circuit.connect(count, circuit.pin("Count"));
+			circuit.connect(count, circuit.pinOf(adder, "A"));
+			circuit.connect(count, circuit.pinOf(digits, decompose.inputPin.In));
+			circuit.connect(
+				circuit.pin("Up"),
+				circuit.pinOf(spreadUp, broadcast.inputPin.In),
+			);
+			circuit.connect(
+				circuit.pinOf(one, const_.outputPin.Out),
+				circuit.pinOf(step, and.inputPin.A),
+			);
+			circuit.connect(
+				circuit.pinOf(spreadUp, broadcast.outputPin.Out),
+				circuit.pinOf(step, and.inputPin.B),
+			);
+			circuit.connect(
+				circuit.pinOf(step, and.outputPin.Out),
+				circuit.pinOf(adder, "B"),
+			);
+			if (decorate) {
+				circuit.connect(count, placeNumeral(circuit, { x: 380, y: -330 }));
+			}
+			return () => {
+				const largestAt = circuit.place(and.component.id, { x: 180, y: 290 });
+				const carries = circuit.place(and.component.id, { x: 330, y: 200 });
+				const stays = circuit.place(not.component.id, { x: 380, y: 40 });
+				const spreadStays = circuit.place(broadcast.component.id, {
+					x: 380,
+					y: -30,
+				});
+				const kept = circuit.place(and.component.id, { x: -320, y: -120 });
+				circuit.setBitWidth(spreadStays, broadcast.outputPin.Out, digitCount);
+				const digit = (index: number) =>
+					circuit.pinOf(digits, decompose.outputPin.Out, index);
+				circuit.connect(
+					digit(firstOne),
+					circuit.pinOf(largestAt, and.inputPin.A),
+				);
+				circuit.connect(
+					digit(secondOne),
+					circuit.pinOf(largestAt, and.inputPin.B),
+				);
+				circuit.connect(
+					circuit.pinOf(largestAt, and.outputPin.Out),
+					circuit.pinOf(carries, and.inputPin.A),
+				);
+				circuit.connect(
+					circuit.pin("Up"),
+					circuit.pinOf(carries, and.inputPin.B),
+				);
+				const carry = circuit.pinOf(carries, and.outputPin.Out);
+				circuit.connect(carry, circuit.pin("Carry"));
+				circuit.connect(carry, circuit.pinOf(stays, not.inputPin.In));
+				circuit.connect(
+					circuit.pinOf(stays, not.outputPin.Out),
+					circuit.pinOf(spreadStays, broadcast.inputPin.In),
+				);
+				circuit.connect(
+					circuit.pinOf(adder, "S"),
+					circuit.pinOf(kept, and.inputPin.A),
+				);
+				circuit.connect(
+					circuit.pinOf(spreadStays, broadcast.outputPin.Out),
+					circuit.pinOf(kept, and.inputPin.B),
+				);
+				circuit.connect(
+					circuit.pinOf(kept, and.outputPin.Out),
+					circuit.pinOf(memory, flipflop.inputPin.In),
+				);
+			};
+		},
+	});
+}
 
-/** Count goes up while Up is ON and back to 0 after 9; Carry is ON when it goes back */
-const decimalDigitStage = defineStage("decimal-digit", {
-	parts: [flipflop, const_, broadcast, and, not, decompose].map(
-		(part) => part.component.id,
-	),
-	givenParts: ["four-bit-adder"],
+const decimalDigitStage = digitStage("decimal-digit", 10);
+/** Handed over to the stopwatch for the tens of seconds and of minutes */
+const senaryDigitPart = digitStage("senary-digit", 6);
+
+export const tutorialParts: readonly GivenPart[] = [senaryDigitPart];
+
+const secondsInHour = 3600;
+const stopwatchDigits = [
+	{ name: "M10", part: senaryDigitPart, x: -420 },
+	{ name: "M1", part: decimalDigitStage, x: -240 },
+	{ name: "S10", part: senaryDigitPart, x: 100 },
+	{ name: "S1", part: decimalDigitStage, x: 280 },
+] as const;
+const stopwatchOffSteps = [6, 7];
+// The rows the dots of a colon light on a display as tall as a 7seg's
+const colonPixels = [false, false, true, false, true, false, false];
+
+/** MM:SS, one second a step while Start is ON, back to 00:00 after 59:59 */
+const stopwatchStage = defineStage("stopwatch", {
+	parts: [],
+	givenParts: ["decimal-digit", "senary-digit"],
 	tableNotation: "digits",
 	pinDistance: 560,
 	check: sequentialCheck(
-		{ inputs: oneBitInputs("Up"), outputs: ["Count", "Carry"] },
+		{
+			inputs: oneBitInputs("Start"),
+			outputs: stopwatchDigits.map(({ name }) => name),
+		},
 		{
 			initialState: 0,
-			step: (count, { Up }) => {
-				const isUp = isOn(Up);
-				const carries = isUp && count === decimalDigitCount - 1;
+			step: (seconds, { Start }) => {
+				const minutes = Math.floor(seconds / 60);
+				const values = [
+					Math.floor(minutes / 10),
+					minutes % 10,
+					Math.floor((seconds % 60) / 10),
+					seconds % 10,
+				];
 				return {
-					outputs: { Count: bitsOf(count, digitCount), Carry: bit(carries) },
-					next: carries ? 0 : isUp ? count + 1 : count,
+					outputs: Object.fromEntries(
+						stopwatchDigits.map(({ name }, index) => [
+							name,
+							bitsOf(nullthrows(values[index]), digitCount),
+						]),
+					),
+					next: isOn(Start) ? (seconds + 1) % secondsInHour : seconds,
 				};
 			},
 		},
-		// Up is OFF while Count stays at 9, so a Carry that ignores Up is caught
-		Array.from({ length: 24 }, (_, index) => ({
-			Up: bit(index + 1 < 10 || index + 1 > 11),
-		})),
-		[1, 2, 10, 11, 12, 13],
+		// Long enough to go from 59:59 back to 00:00 after Start was OFF a while
+		Array.from(
+			{ length: secondsInHour + stopwatchOffSteps.length + 2 },
+			(_, index) => ({ Start: bit(!stopwatchOffSteps.includes(index + 1)) }),
+		),
+		[
+			1,
+			2,
+			...stopwatchOffSteps,
+			8,
+			secondsInHour + stopwatchOffSteps.length,
+			secondsInHour + stopwatchOffSteps.length + 1,
+		],
 	),
 	layOut(circuit, { decorate }) {
-		// Every wire placed here runs left to right, so that none crosses a node
-		const memory = circuit.place(flipflop.component.id, { x: -150, y: -150 });
-		const adder = circuit.place(fourBitAdderStage.componentId, {
-			x: 100,
-			y: 0,
-		});
-		const one = circuit.place(
-			const_.component.id,
-			{ x: -400, y: -300 },
-			{ mode: "binary", data: bitsOf(1, digitCount) },
-		);
-		const spreadUp = circuit.place(broadcast.component.id, { x: -400, y: 120 });
-		const step = circuit.place(and.component.id, { x: -150, y: 120 });
-		const digits = circuit.place(decompose.component.id, { x: 0, y: 250 });
-		circuit.setBitWidth(spreadUp, broadcast.outputPin.Out, digitCount);
-		circuit.split(
-			digits,
-			decompose.outputPin.Out,
-			new Array<number>(digitCount).fill(1),
-		);
-		const count = circuit.pinOf(memory, flipflop.outputPin.Out);
-		circuit.connect(count, circuit.pin("Count"));
-		circuit.connect(count, circuit.pinOf(adder, "A"));
-		circuit.connect(count, circuit.pinOf(digits, decompose.inputPin.In));
-		circuit.connect(
-			circuit.pin("Up"),
-			circuit.pinOf(spreadUp, broadcast.inputPin.In),
-		);
-		circuit.connect(
-			circuit.pinOf(one, const_.outputPin.Out),
-			circuit.pinOf(step, and.inputPin.A),
-		);
-		circuit.connect(
-			circuit.pinOf(spreadUp, broadcast.outputPin.Out),
-			circuit.pinOf(step, and.inputPin.B),
-		);
-		circuit.connect(
-			circuit.pinOf(step, and.outputPin.Out),
-			circuit.pinOf(adder, "B"),
+		const numerals = stopwatchDigits.map(({ x }) =>
+			decorate ? placeNumeral(circuit, { x: x - 140, y: -420 }, 140) : null,
 		);
 		if (decorate) {
-			circuit.connect(count, placeNumeral(circuit, { x: 380, y: -330 }));
+			const colon = circuit.place(
+				display.component.id,
+				{ x: -70, y: -560 },
+				{
+					resolution: { x: 1, y: colonPixels.length },
+					pixelOrder: "row-major",
+				},
+			);
+			const dots = circuit.place(
+				const_.component.id,
+				{ x: -290, y: -800 },
+				{ mode: "binary", data: colonPixels },
+			);
+			circuit.connect(
+				circuit.pinOf(dots, const_.outputPin.Out),
+				circuit.pinOf(colon, display.inputPin.Pixels),
+			);
 		}
 		return () => {
-			const nineAt = circuit.place(and.component.id, { x: 180, y: 290 });
-			const carries = circuit.place(and.component.id, { x: 330, y: 200 });
-			const stays = circuit.place(not.component.id, { x: 380, y: 40 });
-			const spreadStays = circuit.place(broadcast.component.id, {
-				x: 380,
-				y: -30,
-			});
-			const kept = circuit.place(and.component.id, { x: -320, y: -120 });
-			circuit.setBitWidth(spreadStays, broadcast.outputPin.Out, digitCount);
-			const digit = (index: number) =>
-				circuit.pinOf(digits, decompose.outputPin.Out, index);
-			circuit.connect(digit(0), circuit.pinOf(nineAt, and.inputPin.A));
-			circuit.connect(
-				digit(digitCount - 1),
-				circuit.pinOf(nineAt, and.inputPin.B),
+			const nodes = stopwatchDigits.map(({ part }, index) =>
+				circuit.place(part.componentId, {
+					x: 250 - 200 * index,
+					y: 300 - 150 * index,
+				}),
 			);
-			circuit.connect(
-				circuit.pinOf(nineAt, and.outputPin.Out),
-				circuit.pinOf(carries, and.inputPin.A),
-			);
-			circuit.connect(
-				circuit.pin("Up"),
-				circuit.pinOf(carries, and.inputPin.B),
-			);
-			const carry = circuit.pinOf(carries, and.outputPin.Out);
-			circuit.connect(carry, circuit.pin("Carry"));
-			circuit.connect(carry, circuit.pinOf(stays, not.inputPin.In));
-			circuit.connect(
-				circuit.pinOf(stays, not.outputPin.Out),
-				circuit.pinOf(spreadStays, broadcast.inputPin.In),
-			);
-			circuit.connect(
-				circuit.pinOf(adder, "S"),
-				circuit.pinOf(kept, and.inputPin.A),
-			);
-			circuit.connect(
-				circuit.pinOf(spreadStays, broadcast.outputPin.Out),
-				circuit.pinOf(kept, and.inputPin.B),
-			);
-			circuit.connect(
-				circuit.pinOf(kept, and.outputPin.Out),
-				circuit.pinOf(memory, flipflop.inputPin.In),
-			);
+			for (const [index, node] of nodes.entries()) {
+				const { name } = nullthrows(stopwatchDigits[index]);
+				const count = circuit.pinOf(node, "Count");
+				circuit.connect(count, circuit.pin(name));
+				const numeral = numerals[index];
+				if (numeral) circuit.connect(count, numeral);
+				const lower = nodes[index + 1];
+				circuit.connect(
+					lower ? circuit.pinOf(lower, "Carry") : circuit.pin("Start"),
+					circuit.pinOf(node, "Up"),
+				);
+			}
 		};
 	},
 });
@@ -542,6 +692,7 @@ export const tutorialStages: readonly TutorialStage[] = [
 	fourBitAdderStage,
 	counterStage,
 	decimalDigitStage,
+	stopwatchStage,
 ];
 
 /** Between the columns of input and output pins, also for a stage without inputs */
@@ -556,23 +707,26 @@ export function findTutorialStage(id: string | undefined) {
 	return tutorialStages.find((stage) => stage.id === id);
 }
 
-function tutorialStageById(id: TutorialStageId): TutorialStage {
-	return nullthrows(findTutorialStage(id), `No stage ${id}`);
+export function givenPartById(id: GivenPartId): GivenPart {
+	return nullthrows(
+		[...tutorialStages, ...tutorialParts].find((part) => part.id === id),
+		`No stage or part ${id}`,
+	);
 }
 
-function stagesBuiltIn(stage: TutorialStage): TutorialStage[] {
+function stagesBuiltIn(stage: GivenPart): GivenPart[] {
 	return [
 		stage,
-		...stage.givenParts.flatMap((id) => stagesBuiltIn(tutorialStageById(id))),
+		...stage.givenParts.flatMap((id) => stagesBuiltIn(givenPartById(id))),
 	];
 }
 
-function stageOwning(stage: TutorialStage, componentId: CCComponentId) {
+function stageOwning(stage: GivenPart, componentId: CCComponentId) {
 	return stagesBuiltIn(stage).find((s) => s.componentId === componentId);
 }
 
 export function isStageComponent(
-	stage: TutorialStage,
+	stage: GivenPart,
 	componentId: CCComponentId,
 ): boolean {
 	return stageOwning(stage, componentId) !== undefined;
@@ -585,9 +739,9 @@ export function isStagePart(
 	editedComponentId: CCComponentId,
 ) {
 	const owner = stageOwning(stage, editedComponentId);
-	const isGivenTo = (receiver: TutorialStage) =>
+	const isGivenTo = (receiver: GivenPart) =>
 		receiver.givenParts.some(
-			(id) => tutorialStageById(id).componentId === component.id,
+			(id) => givenPartById(id).componentId === component.id,
 		);
 	if (owner && owner !== stage) {
 		return component.intrinsicType
@@ -640,7 +794,7 @@ function renamePinOfNode(
 
 function registerStageComponent(
 	store: CCStore,
-	stage: TutorialStage,
+	stage: GivenPart,
 	componentName: string,
 ) {
 	store.components.register({
@@ -680,10 +834,10 @@ function registerStageComponent(
 /** Skips the parts `store` already has, as a save from before may lack only some */
 export function registerGivenParts(
 	store: CCStore,
-	stage: TutorialStage,
+	stage: GivenPart,
 	titleOf: StageTitleOf,
 ): void {
-	for (const given of stage.givenParts.map(tutorialStageById)) {
+	for (const given of stage.givenParts.map(givenPartById)) {
 		if (store.components.get(given.componentId)) continue;
 		registerGivenParts(store, given, titleOf);
 		registerStageComponent(store, given, titleOf(given.id));
@@ -700,7 +854,7 @@ export function registerGivenParts(
  */
 export function setUpTutorialStage(
 	store: CCStore,
-	stage: TutorialStage,
+	stage: GivenPart,
 	titleOf: StageTitleOf,
 ): () => void {
 	registerGivenParts(store, stage, titleOf);

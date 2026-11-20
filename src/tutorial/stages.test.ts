@@ -1,12 +1,12 @@
 import nullthrows from "nullthrows";
 import { describe, expect, it } from "vitest";
+import { numberOf } from "../common/bits";
 import {
 	connectionStraightGap,
 	pointsOnConnection,
 } from "../pages/edit/Editor/renderer/Connection/path";
 import { nodeTitleHeight } from "../pages/edit/Editor/renderer/Node/components/Default/geometry";
 import { getCCComponentEditorRendererNodeGeometry } from "../pages/edit/Editor/renderer/Node/geometry";
-import type { CCComponentId } from "../store/component";
 import {
 	and,
 	display,
@@ -27,10 +27,14 @@ import {
 import { checkCircuit, goalTableOf } from "./check";
 import {
 	findTutorialStage,
+	type GivenPartId,
+	givenPartById,
 	isStagePart,
 	isStagePinNode,
+	isTutorialStageId,
 	setUpTutorialStage,
 	type TutorialStageId,
+	tutorialParts,
 	tutorialStages,
 } from "./stages";
 
@@ -38,7 +42,10 @@ const [stage] = tutorialStages;
 if (!stage) throw new Error("No stage");
 const xorStage = nullthrows(findTutorialStage("xor"));
 const aOnlyStage = nullthrows(findTutorialStage("a-only"));
-const titleOf = (id: TutorialStageId) => `Stage ${id}`;
+const titleOf = (id: GivenPartId) => `Stage ${id}`;
+const everyStageAndPart = [...tutorialStages, ...tutorialParts].map(
+	(s) => [s.id, s] as const,
+);
 
 describe("tutorialStages", () => {
 	it("writes tables in digits from the stage that teaches binary on", () => {
@@ -51,17 +58,21 @@ describe("tutorialStages", () => {
 		);
 	});
 
-	it("hands over only the parts of earlier stages", () => {
+	it("hands over only earlier stages, or parts no stage builds", () => {
 		for (const [index, later] of tutorialStages.entries()) {
 			for (const id of later.givenParts) {
-				expect(tutorialStages.findIndex((s) => s.id === id)).toBeLessThan(
-					index,
-				);
+				if (isTutorialStageId(id)) {
+					expect(tutorialStages.findIndex((s) => s.id === id)).toBeLessThan(
+						index,
+					);
+				} else {
+					expect(tutorialParts.map((part) => part.id)).toContain(id);
+				}
 			}
 		}
 	});
 
-	it.each(tutorialStages.map((s) => [s.id, s] as const))(
+	it.each(everyStageAndPart)(
 		"%s is cleared by its solution, made of the parts it offers",
 		(_, solved) => {
 			const store = createTestStore();
@@ -83,9 +94,7 @@ describe("tutorialStages", () => {
 				.map((node) => node.componentId);
 			const offered = [
 				...solved.parts,
-				...solved.givenParts.map(
-					(id) => nullthrows(findTutorialStage(id)).componentId,
-				),
+				...solved.givenParts.map((id) => givenPartById(id).componentId),
 			];
 			expect(placed.length).toBeGreaterThan(0);
 			expect(offered).toEqual(expect.arrayContaining(placed));
@@ -94,7 +103,7 @@ describe("tutorialStages", () => {
 });
 
 describe("the layout of every stage", () => {
-	it.each(tutorialStages.map((s) => [s.id, s] as const))(
+	it.each(everyStageAndPart)(
 		"%s places no node or its name over another, also once solved",
 		(_, laidOut) => {
 			const store = createTestStore();
@@ -134,7 +143,7 @@ describe("the wires every stage starts with", () => {
 	// Below the straight part of a wire, which starts that far from its own node
 	const clearance = connectionStraightGap - 4;
 
-	it.each(tutorialStages.map((s) => [s.id, s] as const))(
+	it.each(everyStageAndPart)(
 		"%s runs no wire over a node or its name",
 		(_, laidOut) => {
 			const store = createTestStore();
@@ -249,25 +258,59 @@ describe("the decimal digit stage", () => {
 });
 
 describe("setUpTutorialStage with decorations", () => {
-	it("places the display only for the player, not inside the part handed over", () => {
-		const fourBit = nullthrows(findTutorialStage("four-bit-adder"));
-		const counter = nullthrows(findTutorialStage("counter"));
-		const store = createTestStore();
-		setUpTutorialStage(store, counter, titleOf);
-		const decorationsIn = (componentId: CCComponentId) =>
-			store.nodes
-				.getManyByParentComponentId(componentId)
-				.filter(
-					(node) =>
-						node.componentId === seven_segment.component.id ||
-						node.componentId === display.component.id,
-				);
+	it.each(
+		tutorialStages
+			.filter((s) => s.givenParts.length > 0)
+			.map((s) => [s.id, s] as const),
+	)(
+		"%s hands its parts over built and working, without their displays",
+		(_, receiver) => {
+			const store = createTestStore();
+			setUpTutorialStage(store, receiver, titleOf);
 
-		expect(decorationsIn(counter.componentId)).toHaveLength(2);
-		expect(decorationsIn(fourBit.componentId)).toHaveLength(0);
-		expect(checkCircuit(store, fourBit.componentId, fourBit.check)).toEqual({
-			type: "passed",
-		});
+			for (const given of receiver.givenParts.map(givenPartById)) {
+				expect(
+					store.nodes
+						.getManyByParentComponentId(given.componentId)
+						.filter(
+							(node) =>
+								node.componentId === seven_segment.component.id ||
+								node.componentId === display.component.id,
+						),
+				).toEqual([]);
+				expect(checkCircuit(store, given.componentId, given.check)).toEqual({
+					type: "passed",
+				});
+			}
+		},
+	);
+});
+
+describe("the stopwatch stage", () => {
+	it("shows the pause while Start is OFF, and 59:59 going back to 00:00", () => {
+		const stopwatch = nullthrows(findTutorialStage("stopwatch"));
+		const table = nullthrows(goalTableOf(stopwatch.check));
+		const clockOf = (values: boolean[][]) => {
+			const [m10, m1, s10, s1] = values.map(numberOf);
+			return `${m10}${m1}:${s10}${s1}`;
+		};
+
+		expect(table.outputs).toEqual(["M10", "M1", "S10", "S1"]);
+		expect(
+			table.rows.map(({ stepNumber, inputs, outputs }) => [
+				stepNumber,
+				nullthrows(inputs[0]?.[0]),
+				clockOf(outputs),
+			]),
+		).toEqual([
+			[1, true, "00:00"],
+			[2, true, "00:01"],
+			[6, false, "00:05"],
+			[7, false, "00:05"],
+			[8, true, "00:05"],
+			[3602, true, "59:59"],
+			[3603, true, "00:00"],
+		]);
 	});
 });
 

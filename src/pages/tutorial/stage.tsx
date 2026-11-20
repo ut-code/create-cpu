@@ -40,9 +40,11 @@ import {
 } from "../../tutorial/stageStore";
 import {
 	findTutorialStage,
+	givenPartById,
 	isStageComponent,
 	isStagePart,
 	isStagePinNode,
+	isTutorialStageId,
 	type StageTitleOf,
 	stageAreaOf,
 	type TutorialStage,
@@ -71,7 +73,8 @@ function StageView({ stage }: { stage: TutorialStage }) {
 	const navigate = useNavigate();
 	const stageIndex = tutorialStages.indexOf(stage);
 	const nextStage = tutorialStages[stageIndex + 1];
-	const titleOf: StageTitleOf = (id) => texts.stageTexts[id].title;
+	const titleOf: StageTitleOf = (id) =>
+		isTutorialStageId(id) ? texts.stageTexts[id].title : texts.partTitles[id];
 	const goalTable = goalTableOf(stage.check);
 	const stageTexts = texts.stageTexts[stage.id];
 
@@ -193,16 +196,14 @@ function StageView({ stage }: { stage: TutorialStage }) {
 										}
 									/>
 								))}
-								{stage.givenParts
-									.map((id) => nullthrows(findTutorialStage(id)))
-									.map((given) => (
-										<PartDescriptionView
-											key={given.id}
-											name={titleOf(given.id)}
-											summary={null}
-											table={goalTableOf(given.check)}
-										/>
-									))}
+								{stage.givenParts.map(givenPartById).map((given) => (
+									<PartDescriptionView
+										key={given.id}
+										name={titleOf(given.id)}
+										summary={null}
+										table={goalTableOf(given.check)}
+									/>
+								))}
 							</Stack>
 						</div>
 						<Box sx={{ flexGrow: 1 }} />
