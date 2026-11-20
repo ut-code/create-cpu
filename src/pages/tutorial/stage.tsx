@@ -359,7 +359,7 @@ function StageView({ stage }: { stage: TutorialStage }) {
 							color="textSecondary"
 							variant="body2"
 						>
-							{texts.parts}
+							{messages.common.components}
 						</Typography>
 						<SidePanel
 							editedComponentId={shownComponentId}
