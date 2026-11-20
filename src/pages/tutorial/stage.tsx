@@ -25,6 +25,7 @@ import {
 } from "react-router";
 import { BitNotationContext } from "../../components/bitNotation";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
+import { checkButtonLook } from "../../components/controlLooks";
 import {
 	PartDescription,
 	PartDescriptionView,
@@ -36,7 +37,6 @@ import { SimulationNodeError } from "../../store/netlist";
 import type { CCNodeId } from "../../store/node";
 import { StoreScope, useStore } from "../../store/react";
 import { useComponents } from "../../store/react/selectors";
-import { theme } from "../../style";
 import {
 	type CheckResult,
 	checkCircuit,
@@ -65,6 +65,7 @@ import CCComponentEditor from "../edit/Editor";
 import { OutlinedNodeIdsContext } from "../edit/Editor/outlinedNodes";
 import type { OffersComponent } from "../edit/placement";
 import SidePanel from "../edit/SidePanel";
+import { StageText } from "./StageText";
 
 function SectionHeading({ children }: { children: ReactNode }) {
 	return (
@@ -249,7 +250,13 @@ function StageView({ stage }: { stage: TutorialStage }) {
 							</div>
 							<div>
 								<SectionHeading>{texts.goalHeading}</SectionHeading>
-								<Typography>{stageTexts.goal}</Typography>
+								<Stack spacing={1}>
+									{stageTexts.goal.map((paragraph) => (
+										<Typography key={paragraph}>
+											<StageText text={paragraph} />
+										</Typography>
+									))}
+								</Stack>
 								{goalTable && (
 									<Box sx={{ mt: 1 }}>
 										<Box sx={{ overflowX: "auto" }}>
@@ -268,8 +275,8 @@ function StageView({ stage }: { stage: TutorialStage }) {
 									<SectionHeading>{texts.stepsHeading}</SectionHeading>
 									<Box component="ol" sx={{ m: 0, pl: 3 }}>
 										{stageTexts.steps.map((step) => (
-											<Typography key={step} component="li" sx={{ mb: 0.5 }}>
-												{step}
+											<Typography key={step} component="li" sx={{ mb: 1 }}>
+												<StageText text={step} />
 											</Typography>
 										))}
 									</Box>
@@ -313,10 +320,9 @@ function StageView({ stage }: { stage: TutorialStage }) {
 						{/* Outside the scrolling, so that Check and its result stay in view */}
 						<Stack spacing={1} sx={{ p: 2 }}>
 							<Button
-								variant="contained"
+								{...checkButtonLook}
 								onClick={check}
 								disabled={isChecking}
-								sx={{ background: theme.colors.tutorial }}
 							>
 								{isChecking ? texts.checking : texts.check}
 							</Button>

@@ -10,6 +10,10 @@ import {
 } from "react-router";
 import App from "./App";
 import { LanguageProvider } from "./i18n";
+// The first of the Latin fonts in style.css, with the weights the interface uses
+import "@fontsource/roboto/400.css";
+import "@fontsource/roboto/500.css";
+import "@fontsource/roboto/700.css";
 import "./style.css";
 import { muiTheme } from "./common/theme";
 import EditPage from "./pages/edit";
