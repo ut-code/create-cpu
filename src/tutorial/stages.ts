@@ -2,6 +2,7 @@ import nullthrows from "nullthrows";
 import type { BitNotation } from "../common/bitLabel";
 import { bitsOf, numberOf } from "../common/bits";
 import type { Rect } from "../common/rect";
+import type { Vector2 } from "../common/vector2";
 import type CCStore from "../store";
 import {
 	type CCComponent,
@@ -12,6 +13,7 @@ import type { CCComponentPin } from "../store/componentPin";
 import {
 	aggregate,
 	and,
+	broadcast,
 	const_,
 	decompose,
 	display,
@@ -42,6 +44,7 @@ export const tutorialStageIds = [
 	"full-adder",
 	"four-bit-adder",
 	"counter",
+	"decimal-digit",
 ] as const;
 export type TutorialStageId = (typeof tutorialStageIds)[number];
 export type StageTitleOf = (id: TutorialStageId) => string;
@@ -260,12 +263,15 @@ const fullAdderStage = defineStage("full-adder", {
 
 const digitCount = 4;
 
-/** A 7seg showing a number on a Display at the top right; returns the 7seg's input */
-function placeNumeral(circuit: StageCircuit): CCNodePinId {
-	const digit = circuit.place(seven_segment.component.id, { x: 290, y: -250 });
+/** A 7seg at `position` showing a number on a Display right of it; returns the 7seg's input */
+function placeNumeral(
+	circuit: StageCircuit,
+	position: Vector2 = { x: 290, y: -250 },
+): CCNodePinId {
+	const digit = circuit.place(seven_segment.component.id, position);
 	const screen = circuit.place(
 		display.component.id,
-		{ x: 430, y: -250 },
+		{ x: position.x + 140, y: position.y },
 		{ resolution: { x: 4, y: 7 }, pixelOrder: "row-major" },
 	);
 	circuit.connect(
@@ -406,6 +412,127 @@ const counterStage = defineStage("counter", {
 	},
 });
 
+const decimalDigitCount = 10;
+
+/** Count goes up while Up is ON and back to 0 after 9; Carry is ON when it goes back */
+const decimalDigitStage = defineStage("decimal-digit", {
+	parts: [flipflop, const_, broadcast, and, not, decompose].map(
+		(part) => part.component.id,
+	),
+	givenParts: ["four-bit-adder"],
+	tableNotation: "digits",
+	pinDistance: 560,
+	check: sequentialCheck(
+		{ inputs: oneBitInputs("Up"), outputs: ["Count", "Carry"] },
+		{
+			initialState: 0,
+			step: (count, { Up }) => {
+				const isUp = isOn(Up);
+				const carries = isUp && count === decimalDigitCount - 1;
+				return {
+					outputs: { Count: bitsOf(count, digitCount), Carry: bit(carries) },
+					next: carries ? 0 : isUp ? count + 1 : count,
+				};
+			},
+		},
+		// Up is OFF while Count stays at 9, so a Carry that ignores Up is caught
+		Array.from({ length: 24 }, (_, index) => ({
+			Up: bit(index + 1 < 10 || index + 1 > 11),
+		})),
+		[1, 2, 10, 11, 12, 13],
+	),
+	layOut(circuit, { decorate }) {
+		// Every wire placed here runs left to right, so that none crosses a node
+		const memory = circuit.place(flipflop.component.id, { x: -150, y: -150 });
+		const adder = circuit.place(fourBitAdderStage.componentId, {
+			x: 100,
+			y: 0,
+		});
+		const one = circuit.place(
+			const_.component.id,
+			{ x: -400, y: -300 },
+			{ mode: "binary", data: bitsOf(1, digitCount) },
+		);
+		const spreadUp = circuit.place(broadcast.component.id, { x: -400, y: 120 });
+		const step = circuit.place(and.component.id, { x: -150, y: 120 });
+		const digits = circuit.place(decompose.component.id, { x: 0, y: 250 });
+		circuit.setBitWidth(spreadUp, broadcast.outputPin.Out, digitCount);
+		circuit.split(
+			digits,
+			decompose.outputPin.Out,
+			new Array<number>(digitCount).fill(1),
+		);
+		const count = circuit.pinOf(memory, flipflop.outputPin.Out);
+		circuit.connect(count, circuit.pin("Count"));
+		circuit.connect(count, circuit.pinOf(adder, "A"));
+		circuit.connect(count, circuit.pinOf(digits, decompose.inputPin.In));
+		circuit.connect(
+			circuit.pin("Up"),
+			circuit.pinOf(spreadUp, broadcast.inputPin.In),
+		);
+		circuit.connect(
+			circuit.pinOf(one, const_.outputPin.Out),
+			circuit.pinOf(step, and.inputPin.A),
+		);
+		circuit.connect(
+			circuit.pinOf(spreadUp, broadcast.outputPin.Out),
+			circuit.pinOf(step, and.inputPin.B),
+		);
+		circuit.connect(
+			circuit.pinOf(step, and.outputPin.Out),
+			circuit.pinOf(adder, "B"),
+		);
+		if (decorate) {
+			circuit.connect(count, placeNumeral(circuit, { x: 380, y: -330 }));
+		}
+		return () => {
+			const nineAt = circuit.place(and.component.id, { x: 180, y: 290 });
+			const carries = circuit.place(and.component.id, { x: 330, y: 200 });
+			const stays = circuit.place(not.component.id, { x: 380, y: 40 });
+			const spreadStays = circuit.place(broadcast.component.id, {
+				x: 380,
+				y: -30,
+			});
+			const kept = circuit.place(and.component.id, { x: -320, y: -120 });
+			circuit.setBitWidth(spreadStays, broadcast.outputPin.Out, digitCount);
+			const digit = (index: number) =>
+				circuit.pinOf(digits, decompose.outputPin.Out, index);
+			circuit.connect(digit(0), circuit.pinOf(nineAt, and.inputPin.A));
+			circuit.connect(
+				digit(digitCount - 1),
+				circuit.pinOf(nineAt, and.inputPin.B),
+			);
+			circuit.connect(
+				circuit.pinOf(nineAt, and.outputPin.Out),
+				circuit.pinOf(carries, and.inputPin.A),
+			);
+			circuit.connect(
+				circuit.pin("Up"),
+				circuit.pinOf(carries, and.inputPin.B),
+			);
+			const carry = circuit.pinOf(carries, and.outputPin.Out);
+			circuit.connect(carry, circuit.pin("Carry"));
+			circuit.connect(carry, circuit.pinOf(stays, not.inputPin.In));
+			circuit.connect(
+				circuit.pinOf(stays, not.outputPin.Out),
+				circuit.pinOf(spreadStays, broadcast.inputPin.In),
+			);
+			circuit.connect(
+				circuit.pinOf(adder, "S"),
+				circuit.pinOf(kept, and.inputPin.A),
+			);
+			circuit.connect(
+				circuit.pinOf(spreadStays, broadcast.outputPin.Out),
+				circuit.pinOf(kept, and.inputPin.B),
+			);
+			circuit.connect(
+				circuit.pinOf(kept, and.outputPin.Out),
+				circuit.pinOf(memory, flipflop.inputPin.In),
+			);
+		};
+	},
+});
+
 export const tutorialStages: readonly TutorialStage[] = [
 	andStage,
 	aOnlyStage,
@@ -414,6 +541,7 @@ export const tutorialStages: readonly TutorialStage[] = [
 	fullAdderStage,
 	fourBitAdderStage,
 	counterStage,
+	decimalDigitStage,
 ];
 
 /** Between the columns of input and output pins, also for a stage without inputs */

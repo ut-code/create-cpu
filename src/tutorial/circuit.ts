@@ -41,6 +41,10 @@ export class StageCircuit {
 		return node;
 	}
 
+	setBitWidth(node: CCNode, componentPin: CCComponentPin, bitWidth: number) {
+		this.split(node, componentPin, [bitWidth]);
+	}
+
 	split(node: CCNode, componentPin: CCComponentPin, widths: readonly number[]) {
 		const [first, ...rest] = widths;
 		const existing = this.store.nodePins.getManyByNodeIdAndComponentPinId(

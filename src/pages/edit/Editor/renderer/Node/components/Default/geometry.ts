@@ -5,6 +5,17 @@ import type {
 	CCComponentEditorRendererNodeLayoutSource,
 } from "../../types";
 
+/** The name of a node is written above its top left corner */
+export const CC_COMPONENT_EDITOR_RENDERER_NODE_TITLE = {
+	baselineY: -5,
+	fontSize: 12,
+};
+
+/** How far above a node its name reaches */
+export const nodeTitleHeight =
+	CC_COMPONENT_EDITOR_RENDERER_NODE_TITLE.fontSize -
+	CC_COMPONENT_EDITOR_RENDERER_NODE_TITLE.baselineY;
+
 const width = 100;
 const gapY = 20;
 const paddingY = 15;

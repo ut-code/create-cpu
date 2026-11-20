@@ -6,7 +6,7 @@ const listOf = (names: readonly string[]) =>
 	names.length < 2
 		? names.join("")
 		: `${names.slice(0, -1).join(", ")} and ${names.at(-1)}`;
-const digits = (count: number) => (count === 1 ? "1 digit" : `${count} digits`);
+const bitCount = (count: number) => (count === 1 ? "1 bit" : `${count} bits`);
 const themOf = (names: readonly string[]) =>
 	names.length === 1 ? "it" : "them";
 
@@ -36,7 +36,7 @@ const stageTexts: Record<TutorialStageId, StageTexts> = {
 	},
 	"half-adder": {
 		title: "Adding one digit",
-		goal: "From here on, think of ON as 1 and OFF as 0, and the tables write them that way too. Then A + B is 0, 1 or 2. Binary writes numbers with only 0 and 1: just as 9 + 1 carries over and becomes 10 in everyday numbers, 1 + 1 carries over and becomes 10 in binary. So 0, 1 and 2 are 00, 01 and 10 in two digits. Output the left digit (the twos digit) to C and the right digit (the ones digit) to S. C is called the carry and S the sum, and this circuit is called a half adder.",
+		goal: "From here on, think of ON as 1 and OFF as 0, and the tables write them that way too. Then A + B is 0, 1 or 2. Binary writes numbers with only 0 and 1: just as 9 + 1 carries over and becomes 10 in everyday numbers, 1 + 1 carries over and becomes 10 in binary. So 0, 1 and 2 are 00, 01 and 10 in two digits. A digit of a binary number is called a bit. Output the left digit (the twos digit) to C and the right digit (the ones digit) to S. C is called the carry and S the sum, and this circuit is called a half adder.",
 		steps: [],
 	},
 	"full-adder": {
@@ -59,9 +59,20 @@ const stageTexts: Record<TutorialStageId, StageTexts> = {
 		goal: "After pressing the play button, a number with an arrow button on each side appears at the bottom. The number is called the time step, and the right arrow goes to the next one. The circuit runs one time step at a time. Make Count go up by 1 at each time step, and go back to 0000 after 1111. 0000 to 1111 are 0 to F in hexadecimal.",
 		steps: [
 			"Place a FlipFlop. A FlipFlop outputs what it received at the time step before, and 0 at the first time step. Connect its output to Count and to the 7seg at the top right.",
-			"Place a Const. A Const always outputs the value written in it. Change 00000000 in its box to 0001 and press Apply (four digits, to match the B it connects to).",
+			'Place a Const. A Const always outputs the value written in it. Change 00000000 in its box to 0001 and press Apply (four bits, to match the B it connects to). The "4 bits" below the box is the number of bits of the value.',
 			'Place "Adding four digits". Connect the output of the FlipFlop to its A, the Const to its B, and its S to the input of the FlipFlop. Then the number the FlipFlop outputs plus 1 comes out of the FlipFlop at the next time step. C is not used.',
 			'Press the play button and go through the time steps with the right arrow. Press "Auto" to go on by itself, one time step a second. The circuit works when the Display at the top right shows 0 to F in turn.',
+		],
+	},
+	"decimal-digit": {
+		title: "One decimal digit",
+		goal: "Writing numbers with 0 to 9, carrying over after 9 as everyday numbers do, is called decimal. Make Count go up by 1 only at the time steps when Up is ON, and go back to 0000 after 1001. 1001 is 9, 8 plus 1. At a time step when Count is 1001 and Up is ON, make Carry turn ON: it tells the digit above to go up. Check turns Up ON for time steps 1 to 9, OFF for 10 and 11, and ON again from 12.",
+		steps: [
+			'The Const, Broadcast and And on the left send 0001 to B of "Adding four digits" when Up is ON, and 0000 when it is OFF. A Broadcast spreads a one-bit value over several bits: 1111 for ON, 0000 for OFF. An And given values of several bits makes each bit 1 only where both are 1.',
+			"Make Carry. From 0000 to 1001, only 1001 has 1 in both the eights and the ones digit. Join the top pin (eights) and the bottom pin (ones) on the right of the Decompose at the bottom with an And, join its output and Up with another And, and connect that to Carry.",
+			"Place a Broadcast and click the pin on its right. The box that appears is the bit width, the number of bits of the output. Change its 1 to 4 and press Apply, and the output has four bits. Do this before connecting it.",
+			"Go back to 0000 when Carry is ON. S is not connected to the FlipFlop yet. Connect the output of the And that goes to Carry to a Not as well to turn it over, spread it to four bits with that Broadcast, join it and S with an And, and connect the And to the input of the FlipFlop.",
+			"While playing, click Up to switch it ON and OFF, and go through the time steps with the right arrow. The circuit works when the number on the Display goes up only while Up is ON, and goes back to 0 after 9.",
 		],
 	},
 };
@@ -83,13 +94,12 @@ export const en = {
 			XOR: "ON when exactly one input is ON",
 			TRUE: "Always ON",
 			FALSE: "Always OFF",
-			DECOMPOSE:
-				"Splits a number of several digits, from the highest digit down",
-			AGGREGATE:
-				"Joins values into one number, the upper pins as the higher digits",
+			DECOMPOSE: "Splits a value of several bits, from the highest digit down",
+			AGGREGATE: "Joins values into one, the upper pins as the higher digits",
 			FLIPFLOP:
 				"Outputs what it received at the time step before (0 at the first time step)",
 			CONST: "Always outputs the value written in it",
+			BROADCAST: "Repeats a one-bit value over several bits",
 		},
 		about: (name: string) => `About ${name}`,
 		ofStage: "Available parts",
@@ -186,7 +196,7 @@ export const en = {
 		missingPin: (pinType: "input" | "output", pinName: string) =>
 			`There is no ${pinType} pin named ${pinName}. "Reset this stage" brings back how the stage started.`,
 		wrongBitWidth: (pinName: string, expected: number, actual: number) =>
-			`${pinName} should have ${digits(expected)}, but it has ${digits(actual)}. Check what it is connected to.`,
+			`${pinName} should have ${bitCount(expected)}, but it has ${bitCount(actual)}. Check what it is connected to.`,
 		wrongOutput: (
 			inputs: readonly { name: string; value: string }[],
 			pinName: string,

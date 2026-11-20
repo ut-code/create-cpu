@@ -160,15 +160,15 @@ describe("the message on a wrong output at a step", () => {
 });
 
 describe("the message on a pin of the wrong width", () => {
-	it("counts digits in both languages", () => {
+	it("counts bits in both languages", () => {
 		expect(messagesByLanguage.en.tutorial.wrongBitWidth("A", 4, 1)).toBe(
-			"A should have 4 digits, but it has 1 digit. Check what it is connected to.",
+			"A should have 4 bits, but it has 1 bit. Check what it is connected to.",
 		);
 		expect(messagesByLanguage.en.tutorial.wrongBitWidth("C", 1, 4)).toBe(
-			"C should have 1 digit, but it has 4 digits. Check what it is connected to.",
+			"C should have 1 bit, but it has 4 bits. Check what it is connected to.",
 		);
 		expect(messagesByLanguage.ja.tutorial.wrongBitWidth("A", 4, 1)).toBe(
-			"A は 4桁のはずですが、1桁になっています。つないだ先を確かめてください。",
+			"A は 4ビットのはずですが、1ビットになっています。つないだ先を確かめてください。",
 		);
 	});
 });

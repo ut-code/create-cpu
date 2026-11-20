@@ -1,5 +1,11 @@
 import nullthrows from "nullthrows";
 import { describe, expect, it } from "vitest";
+import {
+	connectionStraightGap,
+	pointsOnConnection,
+} from "../pages/edit/Editor/renderer/Connection/path";
+import { nodeTitleHeight } from "../pages/edit/Editor/renderer/Node/components/Default/geometry";
+import { getCCComponentEditorRendererNodeGeometry } from "../pages/edit/Editor/renderer/Node/geometry";
 import type { CCComponentId } from "../store/component";
 import {
 	and,
@@ -11,6 +17,8 @@ import {
 	seven_segment,
 	xor,
 } from "../store/intrinsics/definitions";
+import type { CCNodeId } from "../store/node";
+import type { CCNodePinId } from "../store/nodePin";
 import {
 	createTestStore,
 	registerTestComponent,
@@ -85,6 +93,100 @@ describe("tutorialStages", () => {
 	);
 });
 
+describe("the layout of every stage", () => {
+	it.each(tutorialStages.map((s) => [s.id, s] as const))(
+		"%s places no node or its name over another, also once solved",
+		(_, laidOut) => {
+			const store = createTestStore();
+			setUpTutorialStage(store, laidOut, titleOf)();
+			const rects = store.nodes
+				.getManyByParentComponentId(laidOut.componentId)
+				.map((node) => {
+					const { position, size } = getCCComponentEditorRendererNodeGeometry(
+						store,
+						node.id,
+					).rect;
+					return {
+						name: nullthrows(store.components.get(node.componentId)).name,
+						position: { x: position.x, y: position.y - nodeTitleHeight },
+						size: { x: size.x, y: size.y + nodeTitleHeight },
+					};
+				});
+			const overlaps = rects.flatMap((a, i) =>
+				rects
+					.slice(i + 1)
+					.filter(
+						(b) =>
+							a.position.x < b.position.x + b.size.x &&
+							b.position.x < a.position.x + a.size.x &&
+							a.position.y < b.position.y + b.size.y &&
+							b.position.y < a.position.y + a.size.y,
+					)
+					.map((b) => `${a.name} and ${b.name}`),
+			);
+
+			expect(overlaps).toEqual([]);
+		},
+	);
+});
+
+describe("the wires every stage starts with", () => {
+	// Below the straight part of a wire, which starts that far from its own node
+	const clearance = connectionStraightGap - 4;
+
+	it.each(tutorialStages.map((s) => [s.id, s] as const))(
+		"%s runs no wire over a node or its name",
+		(_, laidOut) => {
+			const store = createTestStore();
+			setUpTutorialStage(store, laidOut, titleOf);
+			const nodes = store.nodes.getManyByParentComponentId(laidOut.componentId);
+			const nameOf = (nodeId: CCNodeId) =>
+				nullthrows(
+					store.components.get(nullthrows(store.nodes.get(nodeId)).componentId),
+				).name;
+			const endpointOf = (nodePinId: CCNodePinId) => {
+				const nodePin = nullthrows(store.nodePins.get(nodePinId));
+				return {
+					nodeId: nodePin.nodeId,
+					direction: nullthrows(store.componentPins.get(nodePin.componentPinId))
+						.type,
+					position: nullthrows(
+						getCCComponentEditorRendererNodeGeometry(
+							store,
+							nodePin.nodeId,
+						).nodePinPositionById.get(nodePinId),
+					),
+				};
+			};
+			const crossings = store.connections
+				.getManyByParentComponentId(laidOut.componentId)
+				.flatMap((connection) => {
+					const from = endpointOf(connection.from);
+					const to = endpointOf(connection.to);
+					const points = pointsOnConnection(from, to, 100);
+					return nodes
+						.filter((node) => {
+							const { position, size } =
+								getCCComponentEditorRendererNodeGeometry(store, node.id).rect;
+							return points.some(
+								(point) =>
+									point.x > position.x - clearance &&
+									point.x < position.x + size.x + clearance &&
+									point.y > position.y - nodeTitleHeight - clearance &&
+									point.y < position.y + size.y + clearance,
+							);
+						})
+						.map(
+							(node) =>
+								`${nameOf(from.nodeId)} to ${nameOf(to.nodeId)} over ${nameOf(node.id)}`,
+						);
+				});
+
+			expect(crossings).toEqual([]);
+		},
+	);
+});
+
 describe("setUpTutorialStage", () => {
 	it("hands over the parts of earlier stages, built and named after them", () => {
 		const store = createTestStore();
@@ -116,6 +218,32 @@ describe("the counter stage", () => {
 			[3, ["0010"]],
 			[16, ["1111"]],
 			[17, ["0000"]],
+		]);
+	});
+});
+
+describe("the decimal digit stage", () => {
+	it("shows Count held at 1001 while Up is OFF, and the carry back to 0000", () => {
+		const decimal = nullthrows(findTutorialStage("decimal-digit"));
+		const table = nullthrows(goalTableOf(decimal.check));
+		const digitsOf = (values: boolean[][]) =>
+			values.map((value) => value.map(Number).join(""));
+
+		expect(table.inputs).toEqual(["Up"]);
+		expect(table.outputs).toEqual(["Count", "Carry"]);
+		expect(
+			table.rows.map(({ stepNumber, inputs, outputs }) => [
+				stepNumber,
+				...digitsOf(inputs),
+				...digitsOf(outputs),
+			]),
+		).toEqual([
+			[1, "1", "0000", "0"],
+			[2, "1", "0001", "0"],
+			[10, "0", "1001", "0"],
+			[11, "0", "1001", "0"],
+			[12, "1", "1001", "1"],
+			[13, "1", "0000", "0"],
 		]);
 	});
 });
