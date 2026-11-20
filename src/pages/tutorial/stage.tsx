@@ -250,9 +250,13 @@ function StageView({ stage }: { stage: TutorialStage }) {
 							</div>
 							<div>
 								<SectionHeading>{texts.goalHeading}</SectionHeading>
-								<Typography>
-									<StageText text={stageTexts.goal} />
-								</Typography>
+								<Stack spacing={1}>
+									{stageTexts.goal.map((paragraph) => (
+										<Typography key={paragraph}>
+											<StageText text={paragraph} />
+										</Typography>
+									))}
+								</Stack>
 								{goalTable && (
 									<Box sx={{ mt: 1 }}>
 										<Box sx={{ overflowX: "auto" }}>
@@ -271,7 +275,7 @@ function StageView({ stage }: { stage: TutorialStage }) {
 									<SectionHeading>{texts.stepsHeading}</SectionHeading>
 									<Box component="ol" sx={{ m: 0, pl: 3 }}>
 										{stageTexts.steps.map((step) => (
-											<Typography key={step} component="li" sx={{ mb: 0.5 }}>
+											<Typography key={step} component="li" sx={{ mb: 1 }}>
 												<StageText text={step} />
 											</Typography>
 										))}

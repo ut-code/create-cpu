@@ -150,7 +150,12 @@ function SegmentView({ segment }: { segment: StageTextSegment }) {
 		case "text":
 			return segment.text;
 		case "name":
-			return <b>{segment.name}</b>;
+			// Lighter than values, as a text names many pins and parts
+			return (
+				<Box component="b" sx={{ fontWeight: 500 }}>
+					{segment.name}
+				</Box>
+			);
 		case "value":
 			// Bold as a whole, so that a value of OFFs stands out of the text too
 			return (

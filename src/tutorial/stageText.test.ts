@@ -55,10 +55,15 @@ describe("the stage texts", () => {
 		(id) => {
 			const english = en.tutorial.stageTexts[id];
 			const japanese = ja.tutorial.stageTexts[id];
-			expect(japanese.steps).toHaveLength(english.steps.length);
-			expect(marksOf(japanese.goal)).toEqual(marksOf(english.goal));
-			for (const [index, step] of english.steps.entries()) {
-				expect(marksOf(japanese.steps[index] ?? "")).toEqual(marksOf(step));
+			const textsOf = (texts: typeof english) => [
+				...texts.goal,
+				...texts.steps,
+			];
+			const japaneseTexts = textsOf(japanese);
+			expect(japanese.goal).toHaveLength(english.goal.length);
+			expect(japaneseTexts).toHaveLength(textsOf(english).length);
+			for (const [index, text] of textsOf(english).entries()) {
+				expect(marksOf(japaneseTexts[index] ?? "")).toEqual(marksOf(text));
 			}
 		},
 	);
