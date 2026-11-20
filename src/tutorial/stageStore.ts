@@ -21,7 +21,7 @@ const storeByStageId = new Map<TutorialStage["id"], CCStore>();
 function createStageStore(stage: TutorialStage, titleOf: StageTitleOf) {
 	const store = new CCStore({ storageKey: storageKeyOf(stage) });
 	store.mount();
-	setUpTutorialStage(store, stage, titleOf);
+	setUpTutorialStage(store, stage, titleOf)();
 	store.autoSaver.watch();
 	return store;
 }
