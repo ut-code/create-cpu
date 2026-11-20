@@ -18,7 +18,7 @@ describe("describeComponentDeletion", () => {
 		);
 	});
 
-	it("tells where the component is used, as its nodes are removed too", () => {
+	it("tells where the component is used, as it is removed from there too", () => {
 		const store = createTestStore();
 		const adder = registerTestComponent(store, "Adder");
 		const alu = registerTestComponent(store, "ALU");
@@ -28,7 +28,7 @@ describe("describeComponentDeletion", () => {
 		registerTestNode(store, cpu.id, adder.id);
 
 		expect(describeComponentDeletion(store, adder.id, en)).toBe(
-			"It is used 3 times in ALU, CPU. Deleting it also removes those nodes and their connections. This cannot be undone.",
+			"It is used 3 times in ALU, CPU. Deleting it also removes it from those places, with its connections. This cannot be undone.",
 		);
 	});
 
@@ -52,7 +52,7 @@ describe("describeComponentDeletion", () => {
 		registerTestNode(store, alu.id, adder.id);
 
 		expect(describeComponentDeletion(store, adder.id, ja)).toBe(
-			"ALU で 1 か所使われています。削除すると、それらのノードと、つながっている線も消えます。元に戻せません。",
+			"ALU で 1 か所使われています。削除すると、使われているところからも消え、つながっている線も消えます。元に戻せません。",
 		);
 	});
 
@@ -65,7 +65,7 @@ describe("describeComponentDeletion", () => {
 		}
 
 		expect(describeComponentDeletion(store, adder.id, en)).toBe(
-			"It is used 5 times in A, B, C and 2 other components. Deleting it also removes those nodes and their connections. This cannot be undone.",
+			"It is used 5 times in A, B, C and 2 other components. Deleting it also removes it from those places, with its connections. This cannot be undone.",
 		);
 		expect(describeComponentDeletion(store, adder.id, ja)).toMatch(
 			/^A、B、C ほか 2 個のコンポーネントで 5 か所使われています。/,

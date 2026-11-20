@@ -287,7 +287,7 @@ describe("simulateComponent", () => {
 			SimulationCombinationalLoopError,
 		);
 		expect(error.message).toBe(
-			"The output of each part outlined in red comes back to its own input along the wires. Working out its output needs that same output, so the circuit cannot run as it is. Reconnect a wire, or put a FlipFlop somewhere along the way.",
+			"The output of each component outlined in red comes back to its own input along the wires. Working out its output needs that same output, so the circuit cannot run as it is. Reconnect a wire, or put a FlipFlop somewhere along the way.",
 		);
 		expect(new Set(error.nodePaths.map((path) => path[0]))).toEqual(
 			new Set([first.id, second.id]),
@@ -325,7 +325,7 @@ describe("simulateComponent", () => {
 			SimulationCombinationalLoopError,
 		);
 		expect(error.message).toBe(
-			"The output of each part outlined in red comes back to its own input along the wires. Working out its output needs that same output, so the circuit cannot run as it is. Reconnect a wire, or put a FlipFlop somewhere along the way.",
+			"The output of each component outlined in red comes back to its own input along the wires. Working out its output needs that same output, so the circuit cannot run as it is. Reconnect a wire, or put a FlipFlop somewhere along the way.",
 		);
 		expect(new Set(error.nodePaths.map((path) => path[0]))).toEqual(
 			new Set([first.id, second.id]),
@@ -357,7 +357,7 @@ describe("simulateComponent", () => {
 			SimulationCombinationalLoopError,
 		);
 		expect(error.message).toBe(
-			"Inside Ring, the output of some parts comes back to their own input along the wires. Working out their output needs that same output, so the circuit cannot run as it is. Open Ring to reconnect a wire, or put a FlipFlop somewhere along the way.",
+			"Inside Ring, the output of some components comes back to their own input along the wires. Working out their output needs that same output, so the circuit cannot run as it is. Open Ring to reconnect a wire, or put a FlipFlop somewhere along the way.",
 		);
 		expect(new Set(error.nodePaths.map((path) => path[0]))).toEqual(
 			new Set([ringNode.id]),
@@ -434,7 +434,9 @@ describe("simulateComponent", () => {
 				() => simulateComponent(store, root.id, new Map()),
 				SimulationCombinationalLoopError,
 			);
-			expect(error.message).toMatch(/^The output of each part outlined in red/);
+			expect(error.message).toMatch(
+				/^The output of each component outlined in red/,
+			);
 			expect(new Set(error.nodePaths.map((path) => path[0]))).toEqual(
 				new Set([chainNode.id, bufferNode.id]),
 			);

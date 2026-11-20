@@ -25,9 +25,9 @@ const stageTexts: Record<TutorialStageId, StageTexts> = {
 			"Make the lamp {Out} turn [ON] only when both switches {A} and {B} are [ON]. The stage is cleared when the circuit works as in the table below.",
 		],
 		steps: [
-			"Pick a part in the Parts list and drag it onto the editor on the right.",
-			"The small squares on the edges of a part are its pins. A pin on the left side is an input, which receives [ON] or [OFF], and a pin on the right side is an output, which sends [ON] or [OFF]. Drag between an output pin and an input pin to connect them with a wire.",
-			"Once {Out} and every input pin of the parts you placed are connected, the play button <play> at the bottom right can be pressed. It cannot be pressed while a part has a free input pin.",
+			"Pick a component in the Components list and drag it onto the editor on the right.",
+			"The small squares on the edges of a component are its pins. A pin on the left side is an input, which receives [ON] or [OFF], and a pin on the right side is an output, which sends [ON] or [OFF]. Drag between an output pin and an input pin to connect them with a wire.",
+			"Once {Out} and every input pin of the components you placed are connected, the play button <play> at the bottom right can be pressed. It cannot be pressed while a component has a free input pin.",
 			"After pressing the play button <play>, click the switches {A} and {B} to turn them [ON] and [OFF], and watch the lamp {Out}. To fix the circuit, the pencil button <edit> in the same place takes you back to editing.",
 			"When it works as in the table, press <check>.",
 		],
@@ -35,14 +35,14 @@ const stageTexts: Record<TutorialStageId, StageTexts> = {
 	"a-only": {
 		title: "ON when only A is ON",
 		goal: [
-			"Make the lamp {Out} turn [ON] only when switch {A} is [ON] and {B} is [OFF]. This time, one part alone is not enough.",
+			"Make the lamp {Out} turn [ON] only when switch {A} is [ON] and {B} is [OFF]. This time, one component alone is not enough.",
 		],
 		steps: [],
 	},
 	xor: {
 		title: "ON when just one is ON",
 		goal: [
-			'Make the lamp {Out} turn [ON] when exactly one of the switches {A} and {B} is [ON]. It stays [OFF] when both are [ON]. "{ON when only A is ON}" is ready to use as a part.',
+			'Make the lamp {Out} turn [ON] when exactly one of the switches {A} and {B} is [ON]. It stays [OFF] when both are [ON]. "{ON when only A is ON}" is ready to use as a component.',
 		],
 		steps: [],
 	},
@@ -57,7 +57,7 @@ const stageTexts: Record<TutorialStageId, StageTexts> = {
 	"full-adder": {
 		title: "Adding with a carry",
 		goal: [
-			'Output {A} + {B} + {Cin} as a two-digit binary number to {C} and {S}. {Cin} is the carry coming up from the next lower digit. The answer is 0 to 3, and 3 is [11] in binary. "{Adding one digit}" is ready to use as a part: add {A} and {B} with one, then add {Cin} to its {S} with another. This circuit is called a full adder.',
+			'Output {A} + {B} + {Cin} as a two-digit binary number to {C} and {S}. {Cin} is the carry coming up from the next lower digit. The answer is 0 to 3, and 3 is [11] in binary. "{Adding one digit}" is ready to use as a component: add {A} and {B} with one, then add {Cin} to its {S} with another. This circuit is called a full adder.',
 		],
 		steps: [],
 	},
@@ -110,8 +110,8 @@ const stageTexts: Record<TutorialStageId, StageTexts> = {
 		],
 		steps: [
 			'Place two "{0–5 counter}" and two "{0–9 counter}". "{0–5 counter}" is built like "{0–9 counter}", but goes back to 0 and carries over after 5 instead of 9.',
-			'Give each of the four parts one of {M10}, {M1}, {S10} and {S1}: "{0–5 counter}" for {M10} and {S10}, and "{0–9 counter}" for {M1} and {S1}. Connect the {Count} of each to the output on the right named after its digit, and to the {7seg} of that digit. The {7seg}s are, from the top, for {M10}, {M1}, {S10} and {S1}.',
-			"Connect {Start} to {Up} of the part connected to {S1}. Then connect {Carry} of the part for {S1} to {Up} of the part for {S10}, {Carry} for {S10} to {Up} for {M1}, and {Carry} for {M1} to {Up} for {M10}. A digit then goes on only when the digit one lower goes back to 0.",
+			'Give each of the four components one of {M10}, {M1}, {S10} and {S1}: "{0–5 counter}" for {M10} and {S10}, and "{0–9 counter}" for {M1} and {S1}. Connect the {Count} of each to the output on the right named after its digit, and to the {7seg} of that digit. The {7seg}s are, from the top, for {M10}, {M1}, {S10} and {S1}.',
+			"Connect {Start} to {Up} of the component connected to {S1}. Then connect {Carry} of the component for {S1} to {Up} of the component for {S10}, {Carry} for {S10} to {Up} for {M1}, and {Carry} for {M1} to {Up} for {M10}. A digit then goes on only when the digit one lower goes back to 0.",
 			"Press the play button <play>. If {Start} is [OFF] at the first time step, click it to turn it [ON]. Press <auto>, and the {Display} goes on like a clock, one time step a second. To see what comes after 59:59, stop <auto>, click the number at the bottom, enter 3600 and press the <enter> key. It goes to that time step at once and shows 59:59, and the right arrow <nextStep> shows 00:00.",
 		],
 	},
@@ -150,16 +150,16 @@ export const en = {
 			DISPLAY:
 				"While playing, shows the value of {Pixels} as a picture, one bit per pixel ([1] is black, [0] is white). From the highest digit, the pixels go from the top left row by row in row-major order, or column by column in column-major order. While editing, the gear button sets the resolution and the pixel order.",
 			INPUT:
-				"Adds an input to the component it is placed in. Where that component is placed as a part, the input is a pin on its left. While playing, its value can be changed on the placed {Input}.",
+				"Adds an input to the component it is placed in. Where that component is placed, the input is a pin on its left. While playing, its value can be changed on the placed {Input}.",
 			OUTPUT:
-				"Adds an output to the component it is placed in. Where that component is placed as a part, the output is a pin on its right. While playing, it shows the value it receives.",
+				"Adds an output to the component it is placed in. Where that component is placed, the output is a pin on its right. While playing, it shows the value it receives.",
 		} satisfies Record<CCIntrinsicComponentType, string>,
 		pinBitWidth: (pinName: string, canAddPins: boolean) =>
 			canAddPins
 				? `The number in an {${pinName}} pin is its number of bits. Click an {${pinName}} pin while editing, and a box for each {${pinName}} pin appears, from the top. <pinAdd> adds a box at the bottom, and <pinRemove> removes the bottom one. Change the numbers in the boxes and press <pinApply>, and the {${pinName}} pins follow the boxes.`
 				: `The number in the {${pinName}} pin is its number of bits. To change it, click the pin while editing, change the number in the box and press <pinApply>.`,
 		about: (name: string) => `About ${name}`,
-		ofStage: "Available parts",
+		ofStage: "Available components",
 	},
 	header: {
 		language: "Language",
@@ -188,7 +188,8 @@ export const en = {
 		reset: "Reset",
 		selectToEdit: "Select a component to start editing.",
 		create: "Create",
-		nodeCount: (count: number) => `${count} ${count === 1 ? "node" : "nodes"}`,
+		nodeCount: (count: number) =>
+			`Uses ${count} ${count === 1 ? "component" : "components"}`,
 		componentMenu: "Component menu",
 		resetDialog: {
 			title: "Reset all components?",
@@ -202,7 +203,7 @@ export const en = {
 			title: (componentName: string) => `Delete ${componentName}?`,
 			unused: "This cannot be undone.",
 			used: (count: number, places: readonly string[], otherCount: number) =>
-				`It is used ${count === 1 ? "once" : `${count} times`} in ${places.join(", ")}${otherCount > 0 ? ` and ${otherCount} other ${otherCount === 1 ? "component" : "components"}` : ""}. Deleting it also removes those nodes and their connections. This cannot be undone.`,
+				`It is used ${count === 1 ? "once" : `${count} times`} in ${places.join(", ")}${otherCount > 0 ? ` and ${otherCount} other ${otherCount === 1 ? "component" : "components"}` : ""}. Deleting it also removes it from those places, with its connections. This cannot be undone.`,
 		},
 		errors: {
 			read: (fileName: string) => `Could not read ${fileName}.`,
@@ -238,7 +239,7 @@ export const en = {
 	tutorial: {
 		lead: [
 			"Starting at the first stage, build circuit after circuit, and finish a stopwatch in the last stage.",
-			"When a stage needs a circuit from an earlier one, it hands it to you as a finished part, so you can start from any stage.",
+			"When a stage needs a circuit from an earlier one, it hands it to you as a finished component, so you can start from any stage.",
 		],
 		stageNumber: (number: number) => `Stage ${number}`,
 		cleared: "Cleared",
@@ -251,7 +252,6 @@ export const en = {
 		},
 		startOverFailed: "Could not start the tutorial over.",
 		stages: "Stages",
-		parts: "Parts",
 		goalHeading: "Goal",
 		stepsHeading: "Steps",
 		digitsLegend:
@@ -350,7 +350,7 @@ export const en = {
 		},
 		connectionRejection: {
 			sameDirection: "Cannot connect two input pins or two output pins",
-			sameNode: "Cannot connect pins of the same node",
+			sameNode: "Cannot connect two pins of one placed component",
 			differentParentComponent:
 				"Cannot connect pins placed in different components",
 			inputAlreadyConnected: "This input pin is already connected",
