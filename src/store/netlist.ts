@@ -137,14 +137,20 @@ function isInterfaceNode(store: CCStore, nodeId: CCNodeId): boolean {
 	);
 }
 
-function nameOfNode(store: CCStore, nodeId: CCNodeId): string {
+function nameOfNode(
+	store: CCStore,
+	nodeId: CCNodeId,
+	texts: SimulationErrorTexts,
+): string {
 	const componentName = componentNameOfNode(store, nodeId);
 	if (!isInterfaceNode(store, nodeId)) return componentName;
 	const exposedPin = store.nodePins
 		.getManyByNodeId(nodeId)
 		.map((nodePin) => store.componentPins.getByImplementation(nodePin.id))
 		.find((componentPin) => componentPin !== undefined);
-	return exposedPin ? `${componentName} ${exposedPin.name}` : componentName;
+	return exposedPin
+		? texts.interfaceNode(exposedPin.type, exposedPin.name)
+		: componentName;
 }
 
 export function describeNodePath(
@@ -152,7 +158,7 @@ export function describeNodePath(
 	path: readonly CCNodeId[],
 	texts: SimulationErrorTexts = englishSimulationErrorTexts,
 ): string {
-	return texts.nodeName(path.map((nodeId) => nameOfNode(store, nodeId)));
+	return texts.nodeName(path.map((nodeId) => nameOfNode(store, nodeId, texts)));
 }
 
 function commonPrefixOf(
@@ -185,6 +191,16 @@ export class SimulationNodeError extends Error {
 	describe(_store: CCStore, _texts: SimulationErrorTexts): string {
 		return this.message;
 	}
+
+	/** Whether `describe` words the error, rather than giving the English message */
+	get isWorded(): boolean {
+		return false;
+	}
+
+	/** The nodes of the simulated component itself that the error is in or under */
+	get outlinedNodeIds(): ReadonlySet<CCNodeId> {
+		return new Set(this.nodePaths.flatMap((path) => path.slice(0, 1)));
+	}
 }
 
 function describeLoop(
@@ -215,6 +231,10 @@ export class SimulationCombinationalLoopError extends SimulationNodeError {
 
 	override describe(store: CCStore, texts: SimulationErrorTexts): string {
 		return describeLoop(store, this.nodePaths, texts);
+	}
+
+	override get isWorded(): boolean {
+		return true;
 	}
 }
 
@@ -267,6 +287,10 @@ export class SimulationUnconnectedPinError extends SimulationNodeError {
 			texts,
 		);
 	}
+
+	override get isWorded(): boolean {
+		return true;
+	}
 }
 
 function describeBitWidthConflict(
@@ -311,6 +335,10 @@ export class SimulationBitWidthConflictError extends SimulationNodeError {
 			this.nodePaths.length > 0,
 			texts,
 		);
+	}
+
+	override get isWorded(): boolean {
+		return true;
 	}
 }
 

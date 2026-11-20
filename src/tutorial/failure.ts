@@ -35,12 +35,17 @@ export function describeFailure(
 		case "checkFailed":
 			return texts.checkFailed;
 		case "simulationFailed":
+			// A worded error tells by itself what keeps the circuit from running
+			if (
+				result.error instanceof SimulationNodeError &&
+				result.error.isWorded
+			) {
+				return result.error.describe(store, messages.simulation);
+			}
 			return texts.simulationFailed(
-				result.error instanceof SimulationNodeError
-					? result.error.describe(store, messages.simulation)
-					: result.error instanceof Error
-						? result.error.message
-						: String(result.error),
+				result.error instanceof Error
+					? result.error.message
+					: String(result.error),
 			);
 	}
 }

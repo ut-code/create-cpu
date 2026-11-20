@@ -287,7 +287,7 @@ describe("simulateComponent", () => {
 			SimulationCombinationalLoopError,
 		);
 		expect(error.message).toBe(
-			"The outlined nodes form a loop, so their values cannot be determined. Fix the connections in the loop, or add a FlipFlop to it if the value should feed back.",
+			"The output of each part outlined in red comes back to its own input along the wires. Working out its output needs that same output, so the circuit cannot run as it is. Reconnect a wire, or put a FlipFlop somewhere along the way.",
 		);
 		expect(new Set(error.nodePaths.map((path) => path[0]))).toEqual(
 			new Set([first.id, second.id]),
@@ -325,7 +325,7 @@ describe("simulateComponent", () => {
 			SimulationCombinationalLoopError,
 		);
 		expect(error.message).toBe(
-			"The outlined nodes form a loop, so their values cannot be determined. Fix the connections in the loop, or add a FlipFlop to it if the value should feed back.",
+			"The output of each part outlined in red comes back to its own input along the wires. Working out its output needs that same output, so the circuit cannot run as it is. Reconnect a wire, or put a FlipFlop somewhere along the way.",
 		);
 		expect(new Set(error.nodePaths.map((path) => path[0]))).toEqual(
 			new Set([first.id, second.id]),
@@ -357,7 +357,7 @@ describe("simulateComponent", () => {
 			SimulationCombinationalLoopError,
 		);
 		expect(error.message).toBe(
-			"There is a loop inside Ring, so the values in it cannot be determined. Open Ring to fix the connections, or add a FlipFlop to the loop if the value should feed back.",
+			"Inside Ring, the output of some parts comes back to their own input along the wires. Working out their output needs that same output, so the circuit cannot run as it is. Open Ring to reconnect a wire, or put a FlipFlop somewhere along the way.",
 		);
 		expect(new Set(error.nodePaths.map((path) => path[0]))).toEqual(
 			new Set([ringNode.id]),
@@ -434,7 +434,7 @@ describe("simulateComponent", () => {
 				() => simulateComponent(store, root.id, new Map()),
 				SimulationCombinationalLoopError,
 			);
-			expect(error.message).toMatch(/^The outlined nodes form a loop/);
+			expect(error.message).toMatch(/^The output of each part outlined in red/);
 			expect(new Set(error.nodePaths.map((path) => path[0]))).toEqual(
 				new Set([chainNode.id, bufferNode.id]),
 			);
@@ -452,7 +452,7 @@ describe("simulateComponent", () => {
 				SimulationCombinationalLoopError,
 			);
 			expect(error.message).toMatch(
-				/^There is a loop inside Outer, .* Open Outer to fix/,
+				/^Inside Outer, .* Open Outer to reconnect/,
 			);
 			expect(new Set(error.nodePaths.map((path) => path[0]))).toEqual(
 				new Set([outerNode.id]),
@@ -492,7 +492,7 @@ describe("simulateComponent", () => {
 			() => simulateComponent(store, root.id, new Map()),
 			SimulationCombinationalLoopError,
 		);
-		expect(error.message).toMatch(/^There is a loop inside Ring, .* Open Ring/);
+		expect(error.message).toMatch(/^Inside Ring, .* Open Ring/);
 		expect(new Set(error.nodePaths.map((path) => path[0]))).toEqual(
 			new Set([ringNode.id]),
 		);
@@ -530,7 +530,7 @@ describe("simulateComponent", () => {
 			() => simulateComponent(store, root.id, new Map()),
 			SimulationUnconnectedPinError,
 		);
-		expect(error.message).toMatch(/^Input pin [AB] of And is not connected\.$/);
+		expect(error.message).toMatch(/^Pin [AB] of And is not connected\.$/);
 		expect(error.nodePaths).toEqual([[andNode.id]]);
 	});
 
@@ -567,7 +567,7 @@ describe("simulateComponent", () => {
 			SimulationUnconnectedPinError,
 		);
 		expect(error.message).toBe(
-			"Input pin B of And in Half is not connected. Open Half to connect it.",
+			"Pin B of And in Half is not connected. Open Half to connect it.",
 		);
 		expect(error.nodePaths).toEqual([[halfNode.id, andNode.id]]);
 	});

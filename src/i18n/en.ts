@@ -219,7 +219,7 @@ export const en = {
 		next: "Next stage",
 		backToStages: "Back to the stages",
 		missingPin: (pinType: "input" | "output", pinName: string) =>
-			`There is no ${pinType} pin named ${pinName}. "Reset this stage" brings back how the stage started.`,
+			`The ${pinType} ${pinName} on the ${pinType === "input" ? "left" : "right"} is missing. Reset this stage to bring back how it started.`,
 		wrongBitWidth: (pinName: string, expected: number, actual: number) =>
 			`${pinName} should have ${bitCount(expected)}, but it has ${bitCount(actual)}. Check what it is connected to.`,
 		wrongOutput: (
@@ -239,8 +239,7 @@ export const en = {
 			`At time step ${stepNumber}${inputs.length > 0 ? ` (${listOf(inputs.map(({ name, value }) => `${name} is ${value}`))})` : ""}, ${pinName} should be ${expected}, but it ${actual === null ? "has no value" : `is ${actual}`}.`,
 		checkFailed:
 			"Something went wrong while checking. Change the circuit a little and press Check again.",
-		simulationFailed: (detail: string) =>
-			`The circuit could not be simulated. ${detail}`,
+		simulationFailed: (detail: string) => `The circuit cannot run. ${detail}`,
 		resetStage: "Reset this stage",
 		resetStageDialog: {
 			title: "Reset this stage?",

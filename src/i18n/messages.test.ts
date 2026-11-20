@@ -69,7 +69,32 @@ describe("Japanese messages", () => {
 		);
 
 		expect(error.describe(store, ja.simulation)).toBe(
-			"Half 内の And の入力ピン B がつながっていません。Half を開いてつないでください。",
+			"Half 内の And の B のピンがつながっていません。Half を開いてつないでください。",
+		);
+	});
+
+	it("names an Output node by its role, so that it is not read as a pin of the part", () => {
+		const store = createTestStore();
+		const half = registerTestComponent(store, "Half");
+		registerTestInputNode(store, half.id, "In");
+		registerTestOutputNode(store, half.id, "S");
+		const root = registerTestComponent(store, "Root");
+		const rootIn = registerTestInputNode(store, root.id, "In");
+		const halfNode = registerTestNode(store, root.id, half.id);
+		connectTestNodePins(
+			store,
+			root.id,
+			rootIn.out,
+			testNodePin(store, halfNode, testComponentPin(store, half, "In")),
+		);
+
+		const error = thrownBy(
+			() => simulateComponent(store, root.id, new Map()),
+			SimulationUnconnectedPinError,
+		);
+
+		expect(error.describe(store, ja.simulation)).toBe(
+			"Half 内の 出力 S がつながっていません。Half を開いてつないでください。",
 		);
 	});
 

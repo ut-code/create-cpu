@@ -187,10 +187,10 @@ describe("simulation errors", () => {
 		const { editorMode, simulationError } = editorStore.getState();
 		expect(editorMode).toBe("edit");
 		expect(simulationError?.messageByLanguage.en).toMatch(
-			/^The outlined nodes form a loop/,
+			/^The output of each part outlined in red/,
 		);
 		expect(simulationError?.messageByLanguage.ja).toMatch(
-			/^赤い枠のノードがループになっていて/,
+			/^赤い枠の部品は、自分の出力が/,
 		);
 		expect(simulationError?.nodeIds).toEqual(new Set([first.id, second.id]));
 	});
