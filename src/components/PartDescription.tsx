@@ -4,6 +4,7 @@ import type { CCComponent } from "../store/component";
 import { IntrinsicComponentDefinition } from "../store/intrinsics/base";
 import { definitionByComponentId } from "../store/intrinsics/definitions";
 import { type TruthTable, truthTableOf } from "../store/intrinsics/truthTable";
+import { BitNotationContext } from "./bitNotation";
 import { MarkedText } from "./MarkedText";
 import { TruthTableView } from "./TruthTableView";
 
@@ -33,13 +34,17 @@ export function pinNotesOf(
 export function PartDescription({ component }: { component: CCComponent }) {
 	const messages = useMessages();
 	const definition = definitionByComponentId.get(component.id);
+	// A part is the same outside the stages, so its table writes bits as the editor shows
+	// them, not as the stage tables do
 	return (
-		<PartDescriptionView
-			name={component.name}
-			summary={partSummary(messages, component)}
-			notes={definition ? pinNotesOf(messages, definition) : []}
-			table={definition ? truthTableOf(definition) : null}
-		/>
+		<BitNotationContext value="onOff">
+			<PartDescriptionView
+				name={component.name}
+				summary={partSummary(messages, component)}
+				notes={definition ? pinNotesOf(messages, definition) : []}
+				table={definition ? truthTableOf(definition) : null}
+			/>
+		</BitNotationContext>
 	);
 }
 
