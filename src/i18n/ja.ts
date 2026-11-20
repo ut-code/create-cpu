@@ -106,7 +106,7 @@ export const ja: Messages = {
 		timeStep: "ステップ",
 	},
 	tutorial: {
-		lead: "上から順に進めるのがおすすめですが、どの課題からでも始められます。",
+		lead: "課題 1 から順に回路を組み立てていき、最後にストップウォッチを完成させます。前の課題の回路は完成した部品として渡されるので、どの課題からでも始められます。",
 		stageNumber: (number) => `課題 ${number}`,
 		cleared: "クリア",
 		startOver: "最初からやり直す",

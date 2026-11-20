@@ -225,7 +225,7 @@ export const en = {
 		timeStep: "Time step",
 	},
 	tutorial: {
-		lead: "Going from the top is recommended, but you can start from any stage.",
+		lead: "Build circuit after circuit from stage 1, and finish a stopwatch in the last stage. Each stage hands you the circuits of the earlier stages as finished parts, so you can start from any stage.",
 		stageNumber: (number: number) => `Stage ${number}`,
 		cleared: "Cleared",
 		startOver: "Start over from the beginning",
