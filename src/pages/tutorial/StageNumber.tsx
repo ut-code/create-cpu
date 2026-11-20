@@ -3,7 +3,6 @@ import { visuallyHiddenSx } from "../../components/visuallyHidden";
 import { useMessages } from "../../i18n";
 import { theme } from "../../style";
 
-/** The number of a stage in a circle, as the list and the stage itself show it */
 export function StageNumber({ number }: { number: number }) {
 	const messages = useMessages();
 	return (

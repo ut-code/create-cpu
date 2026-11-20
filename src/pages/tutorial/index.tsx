@@ -106,7 +106,6 @@ export default function TutorialPage() {
 										gap: 1.5,
 									}}
 								>
-									{/* Large, as the grid alone does not tell the order */}
 									<StageNumber number={index + 1} />
 									{/* Under the title, which then has the width of the card */}
 									<Box sx={{ flexGrow: 1 }}>

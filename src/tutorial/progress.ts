@@ -42,7 +42,6 @@ export function forgetClearedStages(): void {
 	}
 }
 
-/** The first stage not cleared yet, from which the tutorial goes on in order */
 export function nextStageOf(
 	cleared: ReadonlySet<TutorialStageId>,
 ): TutorialStageId | undefined {
