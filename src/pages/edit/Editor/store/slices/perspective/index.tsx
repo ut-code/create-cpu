@@ -71,13 +71,16 @@ const createComponentEditorStorePerspectiveSlice: ComponentEditorSliceCreator<
 					rendererSize,
 					...(fitsNow && {
 						perspective: perspectiveFitting(
-							store.nodes
-								.getManyByParentComponentId(componentId)
-								.map(
-									(node) =>
-										getCCComponentEditorRendererNodeGeometry(store, node.id)
-											.rect,
-								),
+							[
+								...store.nodes
+									.getManyByParentComponentId(componentId)
+									.map(
+										(node) =>
+											getCCComponentEditorRendererNodeGeometry(store, node.id)
+												.rect,
+									),
+								...(state.areaToFit ? [state.areaToFit] : []),
+							],
 							rendererSize,
 						),
 					}),

@@ -1,11 +1,14 @@
 import nullthrows from "nullthrows";
 import { describe, expect, it } from "vitest";
+import type { CCComponentId } from "../store/component";
 import {
 	and,
+	display,
 	input,
 	not,
 	or,
 	output,
+	seven_segment,
 	xor,
 } from "../store/intrinsics/definitions";
 import {
@@ -13,7 +16,7 @@ import {
 	registerTestComponent,
 	registerTestNode,
 } from "../store/testUtils";
-import { checkCircuit } from "./check";
+import { checkCircuit, goalTableOf } from "./check";
 import {
 	findTutorialStage,
 	isStagePart,
@@ -94,6 +97,49 @@ describe("setUpTutorialStage", () => {
 		expect(
 			checkCircuit(store, aOnlyStage.componentId, aOnlyStage.check),
 		).toEqual({ type: "passed" });
+	});
+});
+
+describe("the counter stage", () => {
+	it("shows the first steps and the wrap from 1111 to 0000 as its goal", () => {
+		const counter = nullthrows(findTutorialStage("counter"));
+		const table = nullthrows(goalTableOf(counter.check));
+
+		expect(
+			table.rows.map(({ stepNumber, outputs }) => [
+				stepNumber,
+				outputs.map((value) => value.map(Number).join("")),
+			]),
+		).toEqual([
+			[1, ["0000"]],
+			[2, ["0001"]],
+			[3, ["0010"]],
+			[16, ["1111"]],
+			[17, ["0000"]],
+		]);
+	});
+});
+
+describe("setUpTutorialStage with decorations", () => {
+	it("places the display only for the player, not inside the part handed over", () => {
+		const fourBit = nullthrows(findTutorialStage("four-bit-adder"));
+		const counter = nullthrows(findTutorialStage("counter"));
+		const store = createTestStore();
+		setUpTutorialStage(store, counter, titleOf);
+		const decorationsIn = (componentId: CCComponentId) =>
+			store.nodes
+				.getManyByParentComponentId(componentId)
+				.filter(
+					(node) =>
+						node.componentId === seven_segment.component.id ||
+						node.componentId === display.component.id,
+				);
+
+		expect(decorationsIn(counter.componentId)).toHaveLength(2);
+		expect(decorationsIn(fourBit.componentId)).toHaveLength(0);
+		expect(checkCircuit(store, fourBit.componentId, fourBit.check)).toEqual({
+			type: "passed",
+		});
 	});
 });
 

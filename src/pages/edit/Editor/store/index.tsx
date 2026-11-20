@@ -1,6 +1,7 @@
 import { createContext, useContext, useState } from "react";
 import invariant from "tiny-invariant";
 import { create } from "zustand";
+import type { Rect } from "../../../../common/rect";
 import type CCStore from "../../../../store";
 import type { CCComponentId } from "../../../../store/component";
 import type { CCNodeId } from "../../../../store/node";
@@ -16,6 +17,7 @@ export type EditorStoreOptions = {
 	isOffered?: OffersComponent;
 	canCreateComponents?: boolean;
 	fitsNodesInView?: boolean;
+	areaToFit?: Rect | null;
 	hasProperties?: (componentId: CCComponentId) => boolean;
 };
 
@@ -28,6 +30,7 @@ export function createEditorStore(
 		hasProperties = () => true,
 		canCreateComponents = true,
 		fitsNodesInView = false,
+		areaToFit = null,
 	}: EditorStoreOptions = {},
 ) {
 	const props = { store, componentId };
@@ -41,6 +44,7 @@ export function createEditorStore(
 		hasProperties,
 		canCreateComponents,
 		fitsNodesInView,
+		areaToFit,
 		...coreSlice.define(set, get),
 		...perspectiveSlice.define(set, get),
 		...contextMenuSlice.define(set, get),

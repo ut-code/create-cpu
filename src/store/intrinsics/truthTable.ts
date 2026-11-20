@@ -6,7 +6,12 @@ import { IntrinsicComponentDefinition } from "./base";
 export type TruthTable = {
 	inputs: string[];
 	outputs: string[];
-	rows: { inputs: SimulationValue[]; outputs: SimulationValue[] }[];
+	rows: {
+		inputs: SimulationValue[];
+		outputs: SimulationValue[];
+		/** For a table over time, counted from 1 */
+		stepNumber?: number;
+	}[];
 };
 
 const maxInputCount = 2;

@@ -1,4 +1,5 @@
 import type { StoreApi } from "zustand";
+import type { Rect } from "../../../../common/rect";
 import type CCStore from "../../../../store";
 import type { CCComponentId } from "../../../../store/component";
 import type { CCNodeId } from "../../../../store/node";
@@ -14,6 +15,8 @@ export type ComponentEditorStoreValue = {
 	readonly canCreateComponents: boolean;
 	/** whether the view is fitted to the nodes when the editor first gets its size */
 	readonly fitsNodesInView: boolean;
+	/** taken in too when the view is fitted, e.g. where the nodes are to be placed */
+	readonly areaToFit: Rect | null;
 	readonly hasProperties: (componentId: CCComponentId) => boolean;
 } & EditorStoreCoreSlice &
 	PerspectiveStoreSlice &
