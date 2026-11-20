@@ -119,12 +119,12 @@ export const en = {
 			DISPLAY:
 				"While playing, shows the value of Pixels as a picture, one bit per pixel (1 is black, 0 is white). From the highest digit, the pixels go from the top left row by row in row-major order, or column by column in column-major order. The gear button sets the resolution and the pixel order.",
 			INPUT:
-				"Adds an input to the component it is placed in. Where that component is placed as a part, the input is a pin on its left. While playing, click it to change its value.",
+				"Adds an input to the component it is placed in. Where that component is placed as a part, the input is a pin on its left. While playing, its value can be changed here.",
 			OUTPUT:
 				"Adds an output to the component it is placed in. Where that component is placed as a part, the output is a pin on its right. While playing, it shows the value it receives.",
 		} satisfies Record<CCIntrinsicComponentType, string>,
 		pinBitWidth: (pinName: string, canAddPins: boolean) =>
-			`The number in the ${pinName} pin is its number of bits. Click the pin to change it.${canAddPins ? ` "Add" adds another ${pinName} pin.` : ""}`,
+			`The number in the ${pinName} pin is its number of bits. To change it, click the pin while editing, change the field and press "Apply".${canAddPins ? ` Each field added with "Add" becomes another ${pinName} pin.` : ""}`,
 		about: (name: string) => `About ${name}`,
 		ofStage: "Available parts",
 	},

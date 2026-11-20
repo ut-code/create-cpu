@@ -14,16 +14,16 @@ const { en, ja } = messagesByLanguage;
 describe("pinNotesOf", () => {
 	it("tells how to set a pin whose bit width the player chooses", () => {
 		expect(pinNotesOf(en, broadcast)).toEqual([
-			"The number in the Out pin is its number of bits. Click the pin to change it.",
+			'The number in the Out pin is its number of bits. To change it, click the pin while editing, change the field and press "Apply".',
 		]);
 	});
 
 	it("tells how to add pins where a pin can be split", () => {
 		expect(pinNotesOf(en, and_n)).toEqual([
-			'The number in the In pin is its number of bits. Click the pin to change it. "Add" adds another In pin.',
+			'The number in the In pin is its number of bits. To change it, click the pin while editing, change the field and press "Apply". Each field added with "Add" becomes another In pin.',
 		]);
 		expect(pinNotesOf(ja, decompose)).toEqual([
-			"Out のピンの中の数字は、そのピンのビット数。ピンをクリックすると変えられる。「追加」で Out のピンを増やせる。",
+			"Out のピンの中の数字は、そのピンのビット数。編集中にピンをクリックし、出てきた欄で変えて「適用」を押す。「追加」で欄を増やすと、Out のピンも増える。",
 		]);
 	});
 
