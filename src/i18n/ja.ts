@@ -54,7 +54,8 @@ export const ja: Messages = {
 		],
 		title: "何をしますか？",
 		tutorialAudience: "はじめての方はこちら",
-		tutorial: "2つのスイッチから始めて、最後にストップウォッチを作ります。",
+		tutorial: (stageCount) =>
+			`${stageCount}つの課題を順に解きながら回路を作り、最後にストップウォッチを完成させます。`,
 		freeAudience: "論理回路を知っている方向け",
 		free: "好きな回路を自由に作ります。",
 	},

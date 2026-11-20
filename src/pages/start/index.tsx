@@ -3,6 +3,7 @@ import { Link } from "react-router";
 import { appName } from "../../common/appName";
 import { useMessages } from "../../i18n";
 import { theme } from "../../style";
+import { tutorialStages } from "../../tutorial/stages";
 
 export default function StartPage() {
 	const messages = useMessages();
@@ -11,7 +12,7 @@ export default function StartPage() {
 			to: "/tutorial",
 			audience: messages.start.tutorialAudience,
 			title: messages.header.modes.tutorial,
-			body: messages.start.tutorial,
+			body: messages.start.tutorial(tutorialStages.length),
 			color: theme.colors.tutorial,
 		},
 		{

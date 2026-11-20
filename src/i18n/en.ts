@@ -172,8 +172,8 @@ export const en = {
 		],
 		title: "What would you like to do?",
 		tutorialAudience: "New here? Start here.",
-		tutorial:
-			"Start from a pair of switches, and build a stopwatch at the end.",
+		tutorial: (stageCount: number) =>
+			`Solve ${stageCount} stages in turn, building circuits as you go, and finish a stopwatch at the end.`,
 		freeAudience: "For those who know logic circuits",
 		free: "Build any circuit you like.",
 	},
