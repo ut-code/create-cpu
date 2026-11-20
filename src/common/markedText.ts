@@ -1,8 +1,8 @@
-import type { BitNotation } from "../common/bitLabel";
 import type { SimulationValue } from "../store/simulation";
+import type { BitNotation } from "./bitLabel";
 
-/** Things on the screen a stage text points at, drawn as they look there */
-export const stageTextControls = [
+/** Things on the screen a text points at, drawn as they look there */
+export const markedTextControls = [
 	"check",
 	"constApply",
 	"pinApply",
@@ -13,20 +13,20 @@ export const stageTextControls = [
 	"nextStep",
 	"enter",
 ] as const;
-export type StageTextControl = (typeof stageTextControls)[number];
+export type MarkedTextControl = (typeof markedTextControls)[number];
 
-export type StageTextSegment =
+export type MarkedTextSegment =
 	| { type: "text"; text: string }
 	/** a pin or a part, by the name the editor shows */
 	| { type: "name"; name: string }
 	| { type: "value"; value: SimulationValue; notation: BitNotation }
-	| { type: "control"; control: StageTextControl };
+	| { type: "control"; control: MarkedTextControl };
 
-function isControl(key: string): key is StageTextControl {
-	return stageTextControls.some((control) => control === key);
+function isControl(key: string): key is MarkedTextControl {
+	return markedTextControls.some((control) => control === key);
 }
 
-function parseValue(token: string): StageTextSegment {
+function parseValue(token: string): MarkedTextSegment {
 	if (token === "ON" || token === "OFF") {
 		return { type: "value", value: [token === "ON"], notation: "onOff" };
 	}
@@ -43,12 +43,12 @@ function parseValue(token: string): StageTextSegment {
 const markup = /\{([^{}]+)\}|\[([^[\]]+)\]|<([A-Za-z]+)>/g;
 
 /**
- * A stage text cut where it marks a name as `{Start}`, a value as `[ON]` or `[0011]`,
+ * A text cut where it marks a name as `{Start}`, a value as `[ON]` or `[0011]`,
  * or a control as `<check>`
  * @throws if a mark is not one of these, so that a typo shows in the tests
  */
-export function parseStageText(text: string): StageTextSegment[] {
-	const segments: StageTextSegment[] = [];
+export function parseMarkedText(text: string): MarkedTextSegment[] {
+	const segments: MarkedTextSegment[] = [];
 	let rest = 0;
 	const pushText = (end: number) => {
 		const plain = text.slice(rest, end);
@@ -64,7 +64,7 @@ export function parseStageText(text: string): StageTextSegment[] {
 		else if (value !== undefined) segments.push(parseValue(value));
 		else if (control !== undefined && isControl(control)) {
 			segments.push({ type: "control", control });
-		} else throw new Error(`${whole} is not a control a stage text can show`);
+		} else throw new Error(`${whole} is not a control a text can show`);
 		rest = match.index + whole.length;
 	}
 	pushText(text.length);

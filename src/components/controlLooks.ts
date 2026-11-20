@@ -6,7 +6,7 @@ import type {
 } from "@mui/material";
 import { theme } from "../style";
 
-// The looks of controls a stage text draws too, so that the two cannot drift apart
+// The looks of controls a marked text draws too, so that the two cannot drift apart
 
 export const checkButtonLook = {
 	variant: "contained",

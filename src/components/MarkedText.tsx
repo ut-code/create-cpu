@@ -7,20 +7,20 @@ import {
 import { Box, Button, type ButtonProps, ToggleButton } from "@mui/material";
 import type { ReactNode } from "react";
 import {
+	type MarkedTextControl,
+	type MarkedTextSegment,
+	parseMarkedText,
+} from "../common/markedText";
+import { useMessages } from "../i18n";
+import {
 	autoToggleButtonLook,
 	checkButtonLook,
 	pinApplyButtonLook,
 	valueApplyButtonLook,
 	withLookSx,
-} from "../../components/controlLooks";
-import { ValueView } from "../../components/ValueView";
-import { visuallyHiddenSx } from "../../components/visuallyHidden";
-import { useMessages } from "../../i18n";
-import {
-	parseStageText,
-	type StageTextControl,
-	type StageTextSegment,
-} from "../../tutorial/stageText";
+} from "./controlLooks";
+import { ValueView } from "./ValueView";
+import { visuallyHiddenSx } from "./visuallyHidden";
 
 // The real controls with their looks, smaller and not to be pressed. The label is read
 // out from a hidden copy, as the control itself is hidden from screen readers.
@@ -77,7 +77,7 @@ function InlineButton({ look, label }: { look: ButtonProps; label: string }) {
 	);
 }
 
-function ControlView({ control }: { control: StageTextControl }) {
+function ControlView({ control }: { control: MarkedTextControl }) {
 	const messages = useMessages();
 	const roundIcon = (icon: ReactNode) => (
 		<Box
@@ -171,7 +171,7 @@ function ControlView({ control }: { control: StageTextControl }) {
 	}
 }
 
-function SegmentView({ segment }: { segment: StageTextSegment }) {
+function SegmentView({ segment }: { segment: MarkedTextSegment }) {
 	switch (segment.type) {
 		case "text":
 			return segment.text;
@@ -194,9 +194,9 @@ function SegmentView({ segment }: { segment: StageTextSegment }) {
 	}
 }
 
-/** A stage text with the names, values and controls it marks drawn as on the screen */
-export function StageText({ text }: { text: string }) {
-	return parseStageText(text).map((segment, index) => (
+/** A text with the names, values and controls it marks drawn as on the screen */
+export function MarkedText({ text }: { text: string }) {
+	return parseMarkedText(text).map((segment, index) => (
 		// biome-ignore lint/suspicious/noArrayIndexKey: the segments of a text keep their order
 		<SegmentView key={index} segment={segment} />
 	));
