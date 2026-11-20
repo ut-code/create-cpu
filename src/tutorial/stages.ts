@@ -456,7 +456,7 @@ const decimalDigitStage = defineStage("decimal-digit", {
 		);
 		const spreadUp = circuit.place(broadcast.component.id, { x: -380, y: 100 });
 		const step = circuit.place(and.component.id, { x: -220, y: 40 });
-		const digits = circuit.place(decompose.component.id, { x: 80, y: 300 });
+		const digits = circuit.place(decompose.component.id, { x: 200, y: 170 });
 		circuit.setBitWidth(spreadUp, broadcast.outputPin.Out, digitCount);
 		circuit.split(
 			digits,
@@ -487,7 +487,7 @@ const decimalDigitStage = defineStage("decimal-digit", {
 			circuit.connect(count, placeNumeral(circuit, { x: 380, y: -330 }));
 		}
 		return () => {
-			const nineAt = circuit.place(and.component.id, { x: 260, y: 300 });
+			const nineAt = circuit.place(and.component.id, { x: 340, y: 230 });
 			const carries = circuit.place(and.component.id, { x: 440, y: 130 });
 			const stays = circuit.place(not.component.id, { x: 340, y: 30 });
 			const spreadStays = circuit.place(broadcast.component.id, {
