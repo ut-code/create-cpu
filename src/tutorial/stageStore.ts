@@ -3,6 +3,7 @@ import { CCStoreAutoSaver } from "../store/autoSaver";
 import { importStoreJson } from "../store/savedStore";
 import { forgetClearedStages } from "./progress";
 import {
+	nameStageComponents,
 	registerGivenParts,
 	type StageTitleOf,
 	setUpTutorialStage,
@@ -62,7 +63,22 @@ export function getTutorialStageStore(
 			restoreStageStore(stage, titleOf) ?? createStageStore(stage, titleOf);
 		storeByStageId.set(stage.id, store);
 	}
+	nameTutorialStage(store, stage, titleOf);
 	return store;
+}
+
+/**
+ * Names the components the player cannot rename in the language now shown, which may
+ * differ from the one they were saved in. A stage only opened still leaves nothing behind.
+ */
+export function nameTutorialStage(
+	store: CCStore,
+	stage: TutorialStage,
+	titleOf: StageTitleOf,
+): void {
+	store.autoSaver.changeWithoutSaving(() =>
+		nameStageComponents(store, stage, titleOf),
+	);
 }
 
 // Removed from the storage first, so that the store keeps saving if that fails

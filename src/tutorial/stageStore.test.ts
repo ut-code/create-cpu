@@ -1,5 +1,6 @@
 import nullthrows from "nullthrows";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type CCStore from "../store";
 import { CCStoreAutoSaver } from "../store/autoSaver";
 import {
 	createTestStore,
@@ -9,6 +10,7 @@ import {
 import { markStageCleared, readClearedStages } from "./progress";
 import {
 	getTutorialStageStore,
+	nameTutorialStage,
 	resetTutorial,
 	resetTutorialStage,
 } from "./stageStore";
@@ -25,6 +27,11 @@ const xorStage = nullthrows(findTutorialStage("xor"));
 const aOnlyStage = nullthrows(findTutorialStage("a-only"));
 const firstKey = `ccTutorialStage:${firstStage.id}`;
 const titleOf = (id: GivenPartId) => `Stage ${id}`;
+const otherTitleOf = (id: GivenPartId) => `課題 ${id}`;
+const stageNamesIn = (store: CCStore) =>
+	[xorStage.componentId, aOnlyStage.componentId].map(
+		(id) => store.components.get(id)?.name,
+	);
 
 let saved: Map<string, string>;
 beforeEach(() => {
@@ -110,6 +117,22 @@ describe("getTutorialStageStore", () => {
 		expect(store.components.get(mine.id)).toBeDefined();
 	});
 
+	it("names a stage saved in another language in the one now shown, as saved", async () => {
+		const earlier = getTutorialStageStore(xorStage, titleOf);
+		registerTestComponent(earlier, "Mine");
+		vi.advanceTimersByTime(2000);
+		const json = earlier.toJSON();
+		earlier.autoSaver.unwatch();
+		vi.resetModules();
+
+		const { getTutorialStageStore: fresh } = await import("./stageStore");
+		const store = fresh(xorStage, otherTitleOf);
+		vi.advanceTimersByTime(2000);
+
+		expect(stageNamesIn(store)).toEqual(["課題 xor", "課題 a-only"]);
+		expect(saved.get(`ccTutorialStage:${xorStage.id}`)).toBe(json);
+	});
+
 	it("starts a stage over when what was saved is broken", () => {
 		saved.set(firstKey, "broken");
 		vi.spyOn(console, "warn").mockImplementation(() => {});
@@ -117,6 +140,29 @@ describe("getTutorialStageStore", () => {
 		const store = getTutorialStageStore(firstStage, titleOf);
 
 		expect(store.components.get(firstStage.componentId)).toBeDefined();
+	});
+});
+
+describe("nameTutorialStage", () => {
+	it("renames the stage and what it hands over, saving nothing for a stage only opened", () => {
+		const store = getTutorialStageStore(xorStage, titleOf);
+
+		nameTutorialStage(store, xorStage, otherTitleOf);
+		vi.advanceTimersByTime(2000);
+
+		expect(stageNamesIn(store)).toEqual(["課題 xor", "課題 a-only"]);
+		expect(saved.size).toBe(0);
+	});
+
+	it("leaves the player's own components as they are, and their change saved", () => {
+		const store = getTutorialStageStore(xorStage, titleOf);
+		const mine = registerTestComponent(store, "Mine");
+
+		nameTutorialStage(store, xorStage, otherTitleOf);
+		vi.advanceTimersByTime(2000);
+
+		expect(store.components.get(mine.id)?.name).toBe("Mine");
+		expect(saved.get(`ccTutorialStage:${xorStage.id}`)).toBe(store.toJSON());
 	});
 });
 

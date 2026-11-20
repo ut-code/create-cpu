@@ -12,6 +12,8 @@ export class CCStoreAutoSaver {
 
 	#unwatch: (() => void) | null = null;
 
+	#ignoresChanges = false;
+
 	static localStorageKey = "ccStoreAutoSaverState";
 
 	readonly storageKey: string;
@@ -23,7 +25,10 @@ export class CCStoreAutoSaver {
 
 	watch() {
 		this.unwatch();
-		const save = debounce(this.save.bind(this), 1000);
+		const debouncedSave = debounce(this.save.bind(this), 1000);
+		const save = () => {
+			if (!this.#ignoresChanges) debouncedSave();
+		};
 		const store = this.#store;
 		const unlistens = [
 			listenToEvents(store.components, ccComponentStoreChangeEventTypes, save),
@@ -41,7 +46,7 @@ export class CCStoreAutoSaver {
 			),
 		];
 		this.#unwatch = () => {
-			save.clear();
+			debouncedSave.clear();
 			for (const unlisten of unlistens) unlisten();
 		};
 	}
@@ -50,6 +55,16 @@ export class CCStoreAutoSaver {
 	unwatch() {
 		this.#unwatch?.();
 		this.#unwatch = null;
+	}
+
+	/** For changes made again on every load, which alone are not worth saving */
+	changeWithoutSaving(change: () => void): void {
+		this.#ignoresChanges = true;
+		try {
+			change();
+		} finally {
+			this.#ignoresChanges = false;
+		}
 	}
 
 	save(): void {

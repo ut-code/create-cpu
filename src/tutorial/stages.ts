@@ -903,6 +903,21 @@ function registerStageComponent(
 	);
 }
 
+/** Names the components of `stage` and of what it hands over by `titleOf` */
+export function nameStageComponents(
+	store: CCStore,
+	stage: GivenPart,
+	titleOf: StageTitleOf,
+): void {
+	for (const built of stagesBuiltIn(stage)) {
+		const name = titleOf(built.id);
+		const component = store.components.get(built.componentId);
+		if (component && component.name !== name) {
+			store.components.update(component.id, { name });
+		}
+	}
+}
+
 /** Skips the parts `store` already has, as a save from before may lack only some */
 export function registerGivenParts(
 	store: CCStore,

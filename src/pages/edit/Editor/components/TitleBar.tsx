@@ -2,7 +2,7 @@ import { Close, Edit, KeyboardDoubleArrowRight } from "@mui/icons-material";
 import { Box, IconButton, Paper } from "@mui/material";
 import nullthrows from "nullthrows";
 import { useMessages } from "../../../../i18n";
-import { useStore } from "../../../../store/react";
+import { useComponent } from "../../../../store/react/selectors";
 import { useComponentEditorStore } from "../store";
 
 export type CCComponentEditorTitleBarProps = {
@@ -16,11 +16,8 @@ export default function CCComponentEditorTitleBar({
 }: CCComponentEditorTitleBarProps) {
 	const componentEditorStore = useComponentEditorStore();
 	const componentEditorState = componentEditorStore();
-	const { store } = useStore();
 	const messages = useMessages();
-	const component = nullthrows(
-		store.components.get(componentEditorState.componentId),
-	);
+	const component = nullthrows(useComponent(componentEditorState.componentId));
 
 	return (
 		<Paper

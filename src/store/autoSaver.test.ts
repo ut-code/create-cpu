@@ -38,4 +38,44 @@ describe("CCStoreAutoSaver", () => {
 
 		expect(saved.size).toBe(0);
 	});
+
+	it("does not save a change made without saving", () => {
+		const store = createTestStore();
+		store.autoSaver.watch();
+
+		store.autoSaver.changeWithoutSaving(() =>
+			registerTestComponent(store, "Adder"),
+		);
+		vi.advanceTimersByTime(2000);
+
+		expect(saved.size).toBe(0);
+	});
+
+	it("keeps a save still waiting through a change made without saving", () => {
+		const store = createTestStore();
+		store.autoSaver.watch();
+
+		registerTestComponent(store, "Adder");
+		store.autoSaver.changeWithoutSaving(() =>
+			registerTestComponent(store, "Multiplier"),
+		);
+		vi.advanceTimersByTime(2000);
+
+		expect(saved.get(CCStoreAutoSaver.localStorageKey)).toBe(store.toJSON());
+	});
+
+	it("saves changes again after a change made without saving fails", () => {
+		const store = createTestStore();
+		store.autoSaver.watch();
+
+		expect(() =>
+			store.autoSaver.changeWithoutSaving(() => {
+				throw new Error("Failed");
+			}),
+		).toThrow("Failed");
+		registerTestComponent(store, "Adder");
+		vi.advanceTimersByTime(2000);
+
+		expect(saved.get(CCStoreAutoSaver.localStorageKey)).toBe(store.toJSON());
+	});
 });
