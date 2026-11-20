@@ -133,7 +133,12 @@ function SegmentView({ segment }: { segment: StageTextSegment }) {
 		case "name":
 			return <b>{segment.name}</b>;
 		case "value":
-			return <ValueView value={segment.value} notation={segment.notation} />;
+			// Bold as a whole, so that a value of OFFs stands out of the text too
+			return (
+				<b>
+					<ValueView value={segment.value} notation={segment.notation} />
+				</b>
+			);
 		case "control":
 			return <ControlView control={segment.control} />;
 	}
