@@ -25,25 +25,36 @@ describe("describeFailure", () => {
 	});
 
 	it("gives a worded simulation error as it is", () => {
+		class WordedError extends SimulationNodeError {
+			override get isWorded() {
+				return true;
+			}
+		}
 		expect(
 			describeFailure(
 				{
 					type: "simulationFailed",
-					error: new SimulationNodeError("Out is not connected.", []),
+					error: new WordedError("Output Out is not connected.", []),
 				},
 				createTestStore(),
 				messagesByLanguage.en,
 			),
-		).toBe("Out is not connected.");
+		).toBe("Output Out is not connected.");
 	});
 
-	it("says the circuit cannot run before an error without a wording", () => {
-		expect(
-			describeFailure(
-				{ type: "simulationFailed", error: new Error("Broken") },
-				createTestStore(),
-				messagesByLanguage.ja,
-			),
-		).toBe("回路を動かせません。Broken");
-	});
+	it.each([
+		new Error("Broken"),
+		new SimulationNodeError("And could not be evaluated", []),
+	])(
+		"says the circuit cannot run before an error without a wording",
+		(error) => {
+			expect(
+				describeFailure(
+					{ type: "simulationFailed", error },
+					createTestStore(),
+					messagesByLanguage.ja,
+				),
+			).toBe(`回路を動かせません。${error.message}`);
+		},
+	);
 });

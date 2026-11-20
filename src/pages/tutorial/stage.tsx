@@ -13,6 +13,7 @@ import {
 	type ReactNode,
 	useCallback,
 	useEffect,
+	useMemo,
 	useRef,
 	useState,
 } from "react";
@@ -104,11 +105,13 @@ function CheckFailure({
 	);
 }
 
+const noNodeIds: ReadonlySet<CCNodeId> = new Set();
+
 function outlinedNodeIdsOf(result: CheckResult | null): ReadonlySet<CCNodeId> {
 	return result?.type === "simulationFailed" &&
 		result.error instanceof SimulationNodeError
 		? result.error.outlinedNodeIds
-		: new Set();
+		: noNodeIds;
 }
 
 function StageView({ stage }: { stage: TutorialStage }) {
@@ -159,6 +162,8 @@ function StageView({ stage }: { stage: TutorialStage }) {
 	};
 	useEffect(() => () => cancelCheckRef.current?.(), []);
 
+	const outlinedNodeIds = useMemo(() => outlinedNodeIdsOf(result), [result]);
+
 	const check = () => {
 		setIsChecking(true);
 		const run = () => {
@@ -166,6 +171,10 @@ function StageView({ stage }: { stage: TutorialStage }) {
 			const checked = checkCircuit(store, stage.componentId, stage.check);
 			if (checked.type === "checkFailed") console.error(checked.error);
 			setResult(checked);
+			// The outline is on the stage's own circuit, which a part opened would hide
+			if (outlinedNodeIdsOf(checked).size > 0) {
+				setEditedComponentId(stage.componentId);
+			}
 			if (checked.type === "passed") markStageCleared(stage.id);
 			setIsChecking(false);
 		};
@@ -354,8 +363,8 @@ function StageView({ stage }: { stage: TutorialStage }) {
 						value={
 							// The paths of the error start from the stage's own component
 							shownComponentId === stage.componentId
-								? outlinedNodeIdsOf(result)
-								: new Set()
+								? outlinedNodeIds
+								: noNodeIds
 						}
 					>
 						<CCComponentEditor

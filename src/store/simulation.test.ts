@@ -287,7 +287,7 @@ describe("simulateComponent", () => {
 			SimulationCombinationalLoopError,
 		);
 		expect(error.message).toBe(
-			"The output of each part outlined in red comes back to its own input along the wires. Its output would need itself to be worked out, so this cannot run. Reconnect a wire, or put a FlipFlop on the way back.",
+			"The output of each part outlined in red comes back to its own input along the wires. Working out its output needs that same output, so the circuit cannot run as it is. Reconnect a wire, or put a FlipFlop on the way back.",
 		);
 		expect(new Set(error.nodePaths.map((path) => path[0]))).toEqual(
 			new Set([first.id, second.id]),
@@ -325,7 +325,7 @@ describe("simulateComponent", () => {
 			SimulationCombinationalLoopError,
 		);
 		expect(error.message).toBe(
-			"The output of each part outlined in red comes back to its own input along the wires. Its output would need itself to be worked out, so this cannot run. Reconnect a wire, or put a FlipFlop on the way back.",
+			"The output of each part outlined in red comes back to its own input along the wires. Working out its output needs that same output, so the circuit cannot run as it is. Reconnect a wire, or put a FlipFlop on the way back.",
 		);
 		expect(new Set(error.nodePaths.map((path) => path[0]))).toEqual(
 			new Set([first.id, second.id]),
@@ -357,7 +357,7 @@ describe("simulateComponent", () => {
 			SimulationCombinationalLoopError,
 		);
 		expect(error.message).toBe(
-			"Inside Ring, the output of some parts comes back to their own input along the wires. Their output would need itself to be worked out, so this cannot run. Open Ring to reconnect a wire, or put a FlipFlop on the way back.",
+			"Inside Ring, the output of some parts comes back to their own input along the wires. Working out their output needs that same output, so the circuit cannot run as it is. Open Ring to reconnect a wire, or put a FlipFlop on the way back.",
 		);
 		expect(new Set(error.nodePaths.map((path) => path[0]))).toEqual(
 			new Set([ringNode.id]),
@@ -510,7 +510,7 @@ describe("simulateComponent", () => {
 			SimulationUnconnectedPinError,
 		);
 		expect(error.message).toBe(
-			"Sum in Half is not connected. Open Half to connect it.",
+			"Output Sum in Half is not connected. Open Half to connect it.",
 		);
 	});
 

@@ -1,6 +1,8 @@
 export type SimulationErrorTexts = {
 	/** a node by the names of the nodes it is in, given from the outside in */
 	nodeName(outerToInner: readonly string[]): string;
+	/** an Input or Output node, by the pin it adds */
+	interfaceNode(type: "input" | "output", pin: string): string;
 	sentences(sentences: readonly string[]): string;
 	loop: string;
 	loopInside(place: string, component: string): string;
@@ -13,10 +15,12 @@ export type SimulationErrorTexts = {
 
 export const englishSimulationErrorTexts: SimulationErrorTexts = {
 	nodeName: (outerToInner) => outerToInner.toReversed().join(" in "),
+	interfaceNode: (type, pin) =>
+		`${type === "input" ? "Input" : "Output"} ${pin}`,
 	sentences: (sentences) => sentences.join(" "),
-	loop: "The output of each part outlined in red comes back to its own input along the wires. Its output would need itself to be worked out, so this cannot run. Reconnect a wire, or put a FlipFlop on the way back.",
+	loop: "The output of each part outlined in red comes back to its own input along the wires. Working out its output needs that same output, so the circuit cannot run as it is. Reconnect a wire, or put a FlipFlop on the way back.",
 	loopInside: (place, component) =>
-		`Inside ${place}, the output of some parts comes back to their own input along the wires. Their output would need itself to be worked out, so this cannot run. Open ${component} to reconnect a wire, or put a FlipFlop on the way back.`,
+		`Inside ${place}, the output of some parts comes back to their own input along the wires. Working out their output needs that same output, so the circuit cannot run as it is. Open ${component} to reconnect a wire, or put a FlipFlop on the way back.`,
 	unconnectedPin: (pin, node) => `Pin ${pin} of ${node} is not connected.`,
 	unconnectedNode: (node) => `${node} is not connected.`,
 	openToConnect: (component) => `Open ${component} to connect it.`,

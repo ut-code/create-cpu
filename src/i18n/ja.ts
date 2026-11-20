@@ -289,6 +289,8 @@ export const ja: Messages = {
 	},
 	simulation: {
 		nodeName: (outerToInner) => outerToInner.join(" 内の "),
+		interfaceNode: (type, pin) =>
+			`${type === "input" ? "入力" : "出力"} ${pin}`,
 		sentences: (sentences) => sentences.join(""),
 		loop: "赤い枠の部品は、自分の出力が線をたどって自分の入力に戻ってきます。出力を決めるのにその出力自身が要るので、このままでは動きません。線をつなぎ直すか、戻る途中に FlipFlop を入れてください。",
 		loopInside: (place, component) =>
