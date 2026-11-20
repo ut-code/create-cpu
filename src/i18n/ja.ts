@@ -70,7 +70,7 @@ export const ja: Messages = {
 		reset: "リセット",
 		selectToEdit: "編集するコンポーネントを選んでください。",
 		create: "作成",
-		nodeCount: (count) => `コンポーネントを ${count} 個使用`,
+		nodeCount: (count) => `${count} 個のノード`,
 		componentMenu: "コンポーネントのメニュー",
 		resetDialog: {
 			title: "すべてのコンポーネントをリセットしますか？",

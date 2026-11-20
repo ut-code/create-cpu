@@ -188,8 +188,7 @@ export const en = {
 		reset: "Reset",
 		selectToEdit: "Select a component to start editing.",
 		create: "Create",
-		nodeCount: (count: number) =>
-			`Uses ${count} ${count === 1 ? "component" : "components"}`,
+		nodeCount: (count: number) => `${count} ${count === 1 ? "node" : "nodes"}`,
 		componentMenu: "Component menu",
 		resetDialog: {
 			title: "Reset all components?",
