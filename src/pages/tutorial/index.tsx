@@ -107,7 +107,7 @@ export default function TutorialPage() {
 									}}
 								>
 									<StageNumber number={index + 1} />
-									{/* Under the title, which then has the width of the card */}
+									{/* The status goes under the title rather than beside it, to leave the title room */}
 									<Box sx={{ flexGrow: 1 }}>
 										<Typography
 											variant="h3"

@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { messagesByLanguage } from "../i18n/messages";
-import { tutorialStageIds } from "./stages";
+import { languages, messagesByLanguage } from "../i18n/messages";
+import { definitions } from "../store/intrinsics/definitions";
+import {
+	isTutorialStageId,
+	tutorialPartIds,
+	tutorialParts,
+	tutorialStageIds,
+	tutorialStages,
+} from "./stages";
 import { parseStageText, type StageTextSegment } from "./stageText";
 
 describe("parseStageText", () => {
@@ -67,4 +74,36 @@ describe("the stage texts", () => {
 			}
 		},
 	);
+});
+
+describe("the names in stage texts", () => {
+	// A part handed over is named by its title, so a renamed title must be renamed in the
+	// texts too
+	it.each(languages)("are pins, parts or titles in %s", (language) => {
+		const texts = messagesByLanguage[language].tutorial;
+		const known = new Set([
+			...Object.values(definitions).flatMap((definition) => [
+				definition.name,
+				...definition.allPins.map((pin) => pin.name),
+			]),
+			...[...tutorialStages, ...tutorialParts].flatMap(({ check }) => [
+				...check.inputs.map(({ name }) => name),
+				...check.outputs,
+			]),
+			...[...tutorialStageIds, ...tutorialPartIds].map((id) =>
+				isTutorialStageId(id)
+					? texts.stageTexts[id].title
+					: texts.partTitles[id],
+			),
+		]);
+		const names = tutorialStageIds.flatMap((id) =>
+			[...texts.stageTexts[id].goal, ...texts.stageTexts[id].steps].flatMap(
+				(text) =>
+					parseStageText(text).flatMap((segment) =>
+						segment.type === "name" ? [segment.name] : [],
+					),
+			),
+		);
+		expect(names.filter((name) => !known.has(name))).toEqual([]);
+	});
 });

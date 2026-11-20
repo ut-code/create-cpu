@@ -237,16 +237,19 @@ function StageView({ stage }: { stage: TutorialStage }) {
 								<ArrowBack fontSize="small" />
 								{texts.stages}
 							</Link>
-							<Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+							<Typography
+								variant="h2"
+								typography="h5"
+								sx={{
+									display: "flex",
+									alignItems: "center",
+									gap: 1.5,
+									fontWeight: "bold",
+								}}
+							>
 								<StageNumber number={stageIndex + 1} />
-								<Typography
-									variant="h2"
-									typography="h5"
-									sx={{ fontWeight: "bold" }}
-								>
-									{stageTexts.title}
-								</Typography>
-							</Box>
+								{stageTexts.title}
+							</Typography>
 							<div>
 								<SectionHeading>{texts.goalHeading}</SectionHeading>
 								<Stack spacing={1}>

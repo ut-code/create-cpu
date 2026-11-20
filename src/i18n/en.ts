@@ -165,9 +165,9 @@ export const en = {
 		},
 	},
 	start: {
-		intro: [
+		intro: (appName: string) => [
 			"The brain of a computer or a smartphone, the CPU, is built from combinations of simple logic elements.",
-			"In CreateCPU, you place small circuits on the screen, connect them and run them to learn about logic circuits.",
+			`In ${appName}, you place small circuits on the screen, connect them and run them to learn about logic circuits.`,
 			"Try things out like a puzzle, and take a look inside a computer.",
 		],
 		title: "What would you like to do?",
@@ -234,11 +234,11 @@ export const en = {
 	tutorial: {
 		lead: [
 			"Starting at the first stage, build circuit after circuit, and finish a stopwatch in the last stage.",
-			"Each stage hands you the circuits of the earlier stages as finished parts, so you can start from any stage.",
+			"When a stage needs a circuit from an earlier one, it hands it to you as a finished part, so you can start from any stage.",
 		],
 		stageNumber: (number: number) => `Stage ${number}`,
 		cleared: "Cleared",
-		upNext: "Next stage",
+		upNext: "Continue here",
 		startOver: "Start over from the beginning",
 		startOverDialog: {
 			title: "Start the tutorial over?",

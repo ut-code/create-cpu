@@ -14,6 +14,7 @@ export default function StartPage() {
 			title: messages.header.modes.tutorial,
 			body: messages.start.tutorial(tutorialStages.length),
 			color: theme.colors.tutorial,
+			textColor: theme.colors.tutorial,
 		},
 		{
 			to: "/free",
@@ -21,6 +22,8 @@ export default function StartPage() {
 			title: messages.header.modes.free,
 			body: messages.start.free,
 			color: theme.colors.primary,
+			// The primary colour is too light for small text on white
+			textColor: "primary.dark",
 		},
 	];
 	return (
@@ -29,7 +32,7 @@ export default function StartPage() {
 				<Typography variant="h1" typography="h4" gutterBottom>
 					{appName}
 				</Typography>
-				{messages.start.intro.map((sentence) => (
+				{messages.start.intro(appName).map((sentence) => (
 					<Typography key={sentence} color="textSecondary">
 						{sentence}
 					</Typography>
@@ -58,7 +61,7 @@ export default function StartPage() {
 							>
 								<Typography
 									variant="body2"
-									sx={{ color: choice.color, fontWeight: "bold" }}
+									sx={{ color: choice.textColor, fontWeight: "bold" }}
 								>
 									{choice.audience}
 								</Typography>
