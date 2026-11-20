@@ -132,13 +132,14 @@ export const en = {
 			OR: "[ON] when at least one input is [ON]. Given values of two or more bits, it makes each bit [1] where at least one is [1].",
 			NOT: "Swaps [ON] and [OFF]. Given a value of two or more bits, it swaps [1] and [0] in each bit.",
 			XOR: "[ON] when exactly one input is [ON]. Given values of two or more bits, it makes each bit [1] where exactly one is [1].",
-			TRUE: "Always [ON]. In a value of two or more bits, every bit is [1].",
-			FALSE: "Always [OFF]. In a value of two or more bits, every bit is [0].",
+			TRUE: "Always [ON]. If its output has two or more bits, every bit is [1].",
+			FALSE:
+				"Always [OFF]. If its output has two or more bits, every bit is [0].",
 			DECOMPOSE:
 				"Splits a value of two or more bits, the higher digits to the upper pins.",
 			AGGREGATE: "Joins values into one, the upper pins as the higher digits.",
 			FLIPFLOP:
-				"Outputs what it received at the time step before. At the first time step, it outputs [OFF], or a value whose bits are all [0] if it has two or more bits.",
+				"Outputs what it received at the time step before. At the first time step, it outputs [OFF], or a value of all [0] bits if its output has two or more bits.",
 			CONST: "Always outputs the value written in it.",
 			BROADCAST: "Repeats a one-bit value over two or more bits.",
 			ANDN: "[ON] only when every bit of {In} is [1].",
@@ -154,7 +155,7 @@ export const en = {
 		} satisfies Record<CCIntrinsicComponentType, string>,
 		pinBitWidth: (pinName: string, canAddPins: boolean) =>
 			canAddPins
-				? `The number in an {${pinName}} pin is its number of bits. Click the pin while editing, and a field for each {${pinName}} pin appears, from the top. <pinAdd> adds a field at the bottom, and <pinRemove> removes the bottom one. Change the numbers in the fields and press <pinApply>, and the {${pinName}} pins follow the fields.`
+				? `The number in an {${pinName}} pin is its number of bits. Click an {${pinName}} pin while editing, and a field for each {${pinName}} pin appears, from the top. <pinAdd> adds a field at the bottom, and <pinRemove> removes the bottom one. Change the numbers in the fields and press <pinApply>, and the {${pinName}} pins follow the fields.`
 				: `The number in the {${pinName}} pin is its number of bits. To change it, click the pin while editing, change the number in the field and press <pinApply>.`,
 		about: (name: string) => `About ${name}`,
 		ofStage: "Available parts",
