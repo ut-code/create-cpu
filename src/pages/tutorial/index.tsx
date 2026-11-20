@@ -92,7 +92,16 @@ export default function TutorialPage() {
 											fontWeight: "bold",
 										}}
 									>
-										{index + 1}
+										{/* Trimmed to the digits, which otherwise sit low in their line */}
+										<Box
+											component="span"
+											sx={{
+												display: "block",
+												textBox: "trim-both cap alphabetic",
+											}}
+										>
+											{index + 1}
+										</Box>
 									</Box>
 									{/* Under the title, which then has the width of the card */}
 									<Box sx={{ flexGrow: 1 }}>
