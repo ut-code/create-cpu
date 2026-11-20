@@ -26,6 +26,7 @@ import {
 import { BitNotationContext } from "../../components/bitNotation";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
 import { checkButtonLook } from "../../components/controlLooks";
+import { MarkedText } from "../../components/MarkedText";
 import {
 	PartDescription,
 	PartDescriptionView,
@@ -66,7 +67,6 @@ import { OutlinedNodeIdsContext } from "../edit/Editor/outlinedNodes";
 import type { OffersComponent } from "../edit/placement";
 import SidePanel from "../edit/SidePanel";
 import { StageNumber } from "./StageNumber";
-import { StageText } from "./StageText";
 
 function SectionHeading({ children }: { children: ReactNode }) {
 	return (
@@ -255,7 +255,7 @@ function StageView({ stage }: { stage: TutorialStage }) {
 								<Stack spacing={1}>
 									{stageTexts.goal.map((paragraph) => (
 										<Typography key={paragraph}>
-											<StageText text={paragraph} />
+											<MarkedText text={paragraph} />
 										</Typography>
 									))}
 								</Stack>
@@ -278,7 +278,7 @@ function StageView({ stage }: { stage: TutorialStage }) {
 									<Box component="ol" sx={{ m: 0, pl: 3 }}>
 										{stageTexts.steps.map((step) => (
 											<Typography key={step} component="li" sx={{ mb: 1 }}>
-												<StageText text={step} />
+												<MarkedText text={step} />
 											</Typography>
 										))}
 									</Box>

@@ -4,6 +4,7 @@ import type { CCComponent } from "../store/component";
 import { IntrinsicComponentDefinition } from "../store/intrinsics/base";
 import { definitionByComponentId } from "../store/intrinsics/definitions";
 import { type TruthTable, truthTableOf } from "../store/intrinsics/truthTable";
+import { MarkedText } from "./MarkedText";
 import { TruthTableView } from "./TruthTableView";
 
 export function partSummary(
@@ -62,10 +63,14 @@ export function PartDescriptionView({
 			>
 				{name}
 			</Typography>
-			{summary && <Typography variant="body2">{summary}</Typography>}
+			{summary && (
+				<Typography variant="body2">
+					<MarkedText text={summary} />
+				</Typography>
+			)}
 			{notes.map((note) => (
 				<Typography key={note} variant="body2" sx={{ mt: 0.5 }}>
-					{note}
+					<MarkedText text={note} />
 				</Typography>
 			))}
 			{table && (

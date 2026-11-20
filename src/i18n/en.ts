@@ -94,7 +94,7 @@ const stageTexts: Record<TutorialStageId, StageTexts> = {
 			"<check> turns {Up} [ON] until {Count} reaches [1001], then [OFF] for two time steps to see that {Count} stays at [1001] and {Carry} stays [OFF], and then [ON] again to see that {Count} goes back to [0000].",
 		],
 		steps: [
-			'The {Const}, {Broadcast} and {And} on the left send [0001] to {B} of "{Adding four digits}" when {Up} is [ON], and [0000] when it is [OFF]. A {Broadcast} spreads a one-bit value over several bits: [1111] for [ON], [0000] for [OFF]. An {And} given values of several bits makes each bit [1] only where both are [1].',
+			'The {Const}, {Broadcast} and {And} on the left send [0001] to {B} of "{Adding four digits}" when {Up} is [ON], and [0000] when it is [OFF]. A {Broadcast} spreads a one-bit value over two or more bits: [1111] for [ON], [0000] for [OFF]. An {And} given values of two or more bits makes each bit [1] only where both are [1].',
 			"Make {Carry}. From [0000] to [1001], only [1001] has [1] in both the eights and the ones digit. Join the top pin (eights) and the bottom pin (ones) on the right of the {Decompose} at the bottom with an {And}, join its output and {Up} with another {And}, and connect that to {Carry}.",
 			"Place a {Broadcast} and click the pin on its right. The box that appears is the bit width, the number of bits of the output. Change its 1 to 4 and press <pinApply>, and the output has four bits. Do this before connecting it.",
 			"Go back to [0000] when {Carry} is [ON]. {S} is not connected to the {FlipFlop} yet. Connect the output of the {And} that goes to {Carry} to a {Not} as well to turn it over, spread it to four bits with that {Broadcast}, join it and {S} with an {And}, and connect the {And} to the input of the {FlipFlop}.",
@@ -128,32 +128,35 @@ export const en = {
 	},
 	parts: {
 		summaries: {
-			AND: "ON only when both inputs are ON.",
-			OR: "ON when at least one input is ON.",
-			NOT: "Turns ON into OFF, and OFF into ON.",
-			XOR: "ON when exactly one input is ON.",
-			TRUE: "Always ON.",
-			FALSE: "Always OFF.",
+			AND: "[ON] only when both inputs are [ON]. Given values of two or more bits, it makes each bit [1] only where both are [1].",
+			OR: "[ON] when at least one input is [ON]. Given values of two or more bits, it makes each bit [1] where at least one is [1].",
+			NOT: "Swaps [ON] and [OFF]. Given a value of two or more bits, it swaps [1] and [0] in each bit.",
+			XOR: "[ON] when exactly one input is [ON]. Given values of two or more bits, it makes each bit [1] where exactly one is [1].",
+			TRUE: "Always [ON]. If its output has two or more bits, every bit is [1].",
+			FALSE:
+				"Always [OFF]. If its output has two or more bits, every bit is [0].",
 			DECOMPOSE:
-				"Splits a value of several bits, the higher digits to the upper pins.",
+				"Splits a value of two or more bits, the higher digits to the upper pins.",
 			AGGREGATE: "Joins values into one, the upper pins as the higher digits.",
 			FLIPFLOP:
-				"Outputs what it received at the time step before (0 at the first time step).",
+				"Outputs what it received at the time step before. At the first time step, it outputs [OFF], or a value of all [0] bits if its output has two or more bits.",
 			CONST: "Always outputs the value written in it.",
-			BROADCAST: "Repeats a one-bit value over several bits.",
-			ANDN: "ON only when every bit of In is 1.",
-			ORN: "ON when any bit of In is 1.",
+			BROADCAST: "Repeats a one-bit value over two or more bits.",
+			ANDN: "[ON] only when every bit of {In} is [1].",
+			ORN: "[ON] when any bit of {In} is [1].",
 			SEVEN_SEGMENT:
-				"Turns the 4-bit value of In into the shape of a hexadecimal character, 0 to F. Out is a 28-bit value of a picture 4 pixels wide and 7 high, with 1 for the character. While editing, the gear button sets its pixel order.",
+				"Turns the 4-bit value of {In} into the shape of a hexadecimal character, 0 to F. {Out} is a 28-bit value of a picture 4 pixels wide and 7 high, with [1] for the character. While editing, the gear button sets its pixel order.",
 			DISPLAY:
-				"While playing, shows the value of Pixels as a picture, one bit per pixel (1 is black, 0 is white). From the highest digit, the pixels go from the top left row by row in row-major order, or column by column in column-major order. While editing, the gear button sets the resolution and the pixel order.",
+				"While playing, shows the value of {Pixels} as a picture, one bit per pixel ([1] is black, [0] is white). From the highest digit, the pixels go from the top left row by row in row-major order, or column by column in column-major order. While editing, the gear button sets the resolution and the pixel order.",
 			INPUT:
-				"Adds an input to the component it is placed in. Where that component is placed as a part, the input is a pin on its left. While playing, its value can be changed on the placed Input.",
+				"Adds an input to the component it is placed in. Where that component is placed as a part, the input is a pin on its left. While playing, its value can be changed on the placed {Input}.",
 			OUTPUT:
 				"Adds an output to the component it is placed in. Where that component is placed as a part, the output is a pin on its right. While playing, it shows the value it receives.",
 		} satisfies Record<CCIntrinsicComponentType, string>,
 		pinBitWidth: (pinName: string, canAddPins: boolean) =>
-			`The number in the ${pinName} pin is its number of bits. To change it, click the pin while editing, change the field and press "Apply".${canAddPins ? ` Each field added with "Add" becomes another ${pinName} pin.` : ""}`,
+			canAddPins
+				? `The number in an {${pinName}} pin is its number of bits. Click an {${pinName}} pin while editing, and a field for each {${pinName}} pin appears, from the top. <pinAdd> adds a field at the bottom, and <pinRemove> removes the bottom one. Change the numbers in the fields and press <pinApply>, and the {${pinName}} pins follow the fields.`
+				: `The number in the {${pinName}} pin is its number of bits. To change it, click the pin while editing, change the number in the field and press <pinApply>.`,
 		about: (name: string) => `About ${name}`,
 		ofStage: "Available parts",
 	},
