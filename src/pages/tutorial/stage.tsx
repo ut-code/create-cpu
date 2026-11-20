@@ -65,6 +65,7 @@ import CCComponentEditor from "../edit/Editor";
 import { OutlinedNodeIdsContext } from "../edit/Editor/outlinedNodes";
 import type { OffersComponent } from "../edit/placement";
 import SidePanel from "../edit/SidePanel";
+import { StageText } from "./StageText";
 
 function SectionHeading({ children }: { children: ReactNode }) {
 	return (
@@ -249,7 +250,9 @@ function StageView({ stage }: { stage: TutorialStage }) {
 							</div>
 							<div>
 								<SectionHeading>{texts.goalHeading}</SectionHeading>
-								<Typography>{stageTexts.goal}</Typography>
+								<Typography>
+									<StageText text={stageTexts.goal} />
+								</Typography>
 								{goalTable && (
 									<Box sx={{ mt: 1 }}>
 										<Box sx={{ overflowX: "auto" }}>
@@ -269,7 +272,7 @@ function StageView({ stage }: { stage: TutorialStage }) {
 									<Box component="ol" sx={{ m: 0, pl: 3 }}>
 										{stageTexts.steps.map((step) => (
 											<Typography key={step} component="li" sx={{ mb: 0.5 }}>
-												{step}
+												<StageText text={step} />
 											</Typography>
 										))}
 									</Box>

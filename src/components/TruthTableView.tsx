@@ -1,20 +1,17 @@
 import { Box, type Theme } from "@mui/material";
 import { useContext } from "react";
-import { bitDigit, bitLabel } from "../common/bitLabel";
 import { useMessages } from "../i18n";
 import type { TruthTable } from "../store/intrinsics/truthTable";
 import type { SimulationValue } from "../store/simulation";
-import { theme } from "../style";
 import { BitNotationContext } from "./bitNotation";
 import { truthTableColumnsOf, truthTableLinesOf } from "./truthTableLayout";
+import { ValueView } from "./ValueView";
 
 const divider = (muiTheme: Theme) => `1px solid ${muiTheme.palette.divider}`;
-const onSx = { color: theme.colors.primary, fontWeight: "bold" } as const;
 
 export function TruthTableView({ table }: { table: TruthTable }) {
 	const messages = useMessages();
-	const singleBitLabel =
-		useContext(BitNotationContext) === "digits" ? bitDigit : bitLabel;
+	const notation = useContext(BitNotationContext);
 	const columns = truthTableColumnsOf(table, messages.truthTable.timeStep);
 	const cellSx = (column: number) =>
 		({
@@ -23,17 +20,9 @@ export function TruthTableView({ table }: { table: TruthTable }) {
 			textAlign: "center",
 			...(columns[column]?.startsGroup && { borderLeft: divider }),
 		}) as const;
-	const valueCell = (value: SimulationValue) =>
-		value.map((bit, index) => (
-			<Box
-				// biome-ignore lint/suspicious/noArrayIndexKey: bits are identified by their index
-				key={index}
-				component="span"
-				sx={bit ? onSx : {}}
-			>
-				{value.length === 1 ? singleBitLabel(bit) : bitDigit(bit)}
-			</Box>
-		));
+	const valueCell = (value: SimulationValue) => (
+		<ValueView value={value} notation={notation} />
+	);
 
 	return (
 		<Box
