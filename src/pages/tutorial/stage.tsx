@@ -1,8 +1,10 @@
-import { ArrowBack } from "@mui/icons-material";
+import { ArrowBack, ExpandMore } from "@mui/icons-material";
 import {
 	Alert,
 	Box,
 	Button,
+	ButtonBase,
+	Collapse,
 	Divider,
 	Link,
 	Stack,
@@ -13,6 +15,7 @@ import {
 	type ReactNode,
 	useCallback,
 	useEffect,
+	useId,
 	useMemo,
 	useRef,
 	useState,
@@ -78,6 +81,48 @@ function SectionHeading({ children }: { children: ReactNode }) {
 		>
 			{children}
 		</Typography>
+	);
+}
+
+/** The steps are hints, kept closed until the player asks for them */
+function StepsSection({
+	steps,
+	isOpenAtFirst,
+}: {
+	steps: readonly string[];
+	isOpenAtFirst: boolean;
+}) {
+	const texts = useMessages().tutorial;
+	const [isOpen, setIsOpen] = useState(isOpenAtFirst);
+	const stepsId = useId();
+	return (
+		<div>
+			<SectionHeading>
+				<ButtonBase
+					aria-expanded={isOpen}
+					aria-controls={stepsId}
+					onClick={() => setIsOpen((open) => !open)}
+					sx={{ font: "inherit", gap: 0.5, borderRadius: 1 }}
+				>
+					<ExpandMore
+						sx={{
+							transform: isOpen ? "none" : "rotate(-90deg)",
+							transition: "transform 150ms",
+						}}
+					/>
+					{texts.stepsHeading}
+				</ButtonBase>
+			</SectionHeading>
+			<Collapse in={isOpen} id={stepsId}>
+				<Box component="ol" sx={{ m: 0, pl: 3 }}>
+					{steps.map((step) => (
+						<Typography key={step} component="li" sx={{ mb: 1 }}>
+							<MarkedText text={step} />
+						</Typography>
+					))}
+				</Box>
+			</Collapse>
+		</div>
 	);
 }
 
@@ -273,16 +318,11 @@ function StageView({ stage }: { stage: TutorialStage }) {
 								)}
 							</div>
 							{stageTexts.steps.length > 0 && (
-								<div>
-									<SectionHeading>{texts.stepsHeading}</SectionHeading>
-									<Box component="ol" sx={{ m: 0, pl: 3 }}>
-										{stageTexts.steps.map((step) => (
-											<Typography key={step} component="li" sx={{ mb: 1 }}>
-												<MarkedText text={step} />
-											</Typography>
-										))}
-									</Box>
-								</div>
+								<StepsSection
+									steps={stageTexts.steps}
+									// The first stage's steps teach the editor, not the circuit
+									isOpenAtFirst={stageIndex === 0}
+								/>
 							)}
 							<div>
 								<SectionHeading>{messages.parts.ofStage}</SectionHeading>
