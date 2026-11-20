@@ -28,7 +28,11 @@ export default function StartPage() {
 				<Typography variant="h1" typography="h4" gutterBottom>
 					{appName}
 				</Typography>
-				<Typography color="textSecondary">{messages.start.intro}</Typography>
+				{messages.start.intro.map((sentence) => (
+					<Typography key={sentence} color="textSecondary">
+						{sentence}
+					</Typography>
+				))}
 				<Typography variant="h2" typography="h6" sx={{ mt: 4 }}>
 					{messages.start.title}
 				</Typography>

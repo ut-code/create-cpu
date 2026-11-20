@@ -165,8 +165,11 @@ export const en = {
 		},
 	},
 	start: {
-		intro:
-			"The brain of a computer or a smartphone, the CPU, is built from combinations of simple logic elements. In CreateCPU, you place small circuits on the screen, connect them and run them to learn about logic circuits. Try things out like a puzzle, and take a look inside a computer.",
+		intro: [
+			"The brain of a computer or a smartphone, the CPU, is built from combinations of simple logic elements.",
+			"In CreateCPU, you place small circuits on the screen, connect them and run them to learn about logic circuits.",
+			"Try things out like a puzzle, and take a look inside a computer.",
+		],
 		title: "What would you like to do?",
 		tutorialAudience: "New here? Start here.",
 		tutorial:
