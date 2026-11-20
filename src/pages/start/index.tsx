@@ -24,7 +24,7 @@ export default function StartPage() {
 	];
 	return (
 		<div style={{ overflowY: "auto" }}>
-			<Container sx={{ px: 2, py: 6 }} maxWidth="sm">
+			<Container sx={{ px: 2, py: 6 }} maxWidth="md">
 				<Typography variant="h1" typography="h4" gutterBottom>
 					{appName}
 				</Typography>
