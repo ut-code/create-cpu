@@ -4,7 +4,10 @@ import nullthrows from "nullthrows";
 import { useState } from "react";
 import invariant from "tiny-invariant";
 import { rect } from "../../../../common/rect";
-import { pinApplyButtonLook } from "../../../../components/controlLooks";
+import {
+	pinApplyButtonLook,
+	withLookSx,
+} from "../../../../components/controlLooks";
 import { useMessages } from "../../../../i18n";
 import { IntrinsicComponentDefinition } from "../../../../store/intrinsics/base";
 import { CCNodePinStore } from "../../../../store/nodePin";
@@ -180,7 +183,7 @@ export function CCComponentEditorNodePinPropertyEditor() {
 					<Button
 						{...pinApplyButtonLook}
 						type="submit"
-						sx={{ ml: "auto" }}
+						sx={withLookSx(pinApplyButtonLook, { ml: "auto" })}
 						disabled={!isTouched || !isValid}
 					>
 						{messages.common.apply}

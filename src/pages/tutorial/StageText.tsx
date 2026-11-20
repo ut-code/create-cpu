@@ -11,6 +11,7 @@ import {
 	checkButtonLook,
 	pinApplyButtonLook,
 	valueApplyButtonLook,
+	withLookSx,
 } from "../../components/controlLooks";
 import { ValueView } from "../../components/ValueView";
 import { useMessages } from "../../i18n";
@@ -20,8 +21,8 @@ import {
 	type StageTextSegment,
 } from "../../tutorial/stageText";
 
-// The real controls with their looks, smaller and inert, so that they are not taken
-// for controls to press
+// The real controls with their looks, smaller and not to be pressed. The label is read
+// out from a hidden copy, as the control itself is hidden from screen readers.
 const inlineSx = {
 	mx: 0.25,
 	px: 0.75,
@@ -31,6 +32,16 @@ const inlineSx = {
 	lineHeight: 1.6,
 	verticalAlign: "baseline",
 	boxShadow: "none",
+	pointerEvents: "none",
+} as const;
+
+const visuallyHiddenSx = {
+	position: "absolute",
+	width: "1px",
+	height: "1px",
+	overflow: "hidden",
+	clip: "rect(0 0 0 0)",
+	whiteSpace: "nowrap",
 } as const;
 
 const iconSx = {
@@ -39,17 +50,38 @@ const iconSx = {
 	mx: 0.25,
 } as const;
 
+function InlineControl({
+	label,
+	children,
+}: {
+	label: string;
+	children: ReactNode;
+}) {
+	return (
+		<>
+			<Box component="span" aria-hidden>
+				{children}
+			</Box>
+			<Box component="span" sx={visuallyHiddenSx}>
+				{label}
+			</Box>
+		</>
+	);
+}
+
 function InlineButton({ look, label }: { look: ButtonProps; label: string }) {
 	return (
-		<Button
-			{...look}
-			component="span"
-			inert
-			disableRipple
-			sx={[inlineSx, ...(Array.isArray(look.sx) ? look.sx : [look.sx])]}
-		>
-			{label}
-		</Button>
+		<InlineControl label={label}>
+			<Button
+				{...look}
+				component="span"
+				tabIndex={-1}
+				disableRipple
+				sx={withLookSx(look, inlineSx)}
+			>
+				{label}
+			</Button>
+		</InlineControl>
 	);
 }
 
@@ -106,16 +138,18 @@ function ControlView({ control }: { control: StageTextControl }) {
 			);
 		case "auto":
 			return (
-				<ToggleButton
-					{...autoToggleButtonLook}
-					value="auto"
-					component="span"
-					inert
-					disableRipple
-					sx={inlineSx}
-				>
-					{messages.editor.frameControl.auto}
-				</ToggleButton>
+				<InlineControl label={messages.editor.frameControl.auto}>
+					<ToggleButton
+						{...autoToggleButtonLook}
+						value="auto"
+						component="span"
+						tabIndex={-1}
+						disableRipple
+						sx={withLookSx(autoToggleButtonLook, inlineSx)}
+					>
+						{messages.editor.frameControl.auto}
+					</ToggleButton>
+				</InlineControl>
 			);
 		case "enter":
 			return (

@@ -1,4 +1,9 @@
-import type { ButtonProps, ToggleButtonProps } from "@mui/material";
+import type {
+	ButtonProps,
+	SxProps,
+	Theme,
+	ToggleButtonProps,
+} from "@mui/material";
 import { theme } from "../style";
 
 // The looks of controls a stage text draws too, so that the two cannot drift apart
@@ -22,3 +27,14 @@ export const pinApplyButtonLook = {
 export const autoToggleButtonLook = {
 	size: "small",
 } as const satisfies Partial<ToggleButtonProps>;
+
+const sxList = (sx: SxProps<Theme> | undefined) =>
+	sx === undefined ? [] : Array.isArray(sx) ? sx : [sx];
+
+/** The `sx` of `look` with `sx` after it, so that neither is dropped */
+export function withLookSx(
+	look: ButtonProps | Partial<ToggleButtonProps>,
+	sx: SxProps<Theme>,
+): SxProps<Theme> {
+	return [...sxList(look.sx), ...sxList(sx)];
+}
