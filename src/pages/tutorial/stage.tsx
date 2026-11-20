@@ -83,6 +83,7 @@ function StageView({ stage }: { stage: TutorialStage }) {
 	);
 	const [editedComponentId, setEditedComponentId] = useState(stage.componentId);
 	const [result, setResult] = useState<CheckResult | null>(null);
+	const [isChecking, setIsChecking] = useState(false);
 	const [isConfirmingReset, setIsConfirmingReset] = useState(false);
 	const [hasResetFailed, setHasResetFailed] = useState(false);
 	// The editor keeps state of the store it was made with, so it starts anew on a reset
@@ -100,10 +101,18 @@ function StageView({ stage }: { stage: TutorialStage }) {
 	}, [store]);
 
 	const check = () => {
-		const checked = checkCircuit(store, stage.componentId, stage.check);
-		if (checked.type === "checkFailed") console.error(checked.error);
-		setResult(checked);
-		if (checked.type === "passed") markStageCleared(stage.id);
+		setIsChecking(true);
+		// A check over many time steps holds the page for a moment, so the button says
+		// it is checking before the check starts
+		requestAnimationFrame(() =>
+			setTimeout(() => {
+				const checked = checkCircuit(store, stage.componentId, stage.check);
+				if (checked.type === "checkFailed") console.error(checked.error);
+				setResult(checked);
+				if (checked.type === "passed") markStageCleared(stage.id);
+				setIsChecking(false);
+			}),
+		);
 	};
 
 	const resetStage = () => {
@@ -164,7 +173,9 @@ function StageView({ stage }: { stage: TutorialStage }) {
 							<Typography>{stageTexts.goal}</Typography>
 							{goalTable && (
 								<Box sx={{ mt: 1 }}>
-									<TruthTableView table={goalTable} />
+									<Box sx={{ overflowX: "auto" }}>
+										<TruthTableView table={goalTable} />
+									</Box>
 									{stage.tableNotation === "digits" && (
 										<Typography variant="body2" sx={{ mt: 0.5 }}>
 											{texts.digitsLegend}
@@ -224,9 +235,10 @@ function StageView({ stage }: { stage: TutorialStage }) {
 						<Button
 							variant="contained"
 							onClick={check}
+							disabled={isChecking}
 							sx={{ background: theme.colors.tutorial }}
 						>
-							{texts.check}
+							{isChecking ? texts.checking : texts.check}
 						</Button>
 						{result?.type === "passed" && (
 							<>

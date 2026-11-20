@@ -17,6 +17,7 @@ export default function CCComponentEditorFrameControl() {
 	const [speedInput, setSpeedInput] = useState(
 		String(componentEditorState.playbackSpeed),
 	);
+	const [stepDraft, setStepDraft] = useState<string | null>(null);
 	const isAutomatic = componentEditorState.playbackMode === "auto";
 	const isSpeedValid = isValidPlaybackSpeed(Number(speedInput));
 
@@ -92,12 +93,20 @@ export default function CCComponentEditorFrameControl() {
 							outline: "none",
 							fontSize: "20px",
 						}}
-						value={componentEditorState.timeStep + 1}
-						onChange={(e) => {
-							const value = Number(e.target.value);
+						value={stepDraft ?? String(componentEditorState.timeStep + 1)}
+						onFocus={(e) => e.target.select()}
+						onChange={(e) => setStepDraft(e.target.value)}
+						onKeyDown={(e) => {
+							if (e.key === "Enter") e.currentTarget.blur();
+						}}
+						// Every step up to the one entered is simulated, so a step is only
+						// gone to once it is typed in full, not at each key
+						onBlur={() => {
+							const value = Number(stepDraft);
 							if (Number.isSafeInteger(value) && value > 0) {
 								componentEditorState.setTimeStep(value - 1);
 							}
+							setStepDraft(null);
 						}}
 					/>
 					<IconButton

@@ -139,6 +139,42 @@ describe("the layout of every stage", () => {
 	);
 });
 
+describe("the size of every stage", () => {
+	// The first view shrinks to take in the whole stage, so a larger one is drawn small
+	const largest = { x: 1400, y: 850 };
+
+	it.each(tutorialStages.map((s) => [s.id, s] as const))(
+		"%s starts within the size the first view shows well",
+		(_, laidOut) => {
+			const store = createTestStore();
+			setUpTutorialStage(store, laidOut, titleOf);
+			const rects = store.nodes
+				.getManyByParentComponentId(laidOut.componentId)
+				.map(
+					(node) =>
+						getCCComponentEditorRendererNodeGeometry(store, node.id).rect,
+				);
+			const left = Math.min(
+				-laidOut.pinDistance,
+				...rects.map((rect) => rect.position.x),
+			);
+			const right = Math.max(
+				laidOut.pinDistance,
+				...rects.map((rect) => rect.position.x + rect.size.x),
+			);
+			const top = Math.min(
+				...rects.map((rect) => rect.position.y - nodeTitleHeight),
+			);
+			const bottom = Math.max(
+				...rects.map((rect) => rect.position.y + rect.size.y),
+			);
+
+			expect(right - left).toBeLessThanOrEqual(largest.x);
+			expect(bottom - top).toBeLessThanOrEqual(largest.y);
+		},
+	);
+});
+
 describe("the wires every stage starts with", () => {
 	// Below the straight part of a wire, which starts that far from its own node
 	const clearance = connectionStraightGap - 4;
@@ -287,7 +323,7 @@ describe("setUpTutorialStage with decorations", () => {
 });
 
 describe("the stopwatch stage", () => {
-	it("shows the pause while Start is OFF, and 59:59 going back to 00:00", () => {
+	it("shows 59:59 going back to 00:00, and the pause while Start is OFF", () => {
 		const stopwatch = nullthrows(findTutorialStage("stopwatch"));
 		const table = nullthrows(goalTableOf(stopwatch.check));
 		const clockOf = (values: boolean[][]) => {
@@ -305,11 +341,12 @@ describe("the stopwatch stage", () => {
 		).toEqual([
 			[1, true, "00:00"],
 			[2, true, "00:01"],
-			[6, false, "00:05"],
-			[7, false, "00:05"],
-			[8, true, "00:05"],
-			[3602, true, "59:59"],
-			[3603, true, "00:00"],
+			[3600, true, "59:59"],
+			[3601, true, "00:00"],
+			[3602, false, "00:01"],
+			[3603, false, "00:01"],
+			[3604, true, "00:01"],
+			[3605, true, "00:02"],
 		]);
 	});
 });

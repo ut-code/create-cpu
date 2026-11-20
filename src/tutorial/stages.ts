@@ -74,6 +74,8 @@ type StageOf<Id extends GivenPartId> = {
 	check: CircuitCheck;
 	/** how far left and right of the middle the input and output pins sit */
 	pinDistance: number;
+	/** how far apart the pins in each column sit */
+	pinSpacing: number;
 	/**
 	 * Places what the stage starts with besides its pins, and returns how to clear it
 	 * from there. Decorations, such as a display, are only placed for the player.
@@ -97,7 +99,12 @@ const oneBitInputs = (...names: string[]) =>
 type Solving = { solve(circuit: StageCircuit): void };
 
 type StageDefinition = Pick<TutorialStage, "parts" | "check"> &
-	Partial<Pick<TutorialStage, "givenParts" | "tableNotation" | "pinDistance">> &
+	Partial<
+		Pick<
+			TutorialStage,
+			"givenParts" | "tableNotation" | "pinDistance" | "pinSpacing"
+		>
+	> &
 	(Pick<TutorialStage, "layOut"> | Solving);
 
 function defineStage<Id extends GivenPartId>(
@@ -110,6 +117,7 @@ function defineStage<Id extends GivenPartId>(
 		givenParts = [],
 		tableNotation = "onOff",
 		pinDistance = 300,
+		pinSpacing = 200,
 	} = definition;
 	return {
 		id,
@@ -119,6 +127,7 @@ function defineStage<Id extends GivenPartId>(
 		givenParts,
 		tableNotation,
 		pinDistance,
+		pinSpacing,
 		allowsNewComponents: false,
 		layOut:
 			"layOut" in definition
@@ -578,18 +587,35 @@ const decimalDigitStage = digitStage("decimal-digit", 10);
 /** Handed over to the stopwatch for the tens of seconds and of minutes */
 const senaryDigitPart = digitStage("senary-digit", 6);
 
-export const tutorialParts: readonly GivenPart[] = [senaryDigitPart];
+const partById = {
+	"senary-digit": senaryDigitPart,
+} satisfies { [Id in TutorialPartId]: StageOf<Id> };
+export const tutorialParts: readonly GivenPart[] = Object.values(partById);
 
 const secondsInHour = 3600;
 const stopwatchDigits = [
-	{ name: "M10", part: senaryDigitPart, x: -420 },
-	{ name: "M1", part: decimalDigitStage, x: -240 },
-	{ name: "S10", part: senaryDigitPart, x: 100 },
-	{ name: "S1", part: decimalDigitStage, x: 280 },
+	{ name: "M10", part: senaryDigitPart },
+	{ name: "M1", part: decimalDigitStage },
+	{ name: "S10", part: senaryDigitPart },
+	{ name: "S1", part: decimalDigitStage },
 ] as const;
-const stopwatchOffSteps = [6, 7];
-// The rows the dots of a colon light on a display as tall as a 7seg's
-const colonPixels = [false, false, true, false, true, false, false];
+// Start is OFF for a while only after 59:59 has gone back to 00:00, so that the
+// steps of the goal are those a player reaches with Start ON from the first step
+const stopwatchOffSteps = [secondsInHour + 2, secondsInHour + 3];
+const numeralWidth = 4;
+const numeralHeight = 7;
+const blankColumn = new Array<boolean>(numeralHeight).fill(false);
+// The rows the dots of a colon light, as tall as a 7seg's numeral
+const colonColumn = [false, false, true, false, true, false, false];
+/** The columns between the numerals, from the left: a gap, a gap and a colon, a gap */
+const spacerWidths = [numeralHeight, 3 * numeralHeight, numeralHeight];
+const spacers = [
+	...blankColumn,
+	...blankColumn,
+	...colonColumn,
+	...blankColumn,
+	...blankColumn,
+];
 
 /** MM:SS, one second a step while Start is ON, back to 00:00 after 59:59 */
 const stopwatchStage = defineStage("stopwatch", {
@@ -597,6 +623,8 @@ const stopwatchStage = defineStage("stopwatch", {
 	givenParts: ["decimal-digit", "senary-digit"],
 	tableNotation: "digits",
 	pinDistance: 560,
+	// Close enough for the outputs to sit below the display
+	pinSpacing: 120,
 	check: sequentialCheck(
 		{
 			inputs: oneBitInputs("Start"),
@@ -623,41 +651,73 @@ const stopwatchStage = defineStage("stopwatch", {
 				};
 			},
 		},
-		// Long enough to go from 59:59 back to 00:00 after Start was OFF a while
-		Array.from(
-			{ length: secondsInHour + stopwatchOffSteps.length + 2 },
-			(_, index) => ({ Start: bit(!stopwatchOffSteps.includes(index + 1)) }),
-		),
-		[
-			1,
-			2,
-			...stopwatchOffSteps,
-			8,
-			secondsInHour + stopwatchOffSteps.length,
-			secondsInHour + stopwatchOffSteps.length + 1,
-		],
+		Array.from({ length: secondsInHour + 5 }, (_, index) => ({
+			Start: bit(!stopwatchOffSteps.includes(index + 1)),
+		})),
+		[1, 2, ...Array.from({ length: 6 }, (_, index) => secondsInHour + index)],
 	),
 	layOut(circuit, { decorate }) {
-		const numerals = stopwatchDigits.map(({ x }) =>
-			decorate ? placeNumeral(circuit, { x: x - 140, y: -420 }, 140) : null,
+		const numerals = stopwatchDigits.map((_, index) =>
+			decorate
+				? circuit.place(
+						seven_segment.component.id,
+						{ x: -150, y: [-570, -495, -345, -270][index] ?? 0 },
+						{ pixelOrder: "column-major" },
+					)
+				: null,
 		);
 		if (decorate) {
-			const colon = circuit.place(
+			const spacing = circuit.place(
+				const_.component.id,
+				{ x: -560, y: -430 },
+				{ mode: "binary", data: spacers },
+			);
+			const spaces = circuit.place(decompose.component.id, {
+				x: -260,
+				y: -430,
+			});
+			const joined = circuit.place(aggregate.component.id, {
+				x: 100,
+				y: -430,
+			});
+			const screen = circuit.place(
 				display.component.id,
-				{ x: -70, y: -560 },
+				{ x: 420, y: -430 },
 				{
-					resolution: { x: 1, y: colonPixels.length },
-					pixelOrder: "row-major",
+					resolution: {
+						x:
+							stopwatchDigits.length * numeralWidth +
+							spacers.length / numeralHeight,
+						y: numeralHeight,
+					},
+					pixelOrder: "column-major",
 				},
 			);
-			const dots = circuit.place(
-				const_.component.id,
-				{ x: -290, y: -800 },
-				{ mode: "binary", data: colonPixels },
-			);
+			circuit.split(spaces, decompose.outputPin.Out, spacerWidths);
+			const numeralBits = numeralWidth * numeralHeight;
+			circuit.split(joined, aggregate.inputPin.In, [
+				numeralBits,
+				...spacerWidths.flatMap((width) => [width, numeralBits]),
+			]);
 			circuit.connect(
-				circuit.pinOf(dots, const_.outputPin.Out),
-				circuit.pinOf(colon, display.inputPin.Pixels),
+				circuit.pinOf(spacing, const_.outputPin.Out),
+				circuit.pinOf(spaces, decompose.inputPin.In),
+			);
+			for (const [index, numeral] of numerals.entries()) {
+				circuit.connect(
+					circuit.pinOf(nullthrows(numeral), seven_segment.outputPin.Out),
+					circuit.pinOf(joined, aggregate.inputPin.In, 2 * index),
+				);
+			}
+			for (const index of spacerWidths.keys()) {
+				circuit.connect(
+					circuit.pinOf(spaces, decompose.outputPin.Out, index),
+					circuit.pinOf(joined, aggregate.inputPin.In, 2 * index + 1),
+				);
+			}
+			circuit.connect(
+				circuit.pinOf(joined, aggregate.outputPin.Out),
+				circuit.pinOf(screen, display.inputPin.Pixels),
 			);
 		}
 		return () => {
@@ -672,7 +732,12 @@ const stopwatchStage = defineStage("stopwatch", {
 				const count = circuit.pinOf(node, "Count");
 				circuit.connect(count, circuit.pin(name));
 				const numeral = numerals[index];
-				if (numeral) circuit.connect(count, numeral);
+				if (numeral) {
+					circuit.connect(
+						count,
+						circuit.pinOf(numeral, seven_segment.inputPin.In),
+					);
+				}
 				const lower = nodes[index + 1];
 				circuit.connect(
 					lower ? circuit.pinOf(lower, "Carry") : circuit.pin("Start"),
@@ -811,7 +876,10 @@ function registerStageComponent(
 			const node = CCNodeStore.create({
 				parentComponentId: stage.componentId,
 				componentId: interfaceComponentId,
-				position: { x, y: (index - (names.length - 1) / 2) * 200 },
+				position: {
+					x,
+					y: (index - (names.length - 1) / 2) * stage.pinSpacing,
+				},
 			});
 			store.nodes.register(node);
 			renamePinOfNode(store, node.id, componentPin, name);

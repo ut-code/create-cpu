@@ -77,12 +77,12 @@ const stageTexts: Record<TutorialStageId, StageTexts> = {
 	},
 	stopwatch: {
 		title: "Stopwatch",
-		goal: "Finally, a stopwatch counting minutes and seconds as MM:SS. It goes on by one second at each time step when Start is ON. The four Displays at the top are, from the left, the tens of minutes (M10), the minutes (M1), the tens of seconds (S10) and the seconds (S1). M10 and S10 count 0 to 5, and M1 and S1 count 0 to 9. After 59:59 it goes back to 00:00. Check turns Start ON for time steps 1 to 5, OFF for 6 and 7, and ON again from 8, up to time step 3604.",
+		goal: "Finally, a stopwatch counting minutes and seconds like 12:34. It goes on by one second at each time step when Start is ON. The Display at the top right shows, from the left, the tens digit of the minutes (M10), the ones digit of the minutes (M1), a colon, the tens digit of the seconds (S10) and the ones digit of the seconds (S1). M10 and S10 count 0 to 5, and M1 and S1 count 0 to 9. After 59:59 it goes back to 00:00. The 7segs, Const, Decompose and Aggregate left of the Display put the four numerals and the colon side by side on that one Display. Check turns Start ON up to time step 3601, OFF for 3602 and 3603, and ON again from 3604, up to time step 3605.",
 		steps: [
-			'Place two "One base-6 digit" and two "One decimal digit". "One base-6 digit" is built like "One decimal digit", but counts 0 to 5 and goes back to 0 after 5. Use "One base-6 digit" for M10 and S10, and "One decimal digit" for M1 and S1.',
-			"Connect Start to Up of the part for S1. Then connect Carry of the part for S1 to Up of the part for S10, Carry for S10 to Up for M1, and Carry for M1 to Up for M10. A digit then goes on only when the digit below it goes back to 0.",
-			"Connect each Count to the output of the same name on the right and to its 7seg below the Displays. The 7segs are, from the left, for M10, M1, S10 and S1.",
-			'Press the play button, click Start to turn it ON at the first time step, and press "Auto": the Displays go on like a clock, one time step a second. To see what comes after 59:59, stop Auto and change the time step at the bottom to 3600. It goes there at once, and the right arrow shows 00:00.',
+			'Place two "One base-6 digit" and two "One decimal digit". "One base-6 digit" is built like "One decimal digit", but counts 0 to 5 and carries over after 5, as decimal does after 9.',
+			'Connect Count of each part to one of the outputs on the right and to the 7seg of that digit: "One base-6 digit" for M10 and S10, and "One decimal digit" for M1 and S1. The 7segs are, from the top, for M10, M1, S10 and S1.',
+			"Connect Start to Up of the part connected to S1. Then connect Carry of the part for S1 to Up of the part for S10, Carry for S10 to Up for M1, and Carry for M1 to Up for M10. A digit then goes on only when the digit one lower goes back to 0.",
+			'Press the play button. If Start is OFF at the first time step, click it to turn it ON. Press "Auto", and the Display goes on like a clock, one time step a second. To see what comes after 59:59, stop Auto, click the number at the bottom, enter 3600 and press the Enter key. It goes to that time step at once and shows 59:59, and the right arrow shows 00:00.',
 		],
 	},
 };
@@ -198,6 +198,7 @@ export const en = {
 		stepsHeading: "Steps",
 		digitsLegend: "The tables write ON as 1 and OFF as 0.",
 		check: "Check",
+		checking: "Checking…",
 		passed: "Cleared! The circuit works for every combination of the inputs.",
 		passedSteps: (count: number) =>
 			`Cleared! The circuit works at every time step up to time step ${count}.`,
