@@ -8,6 +8,7 @@ import {
 } from "@mui/material";
 import type { CSSProperties } from "react";
 import { Link as RouterLink, useLocation } from "react-router";
+import { appName } from "../common/appName";
 import {
 	type Language,
 	languages,
@@ -55,7 +56,7 @@ export default function GlobalHeader({ style }: GlobalHeaderProps) {
 			}}
 		>
 			<Link component={RouterLink} to="/" color="inherit" underline="hover">
-				CreateCPU
+				{appName}
 			</Link>
 			{mode && (
 				<Chip

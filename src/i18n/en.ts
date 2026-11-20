@@ -165,9 +165,13 @@ export const en = {
 		},
 	},
 	start: {
+		intro:
+			"The brain of a computer or a smartphone, the CPU, is built from combinations of simple logic elements. In CreateCPU, you place small circuits on the screen, connect them and run them to learn about logic circuits. Try things out like a puzzle, and take a look inside a computer.",
 		title: "What would you like to do?",
+		tutorialAudience: "New here? Start here.",
 		tutorial:
-			"Build logic circuits step by step, starting from a pair of switches.",
+			"Start from a pair of switches, and build a stopwatch at the end.",
+		freeAudience: "For those who know logic circuits",
 		free: "Build any circuit you like.",
 	},
 	home: {
