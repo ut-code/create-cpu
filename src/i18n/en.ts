@@ -203,7 +203,7 @@ export const en = {
 			title: (componentName: string) => `Delete ${componentName}?`,
 			unused: "This cannot be undone.",
 			used: (count: number, places: readonly string[], otherCount: number) =>
-				`It is used ${count === 1 ? "once" : `${count} times`} in ${places.join(", ")}${otherCount > 0 ? ` and ${otherCount} other ${otherCount === 1 ? "component" : "components"}` : ""}. Deleting it also removes it from those components, along with the wires connected to it. This cannot be undone.`,
+				`It is used ${count === 1 ? "once" : `${count} times`} in ${otherCount > 0 ? `${places.join(", ")} and ${otherCount} other ${otherCount === 1 ? "component" : "components"}` : listOf(places)}. Deleting it also removes it from those components, along with the wires connected to it. This cannot be undone.`,
 		},
 		errors: {
 			read: (fileName: string) => `Could not read ${fileName}.`,

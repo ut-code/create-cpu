@@ -28,7 +28,7 @@ describe("describeComponentDeletion", () => {
 		registerTestNode(store, cpu.id, adder.id);
 
 		expect(describeComponentDeletion(store, adder.id, en)).toBe(
-			"It is used 3 times in ALU, CPU. Deleting it also removes it from those components, along with the wires connected to it. This cannot be undone.",
+			"It is used 3 times in ALU and CPU. Deleting it also removes it from those components, along with the wires connected to it. This cannot be undone.",
 		);
 	});
 
@@ -41,7 +41,7 @@ describe("describeComponentDeletion", () => {
 		registerTestNode(store, second.id, adder.id);
 
 		expect(describeComponentDeletion(store, adder.id, en)).toMatch(
-			/^It is used 2 times in ALU, ALU\./,
+			/^It is used 2 times in ALU and ALU\./,
 		);
 	});
 
