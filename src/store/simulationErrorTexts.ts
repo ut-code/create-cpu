@@ -18,9 +18,9 @@ export const englishSimulationErrorTexts: SimulationErrorTexts = {
 	interfaceNode: (type, pin) =>
 		`${type === "input" ? "Input" : "Output"} ${pin}`,
 	sentences: (sentences) => sentences.join(" "),
-	loop: "The output of each part outlined in red comes back to its own input along the wires. Working out its output needs that same output, so the circuit cannot run as it is. Reconnect a wire, or put a FlipFlop on the way back.",
+	loop: "The output of each part outlined in red comes back to its own input along the wires. Working out its output needs that same output, so the circuit cannot run as it is. Reconnect a wire, or put a FlipFlop somewhere along the way.",
 	loopInside: (place, component) =>
-		`Inside ${place}, the output of some parts comes back to their own input along the wires. Working out their output needs that same output, so the circuit cannot run as it is. Open ${component} to reconnect a wire, or put a FlipFlop on the way back.`,
+		`Inside ${place}, the output of some parts comes back to their own input along the wires. Working out their output needs that same output, so the circuit cannot run as it is. Open ${component} to reconnect a wire, or put a FlipFlop somewhere along the way.`,
 	unconnectedPin: (pin, node) => `Pin ${pin} of ${node} is not connected.`,
 	unconnectedNode: (node) => `${node} is not connected.`,
 	openToConnect: (component) => `Open ${component} to connect it.`,

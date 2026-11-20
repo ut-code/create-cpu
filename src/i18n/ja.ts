@@ -292,9 +292,9 @@ export const ja: Messages = {
 		interfaceNode: (type, pin) =>
 			`${type === "input" ? "入力" : "出力"} ${pin}`,
 		sentences: (sentences) => sentences.join(""),
-		loop: "赤い枠の部品は、自分の出力が線をたどって自分の入力に戻ってきます。出力を決めるのにその出力自身が要るので、このままでは動きません。線をつなぎ直すか、戻る途中に FlipFlop を入れてください。",
+		loop: "赤い枠の部品は、自分の出力が線をたどって自分の入力に戻ってきます。出力を決めるのにその出力自身が必要になるので、このままでは動きません。線をつなぎ直すか、その途中に FlipFlop を入れてください。",
 		loopInside: (place, component) =>
-			`${place} の中に、自分の出力が線をたどって自分の入力に戻ってくる部品があります。出力を決めるのにその出力自身が要るので、このままでは動きません。${component} を開いて線をつなぎ直すか、戻る途中に FlipFlop を入れてください。`,
+			`${place} の中に、自分の出力が線をたどって自分の入力に戻ってくる部品があります。出力を決めるのにその出力自身が必要になるので、このままでは動きません。${component} を開いて線をつなぎ直すか、その途中に FlipFlop を入れてください。`,
 		unconnectedPin: (pin, node) =>
 			`${node} の ${pin} のピンがつながっていません。`,
 		unconnectedNode: (node) => `${node} がつながっていません。`,
