@@ -46,7 +46,7 @@ describe("describeFailure", () => {
 		new Error("Broken"),
 		new SimulationNodeError("And could not be evaluated", []),
 	])(
-		"says the circuit cannot run before an error without a wording",
+		"says the circuit cannot run before an error without a wording: %s",
 		(error) => {
 			expect(
 				describeFailure(
