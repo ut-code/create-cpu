@@ -84,16 +84,22 @@ function SectionHeading({ children }: { children: ReactNode }) {
 	);
 }
 
-/** The steps are hints, kept closed until the player asks for them */
-function StepsSection({
-	steps,
-	isOpenAtFirst,
-}: {
-	steps: readonly string[];
-	isOpenAtFirst: boolean;
-}) {
+function StepList({ steps }: { steps: readonly string[] }) {
+	return (
+		<Box component="ol" sx={{ m: 0, pl: 3 }}>
+			{steps.map((step) => (
+				<Typography key={step} component="li" sx={{ mb: 1 }}>
+					<MarkedText text={step} />
+				</Typography>
+			))}
+		</Box>
+	);
+}
+
+/** Steps that are hints, kept closed until the player asks for them */
+function HintSteps({ steps }: { steps: readonly string[] }) {
 	const texts = useMessages().tutorial;
-	const [isOpen, setIsOpen] = useState(isOpenAtFirst);
+	const [isOpen, setIsOpen] = useState(false);
 	const stepsId = useId();
 	const noteId = useId();
 	const toggle = () => setIsOpen((open) => !open);
@@ -137,13 +143,7 @@ function StepsSection({
 				</Typography>
 			)}
 			<Collapse in={isOpen} id={stepsId}>
-				<Box component="ol" sx={{ m: 0, pl: 3 }}>
-					{steps.map((step) => (
-						<Typography key={step} component="li" sx={{ mb: 1 }}>
-							<MarkedText text={step} />
-						</Typography>
-					))}
-				</Box>
+				<StepList steps={steps} />
 			</Collapse>
 		</div>
 	);
@@ -340,13 +340,17 @@ function StageView({ stage }: { stage: TutorialStage }) {
 									</Box>
 								)}
 							</div>
-							{stageTexts.steps.length > 0 && (
-								<StepsSection
-									steps={stageTexts.steps}
-									// The first stage's steps teach the editor, not the circuit
-									isOpenAtFirst={stageIndex === 0}
-								/>
-							)}
+							{stageTexts.steps.length > 0 &&
+								// The first stage's steps teach the editor, not the circuit, so
+								// they are no hints to hide
+								(stageIndex === 0 ? (
+									<div>
+										<SectionHeading>{texts.stepsHeading}</SectionHeading>
+										<StepList steps={stageTexts.steps} />
+									</div>
+								) : (
+									<HintSteps steps={stageTexts.steps} />
+								))}
 							<div>
 								<SectionHeading>{messages.parts.ofStage}</SectionHeading>
 								<Stack spacing={1.5}>
