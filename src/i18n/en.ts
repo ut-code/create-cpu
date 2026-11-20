@@ -37,14 +37,16 @@ const stageTexts: Record<TutorialStageId, StageTexts> = {
 		goal: [
 			"Make the lamp {Out} turn [ON] only when switch {A} is [ON] and {B} is [OFF]. This time, one component alone is not enough.",
 		],
-		steps: [],
+		steps: ["Turn {B} over with a {Not}, then connect it and {A} to an {And}."],
 	},
 	xor: {
 		title: "ON when just one is ON",
 		goal: [
 			'Make the lamp {Out} turn [ON] when exactly one of the switches {A} and {B} is [ON]. It stays [OFF] when both are [ON]. "{ON when only A is ON}" is ready to use as a component.',
 		],
-		steps: [],
+		steps: [
+			'Place two "{ON when only A is ON}", and connect {A} and {B} to one of them the other way round. Join their two {Out}s with an {Or} and connect it to {Out}.',
+		],
 	},
 	"half-adder": {
 		title: "Adding one digit",
@@ -52,25 +54,27 @@ const stageTexts: Record<TutorialStageId, StageTexts> = {
 			"From here on, think of [ON] as [1] and [OFF] as [0], and the tables of the stages' circuits write them that way too. Then {A} + {B} is 0, 1 or 2. Binary writes numbers with only 0 and 1: just as 9 + 1 carries over and becomes 10 in everyday numbers, 1 + 1 carries over and becomes 10 in binary. So 0, 1 and 2 are [00], [01] and [10] in two digits. A digit of a binary number is called a bit.",
 			"Output the left digit (the twos digit) to {C} and the right digit (the ones digit) to {S}. {C} is called the carry and {S} the sum, and this circuit is called a half adder.",
 		],
-		steps: [],
+		steps: ["{C} can be made with an {And}, and {S} with an {Xor}."],
 	},
 	"full-adder": {
 		title: "Adding with a carry",
 		goal: [
-			'Output {A} + {B} + {Cin} as a two-digit binary number to {C} and {S}. {Cin} is the carry coming up from the next lower digit. The answer is 0 to 3, and 3 is [11] in binary. "{Adding one digit}" is ready to use as a component: add {A} and {B} with one, then add {Cin} to its {S} with another. This circuit is called a full adder.',
+			'Output {A} + {B} + {Cin} as a two-digit binary number to {C} and {S}. {Cin} is the carry coming up from the next lower digit. The answer is 0 to 3, and 3 is [11] in binary. "{Adding one digit}" is ready to use as a component. This circuit is called a full adder.',
 		],
-		steps: [],
+		steps: [
+			'Add {A} and {B} with one "{Adding one digit}", then add {Cin} to its {S} with another. Join the two {C}s with an {Or} and output it to {C}.',
+		],
 	},
 	"four-bit-adder": {
 		title: "Adding four digits",
 		goal: [
 			"{A} and {B} are four-digit binary numbers. Output {A} + {B} in four digits to {S}, and its fifth digit, the sixteens digit, to {C}: {C} is [1] when {A} + {B} is 16 or more. The table shows some examples.",
+			"While playing, click a digit of {A} or {B} to switch it between [0] and [1]. The sum {S} is shown as one character on the {Display} at the top right. The {7seg} before it turns the binary number into the shape of a numeral. To write 10 to 15 with one character, A (10), b (11), C (12), d (13), E (14) and F (15) are used. This way of writing is called hexadecimal.",
 		],
 		steps: [
 			'Place four "{Adding with a carry}". From the top, the pins on the right of {Decompose} and on the left of {Aggregate} are the eights, fours, twos and ones digits.',
 			"For each digit, connect that digit's pin on the upper {Decompose}, which {A} goes into, and on the lower one, which {B} goes into, to the {A} and {B} of one \"{Adding with a carry}\". Connect the {S} of that adder to the same digit's pin of {Aggregate}.",
 			"Connect the {C} of each digit's adder to the {Cin} of the adder one digit up. The ones digit's adder gets {False} on its {Cin}, and the {C} of the eights digit's adder goes to the output {C} on the right.",
-			"While playing, click a digit of {A} or {B} to switch it between [0] and [1]. The sum {S} is shown as one character on the {Display} at the top right. The {7seg} before it turns the binary number into the shape of a numeral. To write 10 to 15 with one character, A (10), b (11), C (12), d (13), E (14) and F (15) are used. This way of writing is called hexadecimal.",
 		],
 	},
 	counter: {
