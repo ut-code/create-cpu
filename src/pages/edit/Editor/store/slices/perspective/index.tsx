@@ -1,7 +1,12 @@
+import type { Rect } from "../../../../../../common/rect";
 import { vector2 } from "../../../../../../common/vector2";
+import type { CCNodeId } from "../../../../../../store/node";
 import { getCCComponentEditorRendererNodeGeometry } from "../../../renderer/Node/geometry";
-import type { ComponentEditorSliceCreator } from "../../types";
-import { perspectiveFitting } from "./fit";
+import type {
+	ComponentEditorSliceCreator,
+	ComponentEditorStoreValue,
+} from "../../types";
+import { isShownInRoom, perspectiveFitting } from "./fit";
 import type { PerspectiveStoreSlice } from "./types";
 
 const createComponentEditorStorePerspectiveSlice: ComponentEditorSliceCreator<
@@ -16,6 +21,14 @@ const createComponentEditorStorePerspectiveSlice: ComponentEditorSliceCreator<
 		if (element) resizeObserver.observe(element);
 		rendererElement = element;
 	};
+	const rectOf = (nodeId: CCNodeId) =>
+		getCCComponentEditorRendererNodeGeometry(store, nodeId).rect;
+	const rectsToFit = (state: ComponentEditorStoreValue): Rect[] => [
+		...store.nodes
+			.getManyByParentComponentId(componentId)
+			.map((node) => rectOf(node.id)),
+		...(state.areaToFit ? [state.areaToFit] : []),
+	];
 	return {
 		define: (set, get) => ({
 			perspective: { center: vector2.zero, scale: 1 },
@@ -25,6 +38,23 @@ const createComponentEditorStorePerspectiveSlice: ComponentEditorSliceCreator<
 				return rect ? { x: rect.left, y: rect.top } : vector2.zero;
 			},
 			setPerspective: (perspective) => set((s) => ({ ...s, perspective })),
+			showNodes: (nodeIds) => {
+				const { perspective, rendererSize } = get();
+				if (rendererSize.x <= 0 || rendererSize.y <= 0) return;
+				const isEachShown = [...nodeIds]
+					.filter(
+						(nodeId) =>
+							store.nodes.get(nodeId)?.parentComponentId === componentId,
+					)
+					.every((nodeId) =>
+						isShownInRoom(rectOf(nodeId), perspective, rendererSize),
+					);
+				if (isEachShown) return;
+				set((s) => ({
+					...s,
+					perspective: perspectiveFitting(rectsToFit(get()), rendererSize),
+				}));
+			},
 			registerRendererElement,
 			fromCanvasToStage: (point) =>
 				vector2.add(
@@ -70,19 +100,7 @@ const createComponentEditorStorePerspectiveSlice: ComponentEditorSliceCreator<
 				editorStore.setState({
 					rendererSize,
 					...(fitsNow && {
-						perspective: perspectiveFitting(
-							[
-								...store.nodes
-									.getManyByParentComponentId(componentId)
-									.map(
-										(node) =>
-											getCCComponentEditorRendererNodeGeometry(store, node.id)
-												.rect,
-									),
-								...(state.areaToFit ? [state.areaToFit] : []),
-							],
-							rendererSize,
-						),
+						perspective: perspectiveFitting(rectsToFit(state), rendererSize),
 					}),
 				});
 			});

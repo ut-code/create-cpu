@@ -1,3 +1,4 @@
+import type { Rect } from "../../../../../../common/rect";
 import type { Perspective } from "../../../../../../common/types";
 import type { Vector2 } from "../../../../../../common/vector2";
 
@@ -9,7 +10,7 @@ export const fitPadding = { top: 130, right: 30, bottom: 110, left: 30 };
  * out only as far as needed, never in
  */
 export function perspectiveFitting(
-	rects: readonly { position: Vector2; size: Vector2 }[],
+	rects: readonly Rect[],
 	rendererSize: Vector2,
 ): Perspective {
 	if (rects.length === 0) return { center: { x: 0, y: 0 }, scale: 1 };
@@ -39,4 +40,29 @@ export function perspectiveFitting(
 		},
 		scale,
 	};
+}
+
+/** Whether `rect` lies wholly in the room the padding leaves, as `perspective` shows it */
+export function isShownInRoom(
+	rect: Rect,
+	perspective: Perspective,
+	rendererSize: Vector2,
+): boolean {
+	const toCanvas = (point: Vector2) => ({
+		x:
+			(point.x - perspective.center.x) / perspective.scale + rendererSize.x / 2,
+		y:
+			(point.y - perspective.center.y) / perspective.scale + rendererSize.y / 2,
+	});
+	const topLeft = toCanvas(rect.position);
+	const bottomRight = toCanvas({
+		x: rect.position.x + rect.size.x,
+		y: rect.position.y + rect.size.y,
+	});
+	return (
+		topLeft.x >= fitPadding.left &&
+		topLeft.y >= fitPadding.top &&
+		bottomRight.x <= rendererSize.x - fitPadding.right &&
+		bottomRight.y <= rendererSize.y - fitPadding.bottom
+	);
 }
