@@ -11,8 +11,7 @@ export default function CCComponentEditorViewModeSwitcher() {
 	const isEachInputPinConnected = useIsEachInputPinConnected(
 		componentEditorState.componentId,
 	);
-	// Pale while a pin is free, yet pressed all the same, so that the simulation can
-	// tell which pin it is
+	// Pressed even when pale, so that the simulation names the free pin
 	const looksDisabled = isEditing && !isEachInputPinConnected;
 
 	return (

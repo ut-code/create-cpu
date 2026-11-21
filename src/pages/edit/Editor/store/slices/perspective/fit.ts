@@ -58,7 +58,6 @@ export function perspectiveFitting(
 	};
 }
 
-/** Whether `rect` lies wholly in the room `padding` leaves, as `perspective` shows it */
 export function isShownInRoom(
 	rect: Rect,
 	perspective: Perspective,

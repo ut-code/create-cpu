@@ -21,7 +21,6 @@ export default function CCComponentEditorRenderer() {
 	const nodeIds = useNodeIds(componentEditorState.componentId);
 	const connectionIds = useConnectionIds(componentEditorState.componentId);
 
-	// An outlined node out of view leaves the player not knowing what is wrong
 	const { showNodes, simulationError } = componentEditorState;
 	const outlinedNodeIds = useContext(OutlinedNodeIdsContext);
 	useEffect(() => {
