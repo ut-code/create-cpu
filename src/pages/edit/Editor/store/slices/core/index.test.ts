@@ -194,6 +194,29 @@ describe("simulation errors", () => {
 		);
 		expect(simulationError?.nodeIds).toEqual(new Set([first.id, second.id]));
 	});
+
+	it("tells which pin is free when play is pressed with one", () => {
+		const store = createTestStore();
+		const root = registerTestComponent(store, "Root");
+		const source = registerTestNode(store, root.id, true_.component.id);
+		const gate = registerTestNode(store, root.id, and.component.id);
+		connectTestNodePins(
+			store,
+			root.id,
+			testNodePin(store, source, true_.outputPin.Out),
+			testNodePin(store, gate, and.inputPin.A),
+		);
+		const editorStore = createEditorStore(root.id, store);
+
+		editorStore.getState().setEditorMode("play");
+
+		const { editorMode, simulationError } = editorStore.getState();
+		expect(editorMode).toBe("edit");
+		expect(simulationError?.messageByLanguage.ja).toBe(
+			"And の B のピンがつながっていません。",
+		);
+		expect(simulationError?.nodeIds).toEqual(new Set([gate.id]));
+	});
 });
 
 describe("editor mode", () => {

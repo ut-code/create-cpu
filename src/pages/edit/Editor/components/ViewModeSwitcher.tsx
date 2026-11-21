@@ -1,11 +1,17 @@
 import { Edit, PlayArrow } from "@mui/icons-material";
 import { Fab } from "@mui/material";
-import { useCanSimulate } from "../../../../store/react/selectors";
+import { useIsEachInputPinConnected } from "../../../../store/react/selectors";
 import { useComponentEditorStore } from "../store";
 
 export default function CCComponentEditorViewModeSwitcher() {
 	const componentEditorState = useComponentEditorStore()();
-	const canSimulate = useCanSimulate(componentEditorState.componentId);
+	const isEachInputPinConnected = useIsEachInputPinConnected(
+		componentEditorState.componentId,
+	);
+	// Pale while a pin is free, yet pressed all the same, so that the simulation can
+	// tell which pin it is
+	const looksDisabled =
+		componentEditorState.editorMode === "edit" && !isEachInputPinConnected;
 
 	return (
 		<Fab
@@ -17,7 +23,17 @@ export default function CCComponentEditorViewModeSwitcher() {
 				);
 				componentEditorState.setTimeStep(0);
 			}}
-			disabled={!canSimulate}
+			aria-disabled={looksDisabled}
+			sx={
+				looksDisabled
+					? {
+							color: "action.disabled",
+							bgcolor: "action.disabledBackground",
+							boxShadow: "none",
+							"&:hover": { bgcolor: "action.disabledBackground" },
+						}
+					: {}
+			}
 		>
 			{componentEditorState.editorMode === "edit" ? <PlayArrow /> : <Edit />}
 		</Fab>
