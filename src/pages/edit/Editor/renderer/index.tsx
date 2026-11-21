@@ -1,3 +1,4 @@
+import { useContext, useEffect } from "react";
 import { parseDataTransferAsComponent } from "../../../../common/serialization";
 import { vector2 } from "../../../../common/vector2";
 import { CCNodeStore } from "../../../../store/node";
@@ -7,6 +8,7 @@ import {
 	useNodeIds,
 } from "../../../../store/react/selectors";
 import { canPlaceComponent } from "../../placement";
+import { OutlinedNodeIdsContext } from "../outlinedNodes";
 import { useComponentEditorStore } from "../store";
 import CCComponentEditorRendererBackground from "./Background";
 import CCComponentEditorRendererConnection from "./Connection";
@@ -18,6 +20,15 @@ export default function CCComponentEditorRenderer() {
 	const viewBox = componentEditorState.getViewBox();
 	const nodeIds = useNodeIds(componentEditorState.componentId);
 	const connectionIds = useConnectionIds(componentEditorState.componentId);
+
+	const { showNodes, simulationError } = componentEditorState;
+	const outlinedNodeIds = useContext(OutlinedNodeIdsContext);
+	useEffect(() => {
+		showNodes(outlinedNodeIds);
+	}, [showNodes, outlinedNodeIds]);
+	useEffect(() => {
+		if (simulationError) showNodes(simulationError.nodeIds);
+	}, [showNodes, simulationError]);
 
 	return (
 		// biome-ignore lint/a11y/noSvgWithoutTitle: This svg is not a graphic

@@ -1,25 +1,42 @@
 import { Edit, PlayArrow } from "@mui/icons-material";
 import { Fab } from "@mui/material";
-import { useCanSimulate } from "../../../../store/react/selectors";
+import { useMessages } from "../../../../i18n";
+import { useIsEachInputPinConnected } from "../../../../store/react/selectors";
 import { useComponentEditorStore } from "../store";
 
 export default function CCComponentEditorViewModeSwitcher() {
 	const componentEditorState = useComponentEditorStore()();
-	const canSimulate = useCanSimulate(componentEditorState.componentId);
+	const texts = useMessages().editor.viewMode;
+	const isEditing = componentEditorState.editorMode === "edit";
+	const isEachInputPinConnected = useIsEachInputPinConnected(
+		componentEditorState.componentId,
+	);
+	// Pressed even when pale, so that the simulation names the free pin
+	const looksDisabled = isEditing && !isEachInputPinConnected;
 
 	return (
 		<Fab
 			style={{ position: "absolute", bottom: "40px", right: "40px" }}
 			color="primary"
 			onClick={() => {
-				componentEditorState.setEditorMode(
-					componentEditorState.editorMode === "edit" ? "play" : "edit",
-				);
+				componentEditorState.setEditorMode(isEditing ? "play" : "edit");
 				componentEditorState.setTimeStep(0);
 			}}
-			disabled={!canSimulate}
+			aria-label={isEditing ? texts.play : texts.edit}
+			aria-disabled={looksDisabled}
+			sx={
+				looksDisabled
+					? {
+							color: "action.disabled",
+							bgcolor: "action.disabledBackground",
+							boxShadow: "none",
+							"&:hover": { bgcolor: "action.disabledBackground" },
+							"&:active": { boxShadow: "none" },
+						}
+					: {}
+			}
 		>
-			{componentEditorState.editorMode === "edit" ? <PlayArrow /> : <Edit />}
+			{isEditing ? <PlayArrow /> : <Edit />}
 		</Fab>
 	);
 }

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Perspective } from "../../../../../../common/types";
 import type { Vector2 } from "../../../../../../common/vector2";
-import { fitPadding, perspectiveFitting } from "./fit";
+import { fitPadding, isShownInRoom, perspectiveFitting } from "./fit";
 
 const rendererSize = { x: 900, y: 800 };
 
@@ -75,5 +75,45 @@ describe("perspectiveFitting", () => {
 			center: { x: 0, y: 0 },
 			scale: 1,
 		});
+	});
+});
+
+describe("isShownInRoom", () => {
+	const perspective = { center: { x: 0, y: 0 }, scale: 1 };
+
+	it("tells a rectangle inside the room from one reaching past its edge", () => {
+		expect(
+			isShownInRoom(
+				{ position: { x: -50, y: -20 }, size: { x: 100, y: 40 } },
+				perspective,
+				rendererSize,
+			),
+		).toBe(true);
+		expect(
+			isShownInRoom(
+				{ position: { x: 300, y: 0 }, size: { x: 200, y: 40 } },
+				perspective,
+				rendererSize,
+			),
+		).toBe(false);
+	});
+
+	it("counts the padding under the title bar as out of the room", () => {
+		const underTitleBar = {
+			position: { x: 0, y: -rendererSize.y / 2 + fitPadding.top - 10 },
+			size: { x: 50, y: 30 },
+		};
+		expect(isShownInRoom(underTitleBar, perspective, rendererSize)).toBe(false);
+	});
+
+	it("shows every rectangle in the room once the perspective fits them", () => {
+		const rects = [
+			{ position: { x: -2000, y: 50 }, size: { x: 100, y: 30 } },
+			{ position: { x: 400, y: 900 }, size: { x: 100, y: 30 } },
+		];
+		const fitted = perspectiveFitting(rects, rendererSize);
+		for (const rect of rects) {
+			expect(isShownInRoom(rect, fitted, rendererSize)).toBe(true);
+		}
 	});
 });

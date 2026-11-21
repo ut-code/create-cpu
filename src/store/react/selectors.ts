@@ -156,7 +156,7 @@ export function useComponentPin(componentPinId: CCComponentPinId | undefined) {
 	return useSyncExternalStore(subscribe, getSnapshot);
 }
 
-export function useCanSimulate(componentId: CCComponentId) {
+export function useIsEachInputPinConnected(componentId: CCComponentId) {
 	const { store } = useStore();
 	const getSnapshot = useCallback(
 		() => isEachInputPinConnected(store, componentId),
