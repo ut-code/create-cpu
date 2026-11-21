@@ -53,6 +53,24 @@ describe("showNodes", () => {
 		expect(isShown(near.id)).toBe(true);
 	});
 
+	it("brings a node out from under the error message", () => {
+		const { store, near, editorStore, isShown } = setUp();
+		const rectOfNear = () =>
+			getCCComponentEditorRendererNodeGeometry(store, near.id).rect;
+		const bottomUnderMessage = rendererSize.y / 2 - errorFitPadding.bottom + 10;
+		const { position, size } = rectOfNear();
+		const offset = position.y - near.position.y;
+		store.nodes.update(near.id, {
+			position: { x: 0, y: bottomUnderMessage - size.y - offset },
+		});
+		expect(isShownInRoom(rectOfNear(), perspective, rendererSize)).toBe(true);
+		expect(isShown(near.id)).toBe(false);
+
+		editorStore.getState().showNodes(new Set([near.id]));
+
+		expect(isShown(near.id)).toBe(true);
+	});
+
 	it("ignores nodes of other components", () => {
 		const { store, editorStore } = setUp();
 		const other = registerTestComponent(store, "Other");
