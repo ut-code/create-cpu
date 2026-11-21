@@ -6,7 +6,12 @@ import type {
 	ComponentEditorSliceCreator,
 	ComponentEditorStoreValue,
 } from "../../types";
-import { isShownInRoom, perspectiveFitting } from "./fit";
+import {
+	errorFitPadding,
+	isShownInRoom,
+	perspectiveFitting,
+	stageToCanvas,
+} from "./fit";
 import type { PerspectiveStoreSlice } from "./types";
 
 const createComponentEditorStorePerspectiveSlice: ComponentEditorSliceCreator<
@@ -47,12 +52,21 @@ const createComponentEditorStorePerspectiveSlice: ComponentEditorSliceCreator<
 							store.nodes.get(nodeId)?.parentComponentId === componentId,
 					)
 					.every((nodeId) =>
-						isShownInRoom(rectOf(nodeId), perspective, rendererSize),
+						isShownInRoom(
+							rectOf(nodeId),
+							perspective,
+							rendererSize,
+							errorFitPadding,
+						),
 					);
 				if (isEachShown) return;
 				set((s) => ({
 					...s,
-					perspective: perspectiveFitting(rectsToFit(get()), rendererSize),
+					perspective: perspectiveFitting(
+						rectsToFit(get()),
+						rendererSize,
+						errorFitPadding,
+					),
 				}));
 			},
 			registerRendererElement,
@@ -65,13 +79,7 @@ const createComponentEditorStorePerspectiveSlice: ComponentEditorSliceCreator<
 					get().perspective.center,
 				),
 			fromStageToCanvas: (point) =>
-				vector2.add(
-					vector2.div(
-						vector2.sub(point, get().perspective.center),
-						get().perspective.scale,
-					),
-					vector2.div(get().rendererSize, 2),
-				),
+				stageToCanvas(point, get().perspective, get().rendererSize),
 			getViewBox: () => {
 				const viewBoxTopLeft = get().fromCanvasToStage(vector2.zero);
 				const viewBoxBottomRight = get().fromCanvasToStage(get().rendererSize);
